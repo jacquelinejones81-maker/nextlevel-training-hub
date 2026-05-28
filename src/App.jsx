@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 const C = {
   navy:"#0d1b2e", navyMid:"#1a2d47", navyLight:"#243a55",
@@ -9,6 +9,29 @@ const C = {
   success:"#10b981", warning:"#f59e0b", danger:"#ef4444",
   purple:"#8b5cf6", gold:"#f59e0b",
 };
+
+const MOTIVATIONS = [
+  "Success is not final, failure is not fatal — it is the courage to continue that counts.",
+  "The secret of getting ahead is getting started.",
+  "Don't watch the clock; do what it does. Keep going.",
+  "Believe you can and you're halfway there.",
+  "It always seems impossible until it's done.",
+  "Your only limit is your mind.",
+  "Push yourself because no one else is going to do it for you.",
+  "Great things never come from comfort zones.",
+  "Dream it. Wish it. Do it.",
+  "Success doesn't just find you. You have to go out and get it.",
+  "The harder you work for something, the greater you'll feel when you achieve it.",
+  "Don't stop when you're tired. Stop when you're done.",
+  "Wake up with determination. Go to bed with satisfaction.",
+  "Do something today that your future self will thank you for.",
+  "Little things make big days.",
+  "It's going to be hard, but hard is not impossible.",
+  "Don't wait for opportunity. Create it.",
+  "Sometimes we're tested not to show our weaknesses, but to discover our strengths.",
+  "The key to success is to focus on goals, not obstacles.",
+  "Dream bigger. Do bigger.",
+];
 
 const TRAINER_CHECKLIST = [
   {id:"t1",cat:"Getting Started",task:"Complete IBA and register for class or self online study",note:"Move within 48 hours"},
@@ -22,7 +45,7 @@ const TRAINER_CHECKLIST = [
   {id:"t9",cat:"References",task:"Complete character reference calls and book 5 training appointments",link:"https://docs.google.com/document/d/1ju_kh_QbSc5whqLpm8r9190Jr7raYfcGoi2jdDxP49U/edit?usp=sharing",linkLabel:"Call Script"},
   {id:"t10",cat:"Appointments",task:"Share training appointment link with rep",link:"https://calendly.com/jacquelinejones81/trainingappointment",linkLabel:"Schedule Appointment",note:"Add yourself as guest"},
   {id:"t11",cat:"Events",task:"Choose Digital Grand Opening (DGO) date"},
-  {id:"t12",cat:"FNA & Personal Plan",task:"Schedule time with RVP to complete personal FNA - Life Insurance and Investment",link:"https://calendly.com/jacquelinejones81/meet-with-coach",linkLabel:"Schedule with Coach",note:"Add yourself as guest"},
+  {id:"t12",cat:"FNA & Personal Plan",task:"Schedule time with RVP to complete personal FNA",link:"https://calendly.com/jacquelinejones81/meet-with-coach",linkLabel:"Schedule with Coach",note:"Add yourself as guest"},
   {id:"t13",cat:"Events",task:"Follow up after DGO - debrief, next steps, pipeline review"},
   {id:"t14",cat:"Milestones",task:"First sale milestone - rep writes first policy"},
 ];
@@ -113,11 +136,11 @@ const TRACK_INFO = {
 };
 
 const TEAM_SCHEDULE = [
-  {day:"Monday",title:"Mindset Monday",time:"7:30 PM CST / 8:30 PM EST",emoji:"??"},
-  {day:"Tuesday",title:"SIE Securities Exam Study Group",time:"9:00 PM CST / 10:00 PM EST",note:"Licensed Life Agents only",emoji:"??"},
-  {day:"Wednesday",title:"Education Center",time:"9:00 PM CST / 10:00 PM EST",emoji:"??"},
-  {day:"Thursday",title:"How Money Works Opportunity Night",time:"7:30 PM CST / 8:30 PM EST",emoji:"??"},
-  {day:"Saturday",title:"Team Training",time:"10:10 AM CST / 11:10 AM EST",emoji:"??"},
+  {day:"Monday",title:"Mindset Monday",time:"7:30 PM CST / 8:30 PM EST",dayIndex:1},
+  {day:"Tuesday",title:"SIE Securities Exam Study Group",time:"9:00 PM CST / 10:00 PM EST",note:"Licensed Life Agents only",dayIndex:2},
+  {day:"Wednesday",title:"Education Center",time:"9:00 PM CST / 10:00 PM EST",dayIndex:3},
+  {day:"Thursday",title:"How Money Works Opportunity Night",time:"7:30 PM CST / 8:30 PM EST",dayIndex:4},
+  {day:"Saturday",title:"Team Training",time:"10:10 AM CST / 11:10 AM EST",dayIndex:6},
 ];
 
 const SCRIPTS = [
@@ -126,48 +149,191 @@ const SCRIPTS = [
   {title:"Opportunity Night Invite",content:"Hey [Name], I am attending a financial education event this [day] and I think you would really get value from it. It is about how money works and strategies people use to build wealth. It is free and only about an hour. I would love for you to come as my guest. Can you make it at [time]?"},
 ];
 
-const MACHO_LABELS = {M:"Married",A:"Age 25-55",C:"Children",H:"Homeowner",O:"Occupation"};
+const BONUS_GOALS = [
+  {id:"b1",label:"3 x $3,000",desc:"$650 Bonus + District Manager Promotion",target:3,premium:3000},
+  {id:"b2",label:"6 x $6,000",desc:"$1,250 Bonus + District Manager Promotion",target:6,premium:6000},
+  {id:"b3",label:"10 x $10,000",desc:"$2,050 Bonus + District Manager Promotion",target:10,premium:10000},
+];
+
+const TOUR_STEPS = {
+  admin: [
+    {title:"Welcome to NextLevel Hub!",body:"This is your admin dashboard. You have full access to manage trainers, reps, and production tracking."},
+    {title:"Dashboard",body:"See all your reps at a glance with progress bars, check-in status, and stalled alerts."},
+    {title:"Add Reps",body:"Click 'Add New Rep' to add a new recruit. Assign them a track and trainer."},
+    {title:"Manage Team",body:"Use 'Manage Team' to add trainers and admins with their own PINs."},
+    {title:"Production",body:"Track team premium, recruits, and licensed agents against your goals."},
+  ],
+  trainer: [
+    {title:"Welcome, Trainer!",body:"This is your field training dashboard. You can see all your reps and track their progress."},
+    {title:"Your Reps",body:"Each card shows trainer and rep progress. Red border means stalled - check in!"},
+    {title:"Trainer Checklist",body:"When you open a rep, complete your trainer checklist first - this is your onboarding guide."},
+    {title:"Appointments",body:"Track all 20 training appointments with MACHO scoring to qualify contacts."},
+    {title:"My Production",body:"Log your own life apps and investments to track your personal production."},
+  ],
+  rep: [
+    {title:"Welcome to Your Training Hub!",body:"This app tracks your progress from day one to getting licensed and beyond."},
+    {title:"Your Checklist",body:"Complete each task as you go. Your progress percentage updates automatically."},
+    {title:"Appointments",body:"Log your 20 training appointments here. Use MACHO scoring to find your best prospects."},
+    {title:"Scripts",body:"Not sure what to say? The Scripts tab has word-for-word scripts for setting appointments."},
+    {title:"Add to Your Phone",body:"Tap the menu icon and select 'Add to Home Screen' to install this app on your phone for quick access!"},
+  ],
+};
 
 const LS_KEY = "nlfh_v4";
 const loadData = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } };
 const saveData = (d) => { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch {} };
 
+// ── UTILS ──
 function Badge({color,children,small}) {
   return <span style={{background:color+"22",color,fontSize:small?10:11,fontWeight:600,padding:small?"2px 6px":"3px 8px",borderRadius:20,whiteSpace:"nowrap"}}>{children}</span>;
 }
-
 function Bar({pct,color=C.teal,h=6}) {
   return <div style={{background:"rgba(0,0,0,0.07)",borderRadius:99,height:h,overflow:"hidden"}}><div style={{width:`${Math.min(100,pct)}%`,background:color,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div>;
 }
-
 function Card({children,style={}}) {
   return <div style={{background:C.surfaceCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 18px",...style}}>{children}</div>;
 }
-
 function SecHead({title,count,color=C.teal}) {
-  const done = count && count[0]===count[1];
+  const done=count&&count[0]===count[1];
   return <div style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0 6px"}}><div style={{width:3,height:14,background:done?C.success:color,borderRadius:2}}/><span style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",flex:1}}>{title}</span>{count&&<span style={{fontSize:10,color:done?C.success:C.textLight}}>{count[0]}/{count[1]}</span>}</div>;
 }
 
+// ── MACHO (gold stars, green when qualified) ──
 function MachoQ({value={},onChange}) {
-  const letters = ["M","A","C","H","O"];
-  const score = letters.filter(l=>value[l]).length;
-  return <div style={{marginTop:6}}><div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>{letters.map(l=><button key={l} onClick={()=>onChange({...value,[l]:!value[l]})} title={MACHO_LABELS[l]} style={{width:28,height:28,borderRadius:6,border:`1px solid ${value[l]?C.gold:C.border}`,background:value[l]?C.gold+"22":"transparent",color:value[l]?C.gold:C.textLight,fontWeight:700,fontSize:12,cursor:"pointer"}}>{l}</button>)}<span style={{fontSize:11,color:score>=3?C.success:C.textLight,marginLeft:2}}>{score}/5 {score>=3?"Qualified":""}</span></div></div>;
+  const letters=["M","A","C","H","O"];
+  const labels={M:"Married",A:"Age 25-55",C:"Children",H:"Homeowner",O:"Occupation"};
+  const score=letters.filter(l=>value[l]).length;
+  const qualified=score>=3;
+  return <div style={{marginTop:8}}>
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
+      {letters.map(l=>{
+        const active=!!value[l];
+        return <button key={l} onClick={()=>onChange({...value,[l]:!active})} title={labels[l]}
+          style={{width:44,height:44,borderRadius:10,border:`2px solid ${active?C.gold:"rgba(0,0,0,0.15)"}`,background:active?C.gold+"22":"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,transition:"all 0.15s"}}>
+          <span style={{fontSize:14}}>{active?"★":"☆"}</span>
+          <span style={{fontSize:9,fontWeight:700,color:active?C.gold:C.textLight}}>{l}</span>
+        </button>;
+      })}
+    </div>
+    {score>0&&<div style={{background:qualified?C.success+"11":"rgba(0,0,0,0.04)",border:`1px solid ${qualified?C.success+"44":"rgba(0,0,0,0.08)"}`,borderRadius:8,padding:"6px 10px"}}>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>
+        {letters.filter(l=>value[l]).map(l=><span key={l} style={{background:C.gold+"22",color:C.gold,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:12}}>★ {labels[l]}</span>)}
+      </div>
+      <div style={{fontSize:11,fontWeight:700,color:qualified?C.success:C.gold}}>
+        {score} ★ {qualified?"— Qualified! Great candidate for an appointment.":"— "+(3-score)+" more star"+(3-score!==1?"s":"")+` needed to qualify`}
+      </div>
+    </div>}
+  </div>;
 }
 
 function CheckItem({item,checked,onToggle,readOnly}) {
   return <div style={{display:"flex",gap:9,padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><button onClick={!readOnly?onToggle:undefined} style={{width:20,height:20,borderRadius:5,border:`2px solid ${checked?C.teal:C.border}`,background:checked?C.teal:"white",flexShrink:0,marginTop:1,cursor:readOnly?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{checked&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}</button><div style={{flex:1}}><div style={{fontSize:13,color:checked?C.textLight:C.text,textDecoration:checked?"line-through":"none",lineHeight:1.4}}>{item.task}</div>{item.note&&<div style={{fontSize:11,color:C.textLight,marginTop:1}}>{item.note}</div>}{item.link&&<a href={item.link} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.teal,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:2,marginTop:2}}>{item.linkLabel||"Open"} &rarr;</a>}</div></div>;
 }
 
+// ── APP TOUR ──
+function AppTour({role,onClose}) {
+  const [step,setStep]=useState(0);
+  const steps=TOUR_STEPS[role]||TOUR_STEPS.rep;
+  const isLast=step===steps.length-1;
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"white",borderRadius:16,padding:28,maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{display:"flex",gap:4}}>{steps.map((_,i)=><div key={i} style={{width:i===step?20:6,height:6,borderRadius:3,background:i===step?C.teal:C.border,transition:"width 0.2s"}}/>)}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:C.textLight,cursor:"pointer",fontSize:18}}>x</button>
+      </div>
+      <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:10}}>{steps[step].title}</div>
+      <div style={{fontSize:14,color:C.textMid,lineHeight:1.6,marginBottom:20}}>{steps[step].body}</div>
+      <div style={{display:"flex",gap:8}}>
+        {step>0&&<button onClick={()=>setStep(step-1)} style={{flex:1,padding:"9px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Back</button>}
+        <button onClick={()=>isLast?onClose():setStep(step+1)} style={{flex:2,padding:"9px",borderRadius:8,border:"none",background:isLast?C.success:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>{isLast?"Get Started!":"Next"}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── ADD TO PHONE MODAL ──
+function AddToPhoneModal({onClose}) {
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"white",borderRadius:16,padding:24,maxWidth:400,width:"100%"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={{fontSize:15,fontWeight:700,color:C.text}}>Add App to Your Phone</div>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button>
+      </div>
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:8}}>iPhone / Safari</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>
+          1. Open this app in Safari<br/>
+          2. Tap the Share button (box with arrow pointing up)<br/>
+          3. Scroll down and tap "Add to Home Screen"<br/>
+          4. Tap "Add" in the top right<br/>
+          5. The app icon will appear on your home screen!
+        </div>
+      </div>
+      <div>
+        <div style={{fontSize:13,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>
+          1. Open this app in Chrome<br/>
+          2. Tap the three dots menu (top right)<br/>
+          3. Tap "Add to Home screen"<br/>
+          4. Tap "Add"<br/>
+          5. The app icon will appear on your home screen!
+        </div>
+      </div>
+      <button onClick={onClose} style={{marginTop:16,width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Got it!</button>
+    </div>
+  </div>;
+}
+
+// ── DAILY EVENTS BANNER ──
+function DailyEventsBanner({data,onUpdateData,userRole}) {
+  const today=new Date().getDay();
+  const todayEvents=TEAM_SCHEDULE.filter(s=>s.dayIndex===today);
+  const cancelledEvents=data.cancelledEvents||{};
+  const todayKey=new Date().toISOString().split("T")[0];
+  if(todayEvents.length===0) return null;
+  return <div style={{background:`linear-gradient(135deg,${C.navyMid} 0%,${C.navyLight} 100%)`,borderRadius:12,padding:"12px 16px",marginBottom:14,color:"white"}}>
+    <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Today's Events</div>
+    {todayEvents.map((evt,i)=>{
+      const key=`${todayKey}_${evt.dayIndex}_${i}`;
+      const cancelled=cancelledEvents[key];
+      return <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<todayEvents.length-1?6:0}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div>
+          <div style={{fontSize:11,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div>
+        </div>
+        {cancelled&&<Badge color={C.danger} small>Cancelled</Badge>}
+        {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&!cancelled&&(
+          <button onClick={()=>{const ce={...cancelledEvents,[key]:true};onUpdateData({...data,cancelledEvents:ce});}}
+            style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:"rgba(239,68,68,0.2)",border:"1px solid rgba(239,68,68,0.4)",color:"#fca5a5",cursor:"pointer"}}>Cancel</button>
+        )}
+        {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&cancelled&&(
+          <button onClick={()=>{const ce={...cancelledEvents};delete ce[key];onUpdateData({...data,cancelledEvents:ce});}}
+            style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:"rgba(16,185,129,0.2)",border:"1px solid rgba(16,185,129,0.4)",color:"#6ee7b7",cursor:"pointer"}}>Restore</button>
+        )}
+      </div>;
+    })}
+  </div>;
+}
+
+// ── APPOINTMENT TRACKER ──
 function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
-  const slots = Array.from({length:20},(_,i)=>appointments[i]||{id:i,name:"",phone:"",email:"",date:"",notes:"",macho:{},status:""});
-  const logged = slots.filter(a=>a.name).length;
-  const done = slots.filter(a=>a.status==="Completed").length;
-  const qualified = slots.filter(a=>a.name&&Object.values(a.macho||{}).filter(Boolean).length>=3).length;
-  const fmt = v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
-  const upd = (i,field,val) => {const arr=[...slots];arr[i]={...arr[i],[field]:field==="phone"?fmt(val):val};onChange(arr.filter(a=>a.name||a.phone||a.date));};
-  const updM = (i,macho) => {const arr=[...slots];arr[i]={...arr[i],macho};onChange(arr.filter(a=>a.name||a.phone||a.date));};
+  const [showPurpose,setShowPurpose]=useState(true);
+  const slots=Array.from({length:20},(_,i)=>appointments[i]||{id:i,name:"",phone:"",email:"",date:"",notes:"",macho:{},status:""});
+  const logged=slots.filter(a=>a.name).length;
+  const done=slots.filter(a=>a.status==="Completed").length;
+  const qualified=slots.filter(a=>a.name&&Object.values(a.macho||{}).filter(Boolean).length>=3).length;
+  const fmt=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
+  const upd=(i,field,val)=>{const arr=[...slots];arr[i]={...arr[i],[field]:field==="phone"?fmt(val):val};onChange(arr.filter(a=>a.name||a.phone||a.date));};
+  const updM=(i,macho)=>{const arr=[...slots];arr[i]={...arr[i],macho};onChange(arr.filter(a=>a.name||a.phone||a.date));};
   return <div>
+    {showPurpose&&<div style={{background:C.navyMid,borderRadius:12,padding:"16px 18px",marginBottom:14,position:"relative",border:`1px solid ${C.gold}44`}}>
+      <button onClick={()=>setShowPurpose(false)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16}}>x</button>
+      <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Remember Your Purpose!</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. If a client or recruit comes out of it — amazing! But your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"rgba(255,255,255,0.7)"}}>
+        Need help setting appointments? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need to make the call with confidence!
+      </div>
+    </div>}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
       {[["Logged",logged,"20",C.teal],["Completed",done,logged||"-",C.success],["Qualified",qualified,logged||"-",C.gold]].map(([l,v,t,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"8px 10px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:C.textMid}}>{l}</div><div style={{fontSize:10,color:C.textLight}}>of {t}</div></div>)}
     </div>
@@ -177,37 +343,137 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
       {slots.map((a,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6,background:a.status==="Completed"?C.success+"08":"white"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
           <span style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase"}}>Appt #{i+1}</span>
-          {!readOnly&&<select value={a.status||""} onChange={e=>upd(i,"status",e.target.value)} style={{fontSize:11,padding:"2px 5px",borderRadius:5,border:`1px solid ${C.border}`,color:C.text}}><option value="">Set</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>}
+          {!readOnly&&<select value={a.status||""} onChange={e=>upd(i,"status",e.target.value)} style={{fontSize:11,padding:"2px 5px",borderRadius:5,border:`1px solid ${C.border}`,color:C.text}}><option value="">Set Status</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>}
           {readOnly&&a.status&&<Badge color={a.status==="Completed"?C.success:C.warning} small>{a.status}</Badge>}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
           {[["name","Name"],["phone","Phone"],["email","Email"],["date","Date"]].map(([f,ph])=><input key={f} type={f==="date"?"date":"text"} placeholder={ph} value={a[f]||""} readOnly={readOnly} onChange={e=>upd(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,background:readOnly?C.surface:"white",color:C.text}}/>)}
         </div>
-        <textarea placeholder="Notes" value={a.notes||""} readOnly={readOnly} onChange={e=>upd(i,"notes",e.target.value)} style={{width:"100%",marginTop:5,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,resize:"vertical",minHeight:36,background:readOnly?C.surface:"white",color:C.text,boxSizing:"border-box"}}/>
+        <textarea placeholder="Notes / Follow-up" value={a.notes||""} readOnly={readOnly} onChange={e=>upd(i,"notes",e.target.value)} style={{width:"100%",marginTop:5,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,resize:"vertical",minHeight:36,background:readOnly?C.surface:"white",color:C.text,boxSizing:"border-box"}}/>
         {!readOnly&&<MachoQ value={a.macho||{}} onChange={m=>updM(i,m)}/>}
-        {readOnly&&a.macho&&Object.keys(a.macho).length>0&&<div style={{display:"flex",gap:3,marginTop:4}}>{["M","A","C","H","O"].map(l=><span key={l} style={{width:20,height:20,borderRadius:4,background:a.macho[l]?C.gold+"22":C.surface,color:a.macho[l]?C.gold:C.textLight,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{l}</span>)}<span style={{fontSize:10,color:C.textLight,marginLeft:3,alignSelf:"center"}}>{Object.values(a.macho).filter(Boolean).length}/5</span></div>}
+        {readOnly&&a.macho&&Object.keys(a.macho).length>0&&(()=>{const score=Object.values(a.macho).filter(Boolean).length;const q=score>=3;return <div style={{marginTop:6,background:q?C.success+"11":"rgba(0,0,0,0.04)",borderRadius:6,padding:"4px 8px",fontSize:11,color:q?C.success:C.textLight}}>{score}/5 stars {q?"- Qualified":""}</div>;})()}
       </div>)}
     </div>
   </div>;
 }
 
+// ── REP EXTRAS (Business Commitment, DGO, Exam, Bonus Goal, Motivation) ──
+function RepExtras({rep,onUpdate,readOnly}) {
+  const today=new Date();
+  const motivation=MOTIVATIONS[today.getDate()%MOTIVATIONS.length];
+  const [newBC,setNewBC]=useState("");
+
+  return <div>
+    {/* Daily Motivation */}
+    <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",marginBottom:12,color:"white",border:`1px solid ${C.teal}33`}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Daily Motivation</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,fontStyle:"italic"}}>"{motivation}"</div>
+    </div>
+
+    {/* Bonus Goal */}
+    <Card style={{marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {BONUS_GOALS.map(g=>{
+          const selected=rep.bonusGoal===g.id;
+          return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})}
+            style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
+            <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              {selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div>
+              <div style={{fontSize:11,color:C.textMid}}>{g.desc}</div>
+            </div>
+          </button>;
+        })}
+      </div>
+    </Card>
+
+    {/* Business Commitment */}
+    <Card style={{marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Enter the dollar amount you have committed to your business</div>
+      {!readOnly?<div style={{display:"flex",gap:7,alignItems:"center"}}>
+        <span style={{color:C.textMid,fontSize:16}}>$</span>
+        <input type="number" placeholder="Enter amount" value={rep.businessCommitment||""}
+          onChange={e=>onUpdate({...rep,businessCommitment:e.target.value})}
+          style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}/>
+      </div>:
+      <div style={{fontSize:16,fontWeight:700,color:C.gold}}>{rep.businessCommitment?`$${rep.businessCommitment}`:"Not set"}</div>}
+    </Card>
+
+    {/* DGO */}
+    <Card style={{marginBottom:12,border:`1px solid ${rep.dgoDone?C.success+"44":C.teal+"33"}`,background:rep.dgoDone?C.success+"06":"white"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})}
+          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>
+          {rep.dgoDone?"Completed":"Mark Complete"}
+        </button>}
+        {rep.dgoDone&&readOnly&&<Badge color={C.success} small>Complete</Badge>}
+      </div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>My DGO Date</div>
+      {!readOnly?<input type="date" value={rep.dgoDate||""}
+        onChange={e=>onUpdate({...rep,dgoDate:e.target.value})}
+        style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      <div style={{fontSize:14,fontWeight:700,color:C.teal}}>{rep.dgoDate||"Not set"}</div>}
+    </Card>
+
+    {/* Exam Date */}
+    <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`,background:rep.examPassed?C.success+"06":"white"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Exam Date</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})}
+          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>
+          {rep.examPassed?"Passed!":"Mark Passed"}
+        </button>}
+        {rep.examPassed&&readOnly&&<Badge color={C.success} small>Passed</Badge>}
+      </div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>Scheduled Exam Date</div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
+      {!readOnly?<input type="date" value={rep.examDate||""}
+        onChange={e=>onUpdate({...rep,examDate:e.target.value})}
+        style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
+    </Card>
+  </div>;
+}
+
+// ── COUNTERS (moved to top) ──
+function RepCounters({rep,onUpdate,readOnly}) {
+  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+    {[
+      {label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},
+      {label:"Life Apps Done",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},
+      {label:"Investments",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"},
+    ].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
+      <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
+      {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${c.color}`,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
+      <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
+    </Card>)}
+  </div>;
+}
+
+// ── REP VIEW ──
 function RepView({rep,data,onUpdate,readOnly}) {
-  const [tab,setTab] = useState("checklist");
-  const track = TRACK_INFO[rep.track];
-  const cl = track?.checklist||[];
-  const checked = rep.checked||{};
-  const done = cl.filter(i=>checked[i.id]).length;
-  const pct = cl.length>0?Math.round((done/cl.length)*100):0;
-  const cats = cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
-  const trainer = data.trainers?.find(t=>t.id===rep.trainerId);
-  const bookingLink = trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
-  const tabs = [{k:"checklist",l:"Checklist"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appointments (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"References"},{k:"scripts",l:"Scripts"},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
-  const tog = (id) => { if(!readOnly) onUpdate(rep.id,{...rep,checked:{...checked,[id]:!checked[id]}}); };
-  const togRvp = (id) => { if(!readOnly) onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[id]:!(rep.rvpChecked||{})[id]}}); };
+  const [tab,setTab]=useState("checklist");
+  const track=TRACK_INFO[rep.track];
+  const cl=track?.checklist||[];
+  const checked=rep.checked||{};
+  const done=cl.filter(i=>checked[i.id]).length;
+  const pct=cl.length>0?Math.round((done/cl.length)*100):0;
+  const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
+  const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
+  const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"References"},{k:"scripts",l:"Scripts"},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
+  const tog=(id)=>{if(!readOnly)onUpdate(rep.id,{...rep,checked:{...checked,[id]:!checked[id]}});};
+  const togRvp=(id)=>{if(!readOnly)onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[id]:!(rep.rvpChecked||{})[id]}});};
   return <div>
     <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`,borderRadius:12,padding:"14px 18px",marginBottom:14,color:"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:2}}>{track?.label} &middot; {track?.days}</div></div>
+        <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:2}}>{track?.label} - {track?.days}</div></div>
         <div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:700,color:C.teal}}>{pct}%</div><div style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>COMPLETE</div></div>
       </div>
       <Bar pct={pct} h={5}/>
@@ -217,52 +483,46 @@ function RepView({rep,data,onUpdate,readOnly}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {tab==="checklist"&&<div>
+      <RepCounters rep={rep} onUpdate={(updated)=>onUpdate(rep.id,updated)} readOnly={readOnly}/>
       {Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}
-      <div style={{marginTop:14,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Apps Done",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investments",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
-          {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate(rep.id,{...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate(rep.id,{...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${c.color}`,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
-          <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
-        </Card>)}
-      </div>
     </div>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(updated)=>onUpdate(rep.id,updated)} readOnly={readOnly}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>
       {Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
     {tab==="scripts"&&<div>{SCRIPTS.map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
-    {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:14,fontWeight:600,color:C.text,flex:1}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,textAlign:"right"}}>{s.time}{s.note&&<div>{s.note}</div>}</div></div>)}</div>}
+    {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>togRvp(item.id)} readOnly={readOnly}/>)}</div>)}</div>}
   </div>;
 }
 
+// ── REP PROFILE (trainer/admin view) ──
 function RepProfile({rep,data,onUpdate,onBack}) {
-  const [tab,setTab] = useState("trainer");
-  const track = TRACK_INFO[rep.track];
-  const tc = rep.trainerChecked||{};
-  const trDone = TRAINER_CHECKLIST.filter(i=>tc[i.id]).length;
-  const cl = track?.checklist||[];
-  const repDone = cl.filter(i=>(rep.checked||{})[i.id]).length;
-  const [ciNote,setCiNote] = useState("");
-  const tabs = [{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appointments (${(rep.appointments||[]).length})`},{k:"refs",l:"References"},{k:"checkins",l:"Check-ins"},{k:"rvp",l:"RVP Path"}];
-  const togT = (id) => onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
-  const addCI = () => { if(!ciNote.trim())return; onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]}); setCiNote(""); };
+  const [tab,setTab]=useState("trainer");
+  const track=TRACK_INFO[rep.track];
+  const tc=rep.trainerChecked||{};
+  const trDone=TRAINER_CHECKLIST.filter(i=>tc[i.id]).length;
+  const cl=track?.checklist||[];
+  const repDone=cl.filter(i=>(rep.checked||{})[i.id]).length;
+  const [ciNote,setCiNote]=useState("");
+  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"References"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"rvp",l:"RVP Path"}];
+  const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
+  const addCI=()=>{if(!ciNote.trim())return;onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]});setCiNote("");};
   return <div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
-      <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} &middot; <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
+      <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-      <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length} tasks</div></Card>
-      <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Rep</div><div style={{fontSize:18,fontWeight:700,color:track?.color||C.purple}}>{Math.round((repDone/(cl.length||1))*100)}%</div><Bar pct={(repDone/(cl.length||1))*100} color={track?.color||C.purple}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{repDone}/{cl.length} tasks</div></Card>
+      <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
+      <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Rep</div><div style={{fontSize:18,fontWeight:700,color:track?.color||C.purple}}>{Math.round((repDone/(cl.length||1))*100)}%</div><Bar pct={(repDone/(cl.length||1))*100} color={track?.color||C.purple}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{repDone}/{cl.length}</div></Card>
     </div>
     <Card style={{marginBottom:12,padding:"10px 14px"}}>
       <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Rep-Entered Data</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-        {[{l:"DGO Date",v:rep.dgoDate||"Not set",c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Investments",v:`${rep.pacCount||0} logged`,c:C.purple}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:13,fontWeight:700,color:d.c}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
+        {[{l:"DGO Date",v:rep.dgoDate||"Not set",c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||"Not set",c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
       </div>
-      {(rep.investmentClients||[]).length>0&&<div style={{marginTop:8}}><div style={{fontSize:10,color:C.textMid,marginBottom:4}}>Future Investment Clients</div>{rep.investmentClients.map((c,i)=><div key={i} style={{fontSize:12,color:C.text,padding:"3px 0",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between"}}><span>{c.name}</span>{!c.moved&&<button onClick={()=>onUpdate(rep.id,{...rep,investmentClients:rep.investmentClients.map((cl,j)=>j===i?{...cl,moved:true}:cl)})} style={{fontSize:10,color:C.teal,background:"none",border:"none",cursor:"pointer"}}>Mark Moved</button>}</div>)}</div>}
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
@@ -270,7 +530,8 @@ function RepProfile({rep,data,onUpdate,onBack}) {
     {tab==="trainer"&&<div>{Object.entries(TRAINER_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
     {tab==="rep"&&<RepView rep={rep} data={data} onUpdate={onUpdate} readOnly={false}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})}/>}
-    {tab==="refs"&&<div>{(rep.references||[]).length===0?<div style={{color:C.textLight,fontSize:13,padding:"12px 0"}}>No references entered yet</div>:(rep.references||[]).filter(r=>r.name).map((r,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:6,display:"flex",gap:10,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal}}>{i+1}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}{r.relationship&&` - ${r.relationship}`}</div></div></div>)}</div>}
+    {tab==="refs"&&<div>{(rep.references||[]).filter(r=>r.name).map((r,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:6,display:"flex",gap:10,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal}}>{i+1}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}{r.relationship&&` - ${r.relationship}`}</div></div></div>)}</div>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(updated)=>onUpdate(rep.id,updated)} readOnly={false}/>}
     {tab==="checkins"&&<div>
       {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds===null||ds>=3;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins logged yet":ds===0?"Checked in today":`Last check-in ${ds} days ago`}</div>;})()}
       <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Log</button></div>
@@ -280,19 +541,21 @@ function RepProfile({rep,data,onUpdate,onBack}) {
   </div>;
 }
 
+// ── MY PRODUCTION (with accumulating premium) ──
 function MyProd({myProd,onUpdate}) {
-  const [open,setOpen] = useState(false);
-  const [tab,setTab] = useState("lifeapps");
-  const [na,setNa] = useState({clientName:"",premium:"",date:""});
-  const [ni,setNi] = useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});
-  const apps = myProd.lifeApps||[];
-  const invs = myProd.investments||[];
-  const totPrem = apps.reduce((s,a)=>s+(Number(a.premium)||0),0);
-  const totPAC = invs.reduce((s,i)=>s+(Number(i.pac)||0),0);
-  const totLump = invs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+  const [open,setOpen]=useState(false);
+  const [tab,setTab]=useState("lifeapps");
+  const [na,setNa]=useState({clientName:"",premium:"",date:""});
+  const [ni,setNi]=useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});
+  const [addPrem,setAddPrem]=useState("");
+  const apps=myProd.lifeApps||[];
+  const invs=myProd.investments||[];
+  const totPrem=apps.reduce((s,a)=>s+(Number(a.premium)||0),0);
+  const totPAC=invs.reduce((s,i)=>s+(Number(i.pac)||0),0);
+  const totLump=invs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>My Production</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps &middot; ${totPrem.toFixed(0)}/mo &middot; {invs.length} investments</div></div>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>My Production</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps - ${totPrem.toFixed(0)}/mo - ${(totPrem*12).toFixed(0)}/yr</div></div>
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
@@ -300,10 +563,13 @@ function MyProd({myProd,onUpdate}) {
         {[["lifeapps","Life Apps"],["investments","Investments"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}
       </div>
       {tab==="lifeapps"&&<div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:10}}>
+        {/* Summary */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
           <div style={{background:C.teal+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.teal}}>{apps.length}</div><div style={{fontSize:10,color:C.textMid}}>Life Apps</div></div>
-          <div style={{background:C.gold+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.gold}}>${totPrem.toFixed(0)}/mo</div><div style={{fontSize:10,color:C.textMid}}>${(totPrem*12).toFixed(0)}/yr</div></div>
+          <div style={{background:C.gold+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.gold}}>${totPrem.toFixed(0)}/mo</div><div style={{fontSize:10,color:C.textMid}}>Monthly</div></div>
+          <div style={{background:C.purple+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.purple}}>${(totPrem*12).toFixed(0)}/yr</div><div style={{fontSize:10,color:C.textMid}}>Annual Total</div></div>
         </div>
+        {/* Add new premium entry */}
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
           <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Life App</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
@@ -313,6 +579,23 @@ function MyProd({myProd,onUpdate}) {
           </div>
           <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log Life App</button>
         </div>
+        {/* Running total calculator */}
+        {apps.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Existing Total</div>
+          <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6}}>
+            <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)}
+              style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
+            <button onClick={()=>{
+              if(!addPrem)return;
+              onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toLocaleDateString(),id:Date.now()}]});
+              setAddPrem("");
+            }} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+          </div>
+          <div style={{fontSize:11,color:C.textMid}}>
+            Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>
+            {addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}
+          </div>
+        </div>}
         {apps.map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}><span style={{color:C.text}}>{a.clientName}</span><div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div></div>)}
       </div>}
       {tab==="investments"&&<div>
@@ -335,15 +618,16 @@ function MyProd({myProd,onUpdate}) {
   </Card>;
 }
 
+// ── PRODUCTION DASHBOARD ──
 function ProdDash({data,onUpdateData}) {
-  const reps = data.reps||[];
-  const trainers = data.trainers||[];
-  const goals = data.goals||{premium:10000,recruits:10,licensed:100};
-  const [editG,setEditG] = useState(false);
-  const [gd,setGd] = useState(goals);
-  const totPremMo = reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
-  const totRecs = reps.length;
-  const totLic = reps.filter(r=>r.isLicensed).length;
+  const reps=data.reps||[];
+  const trainers=data.trainers||[];
+  const goals=data.goals||{premium:10000,recruits:10,licensed:100};
+  const [editG,setEditG]=useState(false);
+  const [gd,setGd]=useState(goals);
+  const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+  const totRecs=reps.length;
+  const totLic=reps.filter(r=>r.isLicensed).length;
   return <Card style={{marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
@@ -351,13 +635,20 @@ function ProdDash({data,onUpdateData}) {
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
     </div>}
     {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:C.textMid}}>{g.l}</span><span style={{fontSize:12,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:10,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
-    <div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:5}}>Update Rep Premium</div>{reps.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}><span style={{fontSize:11,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span><input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:75,padding:"3px 6px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><label style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:C.textMid,cursor:"pointer"}}><input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/>Lic</label></div>)}</div>
+    <div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:5}}>Update Rep Premium</div>
+      {reps.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
+        <span style={{fontSize:11,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
+        <input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:75,padding:"3px 6px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+        <label style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:C.textMid,cursor:"pointer"}}><input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/>Lic</label>
+      </div>)}
+    </div>
   </Card>;
 }
 
+// ── ADD REP ──
 function AddRep({onAdd,onClose,trainers}) {
-  const [f,setF] = useState({name:"",phone:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
-  const fmtP = v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
+  const [f,setF]=useState({name:"",phone:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
+  const fmtP=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
@@ -369,11 +660,12 @@ function AddRep({onAdd,onClose,trainers}) {
   </div>;
 }
 
+// ── MANAGE TEAM ──
 function ManageTeam({data,onUpdate,onClose}) {
-  const [nt,setNt] = useState({name:"",pin:"",bookingLink:""});
-  const [na,setNa] = useState({name:"",pin:""});
-  const trainers = data.trainers||[];
-  const admins = data.admins||[{id:"superadmin",name:"Admin (You)",pin:"1234",isSuperAdmin:true}];
+  const [nt,setNt]=useState({name:"",pin:"",bookingLink:""});
+  const [na,setNa]=useState({name:"",pin:""});
+  const trainers=data.trainers||[];
+  const admins=data.admins||[{id:"superadmin",name:"Admin (You)",pin:"1234",isSuperAdmin:true}];
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
@@ -389,16 +681,17 @@ function ManageTeam({data,onUpdate,onClose}) {
   </div>;
 }
 
+// ── DASHBOARD ──
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
-  const [search,setSearch] = useState("");
-  const [filter,setFilter] = useState("all");
-  const [showAdd,setShowAdd] = useState(false);
-  const [showManage,setShowManage] = useState(false);
-  const reps = (data.reps||[]).filter(r=>userRole==="trainer"?r.trainerId===userId:true);
-  const filtered = reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
-  const addRep = f => onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null}]});
-  const trainers = data.trainers||[];
-  const stats = [{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
+  const [search,setSearch]=useState("");
+  const [filter,setFilter]=useState("all");
+  const [showAdd,setShowAdd]=useState(false);
+  const [showManage,setShowManage]=useState(false);
+  const reps=(data.reps||[]).filter(r=>userRole==="trainer"?r.trainerId===userId:true);
+  const filtered=reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
+  const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null}]});
+  const trainers=data.trainers||[];
+  const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
   return <div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
@@ -428,14 +721,14 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const trainer=trainers.find(t=>t.id===rep.trainerId);
       return <div key={rep.id} onClick={()=>onSelectRep(rep.id)} style={{background:"white",borderRadius:12,border:`1px solid ${stalled&&!grad?C.danger+"44":C.border}`,padding:"12px 14px",marginBottom:7,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=grad?C.success:C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=stalled&&!grad?C.danger+"44":C.border}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
-          <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>{grad&&<Badge color={C.success} small>Graduated</Badge>}{stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> &middot; {trainer.name}</span>}</div></div>
+          <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>{grad&&<Badge color={C.success} small>Graduated</Badge>}{stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}</div></div>
           <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:5}}>
           <div><div style={{fontSize:9,color:C.textMid,marginBottom:2}}>Trainer {trPct}%</div><Bar pct={trPct} h={3}/></div>
           <div><div style={{fontSize:9,color:C.textMid,marginBottom:2}}>Rep {pct}%</div><Bar pct={pct} color={track?.color||C.purple} h={3}/></div>
         </div>
-        <div style={{fontSize:10,color:C.textLight}}>{ds===null?"No check-ins":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> &middot; DGO: {rep.dgoDate}</span>}</div>
+        <div style={{fontSize:10,color:C.textLight}}>{ds===null?"No check-ins":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> - DGO: {rep.dgoDate}</span>}</div>
       </div>;
     })}
     {showAdd&&<AddRep onAdd={addRep} onClose={()=>setShowAdd(false)} trainers={trainers}/>}
@@ -443,26 +736,27 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   </div>;
 }
 
+// ── LOGIN ──
 function LoginScreen({data,onLogin}) {
-  const [mode,setMode] = useState("select");
-  const [pin,setPin] = useState("");
-  const [search,setSearch] = useState("");
-  const [selRep,setSelRep] = useState(null);
-  const [rPin,setRPin] = useState("");
-  const [rPinC,setRPinC] = useState("");
-  const [step,setStep] = useState("find");
-  const [err,setErr] = useState("");
-  const admins = data.admins||[{id:"superadmin",name:"Admin (You)",pin:"1234",isSuperAdmin:true}];
-  const trainers = data.trainers||[];
-  const reps = data.reps||[];
-  const doAdminLogin = () => { const f=admins.find(a=>a.pin===pin); if(f){setErr("");onLogin("admin",f.id,f);}else setErr("Incorrect PIN"); };
-  const doTrainerLogin = () => { const f=trainers.find(t=>t.pin===pin); if(f){setErr("");onLogin("trainer",f.id,f);}else setErr("Incorrect PIN"); };
-  const doRepLogin = () => {
+  const [mode,setMode]=useState("select");
+  const [pin,setPin]=useState("");
+  const [search,setSearch]=useState("");
+  const [selRep,setSelRep]=useState(null);
+  const [rPin,setRPin]=useState("");
+  const [rPinC,setRPinC]=useState("");
+  const [step,setStep]=useState("find");
+  const [err,setErr]=useState("");
+  const admins=data.admins||[{id:"superadmin",name:"Admin (You)",pin:"1234",isSuperAdmin:true}];
+  const trainers=data.trainers||[];
+  const reps=data.reps||[];
+  const doAdminLogin=()=>{const f=admins.find(a=>a.pin===pin);if(f){setErr("");onLogin("admin",f.id,f);}else setErr("Incorrect PIN");};
+  const doTrainerLogin=()=>{const f=trainers.find(t=>t.pin===pin);if(f){setErr("");onLogin("trainer",f.id,f);}else setErr("Incorrect PIN");};
+  const doRepLogin=()=>{
     if(step==="create"){if(rPin.length!==4){setErr("PIN must be 4 digits");return;}if(rPin!==rPinC){setErr("PINs do not match");return;}onLogin("rep",selRep.id,selRep,rPin);}
     else{if(rPin===selRep.repPin){setErr("");onLogin("rep",selRep.id,selRep);}else{setErr("Incorrect PIN");setRPin("");}}
   };
-  const filtReps = search.length>0?reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())):[];
-  const inp = {width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid rgba(0,0,0,0.12)`,fontSize:13,outline:"none",background:"white",boxSizing:"border-box",color:C.text};
+  const filtReps=search.length>0?reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())):[];
+  const inp={width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid rgba(0,0,0,0.12)`,fontSize:13,outline:"none",background:"white",boxSizing:"border-box",color:C.text};
   return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 60%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{width:"100%",maxWidth:420}}>
       <div style={{textAlign:"center",marginBottom:28}}>
@@ -476,7 +770,7 @@ function LoginScreen({data,onLogin}) {
         {mode==="select"&&<div>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>Welcome back</div>
           <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>How are you accessing the app?</div>
-          {[{k:"admin",l:"Admin / Super Admin",icon:"??",s:"Full system access"},{k:"trainer",l:"Field Trainer",icon:"??",s:"Manage your reps"},{k:"rep",l:"New Rep",icon:"??",s:"View your checklist"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><span style={{fontSize:18}}>{o.icon}</span><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{marginLeft:"auto",color:C.textLight,fontSize:16}}>›</span></button>)}
+          {[{k:"admin",l:"Admin / Super Admin",icon:"shield",s:"Full system access"},{k:"trainer",l:"Field Trainer",icon:"target",s:"Manage your reps"},{k:"rep",l:"New Rep",icon:"star",s:"View your checklist"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{width:32,height:32,borderRadius:8,background:C.teal+"11",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{o.icon==="shield"?"??":o.icon==="target"?"??":"??"}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{marginLeft:"auto",color:C.textLight,fontSize:16}}>›</span></button>)}
         </div>}
         {(mode==="admin"||mode==="trainer")&&<div>
           <button onClick={()=>{setMode("select");setErr("");setPin("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
@@ -496,7 +790,7 @@ function LoginScreen({data,onLogin}) {
         {mode==="rep"&&(step==="create"||step==="enter")&&selRep&&<div>
           <button onClick={()=>{setStep("find");setErr("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{step==="create"?"Create Your PIN":`Welcome, ${selRep.name}`}</div>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:14}}>{step==="create"?"Choose a 4-digit PIN to secure your account":"Enter your 4-digit PIN"}</div>
+          <div style={{fontSize:11,color:C.textMid,marginBottom:14}}>{step==="create"?"Choose a 4-digit PIN":"Enter your 4-digit PIN"}</div>
           <input type="password" maxLength={4} placeholder="4-digit PIN" value={rPin} onChange={e=>{setRPin(e.target.value.replace(/\D/,""));setErr("");}} style={{...inp,marginBottom:9,textAlign:"center",fontSize:22,letterSpacing:"10px"}} autoFocus/>
           {step==="create"&&<input type="password" maxLength={4} placeholder="Confirm PIN" value={rPinC} onChange={e=>{setRPinC(e.target.value.replace(/\D/,""));setErr("");}} onKeyDown={e=>e.key==="Enter"&&doRepLogin()} style={{...inp,marginBottom:9,textAlign:"center",fontSize:22,letterSpacing:"10px"}}/>}
           {err&&<div style={{color:C.danger,fontSize:11,marginBottom:8}}>{err}</div>}
@@ -508,8 +802,9 @@ function LoginScreen({data,onLogin}) {
   </div>;
 }
 
-function Sidebar({section,onNav,role,name,onSignOut,onClose}) {
-  const nav = [
+// ── SIDEBAR ──
+function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone}) {
+  const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"reps",l:"My Reps",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 14C9.8 14 8 12.2 8 10C8 7.8 9.8 6 12 6C14.2 6 16 7.8 16 10C16 12.2 14.2 14 12 14Z"},
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
@@ -531,6 +826,11 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose}) {
         <span style={{fontSize:12,fontWeight:section===item.k?600:400}}>{item.l}</span>
         {section===item.k&&<div style={{marginLeft:"auto",width:3,height:3,borderRadius:2,background:C.teal}}/>}
       </button>)}
+      {/* Add to phone button */}
+      <button onClick={()=>{onShowPhone();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginTop:8,background:"rgba(14,165,160,0.08)",color:"rgba(255,255,255,0.5)"}}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+        <span style={{fontSize:11}}>Add to Phone</span>
+      </button>
     </nav>
     <div style={{padding:"10px 14px",borderTop:`1px solid ${C.borderLight}`}}>
       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
@@ -542,59 +842,74 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose}) {
   </div>;
 }
 
+// ── MAIN APP ──
 export default function App() {
-  const [data,setData] = useState(()=>loadData());
-  const [session,setSession] = useState(null);
-  const [section,setSection] = useState("dashboard");
-  const [selRepId,setSelRepId] = useState(null);
-  const [mobileOpen,setMobileOpen] = useState(false);
+  const [data,setData]=useState(()=>loadData());
+  const [session,setSession]=useState(null);
+  const [section,setSection]=useState("dashboard");
+  const [selRepId,setSelRepId]=useState(null);
+  const [mobileOpen,setMobileOpen]=useState(false);
+  const [showTour,setShowTour]=useState(false);
+  const [showPhone,setShowPhone]=useState(false);
 
-  const upd = useCallback((d)=>{setData(d);saveData(d);},[]);
+  const upd=useCallback((d)=>{setData(d);saveData(d);},[]);
 
-  const handleLogin = (role,id,userData,newPin) => {
+  const handleLogin=(role,id,userData,newPin)=>{
     if(role==="rep"&&newPin){const ur=(data.reps||[]).map(r=>r.id===id?{...r,repPin:newPin}:r);upd({...data,reps:ur});}
     setSession({role,id,name:userData?.name||(role==="admin"?"Admin":"User")});
     setSection("dashboard");
+    // Show tour on first login
+    const tourKey=`tour_${role}_${id}`;
+    if(!localStorage.getItem(tourKey)){setShowTour(true);localStorage.setItem(tourKey,"done");}
   };
 
-  const signOut = () => {setSession(null);setSelRepId(null);};
+  const signOut=()=>{setSession(null);setSelRepId(null);};
 
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
 
-  if(session.role==="rep") {
+  // Rep-only view
+  if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface}}>
+      {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
+      {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{color:"white",fontWeight:700,fontSize:13}}>NextLevel Field Training Hub</div>
-        <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Tour</button>
+          <button onClick={()=>setShowPhone(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Add to Phone</button>
+          <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
+        </div>
       </div>
       <div style={{maxWidth:580,margin:"0 auto",padding:14}}>
+        <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
         <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} readOnly={false}/>
       </div>
     </div>;
   }
 
-  const selRep = selRepId?(data.reps||[]).find(r=>r.id===selRepId):null;
+  const selRep=selRepId?(data.reps||[]).find(r=>r.id===selRepId):null;
+  const navTo=(s)=>{setSection(s);setSelRepId(null);};
 
-  const navTo = (s) => {setSection(s);setSelRepId(null);};
-
-  const renderContent = () => {
+  const renderContent=()=>{
     if(selRep&&(section==="reps"||section==="dashboard")) return <RepProfile rep={selRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)}/>;
     if(section==="dashboard"||section==="reps") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>upd({...data,myProduction:{...(data.myProduction||{}),[session.id]:p}})}/></div>;
-    if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}><div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}</div>{s.note&&<div style={{fontSize:11,color:C.textLight}}>{s.note}</div>}</div></Card>)}</div>;
+    if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
     if(section==="scripts") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Scripts</div>{SCRIPTS.map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
 
   return <div style={{display:"flex",height:"100vh",background:C.surface,overflow:"hidden"}}>
+    {showTour&&<AppTour role={session.role} onClose={()=>setShowTour(false)}/>}
+    {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
     <div style={{display:"flex",flexShrink:0}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)}/>
     </div>
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}}/>
       <div style={{flex:1,background:"rgba(0,0,0,0.4)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
@@ -603,10 +918,14 @@ export default function App() {
           <div style={{width:17,height:2,background:C.text,borderRadius:1}}/><div style={{width:13,height:2,background:C.text,borderRadius:1}}/><div style={{width:17,height:2,background:C.text,borderRadius:1}}/>
         </button>
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:C.text,textTransform:"capitalize"}}>{selRep?selRep.name:section.replace(/([A-Z])/," $1")}</div><div style={{fontSize:10,color:C.textMid}}>NextLevel Field Training Hub</div></div>
+        <button onClick={()=>setShowTour(true)} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Tour</button>
         <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal}}>{session.name?.charAt(0)?.toUpperCase()}</div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:14}}>
-        <div style={{maxWidth:820,margin:"0 auto"}}>{renderContent()}</div>
+        <div style={{maxWidth:820,margin:"0 auto"}}>
+          <DailyEventsBanner data={data} onUpdateData={upd} userRole={session.role}/>
+          {renderContent()}
+        </div>
       </div>
     </div>
   </div>;
