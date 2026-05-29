@@ -400,11 +400,10 @@ function RepExtras({rep,onUpdate,readOnly}) {
 
       {/* Class type selector */}
       {!readOnly&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
-        {[["inperson","In-Person","??"],["zoom","Zoom","??"],["online","Online Course","??"]].map(([val,label,icon])=>(
+        {[["inperson","In-Person",""],["zoom","Zoom",""],["online","Online Course",""]].map(([val,label,icon])=>(
           <button key={val} onClick={()=>onUpdate({...rep,preLicType:val})}
-            style={{padding:"8px 6px",borderRadius:8,border:`2px solid ${rep.preLicType===val?C.purple:C.border}`,background:rep.preLicType===val?C.purple+"11":"white",cursor:"pointer",textAlign:"center"}}>
-            <div style={{fontSize:14,marginBottom:2}}>{icon}</div>
-            <div style={{fontSize:10,fontWeight:700,color:rep.preLicType===val?C.purple:C.textMid}}>{label}</div>
+            style={{padding:"10px 6px",borderRadius:8,border:`2px solid ${rep.preLicType===val?C.purple:C.border}`,background:rep.preLicType===val?C.purple+"11":"white",cursor:"pointer",textAlign:"center"}}>
+            <div style={{fontSize:11,fontWeight:700,color:rep.preLicType===val?C.purple:C.textMid}}>{label}</div>
           </button>
         ))}
       </div>}
