@@ -420,6 +420,22 @@ function RepView({rep,data,onUpdate,readOnly}) {
       </div>
       <Bar pct={pct} h={5}/>
       {pct===100&&<div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"6px 10px",fontSize:12,color:C.success,textAlign:"center",fontWeight:600}}>All tasks complete!</div>}
+      {pct===100&&(rep.track==="fast"||rep.track==="regular")&&!rep.nextLevelRequested&&!rep.nextLevelGranted&&(
+        <button onClick={()=>onUpdate(rep.id,{...rep,nextLevelRequested:true,nextLevelRequestedAt:new Date().toISOString()})}
+          style={{width:"100%",marginTop:8,padding:"10px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          Request Access to Licensed Now What
+        </button>
+      )}
+      {rep.nextLevelRequested&&!rep.nextLevelGranted&&(
+        <div style={{marginTop:8,background:C.gold+"22",border:`1px solid ${C.gold}44`,borderRadius:8,padding:"8px 12px",fontSize:12,color:C.gold,textAlign:"center"}}>
+          Request sent! Waiting for admin approval...
+        </div>
+      )}
+      {rep.nextLevelGranted&&rep.track!=="licensed"&&(
+        <div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"8px 12px",fontSize:12,color:C.success,textAlign:"center",fontWeight:600}}>
+          Access granted! Refresh to see your Licensed Now What checklist.
+        </div>
+      )}
     </div>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
@@ -630,6 +646,40 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const trainers=data.trainers||[];
   const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
   return <div>
+    {/* Next Level Access Requests */}
+    {(()=>{
+      const pending=(data.reps||[]).filter(r=>r.nextLevelRequested&&!r.nextLevelGranted&&(r.track==="fast"||r.track==="regular"));
+      if(pending.length===0||(userRole!=="admin"&&userRole!=="superadmin"&&userRole!=="trainer")) return null;
+      return <div style={{background:C.gold+"15",border:`2px solid ${C.gold}55`,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <div style={{width:8,height:8,borderRadius:4,background:C.gold,animation:"pulse 1.5s infinite"}}/>
+          <div style={{fontSize:13,fontWeight:700,color:C.gold}}>Next Level Access Requests ({pending.length})</div>
+        </div>
+        <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+        {pending.map(rep=>{
+          const track=TRACK_INFO[rep.track];
+          return <div key={rep.id} style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div>
+              <div style={{fontSize:11,color:C.textMid}}>Completed {track?.label} — requesting Licensed Now What access</div>
+              {rep.nextLevelRequestedAt&&<div style={{fontSize:10,color:C.textLight}}>Requested: {new Date(rep.nextLevelRequestedAt).toLocaleDateString()}</div>}
+            </div>
+            <button onClick={()=>{
+              const updated={...rep,track:"licensed",nextLevelGranted:true,nextLevelGrantedAt:new Date().toISOString(),checked:{},celebrationShown:false};
+              onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?updated:r)});
+            }} style={{padding:"7px 14px",borderRadius:8,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}>
+              Grant Access
+            </button>
+            <button onClick={()=>{
+              const updated={...rep,nextLevelRequested:false,nextLevelRequestedAt:null};
+              onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?updated:r)});
+            }} style={{padding:"7px 10px",borderRadius:8,background:C.danger+"11",color:C.danger,border:`1px solid ${C.danger}33`,cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>
+              Deny
+            </button>
+          </div>;
+        })}
+      </div>;
+    })()}
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
@@ -664,6 +714,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
               <span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>
               {grad&&<Badge color={C.success} small>Graduated</Badge>}
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
+              {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
             </div>
             <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}</div>
           </div>
