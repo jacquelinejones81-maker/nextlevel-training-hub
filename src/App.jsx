@@ -624,10 +624,8 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
         {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
       {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:11,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
       {rep.preLicType&&<div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}><Badge color={C.purple} small>Pre-Lic: {rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online"}</Badge>{rep.preLicDone&&<Badge color={C.success} small>Complete</Badge>}{rep.selectedRVP&&<Badge color={C.gold} small>RVP: {rep.selectedRVP}</Badge>}</div>}
-      <div style={{display:"flex",gap:10,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
-        {rep.dgoPhoto&&<div style={{display:"flex",alignItems:"center",gap:6}}><img src={rep.dgoPhoto} alt="DGO" style={{width:40,height:40,borderRadius:8,objectFit:"cover",border:`2px solid ${C.teal}`}}/><span style={{fontSize:10,color:C.textMid}}>DGO Photo</span></div>}
-        {rep.tshirtSize&&<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{padding:"3px 10px",borderRadius:6,background:C.gold,color:"white",fontSize:11,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:10,color:C.textMid}}>T-Shirt</span></div>}
-      </div>
+      {rep.dgoPhoto&&<DgoPhotoPanel photo={rep.dgoPhoto} name={rep.name}/>}
+      {rep.tshirtSize&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:8}}><div style={{padding:"4px 12px",borderRadius:6,background:C.gold,color:"white",fontSize:12,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:11,color:C.textMid}}>T-Shirt Size</span></div>}
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
@@ -1313,6 +1311,66 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
         <div style={{fontSize:12,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
       </div>)}
     </Card>}
+  </div>;
+}
+
+
+
+// ── DGO PHOTO PANEL ──
+function DgoPhotoPanel({photo,name}) {
+  const [showLightbox,setShowLightbox] = useState(false);
+  const download = () => {
+    const a = document.createElement("a");
+    a.href = photo;
+    a.download = `${(name||"rep").replace(/\s+/g,"-")}-DGO-Photo.jpg`;
+    a.click();
+  };
+  return <div style={{marginTop:10,background:C.surface,borderRadius:10,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+    {showLightbox&&<PhotoLightbox src={photo} name={name||"Rep"} onClose={()=>setShowLightbox(false)}/>}
+    <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>DGO Professional Photo</div>
+    <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+      <img src={photo} alt="DGO" onClick={()=>setShowLightbox(true)} style={{width:100,height:100,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`,cursor:"pointer",flexShrink:0,transition:"transform 0.15s"}} onMouseEnter={e=>e.target.style.transform="scale(1.03)"} onMouseLeave={e=>e.target.style.transform="scale(1)"}/>
+      <div style={{flex:1}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Click the photo to view full size. Right-click to copy. Use the buttons below to download for your presentation.</div>
+        <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+          <button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            View Full Size
+          </button>
+          <button onClick={download} style={{padding:"7px 14px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── PHOTO LIGHTBOX ──
+function PhotoLightbox({src,name,onClose}) {
+  const download = () => {
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `${name.replace(/\s+/g,"-")}-DGO-Photo.jpg`;
+    a.click();
+  };
+  return <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:3000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div onClick={e=>e.stopPropagation()} style={{maxWidth:600,width:"100%"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{color:"white",fontSize:15,fontWeight:700}}>{name} — DGO Photo</div>
+        <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"white",width:32,height:32,borderRadius:8,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>x</button>
+      </div>
+      <img src={src} alt={name} style={{width:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}/>
+      <div style={{display:"flex",gap:10,marginTop:14,justifyContent:"center"}}>
+        <button onClick={download} style={{padding:"10px 24px",borderRadius:10,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download Photo
+        </button>
+        <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:"rgba(255,255,255,0.1)",color:"white",border:"1px solid rgba(255,255,255,0.2)",cursor:"pointer",fontSize:13,fontWeight:600}}>Close</button>
+      </div>
+      <div style={{textAlign:"center",marginTop:10,fontSize:11,color:"rgba(255,255,255,0.4)"}}>Right-click the photo to save or copy image</div>
+    </div>
   </div>;
 }
 
