@@ -475,7 +475,7 @@ function RepCounters({rep,onUpdate,readOnly}) {
 }
 
 // ── REP VIEW ──
-function RepView({rep,data,onUpdate,readOnly}) {
+function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
   const track=TRACK_INFO[rep.track];
@@ -536,7 +536,7 @@ function RepView({rep,data,onUpdate,readOnly}) {
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
-    {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep,...u})} userId={rep.id} userRole="rep"/>}
+    {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
   </div>;
@@ -1444,7 +1444,7 @@ export default function App() {
       <div style={{maxWidth:580,margin:"0 auto",padding:14}}>
         <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
         <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
-        <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} readOnly={false}/>
+        <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false}/>
       </div>
     </div>;
   }
