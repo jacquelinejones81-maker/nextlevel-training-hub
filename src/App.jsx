@@ -1,8 +1,28 @@
 import { useState, useCallback, useEffect } from "react";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
+// ── FIREBASE ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAajM81Hcj205a7PYF6WsTYO5w9hATUTPs",
+  authDomain: "nextlevel-training-hub.firebaseapp.com",
+  projectId: "nextlevel-training-hub",
+  storageBucket: "nextlevel-training-hub.firebasestorage.app",
+  messagingSenderId: "756930331780",
+  appId: "1:756930331780:web:f14de153b0a430ec7caed1"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const DATA_DOC = "appdata/main";
+
+const saveToFirebase = async (data) => {
+  try { await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) }); } catch(e) { console.error("Firebase save error", e); }
+};
+
+// ── DESIGN TOKENS ──
 const C = {
   navy:"#0d1b2e", navyMid:"#1a2d47", navyLight:"#243a55",
-  teal:"#0ea5a0", tealLight:"#14c5bf", tealFade:"rgba(14,165,160,0.12)",
+  teal:"#0ea5a0", tealFade:"rgba(14,165,160,0.12)",
   white:"#ffffff", surface:"#f4f6f9", surfaceCard:"#ffffff",
   border:"rgba(0,0,0,0.08)", borderLight:"rgba(255,255,255,0.08)",
   text:"#1e293b", textMid:"#64748b", textLight:"#94a3b8",
@@ -156,32 +176,28 @@ const BONUS_GOALS = [
 ];
 
 const TOUR_STEPS = {
-  admin: [
+  admin:[
     {title:"Welcome to NextLevel Hub!",body:"This is your admin dashboard. You have full access to manage trainers, reps, and production tracking."},
-    {title:"Dashboard",body:"See all your reps at a glance with progress bars, check-in status, and stalled alerts."},
+    {title:"Dashboard",body:"See all your reps at a glance with progress bars and check-in status."},
     {title:"Add Reps",body:"Click 'Add New Rep' to add a new recruit. Assign them a track and trainer."},
     {title:"Manage Team",body:"Use 'Manage Team' to add trainers and admins with their own PINs."},
     {title:"Production",body:"Track team premium, recruits, and licensed agents against your goals."},
   ],
-  trainer: [
+  trainer:[
     {title:"Welcome, Trainer!",body:"This is your field training dashboard. You can see all your reps and track their progress."},
     {title:"Your Reps",body:"Each card shows trainer and rep progress. Red border means stalled - check in!"},
     {title:"Trainer Checklist",body:"When you open a rep, complete your trainer checklist first - this is your onboarding guide."},
     {title:"Appointments",body:"Track all 20 training appointments with MACHO scoring to qualify contacts."},
     {title:"My Production",body:"Log your own life apps and investments to track your personal production."},
   ],
-  rep: [
+  rep:[
     {title:"Welcome to Your Training Hub!",body:"This app tracks your progress from day one to getting licensed and beyond."},
     {title:"Your Checklist",body:"Complete each task as you go. Your progress percentage updates automatically."},
+    {title:"Milestones Tab",body:"Set your bonus goal, enter your business commitment, DGO date, and exam date here."},
     {title:"Appointments",body:"Log your 20 training appointments here. Use MACHO scoring to find your best prospects."},
-    {title:"Scripts",body:"Not sure what to say? The Scripts tab has word-for-word scripts for setting appointments."},
-    {title:"Add to Your Phone",body:"Tap the menu icon and select 'Add to Home Screen' to install this app on your phone for quick access!"},
+    {title:"Add to Your Phone",body:"Tap 'Add to Phone' in the menu to install this app on your home screen for quick access!"},
   ],
 };
-
-const LS_KEY = "nlfh_v4";
-const loadData = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } };
-const saveData = (d) => { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch {} };
 
 // ── UTILS ──
 function Badge({color,children,small}) {
@@ -198,7 +214,7 @@ function SecHead({title,count,color=C.teal}) {
   return <div style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0 6px"}}><div style={{width:3,height:14,background:done?C.success:color,borderRadius:2}}/><span style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",flex:1}}>{title}</span>{count&&<span style={{fontSize:10,color:done?C.success:C.textLight}}>{count[0]}/{count[1]}</span>}</div>;
 }
 
-// ── MACHO (gold stars, green when qualified) ──
+// ── MACHO ──
 function MachoQ({value={},onChange}) {
   const letters=["M","A","C","H","O"];
   const labels={M:"Married",A:"Age 25-55",C:"Children",H:"Homeowner",O:"Occupation"};
@@ -206,22 +222,11 @@ function MachoQ({value={},onChange}) {
   const qualified=score>=3;
   return <div style={{marginTop:8}}>
     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
-      {letters.map(l=>{
-        const active=!!value[l];
-        return <button key={l} onClick={()=>onChange({...value,[l]:!active})} title={labels[l]}
-          style={{width:44,height:44,borderRadius:10,border:`2px solid ${active?C.gold:"rgba(0,0,0,0.15)"}`,background:active?C.gold+"22":"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,transition:"all 0.15s"}}>
-          <span style={{fontSize:14}}>{active?"★":"☆"}</span>
-          <span style={{fontSize:9,fontWeight:700,color:active?C.gold:C.textLight}}>{l}</span>
-        </button>;
-      })}
+      {letters.map(l=>{const active=!!value[l];return <button key={l} onClick={()=>onChange({...value,[l]:!active})} title={labels[l]} style={{width:44,height:44,borderRadius:10,border:`2px solid ${active?C.gold:"rgba(0,0,0,0.15)"}`,background:active?C.gold+"22":"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,transition:"all 0.15s"}}><span style={{fontSize:14}}>{active?"★":"☆"}</span><span style={{fontSize:9,fontWeight:700,color:active?C.gold:C.textLight}}>{l}</span></button>;})}
     </div>
     {score>0&&<div style={{background:qualified?C.success+"11":"rgba(0,0,0,0.04)",border:`1px solid ${qualified?C.success+"44":"rgba(0,0,0,0.08)"}`,borderRadius:8,padding:"6px 10px"}}>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>
-        {letters.filter(l=>value[l]).map(l=><span key={l} style={{background:C.gold+"22",color:C.gold,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:12}}>★ {labels[l]}</span>)}
-      </div>
-      <div style={{fontSize:11,fontWeight:700,color:qualified?C.success:C.gold}}>
-        {score} ★ {qualified?"— Qualified! Great candidate for an appointment.":"— "+(3-score)+" more star"+(3-score!==1?"s":"")+` needed to qualify`}
-      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>{letters.filter(l=>value[l]).map(l=><span key={l} style={{background:C.gold+"22",color:C.gold,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:12}}>★ {labels[l]}</span>)}</div>
+      <div style={{fontSize:11,fontWeight:700,color:qualified?C.success:C.gold}}>{score} ★ {qualified?"— Qualified! Great candidate.":"— "+(3-score)+" more needed to qualify"}</div>
     </div>}
   </div>;
 }
@@ -251,34 +256,13 @@ function AppTour({role,onClose}) {
   </div>;
 }
 
-// ── ADD TO PHONE MODAL ──
+// ── ADD TO PHONE ──
 function AddToPhoneModal({onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{background:"white",borderRadius:16,padding:24,maxWidth:400,width:"100%"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{fontSize:15,fontWeight:700,color:C.text}}>Add App to Your Phone</div>
-        <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button>
-      </div>
-      <div style={{marginBottom:14}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:8}}>iPhone / Safari</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>
-          1. Open this app in Safari<br/>
-          2. Tap the Share button (box with arrow pointing up)<br/>
-          3. Scroll down and tap "Add to Home Screen"<br/>
-          4. Tap "Add" in the top right<br/>
-          5. The app icon will appear on your home screen!
-        </div>
-      </div>
-      <div>
-        <div style={{fontSize:13,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>
-          1. Open this app in Chrome<br/>
-          2. Tap the three dots menu (top right)<br/>
-          3. Tap "Add to Home screen"<br/>
-          4. Tap "Add"<br/>
-          5. The app icon will appear on your home screen!
-        </div>
-      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add App to Your Phone</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
+      <div style={{marginBottom:14}}><div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:8}}>iPhone / Safari</div><div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Safari<br/>2. Tap the Share button (box with arrow)<br/>3. Scroll down and tap "Add to Home Screen"<br/>4. Tap "Add" in the top right</div></div>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div><div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Chrome<br/>2. Tap the three dots menu (top right)<br/>3. Tap "Add to Home screen"<br/>4. Tap "Add"</div></div>
       <button onClick={onClose} style={{marginTop:16,width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Got it!</button>
     </div>
   </div>;
@@ -294,22 +278,12 @@ function DailyEventsBanner({data,onUpdateData,userRole}) {
   return <div style={{background:`linear-gradient(135deg,${C.navyMid} 0%,${C.navyLight} 100%)`,borderRadius:12,padding:"12px 16px",marginBottom:14,color:"white"}}>
     <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Today's Events</div>
     {todayEvents.map((evt,i)=>{
-      const key=`${todayKey}_${evt.dayIndex}_${i}`;
+      const key=`${todayKey}_${i}`;
       const cancelled=cancelledEvents[key];
       return <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<todayEvents.length-1?6:0}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:13,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div>
-          <div style={{fontSize:11,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div>
-        </div>
+        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div><div style={{fontSize:11,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div></div>
         {cancelled&&<Badge color={C.danger} small>Cancelled</Badge>}
-        {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&!cancelled&&(
-          <button onClick={()=>{const ce={...cancelledEvents,[key]:true};onUpdateData({...data,cancelledEvents:ce});}}
-            style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:"rgba(239,68,68,0.2)",border:"1px solid rgba(239,68,68,0.4)",color:"#fca5a5",cursor:"pointer"}}>Cancel</button>
-        )}
-        {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&cancelled&&(
-          <button onClick={()=>{const ce={...cancelledEvents};delete ce[key];onUpdateData({...data,cancelledEvents:ce});}}
-            style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:"rgba(16,185,129,0.2)",border:"1px solid rgba(16,185,129,0.4)",color:"#6ee7b7",cursor:"pointer"}}>Restore</button>
-        )}
+        {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&<button onClick={()=>{const ce={...cancelledEvents,[key]:!cancelled};onUpdateData({...data,cancelledEvents:ce});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:cancelled?"rgba(16,185,129,0.2)":"rgba(239,68,68,0.2)",border:`1px solid ${cancelled?"rgba(16,185,129,0.4)":"rgba(239,68,68,0.4)"}`,color:cancelled?"#6ee7b7":"#fca5a5",cursor:"pointer"}}>{cancelled?"Restore":"Cancel"}</button>}
       </div>;
     })}
   </div>;
@@ -329,10 +303,8 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
     {showPurpose&&<div style={{background:C.navyMid,borderRadius:12,padding:"16px 18px",marginBottom:14,position:"relative",border:`1px solid ${C.gold}44`}}>
       <button onClick={()=>setShowPurpose(false)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16}}>x</button>
       <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Remember Your Purpose!</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. If a client or recruit comes out of it — amazing! But your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
-      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"rgba(255,255,255,0.7)"}}>
-        Need help setting appointments? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need to make the call with confidence!
-      </div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"rgba(255,255,255,0.7)"}}>Need help? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need!</div>
     </div>}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
       {[["Logged",logged,"20",C.teal],["Completed",done,logged||"-",C.success],["Qualified",qualified,logged||"-",C.gold]].map(([l,v,t,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"8px 10px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:C.textMid}}>{l}</div><div style={{fontSize:10,color:C.textLight}}>of {t}</div></div>)}
@@ -341,113 +313,64 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
     {bookingLink&&!readOnly&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",margin:"10px 0",fontSize:12}}><a href={bookingLink} target="_blank" rel="noreferrer" style={{color:C.gold,fontWeight:600}}>Schedule Training Appointment &rarr;</a><div style={{color:C.textMid,marginTop:2,fontSize:11}}>Add yourself as "guest" to receive notifications</div></div>}
     <div style={{marginTop:10}}>
       {slots.map((a,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6,background:a.status==="Completed"?C.success+"08":"white"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-          <span style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase"}}>Appt #{i+1}</span>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase"}}>Appt #{i+1}</span>
           {!readOnly&&<select value={a.status||""} onChange={e=>upd(i,"status",e.target.value)} style={{fontSize:11,padding:"2px 5px",borderRadius:5,border:`1px solid ${C.border}`,color:C.text}}><option value="">Set Status</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>}
           {readOnly&&a.status&&<Badge color={a.status==="Completed"?C.success:C.warning} small>{a.status}</Badge>}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-          {[["name","Name"],["phone","Phone"],["email","Email"],["date","Date"]].map(([f,ph])=><input key={f} type={f==="date"?"date":"text"} placeholder={ph} value={a[f]||""} readOnly={readOnly} onChange={e=>upd(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,background:readOnly?C.surface:"white",color:C.text}}/>)}
-        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["email","Email"],["date","Date"]].map(([f,ph])=><input key={f} type={f==="date"?"date":"text"} placeholder={ph} value={a[f]||""} readOnly={readOnly} onChange={e=>upd(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,background:readOnly?C.surface:"white",color:C.text}}/>)}</div>
         <textarea placeholder="Notes / Follow-up" value={a.notes||""} readOnly={readOnly} onChange={e=>upd(i,"notes",e.target.value)} style={{width:"100%",marginTop:5,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,resize:"vertical",minHeight:36,background:readOnly?C.surface:"white",color:C.text,boxSizing:"border-box"}}/>
         {!readOnly&&<MachoQ value={a.macho||{}} onChange={m=>updM(i,m)}/>}
-        {readOnly&&a.macho&&Object.keys(a.macho).length>0&&(()=>{const score=Object.values(a.macho).filter(Boolean).length;const q=score>=3;return <div style={{marginTop:6,background:q?C.success+"11":"rgba(0,0,0,0.04)",borderRadius:6,padding:"4px 8px",fontSize:11,color:q?C.success:C.textLight}}>{score}/5 stars {q?"- Qualified":""}</div>;})()}
+        {readOnly&&a.macho&&(()=>{const score=Object.values(a.macho).filter(Boolean).length;const q=score>=3;return score>0?<div style={{marginTop:6,background:q?C.success+"11":"rgba(0,0,0,0.04)",borderRadius:6,padding:"4px 8px",fontSize:11,color:q?C.success:C.textLight}}>{score}/5 stars {q?"- Qualified":""}</div>:null;})()}
       </div>)}
     </div>
   </div>;
 }
 
-// ── REP EXTRAS (Business Commitment, DGO, Exam, Bonus Goal, Motivation) ──
+// ── REP EXTRAS ──
 function RepExtras({rep,onUpdate,readOnly}) {
   const today=new Date();
   const motivation=MOTIVATIONS[today.getDate()%MOTIVATIONS.length];
-  const [newBC,setNewBC]=useState("");
-
   return <div>
-    {/* Daily Motivation */}
     <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",marginBottom:12,color:"white",border:`1px solid ${C.teal}33`}}>
       <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Daily Motivation</div>
       <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,fontStyle:"italic"}}>"{motivation}"</div>
     </div>
-
-    {/* Bonus Goal */}
     <Card style={{marginBottom:12}}>
       <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {BONUS_GOALS.map(g=>{
-          const selected=rep.bonusGoal===g.id;
-          return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})}
-            style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
-            <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div>
-              <div style={{fontSize:11,color:C.textMid}}>{g.desc}</div>
-            </div>
-          </button>;
-        })}
+        {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:11,color:C.textMid}}>{g.desc}</div></div></button>;})}
       </div>
     </Card>
-
-    {/* Business Commitment */}
     <Card style={{marginBottom:12}}>
       <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Enter the dollar amount you have committed to your business</div>
-      {!readOnly?<div style={{display:"flex",gap:7,alignItems:"center"}}>
-        <span style={{color:C.textMid,fontSize:16}}>$</span>
-        <input type="number" placeholder="Enter amount" value={rep.businessCommitment||""}
-          onChange={e=>onUpdate({...rep,businessCommitment:e.target.value})}
-          style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}/>
-      </div>:
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Dollar amount committed to your business</div>
+      {!readOnly?<div style={{display:"flex",gap:7,alignItems:"center"}}><span style={{color:C.textMid,fontSize:16}}>$</span><input type="number" placeholder="Enter amount" value={rep.businessCommitment||""} onChange={e=>onUpdate({...rep,businessCommitment:e.target.value})} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}/></div>:
       <div style={{fontSize:16,fontWeight:700,color:C.gold}}>{rep.businessCommitment?`$${rep.businessCommitment}`:"Not set"}</div>}
     </Card>
-
-    {/* DGO */}
-    <Card style={{marginBottom:12,border:`1px solid ${rep.dgoDone?C.success+"44":C.teal+"33"}`,background:rep.dgoDone?C.success+"06":"white"}}>
+    <Card style={{marginBottom:12,border:`1px solid ${rep.dgoDone?C.success+"44":C.teal+"33"}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <div style={{fontSize:12,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
-        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})}
-          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>
-          {rep.dgoDone?"Completed":"Mark Complete"}
-        </button>}
-        {rep.dgoDone&&readOnly&&<Badge color={C.success} small>Complete</Badge>}
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>{rep.dgoDone?"Completed":"Mark Complete"}</button>}
       </div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>My DGO Date</div>
-      {!readOnly?<input type="date" value={rep.dgoDate||""}
-        onChange={e=>onUpdate({...rep,dgoDate:e.target.value})}
-        style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.teal}}>{rep.dgoDate||"Not set"}</div>}
     </Card>
-
-    {/* Exam Date */}
-    <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`,background:rep.examPassed?C.success+"06":"white"}}>
+    <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <div style={{fontSize:12,fontWeight:700,color:C.text}}>Exam Date</div>
-        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})}
-          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>
-          {rep.examPassed?"Passed!":"Mark Passed"}
-        </button>}
-        {rep.examPassed&&readOnly&&<Badge color={C.success} small>Passed</Badge>}
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
       </div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>Scheduled Exam Date</div>
       <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
-      {!readOnly?<input type="date" value={rep.examDate||""}
-        onChange={e=>onUpdate({...rep,examDate:e.target.value})}
-        style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
     </Card>
   </div>;
 }
 
-// ── COUNTERS (moved to top) ──
+// ── REP COUNTERS ──
 function RepCounters({rep,onUpdate,readOnly}) {
   return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-    {[
-      {label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},
-      {label:"Life Apps Done",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},
-      {label:"Investments",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"},
-    ].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
+    {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Apps Done",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investments",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
       <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
       <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
       {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${c.color}`,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
@@ -467,9 +390,8 @@ function RepView({rep,data,onUpdate,readOnly}) {
   const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"References"},{k:"scripts",l:"Scripts"},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
   const tog=(id)=>{if(!readOnly)onUpdate(rep.id,{...rep,checked:{...checked,[id]:!checked[id]}});};
-  const togRvp=(id)=>{if(!readOnly)onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[id]:!(rep.rvpChecked||{})[id]}});};
   return <div>
     <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`,borderRadius:12,padding:"14px 18px",marginBottom:14,color:"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -482,37 +404,44 @@ function RepView({rep,data,onUpdate,readOnly}) {
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
-    {tab==="checklist"&&<div>
-      <RepCounters rep={rep} onUpdate={(updated)=>onUpdate(rep.id,updated)} readOnly={readOnly}/>
-      {Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}
-    </div>}
-    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(updated)=>onUpdate(rep.id,updated)} readOnly={readOnly}/>}
+    {tab==="checklist"&&<div><RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
-    {tab==="refs"&&<div>
-      {Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
+    {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
     {tab==="scripts"&&<div>{SCRIPTS.map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
-    {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div></div>)}</div>}
-    {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>togRvp(item.id)} readOnly={readOnly}/>)}</div>)}</div>}
+    {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
+    {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
   </div>;
 }
 
 // ── REP PROFILE (trainer/admin view) ──
 function RepProfile({rep,data,onUpdate,onBack}) {
   const [tab,setTab]=useState("trainer");
+  const [viewAsRep,setViewAsRep]=useState(false);
   const track=TRACK_INFO[rep.track];
   const tc=rep.trainerChecked||{};
   const trDone=TRAINER_CHECKLIST.filter(i=>tc[i.id]).length;
   const cl=track?.checklist||[];
   const repDone=cl.filter(i=>(rep.checked||{})[i.id]).length;
   const [ciNote,setCiNote]=useState("");
-  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"References"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"rvp",l:"RVP Path"}];
+  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"rvp",l:"RVP Path"}];
   const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
   const addCI=()=>{if(!ciNote.trim())return;onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]});setCiNote("");};
+
+  if(viewAsRep) return <div>
+    <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <span style={{fontSize:12,color:C.gold,fontWeight:600}}>Viewing as: {rep.name}</span>
+      <button onClick={()=>setViewAsRep(false)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Exit Preview</button>
+    </div>
+    <RepView rep={rep} data={data} onUpdate={onUpdate} readOnly={true}/>
+  </div>;
+
   return <div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
       <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
+      <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
       <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
@@ -520,8 +449,8 @@ function RepProfile({rep,data,onUpdate,onBack}) {
     </div>
     <Card style={{marginBottom:12,padding:"10px 14px"}}>
       <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Rep-Entered Data</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
-        {[{l:"DGO Date",v:rep.dgoDate||"Not set",c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||"Not set",c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+        {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
@@ -531,9 +460,9 @@ function RepProfile({rep,data,onUpdate,onBack}) {
     {tab==="rep"&&<RepView rep={rep} data={data} onUpdate={onUpdate} readOnly={false}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})}/>}
     {tab==="refs"&&<div>{(rep.references||[]).filter(r=>r.name).map((r,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:6,display:"flex",gap:10,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal}}>{i+1}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}{r.relationship&&` - ${r.relationship}`}</div></div></div>)}</div>}
-    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(updated)=>onUpdate(rep.id,updated)} readOnly={false}/>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={false}/>}
     {tab==="checkins"&&<div>
-      {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds===null||ds>=3;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins logged yet":ds===0?"Checked in today":`Last check-in ${ds} days ago`}</div>;})()}
+      {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds!==null&&ds>=7;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins yet - log one below":ds===0?"Checked in today":`Last check-in ${ds} day${ds!==1?"s":""} ago${stalled?" - consider reaching out!":""}`}</div>;})()}
       <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Log</button></div>
       {(rep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:C.text}}>{ci.note}</div><div style={{fontSize:10,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>)}
     </div>}
@@ -541,7 +470,7 @@ function RepProfile({rep,data,onUpdate,onBack}) {
   </div>;
 }
 
-// ── MY PRODUCTION (with accumulating premium) ──
+// ── MY PRODUCTION ──
 function MyProd({myProd,onUpdate}) {
   const [open,setOpen]=useState(false);
   const [tab,setTab]=useState("lifeapps");
@@ -559,17 +488,13 @@ function MyProd({myProd,onUpdate}) {
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
-      <div style={{display:"flex",gap:3,marginBottom:10}}>
-        {[["lifeapps","Life Apps"],["investments","Investments"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}
-      </div>
+      <div style={{display:"flex",gap:3,marginBottom:10}}>{[["lifeapps","Life Apps"],["investments","Investments"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}</div>
       {tab==="lifeapps"&&<div>
-        {/* Summary */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
           <div style={{background:C.teal+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.teal}}>{apps.length}</div><div style={{fontSize:10,color:C.textMid}}>Life Apps</div></div>
           <div style={{background:C.gold+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.gold}}>${totPrem.toFixed(0)}/mo</div><div style={{fontSize:10,color:C.textMid}}>Monthly</div></div>
-          <div style={{background:C.purple+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.purple}}>${(totPrem*12).toFixed(0)}/yr</div><div style={{fontSize:10,color:C.textMid}}>Annual Total</div></div>
+          <div style={{background:C.purple+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.purple}}>${(totPrem*12).toFixed(0)}/yr</div><div style={{fontSize:10,color:C.textMid}}>Annual</div></div>
         </div>
-        {/* Add new premium entry */}
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
           <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Life App</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
@@ -579,29 +504,18 @@ function MyProd({myProd,onUpdate}) {
           </div>
           <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log Life App</button>
         </div>
-        {/* Running total calculator */}
         {apps.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Existing Total</div>
+          <div style={{fontSize:11,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
           <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6}}>
-            <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)}
-              style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
-            <button onClick={()=>{
-              if(!addPrem)return;
-              onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toLocaleDateString(),id:Date.now()}]});
-              setAddPrem("");
-            }} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+            <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
+            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toLocaleDateString(),id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
           </div>
-          <div style={{fontSize:11,color:C.textMid}}>
-            Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>
-            {addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}
-          </div>
+          <div style={{fontSize:11,color:C.textMid}}>Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>{addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}</div>
         </div>}
         {apps.map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}><span style={{color:C.text}}>{a.clientName}</span><div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div></div>)}
       </div>}
       {tab==="investments"&&<div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
-          {[[invs.length,"Investments",C.teal],[`$${totPAC.toFixed(0)}/mo`,"PAC Total",C.gold],[`$${totLump.toFixed(0)}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}
-        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[`$${totPAC.toFixed(0)}/mo`,"PAC Total",C.gold],[`$${totLump.toFixed(0)}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}</div>
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
           <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
@@ -635,7 +549,7 @@ function ProdDash({data,onUpdateData}) {
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
     </div>}
     {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:C.textMid}}>{g.l}</span><span style={{fontSize:12,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:10,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
-    <div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:5}}>Update Rep Premium</div>
+    <div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:5}}>Update Rep Premium / Licensed Status</div>
       {reps.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
         <span style={{fontSize:11,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
         <input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:75,padding:"3px 6px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
@@ -689,7 +603,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const [showManage,setShowManage]=useState(false);
   const reps=(data.reps||[]).filter(r=>userRole==="trainer"?r.trainerId===userId:true);
   const filtered=reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
-  const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null}]});
+  const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
   const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
   return <div>
@@ -716,19 +630,27 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const trPct=Math.round((trDone/TRAINER_CHECKLIST.length)*100);
       const lastCI=rep.checkIns?.length>0?new Date(rep.checkIns[rep.checkIns.length-1].date):null;
       const ds=lastCI?Math.floor((Date.now()-lastCI)/(86400000)):null;
-      const stalled=ds===null||ds>=7;
+      // Stalled = only if they have at least one check-in AND it's been 7+ days
+      const stalled=lastCI!==null&&ds>=7;
       const grad=cl.length>0&&cl.every(i=>(rep.checked||{})[i.id]);
       const trainer=trainers.find(t=>t.id===rep.trainerId);
       return <div key={rep.id} onClick={()=>onSelectRep(rep.id)} style={{background:"white",borderRadius:12,border:`1px solid ${stalled&&!grad?C.danger+"44":C.border}`,padding:"12px 14px",marginBottom:7,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=grad?C.success:C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=stalled&&!grad?C.danger+"44":C.border}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
-          <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>{grad&&<Badge color={C.success} small>Graduated</Badge>}{stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}</div></div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+              <span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>
+              {grad&&<Badge color={C.success} small>Graduated</Badge>}
+              {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
+            </div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}</div>
+          </div>
           <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:5}}>
           <div><div style={{fontSize:9,color:C.textMid,marginBottom:2}}>Trainer {trPct}%</div><Bar pct={trPct} h={3}/></div>
           <div><div style={{fontSize:9,color:C.textMid,marginBottom:2}}>Rep {pct}%</div><Bar pct={pct} color={track?.color||C.purple} h={3}/></div>
         </div>
-        <div style={{fontSize:10,color:C.textLight}}>{ds===null?"No check-ins":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> - DGO: {rep.dgoDate}</span>}</div>
+        <div style={{fontSize:10,color:C.textLight}}>{ds===null?"No check-ins yet":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> - DGO: {rep.dgoDate}</span>}</div>
       </div>;
     })}
     {showAdd&&<AddRep onAdd={addRep} onClose={()=>setShowAdd(false)} trainers={trainers}/>}
@@ -770,7 +692,7 @@ function LoginScreen({data,onLogin}) {
         {mode==="select"&&<div>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>Welcome back</div>
           <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>How are you accessing the app?</div>
-          {[{k:"admin",l:"Admin / Super Admin",icon:"shield",s:"Full system access"},{k:"trainer",l:"Field Trainer",icon:"target",s:"Manage your reps"},{k:"rep",l:"New Rep",icon:"star",s:"View your checklist"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{width:32,height:32,borderRadius:8,background:C.teal+"11",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{o.icon==="shield"?"??":o.icon==="target"?"??":"??"}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{marginLeft:"auto",color:C.textLight,fontSize:16}}>›</span></button>)}
+          {[{k:"admin",l:"Admin / Super Admin",s:"Full system access"},{k:"trainer",l:"Field Trainer",s:"Manage your reps"},{k:"rep",l:"New Rep",s:"View your checklist"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{color:C.textLight,fontSize:16}}>›</span></button>)}
         </div>}
         {(mode==="admin"||mode==="trainer")&&<div>
           <button onClick={()=>{setMode("select");setErr("");setPin("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
@@ -803,7 +725,7 @@ function LoginScreen({data,onLogin}) {
 }
 
 // ── SIDEBAR ──
-function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone}) {
+function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour}) {
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"reps",l:"My Reps",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 14C9.8 14 8 12.2 8 10C8 7.8 9.8 6 12 6C14.2 6 16 7.8 16 10C16 12.2 14.2 14 12 14Z"},
@@ -821,16 +743,14 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone}) {
       {onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:18,padding:0,lineHeight:1}}>x</button>}
     </div>
     <nav style={{flex:1,padding:"10px 7px",overflowY:"auto"}}>
-      {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)",transition:"all 0.12s"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
+      {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
         <span style={{fontSize:12,fontWeight:section===item.k?600:400}}>{item.l}</span>
         {section===item.k&&<div style={{marginLeft:"auto",width:3,height:3,borderRadius:2,background:C.teal}}/>}
       </button>)}
-      {/* Add to phone button */}
-      <button onClick={()=>{onShowPhone();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginTop:8,background:"rgba(14,165,160,0.08)",color:"rgba(255,255,255,0.5)"}}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
-        <span style={{fontSize:11}}>Add to Phone</span>
-      </button>
+      <div style={{borderTop:`1px solid ${C.borderLight}`,marginTop:8,paddingTop:8}}>
+        {[{l:"App Tour",fn:onShowTour},{l:"Add to Phone",fn:onShowPhone}].map(btn=><button key={btn.l} onClick={()=>{btn.fn();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"7px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:"rgba(255,255,255,0.45)",fontSize:11}}>{btn.l}</button>)}
+      </div>
     </nav>
     <div style={{padding:"10px 14px",borderTop:`1px solid ${C.borderLight}`}}>
       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
@@ -844,7 +764,8 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone}) {
 
 // ── MAIN APP ──
 export default function App() {
-  const [data,setData]=useState(()=>loadData());
+  const [data,setData]=useState({});
+  const [loading,setLoading]=useState(true);
   const [session,setSession]=useState(null);
   const [section,setSection]=useState("dashboard");
   const [selRepId,setSelRepId]=useState(null);
@@ -852,22 +773,40 @@ export default function App() {
   const [showTour,setShowTour]=useState(false);
   const [showPhone,setShowPhone]=useState(false);
 
-  const upd=useCallback((d)=>{setData(d);saveData(d);},[]);
+  // Subscribe to Firebase
+  useEffect(()=>{
+    const unsub=onSnapshot(doc(db,"appdata","main"),(snap)=>{
+      if(snap.exists()){
+        try{const d=JSON.parse(snap.data().payload||"{}");setData(d);}catch{}
+      }
+      setLoading(false);
+    },(err)=>{console.error("Firebase read error",err);setLoading(false);});
+    return ()=>unsub();
+  },[]);
+
+  const upd=useCallback((d)=>{setData(d);saveToFirebase(d);},[]);
 
   const handleLogin=(role,id,userData,newPin)=>{
-    if(role==="rep"&&newPin){const ur=(data.reps||[]).map(r=>r.id===id?{...r,repPin:newPin}:r);upd({...data,reps:ur});}
+    if(role==="rep"&&newPin){
+      const updated={...data,reps:(data.reps||[]).map(r=>r.id===id?{...r,repPin:newPin}:r)};
+      upd(updated);
+    }
     setSession({role,id,name:userData?.name||(role==="admin"?"Admin":"User")});
     setSection("dashboard");
-    // Show tour on first login
-    const tourKey=`tour_${role}_${id}`;
+    const tourKey=`tour_shown_${role}_${id}`;
     if(!localStorage.getItem(tourKey)){setShowTour(true);localStorage.setItem(tourKey,"done");}
   };
 
   const signOut=()=>{setSession(null);setSelRepId(null);};
 
+  if(loading) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"white",flexDirection:"column",gap:12}}>
+    <div style={{width:40,height:40,border:`3px solid ${C.teal}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+    <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Loading...</div>
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+  </div>;
+
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
 
-  // Rep-only view
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
@@ -876,7 +815,7 @@ export default function App() {
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{color:"white",fontWeight:700,fontSize:13}}>NextLevel Field Training Hub</div>
-        <div style={{display:"flex",gap:8}}>
+        <div style={{display:"flex",gap:6}}>
           <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Tour</button>
           <button onClick={()=>setShowPhone(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Add to Phone</button>
           <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
@@ -906,10 +845,10 @@ export default function App() {
     {showTour&&<AppTour role={session.role} onClose={()=>setShowTour(false)}/>}
     {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
     <div style={{display:"flex",flexShrink:0}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)}/>
     </div>
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}}/>
       <div style={{flex:1,background:"rgba(0,0,0,0.4)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
@@ -918,7 +857,6 @@ export default function App() {
           <div style={{width:17,height:2,background:C.text,borderRadius:1}}/><div style={{width:13,height:2,background:C.text,borderRadius:1}}/><div style={{width:17,height:2,background:C.text,borderRadius:1}}/>
         </button>
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:C.text,textTransform:"capitalize"}}>{selRep?selRep.name:section.replace(/([A-Z])/," $1")}</div><div style={{fontSize:10,color:C.textMid}}>NextLevel Field Training Hub</div></div>
-        <button onClick={()=>setShowTour(true)} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Tour</button>
         <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal}}>{session.name?.charAt(0)?.toUpperCase()}</div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:14}}>
