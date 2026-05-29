@@ -2,6 +2,17 @@ import { useState, useCallback, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
+// ── RESPONSIVE HOOK ──
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 // ── FIREBASE ──
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FB_API_KEY,
@@ -14,6 +25,17 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const DATA_DOC = "appdata/main";
+
+// ── MOBILE STYLES ──
+const MOBILE_STYLES = `
+  * { -webkit-tap-highlight-color: transparent; }
+  input, select, textarea { font-size: 16px !important; }
+  ::-webkit-scrollbar { display: none; }
+  body { overflow: hidden; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .mobile-animate { animation: slideUp 0.25s ease-out; }
+`;
 
 const saveToFirebase = async (data) => {
   try { await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) }); } catch(e) { console.error("Firebase save error", e); }
@@ -795,7 +817,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
         })}
       </div>;
     })()}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:7,marginBottom:14}}>
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
@@ -868,7 +890,7 @@ function LoginScreen({data,onLogin}) {
   };
   const filtReps=search.length>0?reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())):[];
   const inp={width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid rgba(0,0,0,0.12)`,fontSize:13,outline:"none",background:"white",boxSizing:"border-box",color:C.text};
-  return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 60%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+  return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 60%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20,paddingTop:"max(20px,env(safe-area-inset-top))"}}>
     <div style={{width:"100%",maxWidth:420}}>
       <div style={{textAlign:"center",marginBottom:28}}>
         <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:60,height:60,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.3)",borderRadius:15,marginBottom:10}}>
@@ -1419,6 +1441,9 @@ export default function App() {
 
   const signOut=()=>{setSession(null);setSelRepId(null);};
 
+  const isMobile = useIsMobile();
+  const isMobileRep = isMobile;
+
   if(loading) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"white",flexDirection:"column",gap:12}}>
     <div style={{width:40,height:40,border:`3px solid ${C.teal}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
     <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Loading...</div>
@@ -1430,21 +1455,27 @@ export default function App() {
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
-    return <div style={{minHeight:"100vh",background:C.surface}}>
+    return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
+      <style>{MOBILE_STYLES}</style>
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
-      <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{color:"white",fontWeight:700,fontSize:13}}>NextLevel Field Training Hub</div>
+      <div style={{background:C.navy,padding:`${isMobileRep?"max(10px,env(safe-area-inset-top))":"10px"} 14px 10px`,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div>
+          <div style={{color:"white",fontWeight:700,fontSize:14}}>NextLevel Training Hub</div>
+          <div style={{color:"rgba(255,255,255,0.45)",fontSize:10}}>Welcome, {rep.name}</div>
+        </div>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Tour</button>
-          <button onClick={()=>setShowPhone(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Add to Phone</button>
-          <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
+          <button onClick={()=>setShowTour(true)} style={{background:"rgba(255,255,255,0.1)",border:"none",color:"rgba(255,255,255,0.8)",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600}}>Tour</button>
+          <button onClick={()=>setShowPhone(true)} style={{background:"rgba(255,255,255,0.1)",border:"none",color:"rgba(255,255,255,0.8)",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600}}>+ Phone</button>
+          <button onClick={signOut} style={{background:"rgba(255,255,255,0.1)",border:"none",color:"rgba(255,255,255,0.8)",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600}}>Out</button>
         </div>
       </div>
-      <div style={{maxWidth:580,margin:"0 auto",padding:14}}>
-        <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
-        <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
-        <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false}/>
+      <div style={{flex:1,overflowY:"auto",padding:isMobileRep?"10px 10px 20px":"14px",WebkitOverflowScrolling:"touch"}}>
+        <div style={{maxWidth:580,margin:"0 auto"}}>
+          <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
+          <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
+          <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false}/>
+        </div>
       </div>
     </div>;
   }
