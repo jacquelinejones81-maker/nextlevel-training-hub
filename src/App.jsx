@@ -409,7 +409,7 @@ function RepView({rep,data,onUpdate,readOnly}) {
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
-    {tab==="scripts"&&<div>{SCRIPTS.map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
+    {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
   </div>;
@@ -724,6 +724,80 @@ function LoginScreen({data,onLogin}) {
   </div>;
 }
 
+
+// ── SCRIPTS PAGE (editable by admins) ──
+function ScriptsPage({data,onUpdate,userRole}) {
+  const scripts = data.scripts || SCRIPTS;
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const [editing,setEditing] = useState(null);
+  const [draft,setDraft] = useState({title:"",content:""});
+  const [showAdd,setShowAdd] = useState(false);
+  const [newScript,setNewScript] = useState({title:"",content:""});
+
+  const saveEdit = (i) => {
+    const updated = scripts.map((s,idx)=>idx===i?{...draft}:s);
+    onUpdate({...data,scripts:updated});
+    setEditing(null);
+  };
+  const deleteScript = (i) => {
+    onUpdate({...data,scripts:scripts.filter((_,idx)=>idx!==i)});
+  };
+  const addScript = () => {
+    if(!newScript.title||!newScript.content) return;
+    onUpdate({...data,scripts:[...scripts,{...newScript}]});
+    setNewScript({title:"",content:""});
+    setShowAdd(false);
+  };
+  const resetToDefault = () => {
+    if(window.confirm("Reset all scripts to the original defaults?")) onUpdate({...data,scripts:SCRIPTS});
+  };
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.text}}>Scripts</div>
+      {isAdmin&&<div style={{display:"flex",gap:7}}>
+        <button onClick={resetToDefault} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset Defaults</button>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Script</button>
+      </div>}
+    </div>
+    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:11,color:C.teal}}>
+      You can edit any script below. Changes save instantly and update for everyone on the team.
+    </div>}
+    {showAdd&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>New Script</div>
+      <input placeholder="Script title" value={newScript.title} onChange={e=>setNewScript({...newScript,title:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <textarea placeholder="Script content..." value={newScript.content} onChange={e=>setNewScript({...newScript,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
+      <div style={{display:"flex",gap:7,marginTop:8}}>
+        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+        <button onClick={addScript} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Script</button>
+      </div>
+    </Card>}
+    {scripts.map((s,i)=><Card key={i} style={{marginBottom:10}}>
+      {editing===i?(
+        <div>
+          <input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box",fontWeight:600}}/>
+          <textarea value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:12,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
+          <div style={{display:"flex",gap:7,marginTop:8}}>
+            <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+            <button onClick={()=>saveEdit(i)} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Changes</button>
+          </div>
+        </div>
+      ):(
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
+            {isAdmin&&<div style={{display:"flex",gap:5,marginLeft:8}}>
+              <button onClick={()=>{setEditing(i);setDraft({title:s.title,content:s.content});}} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+              <button onClick={()=>deleteScript(i)} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
+            </div>}
+          </div>
+          <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div>
+        </div>
+      )}
+    </Card>)}
+  </div>;
+}
+
 // ── SIDEBAR ──
 function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour}) {
   const nav=[
@@ -836,7 +910,7 @@ export default function App() {
     if(section==="dashboard"||section==="reps") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>upd({...data,myProduction:{...(data.myProduction||{}),[session.id]:p}})}/></div>;
     if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
-    if(section==="scripts") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Scripts</div>{SCRIPTS.map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>;
+    if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
