@@ -359,36 +359,6 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
         <div style={{fontSize:12,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
       </Card>
     </div>
-    <Card style={{marginBottom:12}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
-      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:11,color:C.textMid}}>{g.desc}</div></div></button>;})}
-      </div>
-    </Card>
-    <Card style={{marginBottom:12}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Dollar amount committed to your business</div>
-      {!readOnly?<div style={{display:"flex",gap:7,alignItems:"center"}}><span style={{color:C.textMid,fontSize:16}}>$</span><input type="number" placeholder="Enter amount" value={rep.businessCommitment||""} onChange={e=>onUpdate({...rep,businessCommitment:e.target.value})} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}/></div>:
-      <div style={{fontSize:16,fontWeight:700,color:C.gold}}>{rep.businessCommitment?`$${rep.businessCommitment}`:"Not set"}</div>}
-    </Card>
-    <Card style={{marginBottom:12,border:`1px solid ${rep.dgoDone?C.success+"44":C.teal+"33"}`}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
-        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>{rep.dgoDone?"Completed":"Mark Complete"}</button>}
-      </div>
-      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
-      <div style={{fontSize:14,fontWeight:700,color:C.teal}}>{rep.dgoDate||"Not set"}</div>}
-    </Card>
-    <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Exam Date</div>
-        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
-      </div>
-      <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
-      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
-      <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
-    </Card>
-
     {/* Pre-Licensing Class */}
     <Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -459,6 +429,36 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
         </div>}
       </div>
     </Card>
+    <Card style={{marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:11,color:C.textMid}}>{g.desc}</div></div></button>;})}
+      </div>
+    </Card>
+    <Card style={{marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Dollar amount committed to your business</div>
+      {!readOnly?<div style={{display:"flex",gap:7,alignItems:"center"}}><span style={{color:C.textMid,fontSize:16}}>$</span><input type="number" placeholder="Enter amount" value={rep.businessCommitment||""} onChange={e=>onUpdate({...rep,businessCommitment:e.target.value})} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}/></div>:
+      <div style={{fontSize:16,fontWeight:700,color:C.gold}}>{rep.businessCommitment?`$${rep.businessCommitment}`:"Not set"}</div>}
+    </Card>
+    <Card style={{marginBottom:12,border:`1px solid ${rep.dgoDone?C.success+"44":C.teal+"33"}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>{rep.dgoDone?"Completed":"Mark Complete"}</button>}
+      </div>
+      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      <div style={{fontSize:14,fontWeight:700,color:C.teal}}>{rep.dgoDate||"Not set"}</div>}
+    </Card>
+    <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Exam Date</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
+      </div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
+      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
+    </Card>
+
   </div>;
 }
 
