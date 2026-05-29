@@ -346,9 +346,18 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
   const today=new Date();
   const motivation=MOTIVATIONS[today.getDate()%MOTIVATIONS.length];
   return <div>
-    <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",marginBottom:12,color:"white",border:`1px solid ${C.teal}33`}}>
-      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Daily Motivation</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,fontStyle:"italic"}}>"{motivation}"</div>
+    {/* Daily Motivation + My Why side by side */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+      <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",color:"white",border:`1px solid ${C.teal}33`}}>
+        <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Daily Motivation</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6,fontStyle:"italic"}}>"{motivation}"</div>
+      </div>
+      <Card style={{margin:0}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:6}}>Your personal reason for joining</div>
+        {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit"}}/>:
+        <div style={{fontSize:12,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
+      </Card>
     </div>
     <Card style={{marginBottom:12}}>
       <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
@@ -378,13 +387,6 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
       <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
       {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
-    </Card>
-    {/* My Why */}
-    <Card style={{marginBottom:12,border:`1px solid ${C.purple}33`}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Write your personal reason for joining — your family, goals, and what drives you</div>
-      {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:80,boxSizing:"border-box",lineHeight:1.6,fontFamily:"inherit"}}/>:
-      <div style={{fontSize:13,color:C.text,lineHeight:1.6,background:C.surface,borderRadius:8,padding:"9px 11px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
     </Card>
 
     {/* Pre-Licensing Class */}
