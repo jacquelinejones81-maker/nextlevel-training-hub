@@ -448,6 +448,7 @@ function RepView({rep,data,onUpdate,readOnly}) {
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
+    {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep,...u})} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
   </div>;
@@ -962,7 +963,7 @@ function ResourceLibrary({data,onUpdate,userRole}) {
       <div style={{fontSize:17,fontWeight:700,color:C.text}}>Resource Library</div>
       {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Resource</button>}
     </div>
-    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>Add links to documents, training videos, and company materials for your team.</div>}
+    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>Add links to documents, training videos, and company materials for your team. <strong>Tip:</strong> Upload files to Google Drive, set sharing to "Anyone with the link", and paste the link here.</div>}
     {showForm&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Resource</div>
       <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
@@ -1006,6 +1007,152 @@ function ResourceLibrary({data,onUpdate,userRole}) {
         {r.description&&<div style={{fontSize:11,color:C.textMid,marginTop:2}}>{r.description}</div>}
       </div>;
     })}
+  </div>;
+}
+
+
+// ── SCORECARD ──
+function getWeekStart(date=new Date()) {
+  const d=new Date(date);
+  const day=d.getDay();
+  const diff=d.getDate()-day+(day===0?-6:1);
+  d.setDate(diff);
+  d.setHours(0,0,0,0);
+  return d.toISOString().split("T")[0];
+}
+
+function ScorecardPage({data,onUpdate,userId,userRole}) {
+  const weekKey=getWeekStart();
+  const allScores=data.scorecards||{};
+  const myScores=allScores[userId]||{};
+  const week=myScores[weekKey]||{contacts:0,apptSet:0,apptDone:0};
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
+
+  const goals={contacts:100,apptSet:20,apptDone:20};
+
+  const update=(field,val)=>{
+    const updated={...data,scorecards:{...allScores,[userId]:{...myScores,[weekKey]:{...week,[field]:Math.max(0,val)}}}};
+    onUpdate(updated);
+  };
+
+  const totalPct=Math.round(((week.contacts/goals.contacts)+(week.apptSet/goals.apptSet)+(week.apptDone/goals.apptDone))/3*100);
+  const getMessage=()=>{
+    if(totalPct>=80) return {msg:"Outstanding week! You are on fire!",color:C.success};
+    if(totalPct>=50) return {msg:"You are building momentum! Keep going!",color:C.teal};
+    if(totalPct>0) return {msg:"Keep pushing! Every contact counts.",color:C.gold};
+    return {msg:"Start logging your activity — small actions add up!",color:C.textMid};
+  };
+  const {msg,color}=getMessage();
+
+  const contactRate=week.contacts>0?Math.round((week.apptSet/week.contacts)*100):0;
+  const showRate=week.apptSet>0?Math.round((week.apptDone/week.apptSet)*100):0;
+
+  const metrics=[
+    {key:"contacts",label:"Contacts Made",goal:goals.contacts,val:week.contacts,color:C.teal,icon:"📞",desc:"Top of the funnel — every appointment starts with a contact"},
+    {key:"apptSet",label:"Appointments Set",goal:goals.apptSet,val:week.apptSet,color:C.purple,icon:"📅",desc:"Target 1 appointment per 5 contacts"},
+    {key:"apptDone",label:"Appointments Completed",goal:goals.apptDone,val:week.apptDone,color:C.success,icon:"✅",desc:"Tracks your show rate — follow-through is everything"},
+  ];
+
+  // Get week history (last 4 weeks)
+  const weekHistory=Array.from({length:4},(_,i)=>{
+    const d=new Date();
+    d.setDate(d.getDate()-(i*7));
+    const wk=getWeekStart(d);
+    const wkData=myScores[wk]||{contacts:0,apptSet:0,apptDone:0};
+    const pct=Math.round(((wkData.contacts/goals.contacts)+(wkData.apptSet/goals.apptSet)+(wkData.apptDone/goals.apptDone))/3*100);
+    return {week:wk,label:i===0?"This Week":i===1?"Last Week":`${i} Weeks Ago`,pct,data:wkData};
+  });
+
+  // Team summary for admins
+  const allUsers=[...(data.trainers||[]),...(data.admins||[])];
+  const teamRows=isAdmin?allUsers.map(u=>{
+    const uScores=(data.scorecards||{})[u.id]||{};
+    const uWeek=uScores[weekKey]||{contacts:0,apptSet:0,apptDone:0};
+    const uPct=Math.round(((uWeek.contacts/goals.contacts)+(uWeek.apptSet/goals.apptSet)+(uWeek.apptDone/goals.apptDone))/3*100);
+    return {...u,week:uWeek,pct:uPct};
+  }):[];
+
+  return <div>
+    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Weekly Scorecard</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>Week of {new Date(weekKey+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+
+    {/* Why this matters banner */}
+    <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",marginBottom:16,color:"white"}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Why This Matters</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>Production tracks your <strong style={{color:"white"}}>results</strong>. The scorecard tracks your <strong style={{color:"white"}}>activity</strong> — the daily work that creates results. You can't control whether someone buys, but you can control how many calls you make. <strong style={{color:C.teal}}>Focus on the activity and the results will follow.</strong></div>
+    </div>
+
+    {/* Weekly score */}
+    <Card style={{marginBottom:16,background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,border:"none"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div><div style={{fontSize:13,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Average across all 3 goals</div></div>
+        <div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:totalPct>=80?C.success:totalPct>=50?C.teal:C.gold}}>{totalPct}%</div></div>
+      </div>
+      <Bar pct={totalPct} color={totalPct>=80?C.success:totalPct>=50?C.teal:C.gold} h={8}/>
+      <div style={{marginTop:8,fontSize:12,color:color,fontWeight:600}}>{msg}</div>
+    </Card>
+
+    {/* Conversion rates */}
+    {(week.contacts>0||week.apptSet>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+      <Card style={{padding:"10px 12px",textAlign:"center"}}>
+        <div style={{fontSize:20,fontWeight:700,color:C.purple}}>{contactRate}%</div>
+        <div style={{fontSize:11,color:C.textMid}}>Contact-to-Appt Rate</div>
+        <div style={{fontSize:10,color:C.textLight}}>Industry target: 20%</div>
+      </Card>
+      <Card style={{padding:"10px 12px",textAlign:"center"}}>
+        <div style={{fontSize:20,fontWeight:700,color:C.success}}>{showRate}%</div>
+        <div style={{fontSize:11,color:C.textMid}}>Appointment Show Rate</div>
+        <div style={{fontSize:10,color:C.textLight}}>Target: 80%+</div>
+      </Card>
+    </div>}
+
+    {/* Metric cards */}
+    {metrics.map(m=><Card key={m.key} style={{marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
+            <span style={{fontSize:16}}>{m.icon}</span>
+            <span style={{fontSize:13,fontWeight:700,color:C.text}}>{m.label}</span>
+          </div>
+          <div style={{fontSize:11,color:C.textLight}}>{m.desc}</div>
+        </div>
+        <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
+          <div style={{fontSize:22,fontWeight:800,color:m.color}}>{m.val}</div>
+          <div style={{fontSize:10,color:C.textLight}}>Goal: {m.goal}</div>
+        </div>
+      </div>
+      <Bar pct={(m.val/m.goal)*100} color={m.val>=m.goal?C.success:m.color} h={6}/>
+      <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center"}}>
+        <button onClick={()=>update(m.key,m.val-1)} style={{width:36,height:36,borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:18,color:C.textMid,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>-</button>
+        <div style={{flex:1,textAlign:"center",fontSize:11,color:C.textMid}}>{m.val>=m.goal?<span style={{color:C.success,fontWeight:700}}>Goal reached!</span>:`${m.goal-m.val} more to reach goal`}</div>
+        <button onClick={()=>update(m.key,m.val+1)} style={{width:36,height:36,borderRadius:8,border:`none`,background:m.color,cursor:"pointer",fontSize:18,color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>+</button>
+      </div>
+    </Card>)}
+
+    {/* History */}
+    <Card style={{marginBottom:16}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>Recent History</div>
+      {weekHistory.map((wh,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+        <div style={{width:80,fontSize:11,color:i===0?C.text:C.textMid,fontWeight:i===0?700:400}}>{wh.label}</div>
+        <div style={{flex:1}}><Bar pct={wh.pct} color={wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold} h={5}/></div>
+        <div style={{fontSize:11,fontWeight:600,color:wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{wh.pct}%</div>
+        <div style={{fontSize:10,color:C.textLight,width:80,textAlign:"right"}}>{wh.data.contacts}c / {wh.data.apptSet}s / {wh.data.apptDone}d</div>
+      </div>)}
+    </Card>
+
+    {/* Team summary - admin only */}
+    {isAdmin&&teamRows.length>0&&<Card>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>Team This Week</div>
+      {teamRows.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
+        <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
+          <div style={{fontSize:10,color:C.textLight}}>{u.week.contacts}c / {u.week.apptSet}s / {u.week.apptDone}d</div>
+        </div>
+        <div style={{flex:1}}><Bar pct={u.pct} color={u.pct>=80?C.success:u.pct>=50?C.teal:C.gold} h={4}/></div>
+        <div style={{fontSize:12,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
+      </div>)}
+    </Card>}
   </div>;
 }
 
@@ -1091,6 +1238,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"schedule",l:"Schedule",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
+    {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
   ];
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
@@ -1198,6 +1346,7 @@ export default function App() {
     if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
