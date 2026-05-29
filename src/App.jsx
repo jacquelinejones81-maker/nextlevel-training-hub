@@ -386,6 +386,78 @@ function RepExtras({rep,onUpdate,readOnly}) {
       {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:80,boxSizing:"border-box",lineHeight:1.6,fontFamily:"inherit"}}/>:
       <div style={{fontSize:13,color:C.text,lineHeight:1.6,background:C.surface,borderRadius:8,padding:"9px 11px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
     </Card>
+
+    {/* Pre-Licensing Class */}
+    <Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Pre-Licensing Class</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,preLicDone:!rep.preLicDone})}
+          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.preLicDone?C.success:C.purple}`,background:rep.preLicDone?C.success+"11":C.purple+"11",color:rep.preLicDone?C.success:C.purple,cursor:"pointer",fontWeight:600}}>
+          {rep.preLicDone?"Completed":"Mark Complete"}
+        </button>}
+        {rep.preLicDone&&readOnly&&<Badge color={C.success} small>Complete</Badge>}
+      </div>
+
+      {/* Class type selector */}
+      {!readOnly&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+        {[["inperson","In-Person","??"],["zoom","Zoom","??"],["online","Online Course","??"]].map(([val,label,icon])=>(
+          <button key={val} onClick={()=>onUpdate({...rep,preLicType:val})}
+            style={{padding:"8px 6px",borderRadius:8,border:`2px solid ${rep.preLicType===val?C.purple:C.border}`,background:rep.preLicType===val?C.purple+"11":"white",cursor:"pointer",textAlign:"center"}}>
+            <div style={{fontSize:14,marginBottom:2}}>{icon}</div>
+            <div style={{fontSize:10,fontWeight:700,color:rep.preLicType===val?C.purple:C.textMid}}>{label}</div>
+          </button>
+        ))}
+      </div>}
+      {readOnly&&rep.preLicType&&<div style={{marginBottom:10}}><Badge color={C.purple} small>{rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online Course"}</Badge></div>}
+
+      {/* Online course details */}
+      {rep.preLicType==="online"&&<div>
+        <div style={{background:C.purple+"11",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.purple,marginBottom:4}}>Access your online course here:</div>
+          <a href="https://www-ucanpass.examfx.com" target="_blank" rel="noreferrer"
+            style={{fontSize:13,fontWeight:700,color:C.teal,textDecoration:"none",display:"block",marginBottom:3}}>www-ucanpass.examfx.com &rarr;</a>
+          <div style={{fontSize:11,color:C.textMid}}>Log in or create your account to begin your online licensing course.</div>
+        </div>
+
+        {/* RVP ID selector */}
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Select Your RVP ID</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...(data.customRVPs||[])].map((rvp,i)=>{
+              const selected=rep.selectedRVP===rvp.id;
+              return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer"}}
+                onClick={()=>!readOnly&&onUpdate({...rep,selectedRVP:rvp.id})}>
+                <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{rvp.id}</div>
+                  <div style={{fontSize:11,color:C.textMid}}>{rvp.name}</div>
+                </div>
+                {selected&&<button onClick={e=>{e.stopPropagation();navigator.clipboard?.writeText(rvp.id);}}
+                  style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Copy</button>}
+              </div>;
+            })}
+          </div>
+        </div>
+      </div>}
+
+      {/* Dates */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:rep.preLicDone?8:0}}>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Start Date</div>
+          {!readOnly?<input type="date" value={rep.preLicStart||""} onChange={e=>onUpdate({...rep,preLicStart:e.target.value})}
+            style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>:
+          <div style={{fontSize:12,fontWeight:600,color:C.text}}>{rep.preLicStart||"Not set"}</div>}
+        </div>
+        {rep.preLicDone&&<div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Completion Date</div>
+          {!readOnly?<input type="date" value={rep.preLicEnd||""} onChange={e=>onUpdate({...rep,preLicEnd:e.target.value})}
+            style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>:
+          <div style={{fontSize:12,fontWeight:600,color:C.text}}>{rep.preLicEnd||"Not set"}</div>}
+        </div>}
+      </div>
+    </Card>
   </div>;
 }
 
@@ -507,6 +579,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
         {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
       {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:11,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
+      {rep.preLicType&&<div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}><Badge color={C.purple} small>Pre-Lic: {rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online"}</Badge>{rep.preLicDone&&<Badge color={C.success} small>Complete</Badge>}{rep.selectedRVP&&<Badge color={C.gold} small>RVP: {rep.selectedRVP}</Badge>}</div>}
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
@@ -646,6 +719,30 @@ function ManageTeam({data,onUpdate,onClose}) {
       <div><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
         {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:12,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);onUpdate({...data,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>onUpdate({...data,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/></div>)}
         <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Trainer name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(nt.name&&nt.pin){onUpdate({...data,trainers:[...trainers,{...nt,id:"trainer_"+Date.now()}]});setNt({name:"",pin:"",bookingLink:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
+      </div>
+
+      {/* RVP IDs */}
+      <div style={{marginTop:14}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP IDs (Online Pre-Licensing)</div>
+        <div style={{marginBottom:8}}>
+          {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...(data.customRVPs||[])].map((rvp,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:7,background:C.surface,marginBottom:5}}>
+              <div style={{flex:1}}><span style={{fontSize:12,fontWeight:700,color:C.gold}}>{rvp.id}</span><span style={{fontSize:11,color:C.textMid,marginLeft:8}}>{rvp.name}</span></div>
+              {i>=2&&<button onClick={()=>onUpdate({...data,customRVPs:(data.customRVPs||[]).filter((_,j)=>j!==i-2)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:13}}>x</button>}
+              {i<2&&<Badge color={C.teal} small>Default</Badge>}
+            </div>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"auto 1fr auto",gap:5}}>
+          <input placeholder="RVP ID" value={(data._newRVP||{}).id||""} onChange={e=>onUpdate({...data,_newRVP:{...(data._newRVP||{}),id:e.target.value.toUpperCase()}})}
+            style={{width:80,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text,letterSpacing:"1px",fontWeight:700}}/>
+          <input placeholder="RVP Name" value={(data._newRVP||{}).name||""} onChange={e=>onUpdate({...data,_newRVP:{...(data._newRVP||{}),name:e.target.value}})}
+            style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <button onClick={()=>{
+            const nr=data._newRVP||{};
+            if(nr.id&&nr.name){onUpdate({...data,customRVPs:[...(data.customRVPs||[]),{id:nr.id,name:nr.name}],_newRVP:{}});}
+          }} style={{padding:"5px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+        </div>
       </div>
     </div>
   </div>;
