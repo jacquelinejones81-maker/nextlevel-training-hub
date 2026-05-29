@@ -447,8 +447,32 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
         <div style={{fontSize:12,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
         {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>{rep.dgoDone?"Completed":"Mark Complete"}</button>}
       </div>
-      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
-      <div style={{fontSize:14,fontWeight:700,color:C.teal}}>{rep.dgoDate||"Not set"}</div>}
+      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:10}}/>:
+      <div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:10}}>{rep.dgoDate||"Not set"}</div>}
+      {/* Professional Photo */}
+      <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo for DGO Presentation</div>
+        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Upload a professional headshot — this will be used in your DGO presentation</div>
+        {rep.dgoPhoto&&<div style={{marginBottom:8,position:"relative",display:"inline-block"}}>
+          <img src={rep.dgoPhoto} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>
+          {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoPhoto:null})} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}
+        </div>}
+        {!readOnly&&<div>
+          <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            {rep.dgoPhoto?"Replace Photo":"Upload Photo"}
+            <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+              const file=e.target.files[0];
+              if(!file) return;
+              if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
+              const reader=new FileReader();
+              reader.onload=ev=>onUpdate({...rep,dgoPhoto:ev.target.result});
+              reader.readAsDataURL(file);
+            }}/>
+          </label>
+        </div>}
+        {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:11,color:C.textLight}}>No photo uploaded yet</div>}
+      </div>
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -456,8 +480,26 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
         {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
       </div>
       <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
-      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
-      <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
+      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:12}}/>:
+      <div style={{fontSize:14,fontWeight:700,color:C.gold,marginBottom:12}}>{rep.examDate||"Not set"}</div>}
+      {/* T-Shirt Size */}
+      <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>T-Shirt Size</div>
+        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>You will receive a t-shirt after passing your life insurance exam!</div>
+        {!readOnly?<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {["XS","S","M","L","XL","2XL","3XL"].map(size=>{
+            const selected=rep.tshirtSize===size;
+            return <button key={size} onClick={()=>onUpdate({...rep,tshirtSize:size})}
+              style={{padding:"6px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",color:selected?"white":C.textMid,fontSize:12,fontWeight:selected?700:400,cursor:"pointer",transition:"all 0.15s"}}>
+              {size}
+            </button>;
+          })}
+        </div>:
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {rep.tshirtSize?<><div style={{padding:"6px 16px",borderRadius:8,background:C.gold,color:"white",fontSize:13,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:11,color:C.textMid}}>T-Shirt Size</span></>:
+          <span style={{fontSize:12,color:C.textLight}}>No size selected yet</span>}
+        </div>}
+      </div>
     </Card>
 
   </div>;
@@ -582,6 +624,10 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
         {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
       {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:11,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
       {rep.preLicType&&<div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}><Badge color={C.purple} small>Pre-Lic: {rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online"}</Badge>{rep.preLicDone&&<Badge color={C.success} small>Complete</Badge>}{rep.selectedRVP&&<Badge color={C.gold} small>RVP: {rep.selectedRVP}</Badge>}</div>}
+      <div style={{display:"flex",gap:10,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
+        {rep.dgoPhoto&&<div style={{display:"flex",alignItems:"center",gap:6}}><img src={rep.dgoPhoto} alt="DGO" style={{width:40,height:40,borderRadius:8,objectFit:"cover",border:`2px solid ${C.teal}`}}/><span style={{fontSize:10,color:C.textMid}}>DGO Photo</span></div>}
+        {rep.tshirtSize&&<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{padding:"3px 10px",borderRadius:6,background:C.gold,color:"white",fontSize:11,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:10,color:C.textMid}}>T-Shirt</span></div>}
+      </div>
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
