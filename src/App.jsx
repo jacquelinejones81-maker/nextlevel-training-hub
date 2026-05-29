@@ -4,12 +4,12 @@ import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
 // ── FIREBASE ──
 const firebaseConfig = {
-  apiKey: "AIzaSyAajM81Hcj205a7PYF6WsTYO5w9hATUTPs",
-  authDomain: "nextlevel-training-hub.firebaseapp.com",
-  projectId: "nextlevel-training-hub",
-  storageBucket: "nextlevel-training-hub.firebasestorage.app",
-  messagingSenderId: "756930331780",
-  appId: "1:756930331780:web:f14de153b0a430ec7caed1"
+  apiKey: import.meta.env.VITE_FB_API_KEY,
+  authDomain: `${import.meta.env.VITE_FB_PROJECT_ID}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FB_PROJECT_ID,
+  storageBucket: `${import.meta.env.VITE_FB_PROJECT_ID}.firebasestorage.app`,
+  messagingSenderId: import.meta.env.VITE_FB_SENDER_ID,
+  appId: import.meta.env.VITE_FB_APP_ID,
 };
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
