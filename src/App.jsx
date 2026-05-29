@@ -364,6 +364,13 @@ function RepExtras({rep,onUpdate,readOnly}) {
       {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.gold}}>{rep.examDate||"Not set"}</div>}
     </Card>
+    {/* My Why */}
+    <Card style={{marginBottom:12,border:`1px solid ${C.purple}33`}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Write your personal reason for joining — your family, goals, and what drives you</div>
+      {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:80,boxSizing:"border-box",lineHeight:1.6,fontFamily:"inherit"}}/>:
+      <div style={{fontSize:13,color:C.text,lineHeight:1.6,background:C.surface,borderRadius:8,padding:"9px 11px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
+    </Card>
   </div>;
 }
 
@@ -382,6 +389,7 @@ function RepCounters({rep,onUpdate,readOnly}) {
 // ── REP VIEW ──
 function RepView({rep,data,onUpdate,readOnly}) {
   const [tab,setTab]=useState("checklist");
+  const [showCelebration,setShowCelebration]=useState(false);
   const track=TRACK_INFO[rep.track];
   const cl=track?.checklist||[];
   const checked=rep.checked||{};
@@ -391,7 +399,19 @@ function RepView({rep,data,onUpdate,readOnly}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
-  const tog=(id)=>{if(!readOnly)onUpdate(rep.id,{...rep,checked:{...checked,[id]:!checked[id]}});};
+  const tog=(id)=>{
+    if(!readOnly){
+      const newChecked={...checked,[id]:!checked[id]};
+      const newDone=cl.filter(i=>newChecked[i.id]).length;
+      const justCompleted=newDone===cl.length&&cl.length>0&&done<cl.length;
+      if(justCompleted&&!rep.celebrationShown){
+        setShowCelebration(true);
+        onUpdate(rep.id,{...rep,checked:newChecked,celebrationShown:true});
+      } else {
+        onUpdate(rep.id,{...rep,checked:newChecked});
+      }
+    }
+  };
   return <div>
     <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`,borderRadius:12,padding:"14px 18px",marginBottom:14,color:"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -404,12 +424,14 @@ function RepView({rep,data,onUpdate,readOnly}) {
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
+    {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
     {tab==="checklist"&&<div><RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
+    {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
   </div>;
@@ -451,6 +473,7 @@ function RepProfile({rep,data,onUpdate,onBack}) {
       <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Rep-Entered Data</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
         {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
+      {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:11,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
@@ -725,6 +748,215 @@ function LoginScreen({data,onLogin}) {
 }
 
 
+
+// ── CONFETTI CELEBRATION ──
+function Confetti({name,onClose}) {
+  const colors=[C.teal,C.gold,C.purple,C.success,"#f43f5e","#3b82f6"];
+  const pieces=Array.from({length:60},(_,i)=>({
+    id:i, color:colors[i%colors.length],
+    left:Math.random()*100, delay:Math.random()*1.2,
+    size:6+Math.random()*8, duration:2+Math.random()*2,
+    rotate:Math.random()*360
+  }));
+  return <div style={{position:"fixed",inset:0,zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)"}}>
+    <style>{`
+      @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+      @keyframes popIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+    `}</style>
+    {pieces.map(p=><div key={p.id} style={{position:"fixed",left:`${p.left}%`,top:"-10px",width:p.size,height:p.size,background:p.color,borderRadius:Math.random()>0.5?"50%":"2px",animation:`confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotate}deg)`}}/>)}
+    <div style={{background:"white",borderRadius:20,padding:"32px 28px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"popIn 0.5s ease-out",position:"relative",zIndex:1}}>
+      <div style={{fontSize:52,marginBottom:8}}>🏆</div>
+      <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:6}}>Congratulations!</div>
+      <div style={{fontSize:15,color:C.textMid,marginBottom:4}}>{name}</div>
+      <div style={{fontSize:13,color:C.success,fontWeight:600,marginBottom:16}}>100% Complete — You did it!</div>
+      <div style={{fontSize:12,color:C.textLight,marginBottom:20,lineHeight:1.5}}>You have completed every task in your training checklist. Your trainer has been notified. Keep pushing forward!</div>
+      <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},${C.tealFade.replace("rgba(14,165,160,0.12)","#0891b2")})`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Let's Keep Going!</button>
+    </div>
+  </div>;
+}
+
+
+// ── ANNOUNCEMENTS BANNER ──
+function AnnouncementsBanner({data,onUpdate,userRole}) {
+  const announcements=(data.announcements||[]).filter(a=>{
+    if(!a.active) return false;
+    if(a.expiresAt&&new Date(a.expiresAt)<new Date()) return false;
+    return true;
+  });
+  if(announcements.length===0) return null;
+  const colors={info:C.teal,warning:C.gold,success:C.success,urgent:C.danger};
+  return <div style={{marginBottom:14}}>
+    {announcements.map((ann,i)=><div key={i} style={{background:colors[ann.type||"info"]+"18",border:`1px solid ${colors[ann.type||"info"]}44`,borderRadius:10,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"flex-start"}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:13,fontWeight:700,color:colors[ann.type||"info"],marginBottom:2}}>{ann.title}</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.5}}>{ann.message}</div>
+        {ann.expiresAt&&<div style={{fontSize:10,color:C.textLight,marginTop:3}}>Expires: {new Date(ann.expiresAt).toLocaleDateString()}</div>}
+      </div>
+    </div>)}
+  </div>;
+}
+
+// ── ANNOUNCEMENTS MANAGER (admin only) ──
+function AnnouncementsManager({data,onUpdate}) {
+  const announcements=data.announcements||[];
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({title:"",message:"",type:"info",expiresAt:"",active:true});
+  const [editing,setEditing]=useState(null);
+
+  const save=()=>{
+    if(!form.title||!form.message) return;
+    if(editing!==null){
+      onUpdate({...data,announcements:announcements.map((a,i)=>i===editing?{...form}:a)});
+      setEditing(null);
+    } else {
+      onUpdate({...data,announcements:[...announcements,{...form,id:Date.now()}]});
+    }
+    setForm({title:"",message:"",type:"info",expiresAt:"",active:true});
+    setShowForm(false);
+  };
+
+  const toggle=(i)=>{
+    onUpdate({...data,announcements:announcements.map((a,idx)=>idx===i?{...a,active:!a.active}:a)});
+  };
+
+  const del=(i)=>{
+    onUpdate({...data,announcements:announcements.filter((_,idx)=>idx!==i)});
+  };
+
+  const typeColors={info:C.teal,warning:C.gold,success:C.success,urgent:C.danger};
+
+  return <Card style={{marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Announcements</div>
+      <button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",message:"",type:"info",expiresAt:"",active:true});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Announcement</button>
+    </div>
+    {showForm&&<div style={{background:C.surface,borderRadius:10,padding:12,marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:8}}>{editing!==null?"Edit":"New"} Announcement</div>
+      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <textarea placeholder="Message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",marginBottom:7,lineHeight:1.5}}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Type</div>
+          <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}>
+            <option value="info">Info (Teal)</option>
+            <option value="warning">Warning (Gold)</option>
+            <option value="success">Success (Green)</option>
+            <option value="urgent">Urgent (Red)</option>
+          </select>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Expires (optional)</div>
+          <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Announcement</button>
+      </div>
+    </div>}
+    {announcements.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"12px 0"}}>No announcements yet</div>}
+    {announcements.map((ann,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${typeColors[ann.type||"info"]}33`,padding:"10px 12px",marginBottom:7,background:ann.active?"white":C.surface,opacity:ann.active?1:0.6}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+            <span style={{fontSize:12,fontWeight:700,color:typeColors[ann.type||"info"]}}>{ann.title}</span>
+            <Badge color={ann.active?C.success:C.textLight} small>{ann.active?"Live":"Off"}</Badge>
+          </div>
+          <div style={{fontSize:11,color:C.textMid,lineHeight:1.4}}>{ann.message}</div>
+          {ann.expiresAt&&<div style={{fontSize:10,color:C.textLight,marginTop:2}}>Expires: {new Date(ann.expiresAt).toLocaleDateString()}</div>}
+        </div>
+        <div style={{display:"flex",gap:5,marginLeft:8,flexShrink:0}}>
+          <button onClick={()=>toggle(i)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{ann.active?"Pause":"Activate"}</button>
+          <button onClick={()=>{setEditing(i);setForm({...ann});setShowForm(true);}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+          <button onClick={()=>del(i)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+        </div>
+      </div>
+    </div>)}
+  </Card>;
+}
+
+
+// ── RESOURCE LIBRARY ──
+const RESOURCE_CATEGORIES=["Training","Licensing","Tools","Company","Other"];
+
+function ResourceLibrary({data,onUpdate,userRole}) {
+  const resources=data.resources||[];
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({title:"",url:"",description:"",category:"Training"});
+  const [editing,setEditing]=useState(null);
+  const [filter,setFilter]=useState("All");
+
+  const save=()=>{
+    if(!form.title||!form.url) return;
+    if(editing!==null){
+      onUpdate({...data,resources:resources.map((r,i)=>i===editing?{...form}:r)});
+      setEditing(null);
+    } else {
+      onUpdate({...data,resources:[...resources,{...form,id:Date.now()}]});
+    }
+    setForm({title:"",url:"",description:"",category:"Training"});
+    setShowForm(false);
+  };
+
+  const del=(i)=>onUpdate({...data,resources:resources.filter((_,idx)=>idx!==i)});
+
+  const cats=["All",...RESOURCE_CATEGORIES.filter(c=>resources.some(r=>r.category===c))];
+  const filtered=filter==="All"?resources:resources.filter(r=>r.category===filter);
+  const catColors={Training:C.teal,Licensing:C.gold,Tools:C.purple,Company:C.success,Other:C.textMid};
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.text}}>Resource Library</div>
+      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Resource</button>}
+    </div>
+    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>Add links to documents, training videos, and company materials for your team.</div>}
+    {showForm&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Resource</div>
+      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:10}}>
+        {RESOURCE_CATEGORIES.map(c=><option key={c}>{c}</option>)}
+      </select>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Resource</button>
+      </div>
+    </Card>}
+    {resources.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>{isAdmin?"No resources yet — add your first one above":"No resources added yet — ask your admin to add some"}</div>}
+    {resources.length>0&&<div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+    </div>}
+    {RESOURCE_CATEGORIES.filter(cat=>filtered.some(r=>r.category===cat)).map(cat=><div key={cat}>
+      <SecHead title={cat} color={catColors[cat]||C.teal}/>
+      {filtered.filter(r=>r.category===cat).map((r,i)=>{
+        const realIdx=resources.indexOf(r);
+        return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:6,background:"white",display:"flex",gap:10,alignItems:"flex-start"}}>
+          <div style={{width:32,height:32,borderRadius:8,background:catColors[r.category]+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={catColors[r.category]||C.teal} strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:13,fontWeight:600,color:C.teal,textDecoration:"none",display:"block",marginBottom:2}}>{r.title} &rarr;</a>
+            {r.description&&<div style={{fontSize:11,color:C.textMid}}>{r.description}</div>}
+          </div>
+          {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+            <button onClick={()=>{setEditing(realIdx);setForm({...r});setShowForm(true);}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+            <button onClick={()=>del(realIdx)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+          </div>}
+        </div>;
+      })}
+    </div>)}
+    {filtered.length>0&&filtered.every(r=>!RESOURCE_CATEGORIES.includes(r.category))&&filtered.map((r,i)=>{
+      const realIdx=resources.indexOf(r);
+      return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:6}}>
+        <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:13,fontWeight:600,color:C.teal,textDecoration:"none"}}>{r.title} &rarr;</a>
+        {r.description&&<div style={{fontSize:11,color:C.textMid,marginTop:2}}>{r.description}</div>}
+      </div>;
+    })}
+  </div>;
+}
+
 // ── SCRIPTS PAGE (editable by admins) ──
 function ScriptsPage({data,onUpdate,userRole}) {
   const scripts = data.scripts || SCRIPTS;
@@ -806,6 +1038,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
     {k:"schedule",l:"Schedule",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
+    {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
   ];
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
@@ -896,6 +1129,7 @@ export default function App() {
         </div>
       </div>
       <div style={{maxWidth:580,margin:"0 auto",padding:14}}>
+        <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
         <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
         <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} readOnly={false}/>
       </div>
@@ -911,7 +1145,8 @@ export default function App() {
     if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>upd({...data,myProduction:{...(data.myProduction||{}),[session.id]:p}})}/></div>;
     if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
-    if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
+    if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
 
@@ -935,6 +1170,7 @@ export default function App() {
       </div>
       <div style={{flex:1,overflowY:"auto",padding:14}}>
         <div style={{maxWidth:820,margin:"0 auto"}}>
+          <AnnouncementsBanner data={data} onUpdate={upd} userRole={session.role}/>
           <DailyEventsBanner data={data} onUpdateData={upd} userRole={session.role}/>
           {renderContent()}
         </div>
