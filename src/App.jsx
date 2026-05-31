@@ -477,7 +477,7 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
         {!readOnly&&<div>
           <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-            {rep.dgoPhoto?"Replace Photo":"Upload Photo"}
+            {rep.dgoPhoto?"Change Photo":"Upload Profile Photo"}
             <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
               const file=e.target.files[0];
               if(!file) return;
@@ -1443,6 +1443,66 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
 
 
 
+
+// ── PROFILE PHOTO UPLOAD ──
+function ProfilePhotoUpload({userId,data,onUpdate,compact=false}) {
+  const [showLightbox,setShowLightbox] = useState(false);
+  // For sidebar compact mode, use localStorage to store photo
+  const storageKey = "profilePhoto_"+userId;
+  const [photo,setPhoto] = useState(()=>{
+    try{return localStorage.getItem(storageKey)||null;}catch(e){return null;}
+  });
+
+  const handleUpload = (e) => {
+    const file=e.target.files[0];
+    if(!file) return;
+    if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const result=ev.target.result;
+      setPhoto(result);
+      try{localStorage.setItem(storageKey,result);}catch(e){}
+      if(onUpdate) onUpdate(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  if(compact) return <div style={{position:"relative",flexShrink:0}}>
+    {photo?<img src={photo} alt="Profile" style={{width:32,height:32,borderRadius:9,objectFit:"cover",border:"2px solid "+C.teal+"66",cursor:"pointer"}} onClick={()=>setShowLightbox(true)}/>:
+    <label style={{width:32,height:32,borderRadius:9,background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"1px dashed "+C.teal+"44"}}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
+    </label>}
+    {showLightbox&&photo&&<div onClick={()=>setShowLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{maxWidth:300,width:"100%",textAlign:"center"}}>
+        <img src={photo} alt="Profile" style={{width:"100%",borderRadius:12,marginBottom:12}}/>
+        <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600,marginRight:8}}>
+          Change Photo<input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
+        </label>
+        <button onClick={()=>setShowLightbox(false)} style={{padding:"8px 16px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"1px solid rgba(255,255,255,0.2)",cursor:"pointer",fontSize:12}}>Close</button>
+      </div>
+    </div>}
+  </div>;
+
+  return <div>
+    {photo?<div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10}}>
+      <img src={photo} alt="Profile" onClick={()=>setShowLightbox(true)} style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:"2px solid "+C.teal,cursor:"pointer"}}/>
+      <div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:6,lineHeight:1.4}}>Click photo to view full size. Used for DGO and Wall of Fame recognition.</div>
+        <label style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:"1px solid "+C.teal+"33",cursor:"pointer",fontSize:11,color:C.teal,fontWeight:600}}>
+          Change Photo<input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
+        </label>
+      </div>
+    </div>:
+    <label style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:9,background:C.teal+"11",border:"1px dashed "+C.teal+"44",cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600,marginBottom:10}}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      Upload Profile Photo
+      <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
+    </label>}
+    {showLightbox&&photo&&<PhotoLightbox src={photo} name="Profile Photo" onClose={()=>setShowLightbox(false)}/>}
+  </div>;
+}
+
 // ── DGO PHOTO PANEL ──
 function DgoPhotoPanel({photo,name}) {
   const [showLightbox,setShowLightbox] = useState(false);
@@ -1454,7 +1514,7 @@ function DgoPhotoPanel({photo,name}) {
   };
   return <div style={{marginTop:10,background:C.surface,borderRadius:10,padding:"10px 12px",border:`1px solid ${C.border}`}}>
     {showLightbox&&<PhotoLightbox src={photo} name={name||"Rep"} onClose={()=>setShowLightbox(false)}/>}
-    <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>DGO Professional Photo</div>
+    <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Profile Photo</div>
     <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
       <img src={photo} alt="DGO" onClick={()=>setShowLightbox(true)} style={{width:100,height:100,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`,cursor:"pointer",flexShrink:0,transition:"transform 0.15s"}} onMouseEnter={e=>e.target.style.transform="scale(1.03)"} onMouseLeave={e=>e.target.style.transform="scale(1)"}/>
       <div style={{flex:1}}>
@@ -1853,7 +1913,10 @@ function WallOfFame({data,onUpdate,userRole}) {
 
   const getPhoto = (personId) => {
     const rep = (data.reps||[]).find(r=>r.id===personId);
-    return rep?.dgoPhoto||null;
+    if(rep?.dgoPhoto) return rep.dgoPhoto;
+    // Check localStorage for trainer/admin photos
+    try{const stored=localStorage.getItem("profilePhoto_"+personId);if(stored) return stored;}catch(e){}
+    return null;
   };
 
   const save = () => {
