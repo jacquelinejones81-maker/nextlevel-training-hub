@@ -534,6 +534,77 @@ function RepCounters({rep,onUpdate,readOnly}) {
   </div>;
 }
 
+// ── CAREER JOURNEY BANNER (sticky, collapsible) ──
+function CareerJourneyBanner({rep,onUpdate}) {
+  const [expanded,setExpanded] = useState(false);
+  const stages = [
+    {key:"new",label:"New Rep",color:C.teal},
+    {key:"licensed",label:"Licensed",color:C.gold},
+    {key:"trainer",label:"Trainer",color:C.purple},
+    {key:"rvp",label:"RVP",color:C.success},
+  ];
+  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const stageIndex = stages.findIndex(s=>s.key===currentStage);
+  const currentColor = stages[stageIndex]?.color||C.teal;
+  const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
+  const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
+
+  const nextGoal = currentStage==="new"?"Get Life Licensed":currentStage==="licensed"?"Become a Field Trainer":currentStage==="trainer"?"Become an RVP":"Regional Vice President";
+
+  return <div style={{marginBottom:12,borderRadius:10,border:"1px solid "+currentColor+"33",overflow:"hidden"}}>
+    {/* Collapsed header - always visible */}
+    <button onClick={()=>setExpanded(!expanded)} style={{width:"100%",background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",border:"none",cursor:"pointer",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+      {/* Mini roadmap */}
+      <div style={{display:"flex",alignItems:"center",gap:0,flex:1}}>
+        {stages.map((s,i)=>{
+          const active=s.key===currentStage;
+          const done=i<stageIndex;
+          return <div key={s.key} style={{display:"flex",alignItems:"center",flex:i<stages.length-1?1:"none"}}>
+            <div style={{width:18,height:18,borderRadius:9,background:active?s.color:done?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.08)",border:"2px solid "+(active?s.color:done?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.15)"),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {done&&<svg width="8" height="7" viewBox="0 0 8 7" fill="none"><path d="M1 3.5L3 5.5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+              {active&&<div style={{width:6,height:6,borderRadius:3,background:"white"}}/>}
+            </div>
+            {i<stages.length-1&&<div style={{flex:1,height:2,background:done?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.08)",margin:"0 2px"}}/>}
+          </div>;
+        })}
+      </div>
+      <div style={{textAlign:"right",flexShrink:0}}>
+        <div style={{fontSize:9,color:"rgba(255,255,255,0.45)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Next Goal</div>
+        <div style={{fontSize:11,fontWeight:700,color:currentColor}}>{nextGoal}</div>
+      </div>
+      <div style={{color:"rgba(255,255,255,0.4)",fontSize:12,transform:expanded?"rotate(180deg)":"none",transition:"transform 0.2s",flexShrink:0}}>v</div>
+    </button>
+
+    {/* Expanded detail */}
+    {expanded&&<div style={{background:"white",padding:"12px 14px"}}>
+      {currentStage==="new"&&<div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>Getting your life insurance license is your first major milestone. Complete your checklist, finish your pre-licensing class, and pass your exam. Once licensed a whole new path opens up!</div>
+        <div style={{fontSize:11,color:C.textLight,textAlign:"center"}}>Field Trainer and RVP paths unlock after you get licensed.</div>
+      </div>}
+      {currentStage==="licensed"&&<div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>You are licensed! Now build your skills, production, and team. When you meet the Field Trainer requirements, request your review below.</div>
+        {!ftRequested?<button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
+          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+          Request Field Trainer Review
+        </button>:
+        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified.</div>}
+      </div>}
+      {currentStage==="trainer"&&<div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>You are a Field Trainer! Now focus on consistently producing and building your team. When you are ready, request access to the RVP Path.</div>
+        {!rvpRequested?<button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
+          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+          Request RVP Path Access
+        </button>:
+        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review soon.</div>}
+      </div>}
+      {currentStage==="rvp"&&<div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:8}}>You have unlocked the RVP Path! Check the Career Path tab for your full RVP checklist.</div>
+        <div style={{fontSize:11,color:C.success,fontWeight:600,textAlign:"center"}}>You are on your way to Regional Vice President!</div>
+      </div>}
+    </div>}
+  </div>;
+}
+
 // ── REP VIEW ──
 function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const [tab,setTab]=useState("checklist");
@@ -586,6 +657,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
         </div>
       )}
     </div>
+    {/* ── CAREER JOURNEY STICKY BANNER ── */}
+    {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
