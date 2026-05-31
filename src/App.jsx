@@ -1505,7 +1505,11 @@ function PhotoLightbox({src,name,onClose}) {
 // ── RVP PATH REQUESTS ──
 function RvpPathRequests({data,onUpdate,userRole}) {
   if(userRole!=="admin"&&userRole!=="superadmin") return null;
-  const pending=(data.reps||[]).filter(r=>r.rvpPathRequested&&!r.rvpPathGranted);
+  const repPending=(data.reps||[]).filter(r=>r.rvpPathRequested&&!r.rvpPathGranted);
+  const trainerCareer=data.trainerCareer||{};
+  const allTrainers=[...(data.trainers||[]),...(data.admins||[])];
+  const trainerPending=allTrainers.filter(t=>{const td=trainerCareer[t.id]||{};return td.rvpPathRequested&&!td.rvpPathGranted;}).map(t=>({...t,...(trainerCareer[t.id]||{}),isTrainer:true}));
+  const pending=[...repPending,...trainerPending];
   if(pending.length===0) return null;
   return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.success+"44",padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -1567,6 +1571,194 @@ function PendingRecruits({data,onUpdate,userRole}) {
         onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===p.recruitedById?{...r,pendingRecruits:updatedPending}:r)});
       }} style={{padding:"5px 8px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:10}}>Dismiss</button>
     </div>)}
+  </div>;
+}
+
+
+// ── TRAINER CAREER PATH ──
+function TrainerCareerPath({data,onUpdate,session}) {
+  const trainer = [...(data.trainers||[]),(data.admins||[])].flat().find(t=>t.id===session.id)||{};
+  const trainerData = data.trainerCareer||{};
+  const myData = trainerData[session.id]||{};
+  const [showCelebration,setShowCelebration] = useState(false);
+  const [showRequest,setShowRequest] = useState(false);
+  const [targetDate,setTargetDate] = useState(myData.rvpTargetDate||"");
+  const [goals,setGoals] = useState(myData.rvpGoals||{premium:10000,agents:20,teamSize:30});
+  const [editGoals,setEditGoals] = useState(false);
+  const [weeklyCommit,setWeeklyCommit] = useState("");
+
+  const rvpRequested = myData.rvpPathRequested&&!myData.rvpPathGranted;
+  const rvpDenied = myData.rvpPathDenied&&!myData.rvpPathRequested;
+  const rvpGranted = myData.rvpPathGranted;
+
+  const save = (updates) => {
+    onUpdate({...data,trainerCareer:{...trainerData,[session.id]:{...myData,...updates}}});
+  };
+
+  // Countdown
+  const daysLeft = myData.rvpTargetDate ? Math.ceil((new Date(myData.rvpTargetDate+"T12:00:00")-new Date())/(86400000)) : null;
+  const countdownMsg = daysLeft===null?"Set your target promotion date":daysLeft<=0?"Your target date has passed — keep pushing!":daysLeft<=30?"You are almost there! Final push!":daysLeft<=90?"You are in the home stretch!":daysLeft<=180?"Great progress — stay consistent!":"Keep building every day!";
+  const countdownColor = daysLeft===null?C.textMid:daysLeft<=0?C.danger:daysLeft<=30?C.gold:C.success;
+
+  // My team stats
+  const myReps = (data.reps||[]).filter(r=>r.trainerId===session.id);
+  const licensed = myReps.filter(r=>r.isLicensed).length;
+  const totalPrem = myReps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0);
+
+  // RVP checklist progress
+  const rvpDone = Object.values(myData.rvpChecked||{}).filter(Boolean).length;
+  const rvpTotal = RVP_CHECKLIST.length;
+  const rvpPct = rvpTotal>0?Math.round((rvpDone/rvpTotal)*100):0;
+
+  // Stages roadmap
+  const stages=[{key:"trainer",label:"Field Trainer",color:C.purple},{key:"rvp",label:"RVP",color:C.success}];
+  const currentStage = rvpGranted?"rvp":"trainer";
+
+  return <div>
+    {showCelebration&&<Confetti name={session.name} onClose={()=>setShowCelebration(false)}/>}
+
+    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>My Career Path</div>
+
+    {/* Roadmap */}
+    <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
+      <div style={{display:"flex",alignItems:"center",gap:0}}>
+        {[{key:"new",label:"New Rep",color:C.teal},{key:"licensed",label:"Licensed",color:C.gold},{key:"trainer",label:"Field Trainer",color:C.purple},{key:"rvp",label:"RVP",color:C.success}].map((s,i)=>{
+          const active=s.key===currentStage||(s.key==="trainer"&&!rvpGranted);
+          const done=i<(rvpGranted?3:2);
+          return <div key={s.key} style={{flex:1,textAlign:"center",position:"relative"}}>
+            {i>0&&<div style={{position:"absolute",top:14,left:0,right:"50%",height:2,background:done||active?s.color:"rgba(255,255,255,0.1)"}}/>}
+            {i<3&&<div style={{position:"absolute",top:14,left:"50%",right:0,height:2,background:done?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)"}}/>}
+            <div style={{width:28,height:28,borderRadius:14,background:active?s.color:done?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.05)",border:"2px solid "+(active?s.color:done?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)"),margin:"0 auto 6px",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1}}>
+              {done&&<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}
+              {active&&<div style={{width:10,height:10,borderRadius:5,background:"white"}}/>}
+            </div>
+            <div style={{fontSize:9,fontWeight:active?700:400,color:active?"white":"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
+          </div>;
+        })}
+      </div>
+    </div>
+
+    {/* Recognition banner */}
+    {!rvpGranted&&<div style={{background:"linear-gradient(135deg,"+C.purple+"22,"+C.gold+"11)",border:"1px solid "+C.purple+"33",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.purple,marginBottom:6}}>You Are a Field Trainer!</div>
+      <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>You have earned one of the most important roles in this organization. You are not just building a business — you are changing lives and creating leaders. Your next milestone is becoming a <strong>Regional Vice President</strong>. You have what it takes!</div>
+    </div>}
+
+    {/* RVP Countdown */}
+    {rvpGranted&&<div style={{background:"linear-gradient(135deg,"+C.success+"22,"+C.teal+"11)",border:"1px solid "+C.success+"33",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.success}}>RVP Path Unlocked!</div>
+        <div style={{fontSize:11,color:C.textMid}}>Checklist {rvpPct}% complete</div>
+      </div>
+      <Bar pct={rvpPct} color={C.success} h={6}/>
+      {myData.rvpTargetDate&&<div style={{marginTop:10,textAlign:"center"}}>
+        <div style={{fontSize:28,fontWeight:800,color:countdownColor}}>{daysLeft<=0?"Time to push harder!":daysLeft+" days"}</div>
+        <div style={{fontSize:11,color:C.textMid}}>until your target promotion date — {new Date(myData.rvpTargetDate+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+        <div style={{fontSize:12,color:countdownColor,fontWeight:600,marginTop:4}}>{countdownMsg}</div>
+      </div>}
+    </div>}
+
+    {/* RVP Request / Target Date */}
+    {!rvpGranted&&<Card style={{marginBottom:14,border:"1px solid "+(rvpRequested?C.gold+"44":rvpDenied?C.danger+"44":C.purple+"33")}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Request RVP Path Access</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you are consistently producing and ready to build a region, request access to the full RVP checklist. Enter your target promotion date so your team knows your commitment.</div>
+      {rvpDenied&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:10,textAlign:"center"}}>Request was not approved — speak with your RVP for next steps</div>}
+      {!rvpRequested&&<div>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Target RVP Promotion Date</div>
+          <input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+        </div>
+        <button onClick={()=>{
+          if(!targetDate){alert("Please enter your target promotion date first");return;}
+          save({rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString(),rvpTargetDate:targetDate});
+          setShowCelebration(true);
+        }} style={{width:"100%",padding:"11px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+","+C.success+")",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          Request RVP Path Access
+        </button>
+      </div>}
+      {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
+        RVP Path request sent! Your target date: {myData.rvpTargetDate?new Date(myData.rvpTargetDate+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}. Your RVP has been notified!
+      </div>}
+    </Card>}
+
+    {/* Target date for granted */}
+    {rvpGranted&&!myData.rvpTargetDate&&<Card style={{marginBottom:14,border:"1px solid "+C.gold+"33"}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:6}}>Set Your Target Promotion Date</div>
+      <input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:8}}/>
+      <button onClick={()=>save({rvpTargetDate:targetDate})} style={{width:"100%",padding:"8px",borderRadius:8,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Date</button>
+    </Card>}
+
+    {/* RVP Goal Tracker */}
+    {rvpGranted&&<Card style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>RVP Goals</div>
+        <button onClick={()=>setEditGoals(!editGoals)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editGoals?"Done":"Edit"}</button>
+      </div>
+      {editGoals&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
+        {[["premium","Monthly Premium Target $",goals.premium],["agents","Licensed Agents Goal",goals.agents],["teamSize","Team Size Goal",goals.teamSize]].map(([k,l,v])=><div key={k} style={{marginBottom:7}}>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>{l}</div>
+          <input type="number" value={v} onChange={e=>setGoals({...goals,[k]:Number(e.target.value)})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+        </div>)}
+        <button onClick={()=>{save({rvpGoals:goals});setEditGoals(false);}} style={{width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
+      </div>}
+      {[
+        {l:"Monthly Premium",val:"$"+totalPrem.toFixed(0),goal:"$"+(myData.rvpGoals?.premium||10000),pct:(totalPrem/(myData.rvpGoals?.premium||10000))*100,color:C.teal},
+        {l:"Licensed Agents",val:licensed,goal:myData.rvpGoals?.agents||20,pct:(licensed/(myData.rvpGoals?.agents||20))*100,color:C.gold},
+        {l:"Team Size",val:myReps.length,goal:myData.rvpGoals?.teamSize||30,pct:(myReps.length/(myData.rvpGoals?.teamSize||30))*100,color:C.purple},
+      ].map(g=><div key={g.l} style={{marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+          <span style={{fontSize:12,color:C.textMid}}>{g.l}</span>
+          <span style={{fontSize:12,fontWeight:600,color:g.pct>=100?C.success:C.text}}>{g.val} / {g.goal}</span>
+        </div>
+        <Bar pct={g.pct} color={g.pct>=100?C.success:g.color} h={5}/>
+      </div>)}
+    </Card>}
+
+    {/* Weekly Accountability */}
+    {rvpGranted&&<Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>Weekly Accountability</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>What do you commit to doing this week toward your RVP goal?</div>
+      <textarea placeholder="This week I will..." value={weeklyCommit} onChange={e=>setWeeklyCommit(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.6,fontFamily:"inherit",marginBottom:8}}/>
+      <button onClick={()=>{
+        const commits=[...(myData.weeklyCommits||[]),{text:weeklyCommit,date:new Date().toISOString()}];
+        save({weeklyCommits:commits});
+        setWeeklyCommit("");
+      }} style={{width:"100%",padding:"8px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Commitment</button>
+      {(myData.weeklyCommits||[]).slice(-3).reverse().map((c,i)=><div key={i} style={{padding:"7px 0",borderTop:"1px solid "+C.border,marginTop:6}}>
+        <div style={{fontSize:11,color:C.text}}>{c.text}</div>
+        <div style={{fontSize:10,color:C.textLight,marginTop:2}}>{new Date(c.date).toLocaleDateString()}</div>
+      </div>)}
+    </Card>}
+
+    {/* RVP Checklist */}
+    {rvpGranted&&<div>
+      <SecHead title={"RVP Checklist ("+rvpDone+"/"+rvpTotal+")"} color={C.gold}/>
+      {Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}>
+        <SecHead title={cat} color={C.gold}/>
+        {items.map(item=><CheckItem key={item.id} item={item}
+          checked={!!(myData.rvpChecked||{})[item.id]}
+          onToggle={()=>save({rvpChecked:{...(myData.rvpChecked||{}),[item.id]:!(myData.rvpChecked||{})[item.id]}})}/>)}
+      </div>)}
+    </div>}
+
+    {/* Team overview */}
+    {rvpGranted&&myReps.length>0&&<Card style={{marginTop:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>My Team</div>
+      {myReps.map((r,i)=>{
+        const cl=TRACK_INFO[r.track]?.checklist||[];
+        const done=cl.filter(item=>(r.checked||{})[item.id]).length;
+        const pct=cl.length>0?Math.round((done/cl.length)*100):0;
+        return <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,padding:"7px 0",borderBottom:i<myReps.length-1?"1px solid "+C.border:"none"}}>
+          <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+            <Bar pct={pct} color={TRACK_INFO[r.track]?.color||C.teal} h={3}/>
+          </div>
+          <div style={{fontSize:11,fontWeight:600,color:pct===100?C.success:C.textMid}}>{pct}%</div>
+        </div>;
+      })}
+    </Card>}
   </div>;
 }
 
@@ -2073,6 +2265,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
+    {k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
   ];
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
@@ -2181,6 +2374,7 @@ export default function App() {
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
+    if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
