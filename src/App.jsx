@@ -600,22 +600,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
-    {tab==="recruits"&&<div>
-      {myRecruits.length===0?<div style={{textAlign:"center",padding:"24px 0",color:C.textLight}}>No recruits yet — keep sharing the opportunity!</div>:myRecruits.map((r,i)=>{
-        const track=TRACK_INFO[r.track];
-        const cl=track?.checklist||[];
-        const done=cl.filter(i=>(r.checked||{})[i.id]).length;
-        const pct=cl.length>0?Math.round((done/cl.length)*100):0;
-        return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:7,background:"white"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}</div></div>
-            <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
-          </div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Progress {pct}%</div>
-          <Bar pct={pct} color={track?.color||C.teal} h={4}/>
-        </div>;
-      })}
-    </div>}
+    {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
+    {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
