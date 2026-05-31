@@ -2653,6 +2653,7 @@ export default function App() {
   const [mobileOpen,setMobileOpen]=useState(false);
   const [showTour,setShowTour]=useState(false);
   const [showPhone,setShowPhone]=useState(false);
+  const [showNeedHelp,setShowNeedHelp]=useState(false);
 
   // Subscribe to Firebase
   useEffect(()=>{
@@ -2688,7 +2689,6 @@ export default function App() {
 
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
 
-  const [showNeedHelp,setShowNeedHelp]=useState(false);
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
