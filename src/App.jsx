@@ -1803,10 +1803,12 @@ function CareerPath({rep,data,onUpdate}) {
     {key:"rvp",label:"RVP",color:C.success},
   ];
   const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
-  const requested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
+  const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
+  const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
 
   return <div>
-    <div style={{background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,borderRadius:12,padding:"16px",marginBottom:14}}>
+    {/* Roadmap */}
+    <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14}}>
       <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
       <div style={{display:"flex",gap:0}}>
         {stages.map((s,i)=>{
@@ -1825,59 +1827,63 @@ function CareerPath({rep,data,onUpdate}) {
         })}
       </div>
     </div>
-    {currentStage==="licensed"&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:4}}>Your Next Goal: Field Trainer</div>
-      <div style={{fontSize:12,color:C.text,lineHeight:1.6}}>You are licensed! Now focus on becoming a Field Trainer. Review the requirements below, work toward each one, and request your review when ready.</div>
-    </div>}
-    <Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>How to Become a Field Trainer</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:12}}>Work toward each requirement. Items marked RVP Approval Required need sign-off from your RVP.</div>
-      {FIELD_TRAINER_REQS.map((r,i)=><div key={r.id} style={{display:"flex",gap:10,padding:"9px 0",borderBottom:i<FIELD_TRAINER_REQS.length-1?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
-        <div style={{width:22,height:22,borderRadius:6,background:r.rvpApproval?C.danger+"11":C.success+"11",border:"1px solid "+(r.rvpApproval?C.danger+"33":C.success+"33"),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-          <span style={{fontSize:9,fontWeight:700,color:r.rvpApproval?C.danger:C.success}}>{i+1}</span>
-        </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:12,color:C.text,lineHeight:1.4}}>{r.req}</div>
-          {r.rvpApproval&&<div style={{fontSize:10,color:C.danger,fontWeight:600,marginTop:2}}>RVP Approval Required</div>}
-        </div>
-      </div>)}
-    </Card>
-    {!rep.fieldTrainerGranted&&<Card style={{border:"1px solid "+(requested?C.gold+"44":C.purple+"33")}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>{rep.track==="licensed"?"Ready for Field Trainer Review?":"Work Toward Field Trainer"}</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>{rep.track==="licensed"?"When you feel confident you meet all the requirements, request a review. Your RVP will be notified and schedule time with you.":"Get licensed first, then work toward each of these requirements. You will be able to request your Field Trainer review once you are on the Licensed Now What track."}</div>
-      {rep.track==="licensed"&&(!requested?<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerRequestedAt:new Date().toISOString()})}
-        style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-        Request Field Trainer Review
-      </button>:
-      <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
-        Review requested! Your RVP has been notified. Keep pushing forward!
-      </div>)}
-      {rep.track!=="licensed"&&<div style={{background:C.teal+"11",borderRadius:8,padding:"8px 12px",fontSize:11,color:C.teal,fontWeight:600,textAlign:"center"}}>Get licensed to unlock Field Trainer review</div>}
-    </Card>}
-    {rep.fieldTrainerGranted&&<div>
-      <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>Field Trainer Approved!</div>
-        <div style={{fontSize:12,color:C.textMid}}>Congratulations! You are now a Field Trainer. Your next and final goal is RVP.</div>
+
+    {/* ── NEW REP: Goal is to get Life Licensed ── */}
+    {currentStage==="new"&&<div>
+      <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:10,padding:"14px 16px",marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6}}>Your Next Goal: Become Life Licensed</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>Getting your life insurance license is your first major milestone. Focus on completing your checklist, finishing your pre-licensing class, and passing your exam. Once you are licensed a whole new path opens up!</div>
       </div>
-      {/* RVP Path Request */}
-      {!rep.rvpPathGranted&&<Card style={{border:"1px solid "+(rep.rvpPathRequested?C.gold+"44":C.success+"33")}}>
+      <div style={{background:C.navy+"11",border:"1px solid "+C.border,borderRadius:8,padding:"10px 12px",fontSize:11,color:C.textMid,textAlign:"center",lineHeight:1.5}}>
+        Field Trainer and RVP paths unlock after you get licensed. Stay focused — every step brings you closer!
+      </div>
+    </div>}
+
+    {/* ── LICENSED AGENT: Goal is Field Trainer ── */}
+    {currentStage==="licensed"&&<div>
+      <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:10,padding:"14px 16px",marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:6}}>Your Next Goal: Become a Field Trainer</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>You are licensed — that is a huge achievement! Now the focus shifts to building your skills, your production, and your team. When you feel ready and meet all the Field Trainer requirements, request your review below.</div>
+      </div>
+      <Card style={{border:"1px solid "+(ftRequested?C.gold+"44":C.purple+"33")}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for Field Trainer Review?</div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you feel confident you meet all the requirements, request a review. Your RVP will be notified and will schedule time to go through everything with you.</div>
+        {!ftRequested?<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerRequestedAt:new Date().toISOString()})}
+          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          Request Field Trainer Review
+        </button>:
+        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
+          Review requested! Your RVP has been notified. Keep pushing forward!
+        </div>}
+      </Card>
+    </div>}
+
+    {/* ── FIELD TRAINER: Goal is RVP ── */}
+    {currentStage==="trainer"&&<div>
+      <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>Field Trainer Approved!</div>
+        <div style={{fontSize:12,color:C.textMid}}>Congratulations! You are now a Field Trainer. Your next and final goal is Regional Vice President.</div>
+      </div>
+      <Card style={{marginBottom:14,border:"1px solid "+(rvpRequested?C.gold+"44":C.success+"33")}}>
         <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for the RVP Path?</div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the RVP checklist.</div>
-        {!rep.rvpPathRequested?<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathRequestedAt:new Date().toISOString()})}
+        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the full RVP checklist.</div>
+        {!rvpRequested?<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathRequestedAt:new Date().toISOString()})}
           style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
           Request RVP Path Access
         </button>:
         <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
           RVP Path request sent! Your admin will review and grant access when ready.
         </div>}
-      </Card>}
-      {rep.rvpPathGranted&&<div>
-        <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
-          <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>RVP Path Unlocked!</div>
-          <div style={{fontSize:12,color:C.textMid}}>You are on your way to Regional Vice President! Complete every item below.</div>
-        </div>
-        {Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={false}/>)}</div>)}
-      </div>}
+      </Card>
+    </div>}
+
+    {/* ── RVP PATH GRANTED: Show full checklist ── */}
+    {currentStage==="rvp"&&<div>
+      <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>RVP Path Unlocked!</div>
+        <div style={{fontSize:12,color:C.textMid}}>You are on your way to Regional Vice President! Complete every item below.</div>
+      </div>
+      {Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={false}/>)}</div>)}
     </div>}
   </div>;
 }
