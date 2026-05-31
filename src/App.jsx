@@ -632,7 +632,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"career",l:"Career Path"},{k:"schedule",l:"Schedule"}];
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"fame",l:"Wall of Fame"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"}];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
