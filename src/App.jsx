@@ -123,10 +123,7 @@ const LICENSED_NOW_WHAT = [
   {id:"l13",cat:"Income Producing",task:"Set 15-30 qualified appointments weekly"},
   {id:"l14",cat:"Income Producing",task:"Complete 3 practice life apps in Primerica app"},
   {id:"l15",cat:"Income Producing",task:"Complete 3 practice IBAs in Primerica app"},
-  {id:"l16",cat:"Team Schedule",task:"Attend Monday Mindset Monday 7:30 PM CST"},
-  {id:"l17",cat:"Team Schedule",task:"Attend Thursday How Money Works Opportunity Night 7:30 PM CST"},
-  {id:"l18",cat:"Team Schedule",task:"Attend Saturday Team Training 10:10 AM CST"},
-  {id:"l19",cat:"RVP Path",task:"Request RVP checklist when ready"},
+
 ];
 
 const RVP_CHECKLIST = [
@@ -550,7 +547,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
+  const showRvp=rep.rvpPathGranted||readOnly===false&&false;
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),...(rep.rvpPathGranted?[{k:"rvp",l:"RVP Path"}]:[]),{k:"schedule",l:"Schedule"}];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -618,7 +616,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   const cl=track?.checklist||[];
   const repDone=cl.filter(i=>(rep.checked||{})[i.id]).length;
   const [ciNote,setCiNote]=useState("");
-  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"rvp",l:"RVP Path"}];
+  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"rvp",l:"RVP Path"}];
   const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
   const addCI=()=>{if(!ciNote.trim())return;onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]});setCiNote("");};
 
@@ -664,6 +662,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Log</button></div>
       {(rep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:C.text}}>{ci.note}</div><div style={{fontSize:10,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>)}
     </div>}
+    {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})}/>)}</div>)}</div>}
   </div>;
 }
@@ -861,6 +860,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
+    <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
     <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
     <BirthdayAnniversaryWidget data={data}/>
@@ -1404,6 +1404,30 @@ function PhotoLightbox({src,name,onClose}) {
 
 
 
+
+// ── RVP PATH REQUESTS ──
+function RvpPathRequests({data,onUpdate,userRole}) {
+  if(userRole!=="admin"&&userRole!=="superadmin") return null;
+  const pending=(data.reps||[]).filter(r=>r.rvpPathRequested&&!r.rvpPathGranted);
+  if(pending.length===0) return null;
+  return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.success+"44",padding:"12px 16px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.success}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>RVP Path Access Requests ({pending.length})</div>
+    </div>
+    {pending.map(rep=><div key={rep.id} style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div>
+        <div style={{fontSize:11,color:C.textMid}}>Requesting RVP Path access — {rep.rvpPathRequestedAt?new Date(rep.rvpPathRequestedAt).toLocaleDateString():""}</div>
+      </div>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,rvpPathGranted:true,rvpPathGrantedAt:new Date().toISOString()}:r)})}
+        style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>Grant Access</button>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,rvpPathRequested:false}:r)})}
+        style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Deny</button>
+    </div>)}
+  </div>;
+}
+
 // ── FIELD TRAINER REQUESTS ──
 function FieldTrainerRequests({data,onUpdate,userRole}) {
   if(userRole!=="admin"&&userRole!=="superadmin") return null;
@@ -1830,9 +1854,27 @@ function CareerPath({rep,data,onUpdate}) {
         Review requested! Your RVP has been notified. Keep pushing forward!
       </div>}
     </Card>}
-    {rep.fieldTrainerGranted&&<div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>Field Trainer Approved!</div>
-      <div style={{fontSize:12,color:C.textMid}}>Your next goal is RVP. Check the RVP Path tab for requirements.</div>
+    {rep.fieldTrainerGranted&&<div>
+      <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>Field Trainer Approved!</div>
+        <div style={{fontSize:12,color:C.textMid}}>Congratulations! You are now a Field Trainer. Your next and final goal is RVP.</div>
+      </div>
+      {/* RVP Path Request */}
+      {!rep.rvpPathGranted&&<Card style={{border:"1px solid "+(rep.rvpPathRequested?C.gold+"44":C.success+"33")}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for the RVP Path?</div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the RVP checklist.</div>
+        {!rep.rvpPathRequested?<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathRequestedAt:new Date().toISOString()})}
+          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          Request RVP Path Access
+        </button>:
+        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
+          RVP Path request sent! Your admin will review and grant access when ready.
+        </div>}
+      </Card>}
+      {rep.rvpPathGranted&&<div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>RVP Path Unlocked!</div>
+        <div style={{fontSize:12,color:C.textMid}}>Check the RVP Path tab to see your full checklist. You are on your way to Regional Vice President!</div>
+      </div>}
     </div>}
   </div>;
 }
