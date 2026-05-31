@@ -177,6 +177,18 @@ const BONUS_GOALS = [
   {id:"b3",label:"10 x $10,000",desc:"$2,050 Bonus + District Manager Promotion",target:10,premium:10000},
 ];
 
+
+const FIELD_TRAINER_REQS = [
+  {id:"ft1",req:"Must Be Life Licensed",rvpApproval:false},
+  {id:"ft2",req:"Must be a District Leader",rvpApproval:false},
+  {id:"ft3",req:"Must do 3 x $3,000 or 3 x 6 life apps (2 months in a row)",rvpApproval:false},
+  {id:"ft4",req:"Must be actively studying for securities license",rvpApproval:false},
+  {id:"ft5",req:"Must know the KT presentation and Interview",rvpApproval:true},
+  {id:"ft6",req:"Must know how to Fast Start a new rep (Fast start checklist provided)",rvpApproval:true},
+  {id:"ft7",req:"Must know how to handle objections",rvpApproval:false},
+  {id:"ft8",req:"Must attend weekly training, meeting, etc",rvpApproval:false},
+];
+
 const TOUR_STEPS = {
   admin:[
     {title:"Welcome to NextLevel Hub!",body:"You have full admin access — manage trainers, reps, announcements, scripts, resources, and track all production in one place."},
@@ -361,6 +373,13 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
         <div style={{fontSize:12,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
       </Card>
     </div>
+    {/* Birthday */}
+    <Card style={{marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>My Birthday</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Your birthday helps us celebrate you!</div>
+      {!readOnly?<input type="date" value={rep.birthday||""} onChange={e=>onUpdate({...rep,birthday:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+      <div style={{fontSize:13,fontWeight:600,color:C.purple}}>{rep.birthday?new Date(rep.birthday+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}</div>}
+    </Card>
     {/* Pre-Licensing Class */}
     <Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -531,7 +550,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:`Recruits (${myRecruits.length})`},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -748,12 +767,12 @@ function ProdDash({data,onUpdateData}) {
 
 // ── ADD REP ──
 function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
-  const [f,setF]=useState({name:"",phone:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:"",birthday:""});
+  const [f,setF]=useState({name:"",phone:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
   const fmtP=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
-      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"startDate",l:"Start Date",t:"date"},{fld:"graduationDate",l:"Target Graduation",t:"date"},{fld:"birthday",l:"Birthday (for celebrations)",t:"date"}].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
+      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"startDate",l:"Start Date",t:"date"},{fld:"graduationDate",l:"Target Graduation",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
       <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>{Object.entries(TRACK_INFO).map(([k,ti])=><button key={k} onClick={()=>setF({...f,track:k})} style={{padding:"7px",borderRadius:8,border:`2px solid ${f.track===k?ti.color:C.border}`,background:f.track===k?ti.color+"11":"white",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:700,color:f.track===k?ti.color:C.textMid}}>{ti.label}</div><div style={{fontSize:9,color:C.textLight}}>{ti.days}</div></button>)}</div></div>
       {trainers.length>0&&<div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>}
       <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
@@ -856,6 +875,8 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
+    <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
+    <PendingRecruits data={data} onUpdate={onUpdate} userRole={userRole}/>
     <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
@@ -1397,47 +1418,81 @@ function PhotoLightbox({src,name,onClose}) {
 
 
 
+
+// ── FIELD TRAINER REQUESTS ──
+function FieldTrainerRequests({data,onUpdate,userRole}) {
+  if(userRole!=="admin"&&userRole!=="superadmin") return null;
+  const pending=(data.reps||[]).filter(r=>r.fieldTrainerRequested&&!r.fieldTrainerGranted);
+  if(pending.length===0) return null;
+  return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.purple+"44",padding:"12px 16px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.purple}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Field Trainer Review Requests ({pending.length})</div>
+    </div>
+    {pending.map(rep=><div key={rep.id} style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>Requesting Field Trainer review - {rep.fieldTrainerRequestedAt?new Date(rep.fieldTrainerRequestedAt).toLocaleDateString():""}</div></div>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerGranted:true,fieldTrainerGrantedAt:new Date().toISOString()}:r)})} style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>Approve</button>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerRequested:false}:r)})} style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Deny</button>
+    </div>)}
+  </div>;
+}
+
+// ── PENDING RECRUITS ──
+function PendingRecruits({data,onUpdate,userRole}) {
+  if(userRole!=="admin"&&userRole!=="superadmin"&&userRole!=="trainer") return null;
+  const allPending=(data.reps||[]).filter(r=>(r.pendingRecruits||[]).length>0).flatMap(r=>(r.pendingRecruits||[]).map(p=>({...p,recruitedBy:r.name,recruitedById:r.id})));
+  if(allPending.length===0) return null;
+  return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.teal+"44",padding:"12px 16px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Pending Recruit Submissions ({allPending.length})</div>
+    </div>
+    {allPending.map((p,i)=><div key={i} style={{background:C.surface,borderRadius:8,padding:"9px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:C.text}}>{p.name}{p.phone&&<span style={{color:C.textMid,fontWeight:400}}> - {p.phone}</span>}</div><div style={{fontSize:10,color:C.textMid}}>Submitted by {p.recruitedBy} on {new Date(p.submittedAt).toLocaleDateString()}</div></div>
+      <button onClick={()=>{
+        const recruiterRep=(data.reps||[]).find(r=>r.id===p.recruitedById);
+        const updatedPending=(recruiterRep?.pendingRecruits||[]).filter(pr=>pr.id!==p.id);
+        const newRep={name:p.name,phone:p.phone||"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:"",recruitedBy:p.recruitedById,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()};
+        onUpdate({...data,reps:[...(data.reps||[]).map(r=>r.id===p.recruitedById?{...r,pendingRecruits:updatedPending}:r),newRep]});
+      }} style={{padding:"5px 10px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Add to System</button>
+      <button onClick={()=>{
+        const recruiterRep=(data.reps||[]).find(r=>r.id===p.recruitedById);
+        const updatedPending=(recruiterRep?.pendingRecruits||[]).filter(pr=>pr.id!==p.id);
+        onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===p.recruitedById?{...r,pendingRecruits:updatedPending}:r)});
+      }} style={{padding:"5px 8px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:10}}>Dismiss</button>
+    </div>)}
+  </div>;
+}
+
 // ── BIRTHDAY & ANNIVERSARY TRACKER ──
 function BirthdayAnniversaryWidget({data}) {
   const reps = data.reps||[];
   const today = new Date();
   const upcoming = [];
-
   reps.forEach(rep => {
     if(rep.birthday) {
-      const bday = new Date(rep.birthday+"T12:00:00");
-      const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
-      const diff = Math.ceil((thisYear - today)/(1000*60*60*24));
-      const days = diff < 0 ? diff + 365 : diff;
-      if(days <= 30) upcoming.push({name:rep.name, type:"Birthday", days, date:thisYear, icon:"??"});
-    }
-    if(rep.startDate) {
-      const start = new Date(rep.startDate+"T12:00:00");
-      const anniv = new Date(today.getFullYear(), start.getMonth(), start.getDate());
-      const diff = Math.ceil((anniv - today)/(1000*60*60*24));
-      const days = diff < 0 ? diff + 365 : diff;
-      const years = today.getFullYear() - start.getFullYear();
-      if(days <= 30) upcoming.push({name:rep.name, type:`${years} Year Anniversary`, days, date:anniv, icon:"??"});
+      try {
+        const d = new Date(rep.birthday+"T12:00:00");
+        const thisYear = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+        const diff = Math.ceil((thisYear - today)/(1000*60*60*24));
+        const days = diff < 0 ? diff + 365 : diff;
+        const age = today.getFullYear() - d.getFullYear() + (diff < 0 ? 1 : 0);
+        if(days <= 30) upcoming.push({name:rep.name, type:"Birthday (turning "+age+")", days, date:thisYear});
+      } catch(e) {}
     }
   });
-
   upcoming.sort((a,b)=>a.days-b.days);
   if(upcoming.length===0) return null;
-
   return <Card style={{marginBottom:14}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Celebrations</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Birthdays</div>
     {upcoming.map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<upcoming.length-1?`1px solid ${C.border}`:"none"}}>
-      <span style={{fontSize:20}}>{item.icon}</span>
-      <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div>
-        <div style={{fontSize:11,color:C.textMid}}>{item.type} — {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
-      </div>
-      <div style={{textAlign:"right"}}>
-        {item.days===0?<Badge color={C.success} small>Today!</Badge>:item.days===1?<Badge color={C.gold} small>Tomorrow</Badge>:<Badge color={C.teal} small>In {item.days}d</Badge>}
-      </div>
+      <div style={{width:32,height:32,borderRadius:8,background:C.purple+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.purple,flexShrink:0}}>BD</div>
+      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div><div style={{fontSize:11,color:C.textMid}}>{item.type} on {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div></div>
+      <div>{item.days===0?<Badge color={C.success} small>Today!</Badge>:item.days===1?<Badge color={C.gold} small>Tomorrow</Badge>:<Badge color={C.teal} small>{"In "+item.days+"d"}</Badge>}</div>
     </div>)}
   </Card>;
 }
+
 
 
 
@@ -1545,25 +1600,31 @@ function Leaderboard({data,userId}) {
     return b.appts-a.appts;
   });
 
-  const medals=["??","??","??"];
+  const medals=["1st","2nd","3rd"];
   const roleColors={admin:C.teal,trainer:C.purple,rep:C.gold};
 
+  const [open,setOpen] = useState(false);
   return <Card style={{marginBottom:14}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+    <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:open?12:0}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Leaderboard</div>
-      <div style={{display:"flex",gap:4}}>
-        {[["scorecard","Scorecard"],["lifeapps","Life Apps"],["appts","Appts"],["recruits","Recruits"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setMode(k)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:mode===k?700:400,background:mode===k?C.navy:C.surface,color:mode===k?"white":C.textMid}}>{l}</button>
-        ))}
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:11,color:C.textLight}}>{ranked.length} members</span>
+        <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
       </div>
     </div>
-    {ranked.slice(0,10).map((u,i)=>{
+    {open&&<div style={{display:"flex",gap:4,marginBottom:12,flexWrap:"wrap"}}>
+      {[["scorecard","Scorecard"],["lifeapps","Life Apps"],["appts","Appts"],["recruits","Recruits"]].map(([k,l])=>(
+        <button key={k} onClick={e=>{e.stopPropagation();setMode(k);}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:mode===k?700:400,background:mode===k?C.navy:C.surface,color:mode===k?"white":C.textMid}}>{l}</button>
+      ))}
+    </div>}
+    {!open&&null}
+    {open&&ranked.slice(0,10).map((u,i)=>{
       const isMe=u.id===userId;
       const val=mode==="scorecard"?`${u.scorePct}%`:mode==="lifeapps"?u.lifeApps:mode==="recruits"?u.recruits:u.appts;
       const maxVal=mode==="scorecard"?100:mode==="lifeapps"?Math.max(...ranked.map(r=>r.lifeApps),1):mode==="recruits"?Math.max(...ranked.map(r=>r.recruits),1):Math.max(...ranked.map(r=>r.appts),1);
       const pct=mode==="scorecard"?u.scorePct:(Number(val)/maxVal)*100;
       return <div key={u.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,padding:"7px 9px",borderRadius:8,background:isMe?C.teal+"11":i<3?"rgba(0,0,0,0.02)":"transparent",border:isMe?`1px solid ${C.teal}33`:"1px solid transparent"}}>
-        <div style={{width:22,height:22,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:i<3?16:11,fontWeight:700,color:i<3?"inherit":C.textLight}}>{i<3?medals[i]:i+1}</div>
+        <div style={{width:28,height:20,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:i<3?9:11,fontWeight:700,color:i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.textLight,background:i<3?(i===0?C.gold+"22":i===1?"rgba(148,163,184,0.15)":"rgba(180,83,9,0.1)"):"transparent",borderRadius:4}}>{i<3?medals[i]:i+1}</div>
         <div style={{width:28,height:28,borderRadius:8,background:roleColors[u.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:roleColors[u.role],flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
@@ -1574,7 +1635,7 @@ function Leaderboard({data,userId}) {
         </div>
       </div>;
     })}
-    {ranked.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"12px 0"}}>No activity logged yet this week</div>}
+    {open&&ranked.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"12px 0"}}>No activity logged yet this week</div>}
   </Card>;
 }
 
@@ -1593,12 +1654,12 @@ function TopRecruiters({data}) {
 
   if(recruitCounts.length===0) return null;
   const roleColors={Admin:C.teal,Trainer:C.purple,Rep:C.gold};
-  const medals=["??","??","??"];
+  const medals=["1st","2nd","3rd"];
 
   return <Card style={{marginBottom:14}}>
     <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Top Recruiters</div>
     {recruitCounts.slice(0,5).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,marginBottom:8,padding:"7px 9px",borderRadius:8,background:i===0?C.gold+"11":"transparent",border:i===0?`1px solid ${C.gold}33`:"none"}}>
-      <div style={{fontSize:i<3?16:11,fontWeight:700,width:22,textAlign:"center"}}>{i<3?medals[i]:i+1}</div>
+      <div style={{fontSize:i<3?9:11,fontWeight:700,width:28,height:20,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:4,background:i===0?C.gold+"22":i===1?"rgba(148,163,184,0.15)":i===2?"rgba(180,83,9,0.1)":"transparent",color:i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.textLight}}>{i<3?medals[i]:i+1}</div>
       <div style={{width:28,height:28,borderRadius:8,background:roleColors[p.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:roleColors[p.role],flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name} <span style={{fontSize:10,color:C.textLight}}>({p.role})</span></div>
@@ -1631,6 +1692,141 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
         <input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:80,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
         <label style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:C.textMid,cursor:"pointer",whiteSpace:"nowrap"}}><input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/> Lic</label>
       </div>)}
+    </div>}
+  </div>;
+}
+
+
+
+// ── RECRUITS TAB ──
+function RecruitsTab({rep,data,myRecruits,onUpdate}) {
+  const [showForm,setShowForm] = useState(false);
+  const [form,setForm] = useState({name:"",phone:""});
+  const pendingRecruits = rep.pendingRecruits||[];
+
+  const submitRecruit = () => {
+    if(!form.name) return;
+    const updated = [...pendingRecruits,{...form,submittedAt:new Date().toISOString(),id:Date.now()}];
+    onUpdate(rep.id,{...rep,pendingRecruits:updated});
+    setForm({name:"",phone:""});
+    setShowForm(false);
+  };
+
+  return <div>
+    <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,color:"white",border:"1px solid "+C.teal+"33"}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Build Your Team</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Every person you bring in builds your team, your income, and your legacy. <strong style={{color:"white"}}>Your income grows as your team grows.</strong> Stay connected to your recruits.</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:11,color:"rgba(255,255,255,0.7)"}}>Recruiting is a core requirement to become a Field Trainer. Start building now!</div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+      <Card style={{padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:C.teal}}>{myRecruits.length}</div><div style={{fontSize:11,color:C.textMid}}>Official Recruits</div></Card>
+      <Card style={{padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:C.gold}}>{pendingRecruits.length}</div><div style={{fontSize:11,color:C.textMid}}>Pending Review</div></Card>
+    </div>
+    {myRecruits.length>0&&<div style={{marginBottom:14}}>
+      <SecHead title="My Recruits" color={C.teal}/>
+      {myRecruits.map((r,i)=>{
+        const track=TRACK_INFO[r.track];
+        const cl=track?.checklist||[];
+        const done=cl.filter(item=>(r.checked||{})[item.id]).length;
+        const pct=cl.length>0?Math.round((done/cl.length)*100):0;
+        return <div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:7,background:"white"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}</div></div>
+            <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
+          </div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Their progress {pct}%</div>
+          <Bar pct={pct} color={track?.color||C.teal} h={4}/>
+          {pct===100&&<div style={{marginTop:5,fontSize:10,color:C.success,fontWeight:600}}>Graduated! Great job coaching them!</div>}
+        </div>;
+      })}
+    </div>}
+    {myRecruits.length===0&&pendingRecruits.length===0&&<div style={{textAlign:"center",padding:"20px 0",marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Your team starts with one conversation</div>
+      <div style={{fontSize:12,color:C.textMid,lineHeight:1.6}}>Who do you know that could benefit from this opportunity? Submit their info below and your admin will get them started.</div>
+    </div>}
+    {pendingRecruits.length>0&&<div style={{marginBottom:14}}>
+      <SecHead title="Pending Admin Review" color={C.gold}/>
+      {pendingRecruits.map((r,i)=><div key={i} style={{borderRadius:8,border:"1px solid "+C.gold+"33",padding:"8px 12px",marginBottom:6,background:C.gold+"08",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{fontSize:12,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:10,color:C.textMid}}>{r.phone} - Submitted {new Date(r.submittedAt).toLocaleDateString()}</div></div>
+        <Badge color={C.gold} small>Pending</Badge>
+      </div>)}
+    </div>}
+    {!showForm?<button onClick={()=>setShowForm(true)} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Submit a New Recruit</button>:
+    <Card style={{border:"1px solid "+C.teal+"44"}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>Submit a New Recruit</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:10}}>Enter their info and your admin will officially add them to the system.</div>
+      <input placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <input placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+        <button onClick={submitRecruit} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Submit Recruit</button>
+      </div>
+    </Card>}
+  </div>;
+}
+
+// ── CAREER PATH ──
+function CareerPath({rep,data,onUpdate}) {
+  const stages = [
+    {key:"new",label:"New Rep",color:C.teal},
+    {key:"licensed",label:"Licensed Agent",color:C.gold},
+    {key:"trainer",label:"Field Trainer",color:C.purple},
+    {key:"rvp",label:"RVP",color:C.success},
+  ];
+  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const requested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
+
+  return <div>
+    <div style={{background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,borderRadius:12,padding:"16px",marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
+      <div style={{display:"flex",gap:0}}>
+        {stages.map((s,i)=>{
+          const active=s.key===currentStage;
+          const stageIndex=stages.findIndex(st=>st.key===currentStage);
+          const done=i<stageIndex;
+          return <div key={s.key} style={{flex:1,textAlign:"center",position:"relative"}}>
+            {i>0&&<div style={{position:"absolute",top:14,left:0,right:"50%",height:2,background:done||active?s.color:"rgba(255,255,255,0.1)"}}/>}
+            {i<stages.length-1&&<div style={{position:"absolute",top:14,left:"50%",right:0,height:2,background:done?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)"}}/>}
+            <div style={{width:28,height:28,borderRadius:14,background:active?s.color:done?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.05)",border:"2px solid "+(active?s.color:done?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)"),margin:"0 auto 6px",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1}}>
+              {done&&<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}
+              {active&&<div style={{width:10,height:10,borderRadius:5,background:"white"}}/>}
+            </div>
+            <div style={{fontSize:9,fontWeight:active?700:400,color:active?"white":"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
+          </div>;
+        })}
+      </div>
+    </div>
+    {currentStage==="licensed"&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:4}}>Your Next Goal: Field Trainer</div>
+      <div style={{fontSize:12,color:C.text,lineHeight:1.6}}>You are licensed! Now focus on becoming a Field Trainer. Review the requirements below, work toward each one, and request your review when ready.</div>
+    </div>}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>How to Become a Field Trainer</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:12}}>Work toward each requirement. Items marked RVP Approval Required need sign-off from your RVP.</div>
+      {FIELD_TRAINER_REQS.map((r,i)=><div key={r.id} style={{display:"flex",gap:10,padding:"9px 0",borderBottom:i<FIELD_TRAINER_REQS.length-1?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
+        <div style={{width:22,height:22,borderRadius:6,background:r.rvpApproval?C.danger+"11":C.success+"11",border:"1px solid "+(r.rvpApproval?C.danger+"33":C.success+"33"),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+          <span style={{fontSize:9,fontWeight:700,color:r.rvpApproval?C.danger:C.success}}>{i+1}</span>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.4}}>{r.req}</div>
+          {r.rvpApproval&&<div style={{fontSize:10,color:C.danger,fontWeight:600,marginTop:2}}>RVP Approval Required</div>}
+        </div>
+      </div>)}
+    </Card>
+    {!rep.fieldTrainerGranted&&<Card style={{border:"1px solid "+(requested?C.gold+"44":C.purple+"33")}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for Field Trainer Review?</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you feel confident you meet all the requirements, request a review. Your RVP will be notified and schedule time with you.</div>
+      {!requested?<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerRequestedAt:new Date().toISOString()})}
+        style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+        Request Field Trainer Review
+      </button>:
+      <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
+        Review requested! Your RVP has been notified. Keep pushing forward!
+      </div>}
+    </Card>}
+    {rep.fieldTrainerGranted&&<div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>Field Trainer Approved!</div>
+      <div style={{fontSize:12,color:C.textMid}}>Your next goal is RVP. Check the RVP Path tab for requirements.</div>
     </div>}
   </div>;
 }
