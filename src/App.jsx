@@ -583,19 +583,33 @@ function CareerJourneyBanner({rep,onUpdate}) {
       </div>}
       {currentStage==="licensed"&&<div>
         <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>You are licensed! Now build your skills, production, and team. When you meet the Field Trainer requirements, request your review below.</div>
-        {!ftRequested?<button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
+        {!ftRequested&&!rep.fieldTrainerDenied&&<button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
           style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
           Request Field Trainer Review
-        </button>:
-        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified.</div>}
+        </button>}
+        {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified.</div>}
+        {rep.fieldTrainerDenied&&!ftRequested&&<div>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+            Request Again
+          </button>
+        </div>}
       </div>}
       {currentStage==="trainer"&&<div>
         <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>You are a Field Trainer! Now focus on consistently producing and building your team. When you are ready, request access to the RVP Path.</div>
-        {!rvpRequested?<button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
+        {!rvpRequested&&!rep.rvpPathDenied&&<button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
           style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
           Request RVP Path Access
-        </button>:
-        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review soon.</div>}
+        </button>}
+        {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review soon.</div>}
+        {rep.rvpPathDenied&&!rvpRequested&&<div>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+            Request Again
+          </button>
+        </div>}
       </div>}
       {currentStage==="rvp"&&<div>
         <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:8}}>You have unlocked the RVP Path! Check the Career Path tab for your full RVP checklist.</div>
@@ -649,6 +663,17 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
       {rep.nextLevelRequested&&!rep.nextLevelGranted&&(
         <div style={{marginTop:8,background:C.gold+"22",border:`1px solid ${C.gold}44`,borderRadius:8,padding:"8px 12px",fontSize:12,color:C.gold,textAlign:"center"}}>
           Request sent! Waiting for admin approval...
+        </div>
+      )}
+      {!rep.nextLevelRequested&&rep.nextLevelDenied&&!rep.nextLevelGranted&&(pct===100)&&(rep.track==="fast"||rep.track==="regular")&&(
+        <div style={{marginTop:8}}>
+          <div style={{background:C.danger+"22",border:`1px solid ${C.danger}44`,borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:6,textAlign:"center"}}>
+            Request was not approved — speak with your trainer for next steps
+          </div>
+          <button onClick={()=>onUpdate(rep.id,{...rep,nextLevelRequested:true,nextLevelDenied:false,nextLevelRequestedAt:new Date().toISOString()})}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+            Request Again
+          </button>
         </div>
       )}
       {rep.nextLevelGranted&&rep.track!=="licensed"&&(
@@ -1513,7 +1538,7 @@ function FieldTrainerRequests({data,onUpdate,userRole}) {
     {pending.map(rep=><div key={rep.id} style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
       <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>Requesting Field Trainer review - {rep.fieldTrainerRequestedAt?new Date(rep.fieldTrainerRequestedAt).toLocaleDateString():""}</div></div>
       <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerGranted:true,fieldTrainerGrantedAt:new Date().toISOString()}:r)})} style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>Approve</button>
-      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerRequested:false}:r)})} style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Deny</button>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerRequested:false,fieldTrainerDenied:true}:r)})} style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Deny</button>
     </div>)}
   </div>;
 }
@@ -1921,12 +1946,14 @@ function CareerPath({rep,data,onUpdate}) {
       <Card style={{border:"1px solid "+(ftRequested?C.gold+"44":C.purple+"33")}}>
         <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for Field Trainer Review?</div>
         <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you feel confident you meet all the requirements, request a review. Your RVP will be notified and will schedule time to go through everything with you.</div>
-        {!ftRequested?<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerRequestedAt:new Date().toISOString()})}
+        {!ftRequested&&!rep.fieldTrainerDenied&&<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})}
           style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
           Request Field Trainer Review
-        </button>:
-        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
-          Review requested! Your RVP has been notified. Keep pushing forward!
+        </button>}
+        {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified. Keep pushing forward!</div>}
+        {rep.fieldTrainerDenied&&!ftRequested&&<div>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:12,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>Request Again</button>
         </div>}
       </Card>
     </div>}
@@ -1940,12 +1967,14 @@ function CareerPath({rep,data,onUpdate}) {
       <Card style={{marginBottom:14,border:"1px solid "+(rvpRequested?C.gold+"44":C.success+"33")}}>
         <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for the RVP Path?</div>
         <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the full RVP checklist.</div>
-        {!rvpRequested?<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathRequestedAt:new Date().toISOString()})}
+        {!rvpRequested&&!rep.rvpPathDenied&&<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})}
           style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
           Request RVP Path Access
-        </button>:
-        <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
-          RVP Path request sent! Your admin will review and grant access when ready.
+        </button>}
+        {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review and grant access when ready.</div>}
+        {rep.rvpPathDenied&&!rvpRequested&&<div>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:12,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>Request Again</button>
         </div>}
       </Card>
     </div>}
