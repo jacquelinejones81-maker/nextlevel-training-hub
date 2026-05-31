@@ -697,6 +697,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
+    {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
+    {rep.track==="licensed"&&tab==="checklist"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
   </div>;
@@ -958,6 +960,8 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
     <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
+    <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
+    <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
     <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
     <BirthdayAnniversaryWidget data={data}/>
@@ -1762,6 +1766,347 @@ function TrainerCareerPath({data,onUpdate,session}) {
   </div>;
 }
 
+
+// ── NEED HELP ──
+function NeedHelpModal({rep,data,onUpdate,onClose}) {
+  const [msg,setMsg] = useState("");
+  const [sent,setSent] = useState(false);
+  const send = () => {
+    if(!msg.trim()) return;
+    const alert = {repId:rep.id,repName:rep.name,repTrack:rep.track,message:msg,sentAt:new Date().toISOString(),dismissed:false};
+    onUpdate({...data,helpRequests:[...(data.helpRequests||[]),alert]});
+    setSent(true);
+  };
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"white",borderRadius:16,padding:"24px 20px",maxWidth:380,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+      {!sent?<>
+        <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:4}}>Need Help?</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:14,lineHeight:1.5}}>Tell us what you need help with and your trainer and admin will be notified right away.</div>
+        <textarea placeholder="What do you need help with? Give us a quick summary..." value={msg} onChange={e=>setMsg(e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:90,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit",marginBottom:10}}/>
+        <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:8,padding:"8px 12px",fontSize:11,color:C.teal,marginBottom:14,lineHeight:1.5}}>
+          For a quicker response, reach out to your trainer directly on <strong>Telegram</strong>!
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={onClose} style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+          <button onClick={send} style={{flex:2,padding:"9px",borderRadius:8,border:"none",background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Send</button>
+        </div>
+      </>:<>
+        <div style={{textAlign:"center",padding:"12px 0"}}>
+          <div style={{fontSize:32,marginBottom:10}}>✓</div>
+          <div style={{fontSize:15,fontWeight:700,color:C.success,marginBottom:6}}>Message Sent!</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:6,lineHeight:1.5}}>Your trainer and admin have been notified. We will be in touch soon!</div>
+          <div style={{fontSize:11,color:C.teal,fontWeight:600,marginBottom:16}}>Remember — Telegram is available for a quicker response!</div>
+          <button onClick={onClose} style={{padding:"9px 24px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>Done</button>
+        </div>
+      </>}
+    </div>
+  </div>;
+}
+
+// ── HELP REQUESTS BANNER (admin/trainer dashboard) ──
+function HelpRequestsBanner({data,onUpdate,userRole,userId}) {
+  const requests = (data.helpRequests||[]).filter(r=>!r.dismissed);
+  const myRequests = userRole==="trainer" ? requests.filter(r=>{const rep=(data.reps||[]).find(rp=>rp.id===r.repId);return rep?.trainerId===userId;}) : requests;
+  if(myRequests.length===0) return null;
+  const dismiss = (i) => {
+    const idx = (data.helpRequests||[]).findIndex(r=>r.repId===myRequests[i].repId&&r.sentAt===myRequests[i].sentAt);
+    const updated = (data.helpRequests||[]).map((r,j)=>j===idx?{...r,dismissed:true}:r);
+    onUpdate({...data,helpRequests:updated});
+  };
+  return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.danger+"44",padding:"12px 16px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.danger,animation:"pulse 1.5s infinite"}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Help Requests ({myRequests.length})</div>
+    </div>
+    {myRequests.map((r,i)=><div key={i} style={{background:C.danger+"08",borderRadius:8,padding:"10px 12px",marginBottom:6,border:"1px solid "+C.danger+"22"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+            <span style={{fontSize:13,fontWeight:700,color:C.text}}>{r.repName}</span>
+            <Badge color={C.danger} small>Needs Help</Badge>
+          </div>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.5,marginBottom:3}}>"{r.message}"</div>
+          <div style={{fontSize:10,color:C.textLight}}>{new Date(r.sentAt).toLocaleDateString()} at {new Date(r.sentAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
+        </div>
+        <button onClick={()=>dismiss(i)} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,whiteSpace:"nowrap",flexShrink:0}}>Dismiss</button>
+      </div>
+    </div>)}
+  </div>;
+}
+
+
+// ── WALL OF FAME ──
+const FAME_CATEGORIES = ["First Life App","Licensed!","Top Producer","Field Trainer Approved","Recruiter of the Month","Most Improved","Going Above and Beyond","Custom"];
+const FAME_COLORS = {"First Life App":C.teal,"Licensed!":C.gold,"Top Producer":C.success,"Field Trainer Approved":C.purple,"Recruiter of the Month":C.teal,"Most Improved":C.gold,"Going Above and Beyond":C.success,"Custom":C.textMid};
+
+function WallOfFame({data,onUpdate,userRole}) {
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const recognitions = data.wallOfFame||[];
+  const [showForm,setShowForm] = useState(false);
+  const [form,setForm] = useState({personId:"",category:"First Life App",message:"",customPhoto:null});
+
+  const allPeople = [
+    ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
+    ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
+    ...(data.reps||[]).map(p=>({...p,role:"Rep"})),
+  ];
+
+  const getPhoto = (personId) => {
+    const rep = (data.reps||[]).find(r=>r.id===personId);
+    return rep?.dgoPhoto||null;
+  };
+
+  const save = () => {
+    if(!form.personId||!form.message) return;
+    const person = allPeople.find(p=>p.id===form.personId);
+    const entry = {...form,personName:person?.name||"",personRole:person?.role||"",postedAt:new Date().toISOString(),id:Date.now()};
+    onUpdate({...data,wallOfFame:[entry,...recognitions]});
+    setForm({personId:"",category:"First Life App",message:"",customPhoto:null});
+    setShowForm(false);
+  };
+
+  const remove = (id) => onUpdate({...data,wallOfFame:recognitions.filter(r=>r.id!==id)});
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div>
+        <div style={{fontSize:17,fontWeight:700,color:C.text}}>Wall of Fame</div>
+        <div style={{fontSize:11,color:C.textMid}}>Celebrating our team's achievements</div>
+      </div>
+      {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:11,padding:"6px 12px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700}}>+ Add Recognition</button>}
+    </div>
+
+    {isAdmin&&showForm&&<Card style={{marginBottom:14,border:"1px solid "+C.gold+"44"}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>New Recognition</div>
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Select Person</div>
+        <select value={form.personId} onChange={e=>setForm({...form,personId:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          <option value="">Choose someone to recognize...</option>
+          {allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
+        </select>
+      </div>
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Category</div>
+        <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          {FAME_CATEGORIES.map(c=><option key={c}>{c}</option>)}
+        </select>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Personal Message</div>
+        <textarea placeholder="Write a personal recognition message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5}}/>
+      </div>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Photo (optional — uses DGO photo if available)</div>
+        <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:7,background:C.surface,border:"1px solid "+C.border,cursor:"pointer",fontSize:11,color:C.textMid}}>
+          Upload Custom Photo
+          <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+            const file=e.target.files[0];
+            if(!file) return;
+            const reader=new FileReader();
+            reader.onload=ev=>setForm({...form,customPhoto:ev.target.result});
+            reader.readAsDataURL(file);
+          }}/>
+        </label>
+        {form.customPhoto&&<span style={{fontSize:10,color:C.success,marginLeft:8}}>Photo ready</span>}
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Post Recognition</button>
+      </div>
+    </Card>}
+
+    {recognitions.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:C.textLight}}>
+      <div style={{fontSize:32,marginBottom:10}}>★</div>
+      <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:6}}>No recognitions yet</div>
+      <div style={{fontSize:12}}>{isAdmin?"Add your first recognition above!":"Check back soon — great things are coming!"}</div>
+    </div>}
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      {recognitions.map((r,i)=>{
+        const photo = r.customPhoto||getPhoto(r.personId);
+        const catColor = FAME_COLORS[r.category]||C.gold;
+        return <div key={i} style={{borderRadius:12,border:"2px solid "+catColor+"33",background:"white",overflow:"hidden",position:"relative"}}>
+          {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
+          {/* Photo/Avatar */}
+          <div style={{background:"linear-gradient(135deg,"+catColor+"33,"+catColor+"11)",padding:"16px 16px 8px",textAlign:"center"}}>
+            {photo?<img src={photo} alt={r.personName} style={{width:64,height:64,borderRadius:32,objectFit:"cover",border:"3px solid "+catColor,margin:"0 auto"}}/>:
+            <div style={{width:64,height:64,borderRadius:32,background:catColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"white",margin:"0 auto",border:"3px solid "+catColor+"66"}}>{r.personName?.charAt(0)?.toUpperCase()}</div>}
+          </div>
+          {/* Content */}
+          <div style={{padding:"8px 12px 12px"}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,textAlign:"center",marginBottom:4}}>{r.personName}</div>
+            <div style={{textAlign:"center",marginBottom:6}}><Badge color={catColor} small>{r.category}</Badge></div>
+            <div style={{fontSize:11,color:C.textMid,lineHeight:1.5,textAlign:"center",fontStyle:"italic"}}>"{r.message}"</div>
+            <div style={{fontSize:9,color:C.textLight,textAlign:"center",marginTop:6}}>{new Date(r.postedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+          </div>
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
+
+// ── GOAL BOARD ──
+function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
+  const goals = data.teamGoals||[];
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const [showForm,setShowForm] = useState(false);
+  const [form,setForm] = useState({title:"",target:0,unit:"Life Apps",current:0,deadline:""});
+
+  const save = () => {
+    if(!form.title||!form.target) return;
+    onUpdate({...data,teamGoals:[...goals,{...form,id:Date.now(),postedAt:new Date().toISOString()}]});
+    setForm({title:"",target:0,unit:"Life Apps",current:0,deadline:""});
+    setShowForm(false);
+  };
+
+  const updateCurrent = (id,val) => onUpdate({...data,teamGoals:goals.map(g=>g.id===id?{...g,current:val}:g)});
+  const remove = (id) => onUpdate({...data,teamGoals:goals.filter(g=>g.id!==id)});
+
+  if(goals.length===0&&!isAdmin) return null;
+
+  return <Card style={{marginBottom:14,border:"1px solid "+C.gold+"33"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:goals.length>0?10:0}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Goals</div>
+      {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Goal</button>}
+    </div>
+    {isAdmin&&showForm&&<div style={{background:C.surface,borderRadius:9,padding:10,marginBottom:10}}>
+      <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Target Number</div>
+          <input type="number" value={form.target} onChange={e=>setForm({...form,target:Number(e.target.value)})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Unit</div>
+          <select value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+            {["Life Apps","Recruits","Licensed Agents","Appointments","Contacts","Custom"].map(u=><option key={u}>{u}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{marginBottom:7}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Deadline (optional)</div>
+        <input type="date" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goal</button>
+      </div>
+    </div>}
+    {goals.length===0&&isAdmin&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No team goals yet — add one above!</div>}
+    {goals.map(g=>{
+      const pct=Math.min(Math.round((g.current/g.target)*100),100);
+      const daysLeft=g.deadline?Math.ceil((new Date(g.deadline+"T12:00:00")-new Date())/86400000):null;
+      return <div key={g.id} style={{marginBottom:10,paddingBottom:10,borderBottom:"1px solid "+C.border}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.text}}>{g.title}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            {daysLeft!==null&&<span style={{fontSize:10,color:daysLeft<=7?C.danger:C.textLight}}>{daysLeft<=0?"Deadline passed":daysLeft+"d left"}</span>}
+            {isAdmin&&<button onClick={()=>remove(g.id)} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
+          </div>
+        </div>
+        <Bar pct={pct} color={pct>=100?C.success:C.gold} h={6}/>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+          <span style={{fontSize:11,color:C.textMid}}>{g.current} / {g.target} {g.unit}</span>
+          <span style={{fontSize:11,fontWeight:700,color:pct>=100?C.success:C.gold}}>{pct}%</span>
+        </div>
+        {isAdmin&&<div style={{display:"flex",gap:5,marginTop:5,alignItems:"center"}}>
+          <span style={{fontSize:10,color:C.textMid}}>Update:</span>
+          <button onClick={()=>updateCurrent(g.id,Math.max(0,g.current-1))} style={{width:22,height:22,borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,fontWeight:700,color:C.textMid}}>-</button>
+          <span style={{fontSize:11,fontWeight:600,color:C.text,minWidth:20,textAlign:"center"}}>{g.current}</span>
+          <button onClick={()=>updateCurrent(g.id,g.current+1)} style={{width:22,height:22,borderRadius:5,border:"none",background:C.gold,cursor:"pointer",fontSize:13,fontWeight:700,color:"white"}}>+</button>
+        </div>}
+      </div>;
+    })}
+  </Card>;
+}
+
+
+// ── QUICK MESSAGE TEMPLATES ──
+const DEFAULT_TEMPLATES = [
+  {cat:"Encouragement",msg:"Hey [name], just checked your progress — you're doing amazing! Keep pushing!"},
+  {cat:"Encouragement",msg:"You haven't checked in lately — we believe in you! What can I do to help you win this week?"},
+  {cat:"Encouragement",msg:"Your exam is coming up — you've got this! Stay focused and trust your preparation."},
+  {cat:"Accountability",msg:"Hey [name], let's connect this week. I want to make sure you have everything you need to succeed."},
+  {cat:"Accountability",msg:"Just a reminder — Monday Mindset is tonight at 7:30 PM CST. See you there!"},
+  {cat:"Accountability",msg:"You're so close to finishing your checklist! One more push and you unlock the next level."},
+  {cat:"Recognition",msg:"CONGRATULATIONS! You passed your exam! We are so proud of you — the team is celebrating you!"},
+  {cat:"Recognition",msg:"You just wrote your first life app — that family is protected because of YOU. That is huge!"},
+  {cat:"Recognition",msg:"Look at you building your team! Recruiting is one of the most powerful things you can do. Keep going!"},
+  {cat:"Invitation",msg:"Opportunity Night is Thursday at 7:30 PM CST. Who are you bringing?"},
+  {cat:"Invitation",msg:"Saturday training is going to be FIRE this week. Don't miss it — bring a friend!"},
+  {cat:"Invitation",msg:"I have someone perfect for this opportunity — can we connect today so I can share more?"},
+  {cat:"Welcome",msg:"Welcome to the team [name]! We are so excited you are here. Your trainer will be reaching out soon. Let's get to work!"},
+];
+
+function QuickMessages({data,onUpdate,userRole}) {
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const templates = data.quickMessages||DEFAULT_TEMPLATES;
+  const [copied,setCopied] = useState(null);
+  const [showAdd,setShowAdd] = useState(false);
+  const [form,setForm] = useState({cat:"Encouragement",msg:""});
+  const [filter,setFilter] = useState("All");
+  const cats = ["All",...[...new Set(templates.map(t=>t.cat))]];
+  const filtered = filter==="All"?templates:templates.filter(t=>t.cat===filter);
+
+  const copy = (msg,i) => {
+    navigator.clipboard?.writeText(msg);
+    setCopied(i);
+    setTimeout(()=>setCopied(null),2000);
+  };
+
+  const add = () => {
+    if(!form.msg) return;
+    onUpdate({...data,quickMessages:[...templates,{...form,id:Date.now()}]});
+    setForm({cat:"Encouragement",msg:""});
+    setShowAdd(false);
+  };
+
+  const del = (i) => onUpdate({...data,quickMessages:templates.filter((_,idx)=>idx!==i)});
+  const reset = () => {if(window.confirm("Reset to default templates?")) onUpdate({...data,quickMessages:DEFAULT_TEMPLATES});};
+
+  const catColors = {Encouragement:C.teal,Accountability:C.gold,Recognition:C.success,Invitation:C.purple,Welcome:C.teal};
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+      <div><div style={{fontSize:17,fontWeight:700,color:C.text}}>Quick Messages</div><div style={{fontSize:11,color:C.textMid}}>Copy and paste to send via text</div></div>
+      {isAdmin&&<div style={{display:"flex",gap:6}}>
+        <button onClick={reset} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>
+      </div>}
+    </div>
+    <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>
+      Tap <strong>Copy</strong> on any message, then paste it into a text message on your phone. Replace [name] with the person's name before sending!
+    </div>
+    {isAdmin&&showAdd&&<Card style={{marginBottom:12,border:"1px solid "+C.teal+"44"}}>
+      <select value={form.cat} onChange={e=>setForm({...form,cat:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7}}>
+        {["Encouragement","Accountability","Recognition","Invitation","Welcome"].map(c=><option key={c}>{c}</option>)}
+      </select>
+      <textarea placeholder="Message text..." value={form.msg} onChange={e=>setForm({...form,msg:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5,marginBottom:7}}/>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={add} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+      </div>
+    </Card>}
+    <div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+    </div>
+    {[...new Set(filtered.map(t=>t.cat))].map(cat=><div key={cat}>
+      <SecHead title={cat} color={catColors[cat]||C.teal}/>
+      {filtered.filter(t=>t.cat===cat).map((t,i)=>{
+        const realIdx=templates.indexOf(t);
+        return <div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:7,background:"white"}}>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.5,marginBottom:8}}>{t.msg}</div>
+          <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+            {isAdmin&&<button onClick={()=>del(realIdx)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>}
+            <button onClick={()=>copy(t.msg,realIdx)} style={{fontSize:11,padding:"4px 12px",borderRadius:6,border:"none",background:copied===realIdx?C.success:C.teal,color:"white",cursor:"pointer",fontWeight:600,transition:"background 0.2s"}}>{copied===realIdx?"Copied!":"Copy"}</button>
+          </div>
+        </div>;
+      })}
+    </div>)}
+  </div>;
+}
+
 // ── BIRTHDAY & ANNIVERSARY TRACKER ──
 function BirthdayAnniversaryWidget({data}) {
   const reps = data.reps||[];
@@ -2264,6 +2609,8 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"schedule",l:"Schedule",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
+    {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
+    {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
   ];
@@ -2341,16 +2688,19 @@ export default function App() {
 
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
 
+  const [showNeedHelp,setShowNeedHelp]=useState(false);
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface}}>
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
+      {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
       <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{color:"white",fontWeight:700,fontSize:13}}>NextLevel Field Training Hub</div>
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Tour</button>
+          <button onClick={()=>setShowNeedHelp(true)} style={{background:"rgba(255,100,100,0.25)",border:"1px solid rgba(255,100,100,0.4)",color:"white",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>Need Help</button>
           <button onClick={()=>setShowPhone(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Add to Phone</button>
           <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
         </div>
@@ -2374,6 +2724,8 @@ export default function App() {
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
+    if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
