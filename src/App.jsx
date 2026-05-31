@@ -191,40 +191,40 @@ const FIELD_TRAINER_REQS = [
 
 const TOUR_STEPS = {
   admin:[
-    {title:"Welcome to NextLevel Hub!",body:"You have full admin access — manage trainers, reps, announcements, scripts, resources, and track all production in one place."},
-    {title:"Dashboard",body:"See all reps at a glance with dual progress bars (trainer + rep), check-in status, and stalled alerts. Gold 'Upgrade Pending' badges show reps requesting Licensed Now What access."},
-    {title:"Next Level Requests",body:"When a rep finishes their checklist they can request access to Licensed Now What. A pulsing gold banner appears on your dashboard — click Grant Access to upgrade them instantly."},
-    {title:"Add & Manage Reps",body:"Click 'Add New Rep' to add a recruit and assign them a track and trainer. Click any rep card to open their full profile, view their checklist as they see it, log check-ins, or remove them."},
-    {title:"Team Announcements",body:"Go to Team Mgmt to post announcements. Choose Info, Warning, Success, or Urgent type. Set an expiry date and it auto-hides. All users see it the moment you post it."},
-    {title:"Scripts",body:"The Scripts section is fully editable by admins. Edit existing scripts, add new ones, or delete them. Changes update for everyone instantly."},
-    {title:"Resource Library",body:"Add links to training docs, videos, and company materials organized by category. Tip: upload files to Google Drive and paste the shareable link here."},
-    {title:"Scorecard",body:"Track your own weekly activity — Contacts Made, Appointments Set, and Appointments Completed. The admin view also shows a team summary so you can see everyone's weekly activity at a glance."},
-    {title:"Production",body:"Track team annual premium, recruits, and licensed agents against your goals. Update rep premium and licensed status here. Edit goals anytime."},
-    {title:"Security",body:"Firebase keys are stored securely in environment variables. All data syncs in real time across every device. PINs protect every role."},
+    {title:"Welcome to NextLevel Hub!",body:"You have full admin access — manage trainers, reps, announcements, scripts, resources, production, and the full team career journey all in one place."},
+    {title:"Dashboard Alerts",body:"Your dashboard shows Field Trainer Review Requests, Activity Alerts for reps with no check-ins, Upcoming Birthdays, Top Recruiters, and the Team Leaderboard — everything you need at a glance."},
+    {title:"Next Level & Field Trainer Requests",body:"When a rep finishes their checklist they request Licensed Now What access. When a licensed rep is ready they request Field Trainer review. Both show as banners on your dashboard — approve or deny with one click."},
+    {title:"Add & Manage Reps",body:"Click 'Add New Rep' to add a recruit — assign their track, trainer, and who recruited them. Click any rep card to open their full profile, view as rep, log check-ins, or remove them."},
+    {title:"Rep Profile",body:"Each rep profile shows their trainer and rep progress, DGO photo, t-shirt size, My Why, birthday, pre-licensing class type, bonus goal, and recruit log. Everything your trainer needs in one place."},
+    {title:"Team Announcements",body:"Go to Team Mgmt to post announcements. Choose Info, Warning, Success, or Urgent. Set an expiry date and it auto-hides. All users see it instantly on every device."},
+    {title:"Scripts & Resources",body:"Scripts are fully editable — add, edit, or delete anytime. Resources holds links to training docs and videos organized by category. Both update for everyone instantly."},
+    {title:"Leaderboard & Top Recruiters",body:"The Team Leaderboard ranks everyone by Scorecard, Life Apps, Appointments, or Recruits. Top Recruiters shows who is building the team. Both are collapsible on the dashboard."},
+    {title:"Scorecard",body:"Track weekly activity — Contacts Made (goal 100), Appointments Set (goal 20), Appointments Completed (goal 20). The admin view shows a team summary so you can coach based on real activity data."},
+    {title:"Production & History",body:"Track annual premium, recruits, and licensed agents against your goals. Archive each month to build a production history and track trends over time."},
   ],
   trainer:[
-    {title:"Welcome, Trainer!",body:"This is your field training hub. You can manage all your reps, track their progress, log check-ins, and track your own production — all in one place."},
-    {title:"Your Rep Dashboard",body:"Each rep card shows dual progress bars — your trainer checklist progress and their rep checklist progress. Red border means stalled (7+ days no check-in)."},
-    {title:"Opening a Rep Profile",body:"Click any rep card to open their full profile. You'll see their trainer checklist, rep checklist, appointments, references, milestones, and rep-entered data like DGO date, My Why, and bonus goal."},
-    {title:"View as Rep",body:"Use the 'View as Rep' button at the top of any rep profile to see exactly what they see — great for troubleshooting or walking them through something on a call."},
-    {title:"Trainer Checklist",body:"Complete your trainer checklist for each rep — this is your onboarding roadmap. It covers everything from downloading Telegram to completing their FNA and DGO."},
-    {title:"Appointments",body:"Track all 20 training appointments with MACHO gold star scoring. 3+ stars = qualified prospect. The 'Remember Your Purpose' banner reminds reps these appointments are for their development."},
-    {title:"Check-ins",body:"Log check-in notes for each rep in the Check-ins tab. If it has been 7+ days since a check-in the rep card shows a red Stalled badge — reach out!"},
-    {title:"My Production",body:"Log your own life apps with monthly premium and investments with PAC and lump sum amounts. The running total calculator shows your monthly and annual premium as you add entries."},
-    {title:"Scorecard",body:"Track your weekly activity — Contacts Made (goal 100), Appointments Set (goal 20), and Appointments Completed (goal 20). Check your conversion rates and 4-week history."},
-    {title:"Today's Events",body:"A banner at the top shows today's team schedule events. You can cancel or restore events for the day — everyone sees the update instantly."},
+    {title:"Welcome, Trainer!",body:"This is your field training hub. Manage your reps, track progress, log check-ins, track your own production and scorecard — all in one place synced across every device."},
+    {title:"Dashboard",body:"See activity alerts for reps with no check-ins, upcoming birthdays, top recruiters, and the leaderboard. Rep cards show dual progress bars and a gold Upgrade Pending badge when a rep has finished their checklist."},
+    {title:"Rep Profile",body:"Click any rep card to open their full profile. See their trainer and rep checklists, appointments, milestones, DGO photo, t-shirt size, My Why, birthday, pre-licensing class, bonus goal, and recruit log."},
+    {title:"View as Rep",body:"Use 'View as Rep' at the top of any rep profile to see exactly what they see — great for troubleshooting or walking them through the app on a call."},
+    {title:"Trainer Checklist",body:"Complete your trainer checklist for each rep — covers everything from Telegram to FNA and DGO. This is your onboarding roadmap."},
+    {title:"Appointments & MACHO",body:"Track all 20 training appointments with gold star MACHO scoring. 3+ stars = qualified prospect. Tap each letter to score — turns green when qualified."},
+    {title:"Milestones",body:"Reps fill out their Milestones tab — My Why, birthday, pre-licensing class, DGO date and photo, exam date, t-shirt size, and bonus goal. You see all of it in their Rep-Entered Data panel."},
+    {title:"My Production & Scorecard",body:"Log your own life apps and investments. Use the running total calculator to track monthly and annual premium. Your scorecard tracks weekly contacts, appointments set, and completed."},
+    {title:"Check-ins & Alerts",body:"Log check-in notes in each rep's Check-ins tab. Activity alerts on the dashboard flag reps with no check-ins after 3 days and stalled reps after 7 days."},
+    {title:"Today's Events",body:"A banner at the top shows today's team events. You can cancel or restore events for the day — everyone sees the update instantly."},
   ],
   rep:[
-    {title:"Welcome to Your Training Hub!",body:"This app is your home base from day one all the way to getting licensed and beyond. Everything you need is right here."},
-    {title:"Your Checklist",body:"Your checklist is broken into categories. Check off tasks as you complete them — your progress percentage updates automatically at the top."},
-    {title:"FTO and Activity Counters",body:"At the top of your checklist you'll find counters for FTO Observations, Life Apps Done, and Investments. Use the + and - buttons to track your activity."},
-    {title:"Milestones Tab",body:"This is where you set your Bonus Goal, write your My Why, enter your Business Commitment amount, log your DGO date, and track your Exam Date. Fill these out early — your trainer can see them!"},
-    {title:"Appointments Tab",body:"Log all 20 of your training appointments here. Use the MACHO gold star scoring to qualify your contacts — 3 or more stars means they are a great candidate for an appointment."},
-    {title:"Scripts Tab",body:"Not sure what to say when setting appointments? The Scripts tab has word-for-word scripts for warm market calls, new contacts, and opportunity night invites."},
-    {title:"Resources Tab",body:"Your admin adds training links, documents, and company materials here. Check back often — this is your team knowledge base."},
-    {title:"Scorecard Tab",body:"Track your weekly activity — Contacts Made, Appointments Set, and Appointments Completed. Focus on the activity and the results will follow!"},
-    {title:"Request Licensed Now What",body:"When you complete 100% of your checklist a gold button appears to request access to the Licensed Now What track. Tap it and your admin will be notified to grant access."},
-    {title:"Add to Your Phone",body:"Tap 'Add to Phone' in the top bar to install this app on your home screen — it works just like a real app and gives you quick access anytime!"},
+    {title:"Welcome to Your Training Hub!",body:"This app is your home base from day one all the way to RVP. Your checklist, milestones, appointments, scripts, resources, scorecard, and career path are all right here."},
+    {title:"Your Checklist",body:"Check off tasks as you complete them. FTO Observations, Life Apps, and Investment counters are at the top. Your progress percentage updates automatically."},
+    {title:"Milestones Tab",body:"Fill out your My Why, birthday, pre-licensing class, DGO date and photo, exam date, t-shirt size, and bonus goal. Your trainer can see everything you enter here — fill it out early!"},
+    {title:"Pre-Licensing Class",body:"In Milestones, choose In-Person, Zoom, or Online Course. If you choose Online Course it shows the ExamFX link and RVP ID options to copy. Schedule your exam within 5 days of finishing class."},
+    {title:"Appointments Tab",body:"Log all 20 training appointments with MACHO gold star scoring. Tap M-A-C-H-O to score each contact — 3 or more stars means they are a great candidate. Remember your purpose — these are for YOUR development!"},
+    {title:"Recruits Tab",body:"Log everyone you bring into the opportunity. This is your personal record — no approval needed. Track their name, phone, and date. Once they are officially in the system their progress bar shows here too."},
+    {title:"Career Path Tab",body:"Licensed agents have a Career Path tab showing your full journey — New Rep, Licensed Agent, Field Trainer, and RVP. See the 8 Field Trainer requirements and request your review when you are ready."},
+    {title:"Scorecard Tab",body:"Track your weekly contacts, appointments set, and appointments completed. Focus on the activity and the results will follow. Check your conversion rate and 4-week history."},
+    {title:"Scripts & Resources",body:"Scripts has word-for-word scripts for every situation. Resources has training links and documents your admin adds. Both update in real time."},
+    {title:"Request Licensed Now What",body:"Finish 100% of your checklist and a gold button appears to request Licensed Now What access. Your admin approves it and your track upgrades automatically. Add the app to your phone for quick access anytime!"},
   ],
 };
 
@@ -862,7 +862,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <PendingRecruits data={data} onUpdate={onUpdate} userRole={userRole}/>
     <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
@@ -1687,29 +1686,40 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
 // ── RECRUITS TAB ──
 function RecruitsTab({rep,data,myRecruits,onUpdate}) {
   const [showForm,setShowForm] = useState(false);
-  const [form,setForm] = useState({name:"",phone:""});
-  const pendingRecruits = rep.pendingRecruits||[];
+  const [form,setForm] = useState({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
+  const myLoggedRecruits = rep.myRecruitLog||[];
 
-  const submitRecruit = () => {
+  const addRecruit = () => {
     if(!form.name) return;
-    const updated = [...pendingRecruits,{...form,submittedAt:new Date().toISOString(),id:Date.now()}];
-    onUpdate(rep.id,{...rep,pendingRecruits:updated});
-    setForm({name:"",phone:""});
+    const updated = [...myLoggedRecruits,{...form,addedAt:new Date().toISOString(),id:Date.now()}];
+    onUpdate(rep.id,{...rep,myRecruitLog:updated});
+    setForm({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
     setShowForm(false);
   };
 
+  const removeRecruit = (id) => {
+    onUpdate(rep.id,{...rep,myRecruitLog:myLoggedRecruits.filter(r=>r.id!==id)});
+  };
+
+  const totalRecruits = myRecruits.length + myLoggedRecruits.length;
+
   return <div>
+    {/* Motivational banner */}
     <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,color:"white",border:"1px solid "+C.teal+"33"}}>
       <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Build Your Team</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Every person you bring in builds your team, your income, and your legacy. <strong style={{color:"white"}}>Your income grows as your team grows.</strong> Stay connected to your recruits.</div>
-      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:11,color:"rgba(255,255,255,0.7)"}}>Recruiting is a core requirement to become a Field Trainer. Start building now!</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Every person you bring in builds your team, your income, and your legacy. <strong style={{color:"white"}}>Your income grows as your team grows.</strong> Stay connected to your recruits — their success is your success!</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:11,color:"rgba(255,255,255,0.7)"}}>Recruiting is a core requirement to become a Field Trainer and RVP. Every conversation is a step toward your goals!</div>
     </div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-      <Card style={{padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:C.teal}}>{myRecruits.length}</div><div style={{fontSize:11,color:C.textMid}}>Official Recruits</div></Card>
-      <Card style={{padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:C.gold}}>{pendingRecruits.length}</div><div style={{fontSize:11,color:C.textMid}}>Pending Review</div></Card>
-    </div>
+
+    {/* Stats */}
+    <Card style={{padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
+      <div style={{fontSize:28,fontWeight:800,color:C.teal}}>{totalRecruits}</div>
+      <div style={{fontSize:12,color:C.textMid}}>Total People You Have Brought In</div>
+    </Card>
+
+    {/* Official recruits - in the system */}
     {myRecruits.length>0&&<div style={{marginBottom:14}}>
-      <SecHead title="My Recruits" color={C.teal}/>
+      <SecHead title={"In the System ("+myRecruits.length+")"} color={C.teal}/>
       {myRecruits.map((r,i)=>{
         const track=TRACK_INFO[r.track];
         const cl=track?.checklist||[];
@@ -1722,30 +1732,40 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
           </div>
           <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Their progress {pct}%</div>
           <Bar pct={pct} color={track?.color||C.teal} h={4}/>
-          {pct===100&&<div style={{marginTop:5,fontSize:10,color:C.success,fontWeight:600}}>Graduated! Great job coaching them!</div>}
+          {pct===100&&<div style={{marginTop:5,fontSize:10,color:C.success,fontWeight:600}}>Graduated! Great job investing in them!</div>}
         </div>;
       })}
     </div>}
-    {myRecruits.length===0&&pendingRecruits.length===0&&<div style={{textAlign:"center",padding:"20px 0",marginBottom:14}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Your team starts with one conversation</div>
-      <div style={{fontSize:12,color:C.textMid,lineHeight:1.6}}>Who do you know that could benefit from this opportunity? Submit their info below and your admin will get them started.</div>
-    </div>}
-    {pendingRecruits.length>0&&<div style={{marginBottom:14}}>
-      <SecHead title="Pending Admin Review" color={C.gold}/>
-      {pendingRecruits.map((r,i)=><div key={i} style={{borderRadius:8,border:"1px solid "+C.gold+"33",padding:"8px 12px",marginBottom:6,background:C.gold+"08",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div><div style={{fontSize:12,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:10,color:C.textMid}}>{r.phone} - Submitted {new Date(r.submittedAt).toLocaleDateString()}</div></div>
-        <Badge color={C.gold} small>Pending</Badge>
+
+    {/* Personal recruit log */}
+    {myLoggedRecruits.length>0&&<div style={{marginBottom:14}}>
+      <SecHead title={"My Recruit Log ("+myLoggedRecruits.length+")"} color={C.purple}/>
+      {myLoggedRecruits.map((r,i)=><div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:6,background:"white",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div>
+          <div style={{fontSize:11,color:C.textMid}}>{r.phone&&r.phone+" - "}{r.date&&new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+        </div>
+        <button onClick={()=>removeRecruit(r.id)} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:16,padding:"0 4px"}}>x</button>
       </div>)}
     </div>}
-    {!showForm?<button onClick={()=>setShowForm(true)} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Submit a New Recruit</button>:
+
+    {/* Empty state */}
+    {totalRecruits===0&&<div style={{textAlign:"center",padding:"20px 0",marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Your team starts with one conversation</div>
+      <div style={{fontSize:12,color:C.textMid,lineHeight:1.6,maxWidth:320,margin:"0 auto"}}>Think about who in your life could use more income, financial protection, or a career change. That person is your first recruit. Log them below and reach out today!</div>
+    </div>}
+
+    {/* Add recruit button/form */}
+    {!showForm?<button onClick={()=>setShowForm(true)} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Log a New Recruit</button>:
     <Card style={{border:"1px solid "+C.teal+"44"}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>Submit a New Recruit</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:10}}>Enter their info and your admin will officially add them to the system.</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>Log a New Recruit</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:10}}>Track everyone you bring into the opportunity. This is your personal record.</div>
       <input placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-      <input placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
+      <input placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
       <div style={{display:"flex",gap:8}}>
         <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-        <button onClick={submitRecruit} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Submit Recruit</button>
+        <button onClick={addRecruit} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Recruit</button>
       </div>
     </Card>}
   </div>;
