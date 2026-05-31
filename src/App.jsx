@@ -134,6 +134,7 @@ const RVP_CHECKLIST = [
   {id:"rvp2",cat:"Licensing",task:"Get Securities Licensed - SIE"},
   {id:"rvp3",cat:"Licensing",task:"Series 6"},
   {id:"rvp4",cat:"Licensing",task:"Series 63"},
+  {id:"rvp4b",cat:"Licensing",task:"Series 65"},
   {id:"rvp5",cat:"Licensing",task:"Series 26"},
   {id:"rvp6",cat:"Licensed Agents",task:"License 1-3 agents"},
   {id:"rvp7",cat:"Licensed Agents",task:"License 4-6 agents"},
@@ -529,7 +530,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
+  const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:`Recruits (${myRecruits.length})`},{k:"schedule",l:"Schedule"},{k:"rvp",l:"RVP Path"}];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -579,6 +581,22 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
+    {tab==="recruits"&&<div>
+      {myRecruits.length===0?<div style={{textAlign:"center",padding:"24px 0",color:C.textLight}}>No recruits yet — keep sharing the opportunity!</div>:myRecruits.map((r,i)=>{
+        const track=TRACK_INFO[r.track];
+        const cl=track?.checklist||[];
+        const done=cl.filter(i=>(r.checked||{})[i.id]).length;
+        const pct=cl.length>0?Math.round((done/cl.length)*100):0;
+        return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:7,background:"white"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}</div></div>
+            <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
+          </div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Progress {pct}%</div>
+          <Bar pct={pct} color={track?.color||C.teal} h={4}/>
+        </div>;
+      })}
+    </div>}
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>!readOnly&&onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={readOnly}/>)}</div>)}</div>}
@@ -724,26 +742,21 @@ function ProdDash({data,onUpdateData}) {
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
     </div>}
     {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:C.textMid}}>{g.l}</span><span style={{fontSize:12,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:10,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
-    <div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:5}}>Update Rep Premium / Licensed Status</div>
-      {reps.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
-        <span style={{fontSize:11,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
-        <input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:75,padding:"3px 6px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-        <label style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:C.textMid,cursor:"pointer"}}><input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/>Lic</label>
-      </div>)}
-    </div>
+    <CollapsibleRepList reps={reps} data={data} onUpdateData={onUpdateData}/>
   </Card>;
 }
 
 // ── ADD REP ──
-function AddRep({onAdd,onClose,trainers}) {
-  const [f,setF]=useState({name:"",phone:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
+function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
+  const [f,setF]=useState({name:"",phone:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:"",birthday:""});
   const fmtP=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
-      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"startDate",l:"Start Date",t:"date"},{fld:"graduationDate",l:"Target Graduation",t:"date"}].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
+      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"startDate",l:"Start Date",t:"date"},{fld:"graduationDate",l:"Target Graduation",t:"date"},{fld:"birthday",l:"Birthday (for celebrations)",t:"date"}].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
       <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>{Object.entries(TRACK_INFO).map(([k,ti])=><button key={k} onClick={()=>setF({...f,track:k})} style={{padding:"7px",borderRadius:8,border:`2px solid ${f.track===k?ti.color:C.border}`,background:f.track===k?ti.color+"11":"white",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:700,color:f.track===k?ti.color:C.textMid}}>{ti.label}</div><div style={{fontSize:9,color:C.textLight}}>{ti.days}</div></button>)}</div></div>
       {trainers.length>0&&<div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>}
+      <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
       <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer",marginTop:4}}>Add Rep</button>
     </div>
   </div>;
@@ -843,7 +856,14 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
+    <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
+    <BirthdayAnniversaryWidget data={data}/>
+    {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
+    {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
+    {(userRole==="admin"||userRole==="superadmin")&&<MonthlyHistory data={data} onUpdate={onUpdate}/>}
+    {userRole==="trainer"&&<TopRecruiters data={data}/>}
+    {userRole==="trainer"&&<Leaderboard data={data} userId={userId}/>}
     {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>onUpdate({...data,myProduction:{...(data.myProduction||{}),[userId]:p}})}/>}
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
@@ -876,7 +896,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
               {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
             </div>
-            <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}{rep.recruitedBy&&(()=>{const recruiter=[...(data.admins||[]),(data.trainers||[]),(data.reps||[])].flat().find(p=>p.id===rep.recruitedBy);return recruiter?<span style={{color:C.purple}}> - Recruited by {recruiter.name}</span>:null;})()}</div>
           </div>
           <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
         </div>
@@ -887,7 +907,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
         <div style={{fontSize:10,color:C.textLight}}>{ds===null?"No check-ins yet":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> - DGO: {rep.dgoDate}</span>}</div>
       </div>;
     })}
-    {showAdd&&<AddRep onAdd={addRep} onClose={()=>setShowAdd(false)} trainers={trainers}/>}
+    {showAdd&&<AddRep onAdd={addRep} onClose={()=>setShowAdd(false)} trainers={trainers} allPeople={[(data.admins||[]).map(a=>({...a,role:"Admin"})),trainers.map(t=>({...t,role:"Trainer"})),(data.reps||[]).map(r=>({...r,role:"Rep"}))].flat()}/>}
     {showManage&&<ManageTeam data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
   </div>;
 }
@@ -1371,6 +1391,247 @@ function PhotoLightbox({src,name,onClose}) {
       </div>
       <div style={{textAlign:"center",marginTop:10,fontSize:11,color:"rgba(255,255,255,0.4)"}}>Right-click the photo to save or copy image</div>
     </div>
+  </div>;
+}
+
+
+
+
+// ── BIRTHDAY & ANNIVERSARY TRACKER ──
+function BirthdayAnniversaryWidget({data}) {
+  const reps = data.reps||[];
+  const today = new Date();
+  const upcoming = [];
+
+  reps.forEach(rep => {
+    if(rep.birthday) {
+      const bday = new Date(rep.birthday+"T12:00:00");
+      const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
+      const diff = Math.ceil((thisYear - today)/(1000*60*60*24));
+      const days = diff < 0 ? diff + 365 : diff;
+      if(days <= 30) upcoming.push({name:rep.name, type:"Birthday", days, date:thisYear, icon:"??"});
+    }
+    if(rep.startDate) {
+      const start = new Date(rep.startDate+"T12:00:00");
+      const anniv = new Date(today.getFullYear(), start.getMonth(), start.getDate());
+      const diff = Math.ceil((anniv - today)/(1000*60*60*24));
+      const days = diff < 0 ? diff + 365 : diff;
+      const years = today.getFullYear() - start.getFullYear();
+      if(days <= 30) upcoming.push({name:rep.name, type:`${years} Year Anniversary`, days, date:anniv, icon:"??"});
+    }
+  });
+
+  upcoming.sort((a,b)=>a.days-b.days);
+  if(upcoming.length===0) return null;
+
+  return <Card style={{marginBottom:14}}>
+    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Celebrations</div>
+    {upcoming.map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<upcoming.length-1?`1px solid ${C.border}`:"none"}}>
+      <span style={{fontSize:20}}>{item.icon}</span>
+      <div style={{flex:1}}>
+        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div>
+        <div style={{fontSize:11,color:C.textMid}}>{item.type} — {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
+      </div>
+      <div style={{textAlign:"right"}}>
+        {item.days===0?<Badge color={C.success} small>Today!</Badge>:item.days===1?<Badge color={C.gold} small>Tomorrow</Badge>:<Badge color={C.teal} small>In {item.days}d</Badge>}
+      </div>
+    </div>)}
+  </Card>;
+}
+
+
+
+// ── ACTIVITY ALERTS ──
+function ActivityAlerts({data,userRole,userId}) {
+  const reps = userRole==="trainer" ? (data.reps||[]).filter(r=>r.trainerId===userId) : (data.reps||[]);
+  const alerts = [];
+  reps.forEach(rep => {
+    const cis = rep.checkIns||[];
+    const lastCI = cis.length>0 ? new Date(cis[cis.length-1].date) : null;
+    const ds = lastCI ? Math.floor((Date.now()-lastCI)/(86400000)) : null;
+    const cl = (rep.track ? (({fast:13,regular:13,licensed:19})[rep.track]||13) : 13);
+    const done = Object.values(rep.checked||{}).filter(Boolean).length;
+    const pct = Math.round((done/cl)*100);
+    if(ds===null&&rep.createdAt&&Date.now()-rep.createdAt>3*86400000) alerts.push({name:rep.name,msg:"No check-ins logged yet",color:C.warning,id:rep.id});
+    else if(ds!==null&&ds>=7) alerts.push({name:rep.name,msg:`No check-in for ${ds} days`,color:C.danger,id:rep.id});
+    if(pct===0&&rep.createdAt&&Date.now()-rep.createdAt>2*86400000) alerts.push({name:rep.name,msg:"No checklist progress yet",color:C.warning,id:rep.id});
+  });
+  if(alerts.length===0) return null;
+  return <div style={{background:"white",borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 16px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.danger}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Activity Alerts ({alerts.length})</div>
+    </div>
+    {alerts.slice(0,5).map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<Math.min(alerts.length,5)-1?`1px solid ${C.border}`:"none"}}>
+      <div style={{width:6,height:6,borderRadius:3,background:a.color,flexShrink:0}}/>
+      <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
+      <span style={{fontSize:11,color:a.color,fontWeight:500}}>{a.msg}</span>
+    </div>)}
+    {alerts.length>5&&<div style={{fontSize:11,color:C.textLight,marginTop:6,textAlign:"center"}}>+{alerts.length-5} more alerts — check your rep list</div>}
+  </div>;
+}
+
+// ── MONTHLY PRODUCTION HISTORY ──
+function MonthlyHistory({data,onUpdate}) {
+  const [open,setOpen] = useState(false);
+  const history = data.productionHistory||[];
+  const currentMonth = new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  const reps = data.reps||[];
+  const trainers = data.trainers||[];
+  const totPremMo = reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction||{})[t.id]?.lifeApps||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+
+  const archiveMonth = () => {
+    if(!window.confirm(`Archive ${currentMonth} production data and reset for next month?`)) return;
+    const entry = {
+      month: currentMonth,
+      archivedAt: new Date().toISOString(),
+      premium: totPremMo,
+      annualPremium: totPremMo*12,
+      recruits: reps.length,
+      licensed: reps.filter(r=>r.isLicensed).length,
+    };
+    onUpdate({...data, productionHistory:[...history, entry], reps: data.reps.map(r=>({...r,premiumSubmitted:0}))});
+  };
+
+  return <Card style={{marginBottom:14}}>
+    <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Production History</div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <span style={{fontSize:11,color:C.textLight}}>{history.length} months archived</span>
+        <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
+      </div>
+    </div>
+    {open&&<div style={{marginTop:12}}>
+      <button onClick={archiveMonth} style={{width:"100%",padding:"8px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,marginBottom:12}}>
+        Archive {currentMonth} and Reset
+      </button>
+      {history.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"8px 0"}}>No months archived yet</div>}
+      {history.slice().reverse().map((h,i)=><div key={i} style={{padding:"8px 10px",borderRadius:8,background:C.surface,marginBottom:6}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <span style={{fontSize:12,fontWeight:700,color:C.text}}>{h.month}</span>
+          <Badge color={C.teal} small>${Math.round(h.annualPremium).toLocaleString()}/yr</Badge>
+        </div>
+        <div style={{display:"flex",gap:12,fontSize:11,color:C.textMid}}>
+          <span>${h.premium.toFixed(0)}/mo premium</span>
+          <span>{h.recruits} recruits</span>
+          <span>{h.licensed} licensed</span>
+        </div>
+      </div>)}
+    </div>}
+  </Card>;
+}
+
+// ── LEADERBOARD ──
+function Leaderboard({data,userId}) {
+  const [mode,setMode] = useState("scorecard");
+  const weekKey = (()=>{const d=new Date();const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);d.setDate(diff);d.setHours(0,0,0,0);return d.toISOString().split("T")[0];})();
+  const allUsers = [
+    ...(data.admins||[]).map(u=>({...u,role:"admin"})),
+    ...(data.trainers||[]).map(u=>({...u,role:"trainer"})),
+    ...(data.reps||[]).map(u=>({...u,role:"rep"})),
+  ];
+  const goals={contacts:100,apptSet:20,apptDone:20};
+
+  const ranked = allUsers.map(u=>{
+    const sc=(data.scorecards||{})[u.id]||{};
+    const wk=sc[weekKey]||{contacts:0,apptSet:0,apptDone:0};
+    const scorePct=Math.round(((wk.contacts/goals.contacts)+(wk.apptSet/goals.apptSet)+(wk.apptDone/goals.apptDone))/3*100);
+    const apps=(data.myProduction||{})[u.id]?.lifeApps||[];
+    const appts=(data.reps||[]).find(r=>r.id===u.id)?.appointments?.filter(a=>a.status==="Completed").length||0;
+    return {...u,scorePct,lifeApps:apps.length,appts,wk};
+  }).sort((a,b)=>{
+    if(mode==="scorecard") return b.scorePct-a.scorePct;
+    if(mode==="lifeapps") return b.lifeApps-a.lifeApps;
+    return b.appts-a.appts;
+  });
+
+  const medals=["??","??","??"];
+  const roleColors={admin:C.teal,trainer:C.purple,rep:C.gold};
+
+  return <Card style={{marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Leaderboard</div>
+      <div style={{display:"flex",gap:4}}>
+        {[["scorecard","Scorecard"],["lifeapps","Life Apps"],["appts","Appts"],["recruits","Recruits"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setMode(k)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:mode===k?700:400,background:mode===k?C.navy:C.surface,color:mode===k?"white":C.textMid}}>{l}</button>
+        ))}
+      </div>
+    </div>
+    {ranked.slice(0,10).map((u,i)=>{
+      const isMe=u.id===userId;
+      const val=mode==="scorecard"?`${u.scorePct}%`:mode==="lifeapps"?u.lifeApps:mode==="recruits"?u.recruits:u.appts;
+      const maxVal=mode==="scorecard"?100:mode==="lifeapps"?Math.max(...ranked.map(r=>r.lifeApps),1):mode==="recruits"?Math.max(...ranked.map(r=>r.recruits),1):Math.max(...ranked.map(r=>r.appts),1);
+      const pct=mode==="scorecard"?u.scorePct:(Number(val)/maxVal)*100;
+      return <div key={u.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,padding:"7px 9px",borderRadius:8,background:isMe?C.teal+"11":i<3?"rgba(0,0,0,0.02)":"transparent",border:isMe?`1px solid ${C.teal}33`:"1px solid transparent"}}>
+        <div style={{width:22,height:22,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:i<3?16:11,fontWeight:700,color:i<3?"inherit":C.textLight}}>{i<3?medals[i]:i+1}</div>
+        <div style={{width:28,height:28,borderRadius:8,background:roleColors[u.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:roleColors[u.role],flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+            <span style={{fontSize:12,fontWeight:isMe?700:500,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}{isMe&&<span style={{fontSize:10,color:C.teal,marginLeft:4}}>(you)</span>}</span>
+            <span style={{fontSize:12,fontWeight:700,color:i===0?C.gold:C.text,marginLeft:8,flexShrink:0}}>{val}</span>
+          </div>
+          <Bar pct={pct} color={i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.teal} h={3}/>
+        </div>
+      </div>;
+    })}
+    {ranked.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"12px 0"}}>No activity logged yet this week</div>}
+  </Card>;
+}
+
+
+// ── TOP RECRUITERS ──
+function TopRecruiters({data}) {
+  const allPeople = [
+    ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
+    ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
+    ...(data.reps||[]).map(p=>({...p,role:"Rep"})),
+  ];
+  const recruitCounts = allPeople.map(p=>({
+    ...p,
+    recruits:(data.reps||[]).filter(r=>r.recruitedBy===p.id),
+  })).filter(p=>p.recruits.length>0).sort((a,b)=>b.recruits.length-a.recruits.length);
+
+  if(recruitCounts.length===0) return null;
+  const roleColors={Admin:C.teal,Trainer:C.purple,Rep:C.gold};
+  const medals=["??","??","??"];
+
+  return <Card style={{marginBottom:14}}>
+    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Top Recruiters</div>
+    {recruitCounts.slice(0,5).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,marginBottom:8,padding:"7px 9px",borderRadius:8,background:i===0?C.gold+"11":"transparent",border:i===0?`1px solid ${C.gold}33`:"none"}}>
+      <div style={{fontSize:i<3?16:11,fontWeight:700,width:22,textAlign:"center"}}>{i<3?medals[i]:i+1}</div>
+      <div style={{width:28,height:28,borderRadius:8,background:roleColors[p.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:roleColors[p.role],flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name} <span style={{fontSize:10,color:C.textLight}}>({p.role})</span></div>
+        <div style={{fontSize:10,color:C.textMid,marginTop:1}}>{p.recruits.map(r=>r.name).join(", ")}</div>
+      </div>
+      <div style={{textAlign:"center",flexShrink:0}}>
+        <div style={{fontSize:18,fontWeight:800,color:i===0?C.gold:C.text}}>{p.recruits.length}</div>
+        <div style={{fontSize:9,color:C.textLight}}>recruit{p.recruits.length!==1?"s":""}</div>
+      </div>
+    </div>)}
+  </Card>;
+}
+
+// ── COLLAPSIBLE REP LIST ──
+function CollapsibleRepList({reps,data,onUpdateData}) {
+  const [open,setOpen] = useState(false);
+  const [search,setSearch] = useState("");
+  const filtered = search ? reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())) : reps;
+  return <div style={{marginTop:10,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
+    <button onClick={()=>setOpen(!open)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer",padding:0}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>Update Rep Premium / Licensed Status ({reps.length} reps)</div>
+      <div style={{fontSize:12,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</div>
+    </button>
+    {open&&<div style={{marginTop:8}}>
+      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)}
+        style={{width:"100%",padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      {filtered.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No reps found</div>}
+      {filtered.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,padding:"5px 0",borderBottom:`1px solid ${C.border}`}}>
+        <span style={{fontSize:12,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
+        <input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:80,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+        <label style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:C.textMid,cursor:"pointer",whiteSpace:"nowrap"}}><input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/> Lic</label>
+      </div>)}
+    </div>}
   </div>;
 }
 
