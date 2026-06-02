@@ -2550,8 +2550,8 @@ function BirthdayAnniversaryWidget({data}) {
 
 // ── ACTIVITY ALERTS ──
 function ActivityAlerts({data,onUpdate,userRole,userId}) {
-  const [dismissed,setDismissed] = useState([]);
   const reps = userRole==="trainer" ? (data.reps||[]).filter(r=>r.trainerId===userId) : (data.reps||[]);
+  const dismissedAlerts = data.dismissedAlerts||[];
   const alerts = [];
   reps.forEach(rep => {
     const cis = rep.checkIns||[];
@@ -2560,29 +2560,32 @@ function ActivityAlerts({data,onUpdate,userRole,userId}) {
     const cl = (rep.track ? (({fast:13,regular:13,licensed:19})[rep.track]||13) : 13);
     const done = Object.values(rep.checked||{}).filter(Boolean).length;
     const pct = Math.round((done/cl)*100);
-    if(ds===null&&rep.createdAt&&Date.now()-rep.createdAt>3*86400000) alerts.push({name:rep.name,msg:"No check-ins logged yet",color:C.warning,id:rep.id});
-    else if(ds!==null&&ds>=7) alerts.push({name:rep.name,msg:`No check-in for ${ds} days`,color:C.danger,id:rep.id});
-    if(pct===0&&rep.createdAt&&Date.now()-rep.createdAt>2*86400000) alerts.push({name:rep.name,msg:"No checklist progress yet",color:C.warning,id:rep.id});
+    if(ds===null&&rep.createdAt&&Date.now()-rep.createdAt>3*86400000) alerts.push({name:rep.name,msg:"No check-ins logged yet",color:C.warning,key:rep.id+"_noci"});
+    else if(ds!==null&&ds>=7) alerts.push({name:rep.name,msg:"No check-in for "+ds+" days",color:C.danger,key:rep.id+"_stale"});
+    if(pct===0&&rep.createdAt&&Date.now()-rep.createdAt>2*86400000) alerts.push({name:rep.name,msg:"No checklist progress yet",color:C.warning,key:rep.id+"_noprog"});
   });
   const [showAll,setShowAll] = useState(false);
-  const visible_alerts = alerts.filter(a=>!dismissed.includes(a.id||a.name+a.msg));
+  const visible_alerts = alerts.filter(a=>!dismissedAlerts.includes(a.key));
   if(visible_alerts.length===0) return null;
   const visible = showAll?visible_alerts:visible_alerts.slice(0,5);
+
+  const dismiss = (key) => onUpdate({...data,dismissedAlerts:[...dismissedAlerts,key]});
+  const clearAll = () => onUpdate({...data,dismissedAlerts:[...dismissedAlerts,...alerts.map(a=>a.key)]});
+
   return <div style={{background:"white",borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.danger}}/>
       <div style={{fontSize:13,fontWeight:700,color:C.text,flex:1}}>Activity Alerts ({visible_alerts.length})</div>
-      <button onClick={()=>setDismissed(alerts.map(a=>a.id||a.name+a.msg))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Clear All</button>
+      <button onClick={clearAll} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Clear All</button>
     </div>
-    {visible.map((a,i)=>{
-      const key=a.id||a.name+a.msg;
-      return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none"}}>
+    {visible.map((a,i)=>(
+      <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none"}}>
         <div style={{width:6,height:6,borderRadius:3,background:a.color,flexShrink:0}}/>
         <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
         <span style={{fontSize:11,color:a.color,fontWeight:500,flex:1}}>{a.msg}</span>
-        <button onClick={()=>setDismissed(d=>[...d,key])} style={{fontSize:10,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
-      </div>;
-    })}
+        <button onClick={()=>dismiss(a.key)} style={{fontSize:10,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
+      </div>
+    ))}
     {visible_alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>{showAll?"Show Less":"Show All "+visible_alerts.length+" Alerts"}</button>}
   </div>;
 }
