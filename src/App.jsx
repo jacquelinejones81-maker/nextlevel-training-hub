@@ -523,55 +523,14 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
 }
 
 // ── REP COUNTERS ──
-function RepCounters({rep,onUpdate,onUpdateData,readOnly,data,repId}) {
-  const [showInvModal,setShowInvModal] = useState(false);
-  const [invForm,setInvForm] = useState({clientName:"",pac:"",lumpSum:"",type:"PAC"});
-
-  const saveInvestment = () => {
-    if(!invForm.clientName) return;
-    const uid = repId||rep.id;
-    const entry = {clientName:invForm.clientName,date:new Date().toISOString(),repId:uid};
-    const prevLogs = (data&&data.investmentLogs)||{};
-    const prevEntries = prevLogs[uid]||[];
-    const newLogs = Object.assign({},prevLogs,{[uid]:[...prevEntries,entry]});
-    // Save investment log to top-level data (Firebase) AND update rep counter
-    if(typeof onUpdateData==="function"){
-      onUpdateData(Object.assign({},data,{
-        investmentLogs:newLogs,
-        reps:(data.reps||[]).map(r=>r.id===uid?{...r,pacCount:(r.pacCount||0)+1}:r)
-      }));
-    } else {
-      onUpdate(Object.assign({},rep,{pacCount:(rep.pacCount||0)+1}),"investmentLog",{investmentLogs:newLogs});
-    }
-    setInvForm({clientName:"",pac:"",lumpSum:"",type:"PAC"});
-    setShowInvModal(false);
-  };
-
-  return <div>
-    {showInvModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div style={{background:"white",borderRadius:14,padding:"20px",maxWidth:360,width:"100%"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Log Investment</div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:6,lineHeight:1.4}}>Log the name of the person you observed an investment appointment with.</div>
-        <input placeholder="Contact Name" value={invForm.clientName} onChange={e=>setInvForm({...invForm,clientName:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,marginBottom:12,boxSizing:"border-box",color:C.text}}/>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setShowInvModal(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-          <button onClick={saveInvestment} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Investment</button>
-        </div>
-      </div>
-    </div>}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-    {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM",isInv:true}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
+function RepCounters({rep,onUpdate,readOnly}) {
+  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+    {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
       <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
       <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
-      {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}>
-        <button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button>
-        {c.isInv?<button onClick={()=>setShowInvModal(true)} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:13,color:c.color,fontWeight:700}}>+</button>:
-        <button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button>}
-      </div>}
+      {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
       <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
-      {c.isInv&&<RepInvestmentLog repId={repId} data={data}/>}
     </Card>)}
-    </div>
   </div>;
 }
 
@@ -722,13 +681,15 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
         </div>
       )}
     </div>
+    {/* ── WALL OF FAME BANNER ── */}
+    <WallOfFameBanner data={data}/>
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
-    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData} readOnly={readOnly} data={data} repId={rep.id}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
@@ -1010,7 +971,8 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<MonthlyHistory data={data} onUpdate={onUpdate}/>}
-    {userRole==="trainer"&&<TopRecruiters data={data}/>}
+    {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
+    {userRole==="trainer"&&<TopRecruiters data={data}/> }
     {userRole==="trainer"&&<Leaderboard data={data} userId={userId}/>}
     {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>onUpdate({...data,myProduction:{...(data.myProduction||{}),[userId]:p}})}/>}
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
@@ -1983,6 +1945,45 @@ function MyProfilePage({session,data,onUpdate}) {
         <span style={{fontSize:12,fontWeight:600,color:C.text}}>{item.v}</span>
       </div>)}
     </Card>
+  </div>;
+}
+
+
+// ── WALL OF FAME BANNER (scrollable strip) ──
+function WallOfFameBanner({data}) {
+  const recognitions = data.wallOfFame||[];
+  if(recognitions.length===0) return null;
+  const FAME_COLORS_B = {"First Life App":C.teal,"Licensed!":C.gold,"Top Producer":C.success,"Field Trainer Approved":C.purple,"Recruiter of the Month":C.teal,"Most Improved":C.gold,"Going Above and Beyond":C.success,"Custom":C.textMid};
+  const profilePhotos = data.profilePhotos||{};
+
+  const getPhotoB = (r) => {
+    if(r.customPhoto) return r.customPhoto;
+    if(profilePhotos[r.personId]) return profilePhotos[r.personId];
+    const rep = (data.reps||[]).find(rp=>rp.id===r.personId);
+    if(rep&&rep.dgoPhoto) return rep.dgoPhoto;
+    return null;
+  };
+
+  return <div style={{marginBottom:12}}>
+    <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:8,paddingLeft:2}}>Wall of Fame</div>
+    <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
+      {recognitions.map((r,i)=>{
+        const photo = getPhotoB(r);
+        const catColor = FAME_COLORS_B[r.category]||C.gold;
+        return <div key={i} style={{flexShrink:0,width:130,borderRadius:12,border:"2px solid "+catColor+"44",background:"white",overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{background:"linear-gradient(135deg,"+catColor+"22,"+catColor+"11)",padding:"10px 10px 6px",textAlign:"center"}}>
+            {photo
+              ?<img src={photo} alt={r.personName} style={{width:48,height:48,borderRadius:24,objectFit:"cover",border:"2px solid "+catColor,margin:"0 auto",display:"block"}}/>
+              :<div style={{width:48,height:48,borderRadius:24,background:catColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"white",margin:"0 auto",border:"2px solid "+catColor+"66"}}>{r.personName?.charAt(0)?.toUpperCase()}</div>}
+          </div>
+          <div style={{padding:"6px 8px 10px",textAlign:"center"}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.personName}</div>
+            <div style={{fontSize:9,fontWeight:700,color:catColor,background:catColor+"15",borderRadius:4,padding:"2px 6px",display:"inline-block",marginBottom:4}}>{r.category}</div>
+            <div style={{fontSize:10,color:C.textMid,lineHeight:1.4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{r.message}</div>
+          </div>
+        </div>;
+      })}
+    </div>
   </div>;
 }
 
@@ -2996,7 +2997,6 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7Z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
-    {k:"investlog",l:"Investment Log",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
   ];
@@ -3112,7 +3112,6 @@ export default function App() {
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
-    if(section==="investlog") return <InvestmentLogPage data={data} onUpdate={upd}/>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
