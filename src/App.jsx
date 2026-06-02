@@ -652,7 +652,7 @@ function CareerJourneyBanner({rep,onUpdate}) {
 }
 
 // ── REP VIEW ──
-function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
+function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
   const track=TRACK_INFO[rep.track];
@@ -720,7 +720,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
-    {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u,flag,extra)=>{if(flag==="investmentLog"&&extra&&onUpdateData)onUpdateData({...data,...extra});onUpdate(rep.id,u);}} readOnly={readOnly} data={data} repId={rep.id}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u,flag,extra)=>{if(flag==="investmentLog"&&extra){const mergedData={...data,...extra};if(onUpdateData)onUpdateData(mergedData);else onUpdate(rep.id,{...u});}else{onUpdate(rep.id,u);}}} readOnly={readOnly} data={data} repId={rep.id}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
@@ -867,7 +867,8 @@ function ProdDash({data,onUpdateData}) {
   const goals=data.goals||{premium:10000,recruits:10,licensed:100};
   const [editG,setEditG]=useState(false);
   const [gd,setGd]=useState(goals);
-  const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0)+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+  const allStaff=[...(data.trainers||[]),...(data.admins||[])];
+  const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0)+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)+allStaff.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
   const totRecs=reps.length;
   const totLic=reps.filter(r=>r.isLicensed).length;
   return <Card style={{marginBottom:14}}>
@@ -2054,14 +2055,27 @@ function WallOfFame({data,onUpdate,userRole}) {
   ];
 
   const getPhoto = (personId) => {
+    // 1. Check rep DGO photo
     const rep = (data.reps||[]).find(r=>r.id===personId);
     if(rep?.dgoPhoto) return rep.dgoPhoto;
-    // Check localStorage for trainer/admin profile photos
-    const person = [...(data.trainers||[]),(data.admins||[])].flat().find(p=>p.id===personId);
+    // 2. Check My Profile photo for trainers/admins
+    const allPeopleList = [...(data.trainers||[]),...(data.admins||[])];
+    const person = allPeopleList.find(p=>p.id===personId);
     if(person){
       try{
-        const key="profilePhoto_"+(person.role||"trainer")+"_"+(person.name||"").replace(/\s+/g,"_");
-        const stored=localStorage.getItem(key);
+        const role = person.role||"trainer";
+        const safeName = (person.name||"").replace(/\s/g,"_");
+        const key = "profilePhoto_"+role+"_"+safeName;
+        const stored = localStorage.getItem(key);
+        if(stored) return stored;
+      }catch(e){}
+    }
+    // 3. Also check rep My Profile (if rep has profile photo separate from DGO)
+    if(rep){
+      try{
+        const safeName = (rep.name||"").replace(/\s/g,"_");
+        const key = "profilePhoto_rep_"+safeName;
+        const stored = localStorage.getItem(key);
         if(stored) return stored;
       }catch(e){}
     }
@@ -2108,9 +2122,14 @@ function WallOfFame({data,onUpdate,userRole}) {
         <textarea placeholder="Write a personal recognition message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5}}/>
       </div>
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Photo (optional — uses DGO photo if available)</div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>Photo</div>
+        {form.personId&&(()=>{const autoPhoto=getPhoto(form.personId);return autoPhoto?<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"7px 10px",background:C.success+"11",borderRadius:8,border:"1px solid "+C.success+"33"}}>
+          <img src={form.customPhoto||autoPhoto} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid "+C.success}}/>
+          <div style={{fontSize:11,color:C.success,fontWeight:600}}>Photo found automatically</div>
+          {form.customPhoto&&<button onClick={()=>setForm({...form,customPhoto:null})} style={{fontSize:10,color:C.textMid,background:"none",border:"none",cursor:"pointer",marginLeft:"auto"}}>Use auto</button>}
+        </div>:null;})()}
         <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:7,background:C.surface,border:"1px solid "+C.border,cursor:"pointer",fontSize:11,color:C.textMid}}>
-          Upload Custom Photo
+          {form.customPhoto?"Change Photo":"Upload Custom Photo"}
           <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
             const file=e.target.files[0];
             if(!file) return;
@@ -2119,7 +2138,7 @@ function WallOfFame({data,onUpdate,userRole}) {
             reader.readAsDataURL(file);
           }}/>
         </label>
-        {form.customPhoto&&<span style={{fontSize:10,color:C.success,marginLeft:8}}>Photo ready</span>}
+        {form.customPhoto&&<span style={{fontSize:10,color:C.success,marginLeft:8}}>Custom photo ready</span>}
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
@@ -2141,7 +2160,7 @@ function WallOfFame({data,onUpdate,userRole}) {
           {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
           {/* Photo/Avatar */}
           <div style={{background:"linear-gradient(135deg,"+catColor+"33,"+catColor+"11)",padding:"16px 16px 8px",textAlign:"center"}}>
-            {photo?<img src={photo} alt={r.personName} style={{width:64,height:64,borderRadius:32,objectFit:"cover",border:"3px solid "+catColor,margin:"0 auto"}}/>:
+            {(r.customPhoto||photo)?<img src={r.customPhoto||photo} alt={r.personName} style={{width:64,height:64,borderRadius:32,objectFit:"cover",border:"3px solid "+catColor,margin:"0 auto"}}/>:
             <div style={{width:64,height:64,borderRadius:32,background:catColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"white",margin:"0 auto",border:"3px solid "+catColor+"66"}}>{r.personName?.charAt(0)?.toUpperCase()}</div>}
           </div>
           {/* Content */}
@@ -2690,7 +2709,7 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
   const filtered = search ? reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())) : reps;
   return <div style={{marginTop:10,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
     <button onClick={()=>setOpen(!open)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer",padding:0}}>
-      <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>Update Rep Premium / Licensed Status ({reps.length} reps)</div>
+      <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>Update Licensed Status ({reps.length} reps)</div>
       <div style={{fontSize:12,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</div>
     </button>
     {open&&<div style={{marginTop:8}}>
@@ -2699,8 +2718,9 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
       {filtered.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No reps found</div>}
       {filtered.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,padding:"5px 0",borderBottom:`1px solid ${C.border}`}}>
         <span style={{fontSize:12,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
-        <input type="number" placeholder="$/mo" value={r.premiumSubmitted||""} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,premiumSubmitted:Number(e.target.value)}:rep)})} style={{width:80,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-        <label style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:C.textMid,cursor:"pointer",whiteSpace:"nowrap"}}><input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/> Lic</label>
+        <label style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.textMid,cursor:"pointer",whiteSpace:"nowrap"}}>
+          <input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/> Licensed
+        </label>
       </div>)}
     </div>}
   </div>;
@@ -3076,7 +3096,7 @@ export default function App() {
       <div style={{maxWidth:580,margin:"0 auto",padding:14}}>
         <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
         <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
-        <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false}/>
+        <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/>
       </div>
     </div>;
   }
