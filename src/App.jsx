@@ -2181,10 +2181,11 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
   const goals = data.teamGoals||[];
   const teams = data.goalTeams||["Main Team"];
   const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const [open,setOpen] = useState(true);
+  const [collapsedTeams,setCollapsedTeams] = useState({});
   const [showForm,setShowForm] = useState(false);
   const [showAddTeam,setShowAddTeam] = useState(false);
   const [newTeamName,setNewTeamName] = useState("");
-  const [selectedTeam,setSelectedTeam] = useState("All");
   const [form,setForm] = useState({title:"",target:0,unit:"Life Apps",current:0,deadline:"",team:teams[0]||"Main Team"});
 
   const addTeam = () => {
@@ -2202,82 +2203,114 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
   };
 
   const updateCurrent = (id,val) => onUpdate({...data,teamGoals:goals.map(g=>g.id===id?{...g,current:val}:g)});
-  const remove = (id) => onUpdate({...data,teamGoals:goals.filter(g=>g.id!==id)});
+  const removeGoal = (id) => onUpdate({...data,teamGoals:goals.filter(g=>g.id!==id)});
+  const toggleTeam = (t) => setCollapsedTeams(prev=>({...prev,[t]:!prev[t]}));
 
   if(goals.length===0&&!isAdmin) return null;
 
-  return <Card style={{marginBottom:14,border:"1px solid "+C.gold+"33"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Goals</div>
-      {isAdmin&&<div style={{display:"flex",gap:5}}>
-        <button onClick={()=>setShowAddTeam(!showAddTeam)} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>+ Team</button>
-        <button onClick={()=>setShowForm(!showForm)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Goal</button>
-      </div>}
+  return <div style={{marginBottom:14}}>
+    {/* Master header */}
+    <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:open?10:0,cursor:"pointer",padding:"10px 14px",background:"white",borderRadius:10,border:"1px solid "+C.gold+"33",boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Goals <span style={{fontSize:11,color:C.textLight,fontWeight:400}}>({teams.length} team{teams.length!==1?"s":""}, {goals.length} goal{goals.length!==1?"s":""})</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        {isAdmin&&open&&<div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
+          <button onClick={()=>setShowAddTeam(!showAddTeam)} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>+ Team</button>
+          <button onClick={()=>setShowForm(!showForm)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Goal</button>
+        </div>}
+        <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
+      </div>
     </div>
-    {isAdmin&&showAddTeam&&<div style={{background:C.surface,borderRadius:8,padding:8,marginBottom:8,display:"flex",gap:6}}>
-      <input placeholder="New team name..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
-      <button onClick={addTeam} style={{padding:"5px 10px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
-      <button onClick={()=>setShowAddTeam(false)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>x</button>
-    </div>}
-    {teams.length>1&&<div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
-      {["All",...teams].map(t=><button key={t} onClick={()=>setSelectedTeam(t)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"none",cursor:"pointer",background:selectedTeam===t?C.navy:C.surface,color:selectedTeam===t?"white":C.textMid,fontWeight:selectedTeam===t?600:400}}>{t}</button>)}
-    </div>}
-    {isAdmin&&showForm&&<div style={{background:C.surface,borderRadius:9,padding:10,marginBottom:10}}>
-      <div style={{marginBottom:7}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Team</div>
-        <select value={form.team} onChange={e=>setForm({...form,team:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
-          {teams.map(t=><option key={t}>{t}</option>)}
-        </select>
-      </div>
-      <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
-        <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Target Number</div>
-          <input type="number" value={form.target} onChange={e=>setForm({...form,target:Number(e.target.value)})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-        </div>
-        <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Unit</div>
-          <select value={["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)?form.unit:"Custom"} onChange={e=>setForm({...form,unit:e.target.value==="Custom"?"":e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
-            {["Life Apps","Recruits","Licensed Agents","Appointments","Contacts","Custom"].map(u=><option key={u}>{u}</option>)}
+
+    {open&&<div>
+      {/* Add team form */}
+      {isAdmin&&showAddTeam&&<div style={{background:"white",borderRadius:8,padding:10,marginBottom:10,border:"1px solid "+C.border,display:"flex",gap:6}}>
+        <input placeholder="New team name..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+        <button onClick={addTeam} style={{padding:"6px 12px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+        <button onClick={()=>setShowAddTeam(false)} style={{padding:"6px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>x</button>
+      </div>}
+
+      {/* Add goal form */}
+      {isAdmin&&showForm&&<div style={{background:"white",borderRadius:9,padding:12,marginBottom:10,border:"1px solid "+C.gold+"44"}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>New Goal</div>
+        <div style={{marginBottom:7}}>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Team</div>
+          <select value={form.team} onChange={e=>setForm({...form,team:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+            {teams.map(t=><option key={t}>{t}</option>)}
           </select>
-          {!["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)&&<input placeholder="Type custom unit..." value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text,marginTop:4,boxSizing:"border-box"}}/>}
         </div>
-      </div>
-      <div style={{marginBottom:7}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Deadline (optional)</div>
-        <input type="date" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-      </div>
-      <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goal</button>
-      </div>
-    </div>}
-    {goals.length===0&&isAdmin&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No team goals yet — add one above!</div>}
-    {goals.filter(g=>selectedTeam==="All"||g.team===selectedTeam).map(g=>{
-      const pct=Math.min(Math.round((g.current/g.target)*100),100);
-      const daysLeft=g.deadline?Math.ceil((new Date(g.deadline+"T12:00:00")-new Date())/86400000):null;
-      return <div key={g.id} style={{marginBottom:10,paddingBottom:10,borderBottom:"1px solid "+C.border}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div><div style={{fontSize:12,fontWeight:700,color:C.text}}>{g.title}</div>{g.team&&g.team!=="Main Team"&&<div style={{fontSize:10,color:C.textLight}}>{g.team}</div>}</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            {daysLeft!==null&&<span style={{fontSize:10,color:daysLeft<=7?C.danger:C.textLight}}>{daysLeft<=0?"Deadline passed":daysLeft+"d left"}</span>}
-            {isAdmin&&<button onClick={()=>remove(g.id)} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
+        <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+          <div>
+            <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Target</div>
+            <input type="number" value={form.target} onChange={e=>setForm({...form,target:Number(e.target.value)})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Unit</div>
+            <select value={["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)?form.unit:"Custom"} onChange={e=>setForm({...form,unit:e.target.value==="Custom"?"":e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+              {["Life Apps","Recruits","Licensed Agents","Appointments","Contacts","Custom"].map(u=><option key={u}>{u}</option>)}
+            </select>
+            {!["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)&&<input placeholder="Custom unit..." value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text,marginTop:4,boxSizing:"border-box"}}/>}
           </div>
         </div>
-        <Bar pct={pct} color={pct>=100?C.success:C.gold} h={6}/>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-          <span style={{fontSize:11,color:C.textMid}}>{g.current} / {g.target} {g.unit}</span>
-          <span style={{fontSize:11,fontWeight:700,color:pct>=100?C.success:C.gold}}>{pct}%</span>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Deadline (optional)</div>
+          <input type="date" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
         </div>
-        {isAdmin&&<div style={{display:"flex",gap:5,marginTop:5,alignItems:"center"}}>
-          <span style={{fontSize:10,color:C.textMid}}>Update:</span>
-          <button onClick={()=>updateCurrent(g.id,Math.max(0,g.current-1))} style={{width:22,height:22,borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,fontWeight:700,color:C.textMid}}>-</button>
-          <span style={{fontSize:11,fontWeight:600,color:C.text,minWidth:20,textAlign:"center"}}>{g.current}</span>
-          <button onClick={()=>updateCurrent(g.id,g.current+1)} style={{width:22,height:22,borderRadius:5,border:"none",background:C.gold,cursor:"pointer",fontSize:13,fontWeight:700,color:"white"}}>+</button>
-        </div>}
-      </div>;
-    })}
-  </Card>;
+        <div style={{display:"flex",gap:7}}>
+          <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"7px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+          <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goal</button>
+        </div>
+      </div>}
+
+      {/* Team cards — horizontal scrollable */}
+      {goals.length===0&&isAdmin&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"12px 0",background:"white",borderRadius:8,border:"1px solid "+C.border}}>No goals yet — click + Goal above to add your first!</div>}
+      {goals.length>0&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
+        {teams.map(team=>{
+          const teamGoals = goals.filter(g=>(g.team||teams[0])===team);
+          if(teamGoals.length===0&&!isAdmin) return null;
+          const collapsed = collapsedTeams[team];
+          const teamTotal = teamGoals.length>0?Math.round(teamGoals.reduce((s,g)=>s+Math.min((g.current/g.target)*100,100),0)/teamGoals.length):0;
+          return <div key={team} style={{flexShrink:0,width:260,background:"white",borderRadius:12,border:"1px solid "+C.gold+"33",overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            {/* Team card header */}
+            <div onClick={()=>toggleTeam(team)} style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",padding:"10px 12px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:"white"}}>{team}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>{teamGoals.length} goal{teamGoals.length!==1?"s":""} • {teamTotal}% avg</div>
+              </div>
+              <span style={{color:"rgba(255,255,255,0.5)",fontSize:13,transform:collapsed?"none":"rotate(180deg)",transition:"transform 0.2s",display:"inline-block"}}>v</span>
+            </div>
+            {/* Team goals */}
+            {!collapsed&&<div style={{padding:"10px 12px"}}>
+              {teamGoals.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No goals yet</div>}
+              {teamGoals.map(g=>{
+                const pct=Math.min(Math.round((g.current/g.target)*100),100);
+                const daysLeft=g.deadline?Math.ceil((new Date(g.deadline+"T12:00:00")-new Date())/86400000):null;
+                return <div key={g.id} style={{marginBottom:10,paddingBottom:10,borderBottom:"1px solid "+C.border}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                    <div style={{fontSize:12,fontWeight:600,color:C.text,flex:1,paddingRight:6}}>{g.title}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                      {daysLeft!==null&&<span style={{fontSize:9,color:daysLeft<=7?C.danger:C.textLight}}>{daysLeft<=0?"Past":daysLeft+"d"}</span>}
+                      {isAdmin&&<button onClick={()=>removeGoal(g.id)} style={{fontSize:11,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>}
+                    </div>
+                  </div>
+                  <Bar pct={pct} color={pct>=100?C.success:C.gold} h={5}/>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+                    <span style={{fontSize:10,color:C.textMid}}>{g.current}/{g.target} {g.unit}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:pct>=100?C.success:C.gold}}>{pct}%</span>
+                  </div>
+                  {isAdmin&&<div style={{display:"flex",gap:4,marginTop:6,alignItems:"center"}}>
+                    <button onClick={()=>updateCurrent(g.id,Math.max(0,g.current-1))} style={{width:24,height:24,borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:14,fontWeight:700,color:C.textMid}}>-</button>
+                    <span style={{fontSize:11,fontWeight:600,color:C.text,flex:1,textAlign:"center"}}>{g.current}</span>
+                    <button onClick={()=>updateCurrent(g.id,g.current+1)} style={{width:24,height:24,borderRadius:5,border:"none",background:C.gold,cursor:"pointer",fontSize:14,fontWeight:700,color:"white"}}>+</button>
+                  </div>}
+                </div>;
+              })}
+            </div>}
+          </div>;
+        })}
+      </div>}
+    </div>}
+  </div>;
 }
 
 
