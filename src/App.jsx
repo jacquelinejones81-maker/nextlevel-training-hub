@@ -523,18 +523,26 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
 }
 
 // ── REP COUNTERS ──
-function RepCounters({rep,onUpdate,readOnly,data,repId}) {
+function RepCounters({rep,onUpdate,onUpdateData,readOnly,data,repId}) {
   const [showInvModal,setShowInvModal] = useState(false);
   const [invForm,setInvForm] = useState({clientName:"",pac:"",lumpSum:"",type:"PAC"});
 
   const saveInvestment = () => {
     if(!invForm.clientName) return;
-    const entry = {...invForm,date:new Date().toISOString(),repId};
     const uid = repId||rep.id;
-    const prevLogs = data?.investmentLogs||{};
+    const entry = {clientName:invForm.clientName,date:new Date().toISOString(),repId:uid};
+    const prevLogs = (data&&data.investmentLogs)||{};
     const prevEntries = prevLogs[uid]||[];
-    const logs = {...prevLogs,[uid]:[...prevEntries,entry]};
-    onUpdate({...rep,pacCount:(rep.pacCount||0)+1},"investmentLog",{investmentLogs:logs});
+    const newLogs = Object.assign({},prevLogs,{[uid]:[...prevEntries,entry]});
+    // Save investment log to top-level data (Firebase) AND update rep counter
+    if(typeof onUpdateData==="function"){
+      onUpdateData(Object.assign({},data,{
+        investmentLogs:newLogs,
+        reps:(data.reps||[]).map(r=>r.id===uid?{...r,pacCount:(r.pacCount||0)+1}:r)
+      }));
+    } else {
+      onUpdate(Object.assign({},rep,{pacCount:(rep.pacCount||0)+1}),"investmentLog",{investmentLogs:newLogs});
+    }
     setInvForm({clientName:"",pac:"",lumpSum:"",type:"PAC"});
     setShowInvModal(false);
   };
@@ -720,7 +728,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
-    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u,flag,extra)=>{if(flag==="investmentLog"&&extra){const mergedData={...data,...extra};if(onUpdateData)onUpdateData(mergedData);else onUpdate(rep.id,{...u});}else{onUpdate(rep.id,u);}}} readOnly={readOnly} data={data} repId={rep.id}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData} readOnly={readOnly} data={data} repId={rep.id}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
@@ -1862,18 +1870,26 @@ function TrainerCareerPath({data,onUpdate,session}) {
 
 
 // ── SIDEBAR PHOTO UPLOAD ──
-function SidebarPhotoUpload({userId}) {
-  const key = "sidebarPhoto_"+userId;
-  const [photo,setPhoto] = useState(()=>{try{return localStorage.getItem(key)||null;}catch(e){return null;}});
+function SidebarPhotoUpload({userId,data,onUpdateData}) {
+  const profilePhotos = (data&&data.profilePhotos)||{};
+  const photo = profilePhotos[userId]||null;
   const [showLightbox,setShowLightbox] = useState(false);
   const handle = (e) => {
     const file=e.target.files[0]; if(!file) return;
     if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
     const reader=new FileReader();
-    reader.onload=ev=>{setPhoto(ev.target.result);try{localStorage.setItem(key,ev.target.result);}catch(e){}};
+    reader.onload=ev=>{
+      if(onUpdateData&&data) onUpdateData({...data,profilePhotos:{...profilePhotos,[userId]:ev.target.result}});
+    };
     reader.readAsDataURL(file);
   };
-  const remove = () => {setPhoto(null);try{localStorage.removeItem(key);}catch(e){}};
+  const remove = () => {
+    if(onUpdateData&&data){
+      const updated=Object.assign({},profilePhotos);
+      delete updated[userId];
+      onUpdateData({...data,profilePhotos:updated});
+    }
+  };
   return <div style={{position:"relative",flexShrink:0}}>
     {showLightbox&&photo&&<div onClick={()=>setShowLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div onClick={e=>e.stopPropagation()} style={{maxWidth:280,width:"100%",textAlign:"center"}}>
@@ -1899,8 +1915,8 @@ function SidebarPhotoUpload({userId}) {
 
 // ── MY PROFILE PAGE ──
 function MyProfilePage({session,data,onUpdate}) {
-  const storageKey = "profilePhoto_"+(session.role||"")+"_"+(session.name||"").replace(/\s+/g,"_");
-  const [photo,setPhoto] = useState(()=>{try{return localStorage.getItem(storageKey)||null;}catch(e){return null;}});
+  const profilePhotos = data.profilePhotos||{};
+  const photo = profilePhotos[session.id]||null;
   const [showLightbox,setShowLightbox] = useState(false);
 
   const handleUpload = (e) => {
@@ -1909,15 +1925,15 @@ function MyProfilePage({session,data,onUpdate}) {
     const reader=new FileReader();
     reader.onload=ev=>{
       const result=ev.target.result;
-      setPhoto(result);
-      try{localStorage.setItem(storageKey,result);}catch(ex){}
+      onUpdate({...data,profilePhotos:{...profilePhotos,[session.id]:result}});
     };
     reader.readAsDataURL(file);
   };
 
   const remove = () => {
-    setPhoto(null);
-    try{localStorage.removeItem(storageKey);}catch(e){}
+    const updated = Object.assign({},profilePhotos);
+    delete updated[session.id];
+    onUpdate({...data,profilePhotos:updated});
   };
 
   return <div>
@@ -2055,30 +2071,12 @@ function WallOfFame({data,onUpdate,userRole}) {
   ];
 
   const getPhoto = (personId) => {
-    // 1. Check rep DGO photo
+    // 1. Check Firebase profilePhotos (My Profile page uploads)
+    const profilePhotos = data.profilePhotos||{};
+    if(profilePhotos[personId]) return profilePhotos[personId];
+    // 2. Check rep DGO photo
     const rep = (data.reps||[]).find(r=>r.id===personId);
-    if(rep?.dgoPhoto) return rep.dgoPhoto;
-    // 2. Check My Profile photo for trainers/admins
-    const allPeopleList = [...(data.trainers||[]),...(data.admins||[])];
-    const person = allPeopleList.find(p=>p.id===personId);
-    if(person){
-      try{
-        const role = person.role||"trainer";
-        const safeName = (person.name||"").replace(/\s/g,"_");
-        const key = "profilePhoto_"+role+"_"+safeName;
-        const stored = localStorage.getItem(key);
-        if(stored) return stored;
-      }catch(e){}
-    }
-    // 3. Also check rep My Profile (if rep has profile photo separate from DGO)
-    if(rep){
-      try{
-        const safeName = (rep.name||"").replace(/\s/g,"_");
-        const key = "profilePhoto_rep_"+safeName;
-        const stored = localStorage.getItem(key);
-        if(stored) return stored;
-      }catch(e){}
-    }
+    if(rep&&rep.dgoPhoto) return rep.dgoPhoto;
     return null;
   };
 
