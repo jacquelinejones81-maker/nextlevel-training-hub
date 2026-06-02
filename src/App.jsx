@@ -2161,14 +2161,25 @@ function WallOfFame({data,onUpdate,userRole}) {
 // ── GOAL BOARD ──
 function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
   const goals = data.teamGoals||[];
+  const teams = data.goalTeams||["Main Team"];
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const [showForm,setShowForm] = useState(false);
-  const [form,setForm] = useState({title:"",target:0,unit:"Life Apps",current:0,deadline:""});
+  const [showAddTeam,setShowAddTeam] = useState(false);
+  const [newTeamName,setNewTeamName] = useState("");
+  const [selectedTeam,setSelectedTeam] = useState("All");
+  const [form,setForm] = useState({title:"",target:0,unit:"Life Apps",current:0,deadline:"",team:teams[0]||"Main Team"});
+
+  const addTeam = () => {
+    if(!newTeamName.trim()) return;
+    onUpdate({...data,goalTeams:[...teams,newTeamName.trim()]});
+    setNewTeamName("");
+    setShowAddTeam(false);
+  };
 
   const save = () => {
     if(!form.title||!form.target) return;
     onUpdate({...data,teamGoals:[...goals,{...form,id:Date.now(),postedAt:new Date().toISOString()}]});
-    setForm({title:"",target:0,unit:"Life Apps",current:0,deadline:""});
+    setForm({title:"",target:0,unit:"Life Apps",current:0,deadline:"",team:teams[0]||"Main Team"});
     setShowForm(false);
   };
 
@@ -2194,6 +2205,12 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
       {["All",...teams].map(t=><button key={t} onClick={()=>setSelectedTeam(t)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"none",cursor:"pointer",background:selectedTeam===t?C.navy:C.surface,color:selectedTeam===t?"white":C.textMid,fontWeight:selectedTeam===t?600:400}}>{t}</button>)}
     </div>}
     {isAdmin&&showForm&&<div style={{background:C.surface,borderRadius:9,padding:10,marginBottom:10}}>
+      <div style={{marginBottom:7}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Team</div>
+        <select value={form.team} onChange={e=>setForm({...form,team:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          {teams.map(t=><option key={t}>{t}</option>)}
+        </select>
+      </div>
       <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
         <div>
