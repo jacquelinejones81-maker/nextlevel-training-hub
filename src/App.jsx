@@ -530,7 +530,10 @@ function RepCounters({rep,onUpdate,readOnly,data,repId}) {
   const saveInvestment = () => {
     if(!invForm.clientName) return;
     const entry = {...invForm,date:new Date().toISOString(),repId};
-    const logs = {...(data?.investmentLogs||{}),(repId||rep.id):[...(data?.investmentLogs?.[repId||rep.id]||[]),entry]};
+    const uid = repId||rep.id;
+    const prevLogs = data?.investmentLogs||{};
+    const prevEntries = prevLogs[uid]||[];
+    const logs = {...prevLogs,[uid]:[...prevEntries,entry]};
     onUpdate({...rep,pacCount:(rep.pacCount||0)+1},"investmentLog",{investmentLogs:logs});
     setInvForm({clientName:"",pac:"",lumpSum:"",type:"PAC"});
     setShowInvModal(false);
