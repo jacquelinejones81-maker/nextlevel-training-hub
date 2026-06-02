@@ -468,8 +468,8 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
       <div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:10}}>{rep.dgoDate||"Not set"}</div>}
       {/* Professional Photo */}
       <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo for DGO Presentation</div>
-        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Upload a professional headshot — this will be used in your DGO presentation</div>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo — DGO & Team Recognition</div>
+        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Upload a professional headshot — used for your DGO presentation and Wall of Fame recognition</div>
         {rep.dgoPhoto&&<div style={{marginBottom:8,position:"relative",display:"inline-block"}}>
           <img src={rep.dgoPhoto} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>
           {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoPhoto:null})} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}
@@ -523,14 +523,42 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
 }
 
 // ── REP COUNTERS ──
-function RepCounters({rep,onUpdate,readOnly}) {
-  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-    {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Apps Done",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investments",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
+function RepCounters({rep,onUpdate,readOnly,data,repId}) {
+  const [showInvModal,setShowInvModal] = useState(false);
+  const [invForm,setInvForm] = useState({clientName:"",pac:"",lumpSum:"",type:"PAC"});
+
+  const saveInvestment = () => {
+    if(!invForm.clientName) return;
+    const entry = {...invForm,date:new Date().toISOString(),repId};
+    const logs = {...(data?.investmentLogs||{}),(repId||rep.id):[...(data?.investmentLogs?.[repId||rep.id]||[]),entry]};
+    onUpdate({...rep,pacCount:(rep.pacCount||0)+1},"investmentLog",{investmentLogs:logs});
+    setInvForm({clientName:"",pac:"",lumpSum:"",type:"PAC"});
+    setShowInvModal(false);
+  };
+
+  return <div>
+    {showInvModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"white",borderRadius:14,padding:"20px",maxWidth:360,width:"100%"}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Log Investment</div>
+        <input placeholder="Client Name" value={invForm.clientName} onChange={e=>setInvForm({...invForm,clientName:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,marginBottom:12,boxSizing:"border-box",color:C.text}}/>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setShowInvModal(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+          <button onClick={saveInvestment} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Investment</button>
+        </div>
+      </div>
+    </div>}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+    {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM",isInv:true}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
       <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
       <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
-      {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:`1px solid ${c.color}`,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
+      {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}>
+        <button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button>
+        {c.isInv?<button onClick={()=>setShowInvModal(true)} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:13,color:c.color,fontWeight:700}}>+</button>:
+        <button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button>}
+      </div>}
       <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
     </Card>)}
+    </div>
   </div>;
 }
 
@@ -541,9 +569,8 @@ function CareerJourneyBanner({rep,onUpdate}) {
     {key:"new",label:"New Rep",color:C.teal},
     {key:"licensed",label:"Licensed",color:C.gold},
     {key:"trainer",label:"Trainer",color:C.purple},
-    {key:"rvp",label:"RVP",color:C.success},
   ];
-  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const stageIndex = stages.findIndex(s=>s.key===currentStage);
   const currentColor = stages[stageIndex]?.color||C.teal;
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
@@ -632,7 +659,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},...(rep.track!=="licensed"?[{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"}]:[]),{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"fame",l:"Wall of Fame"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"}];
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"fame",l:"Wall of Fame"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"}];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -688,7 +715,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
-    {tab==="checklist"&&<div><RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u,flag,extra)=>{if(flag==="investmentLog"&&extra&&onUpdateData)onUpdateData({...data,...extra});onUpdate(rep.id,u);}} readOnly={readOnly} data={data} repId={rep.id}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
@@ -835,11 +862,11 @@ function ProdDash({data,onUpdateData}) {
   const goals=data.goals||{premium:10000,recruits:10,licensed:100};
   const [editG,setEditG]=useState(false);
   const [gd,setGd]=useState(goals);
-  const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+  const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0)+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
   const totRecs=reps.length;
   const totLic=reps.filter(r=>r.isLicensed).length;
   return <Card style={{marginBottom:14}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear all rep premium and trainer production? Use after BD-9 reset."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,premiumSubmitted:0,selfPremium:[]})),myProduction:{}});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear All</button><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>{[["premium","Annual Premium $",gd.premium],["recruits","Recruits",gd.recruits],["licensed","Licensed Agents",gd.licensed]].map(([k,l,v])=><div key={k}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>{l}</div><input type="number" value={v} onChange={e=>setGd({...gd,[k]:Number(e.target.value)})} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,boxSizing:"border-box",color:C.text}}/></div>)}</div>
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
@@ -963,6 +990,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
+    <InvestmentLog data={data} onUpdate={onUpdate} userRole={userRole}/>
     <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
@@ -1827,6 +1855,42 @@ function TrainerCareerPath({data,onUpdate,session}) {
 }
 
 
+
+// ── SIDEBAR PHOTO UPLOAD ──
+function SidebarPhotoUpload({userId}) {
+  const key = "sidebarPhoto_"+userId;
+  const [photo,setPhoto] = useState(()=>{try{return localStorage.getItem(key)||null;}catch(e){return null;}});
+  const [showLightbox,setShowLightbox] = useState(false);
+  const handle = (e) => {
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{setPhoto(ev.target.result);try{localStorage.setItem(key,ev.target.result);}catch(e){}};
+    reader.readAsDataURL(file);
+  };
+  const remove = () => {setPhoto(null);try{localStorage.removeItem(key);}catch(e){}};
+  return <div style={{position:"relative",flexShrink:0}}>
+    {showLightbox&&photo&&<div onClick={()=>setShowLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{maxWidth:280,width:"100%",textAlign:"center"}}>
+        <img src={photo} style={{width:"100%",borderRadius:12,marginBottom:12}}/>
+        <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+          <label style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+            Change<input type="file" accept="image/*" style={{display:"none"}} onChange={handle}/>
+          </label>
+          <button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"22",color:C.danger,border:"none",cursor:"pointer",fontSize:12}}>Remove</button>
+          <button onClick={()=>setShowLightbox(false)} style={{padding:"7px 14px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"none",cursor:"pointer",fontSize:12}}>Close</button>
+        </div>
+      </div>
+    </div>}
+    {photo
+      ?<img src={photo} onClick={()=>setShowLightbox(true)} style={{width:32,height:32,borderRadius:9,objectFit:"cover",border:"2px solid "+C.teal+"66",cursor:"pointer"}}/>
+      :<label style={{width:32,height:32,borderRadius:9,background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"1px dashed "+C.teal+"55",flexShrink:0}}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <input type="file" accept="image/*" style={{display:"none"}} onChange={handle}/>
+      </label>}
+  </div>;
+}
+
 // ── NEED HELP ──
 function NeedHelpModal({rep,data,onUpdate,onClose}) {
   const [msg,setMsg] = useState("");
@@ -2042,9 +2106,10 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
         </div>
         <div>
           <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Unit</div>
-          <select value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          <select value={["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)?form.unit:"Custom"} onChange={e=>setForm({...form,unit:e.target.value==="Custom"?"":e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
             {["Life Apps","Recruits","Licensed Agents","Appointments","Contacts","Custom"].map(u=><option key={u}>{u}</option>)}
           </select>
+          {!["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)&&<input placeholder="Type custom unit..." value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text,marginTop:4,boxSizing:"border-box"}}/>}
         </div>
       </div>
       <div style={{marginBottom:7}}>
@@ -2170,6 +2235,80 @@ function QuickMessages({data,onUpdate,userRole}) {
   </div>;
 }
 
+
+// ── INVESTMENT LOG ──
+function InvestmentLog({data,onUpdate,userRole}) {
+  if(userRole!=="admin"&&userRole!=="superadmin") return null;
+  const [open,setOpen] = useState(false);
+  const allLogs = Object.entries(data.investmentLogs||{}).flatMap(([repId,entries])=>
+    entries.map(e=>({...e,repName:(data.reps||[]).find(r=>r.id===repId)?.name||"Unknown"}))
+  ).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(allLogs.length===0) return null;
+  const total = allLogs.reduce((s,e)=>s+(Number(e.pac)||0)+(Number(e.lumpSum)||0),0);
+  return <Card style={{marginBottom:14}}>
+    <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Investment Log ({allLogs.length})</div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:11,color:C.gold,fontWeight:600}}>${total.toLocaleString()} total</span>
+        <button onClick={e=>{e.stopPropagation();if(window.confirm("Clear all investment logs? This cannot be undone."))onUpdate({...data,investmentLogs:{}});}} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer"}}>Clear All</button>
+        <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
+      </div>
+    </div>
+    {open&&<div style={{marginTop:10}}>
+      {allLogs.map((e,i)=><div key={i} style={{padding:"7px 0",borderBottom:"1px solid "+C.border,display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.text}}>{e.clientName}</div>
+          <div style={{fontSize:10,color:C.textMid}}>{e.repName} • {e.type} • {new Date(e.date).toLocaleDateString()}</div>
+        </div>
+        <div style={{textAlign:"right",fontSize:11,color:C.gold,fontWeight:600}}>
+          {e.pac&&<div>PAC: ${e.pac}</div>}
+          {e.lumpSum&&<div>Lump: ${e.lumpSum}</div>}
+        </div>
+      </div>)}
+    </div>}
+  </Card>;
+}
+
+
+// ── LICENSED PREMIUM ENTRY ──
+function LicensedPremiumEntry({rep,onUpdate}) {
+  const [form,setForm] = useState({client:"",premium:"",date:new Date().toISOString().split("T")[0]});
+  const [show,setShow] = useState(false);
+  const entries = rep.selfPremium||[];
+  const total = entries.reduce((s,e)=>s+(Number(e.premium)||0),0);
+
+  const save = () => {
+    if(!form.client||!form.premium) return;
+    onUpdate({...rep,selfPremium:[...entries,{...form,id:Date.now()}]});
+    setForm({client:"",premium:"",date:new Date().toISOString().split("T")[0]});
+    setShow(false);
+  };
+
+  return <Card style={{marginBottom:12,border:"1px solid "+C.teal+"33"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+      <div><div style={{fontSize:12,fontWeight:700,color:C.text}}>My Premium</div><div style={{fontSize:11,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span></div></div>
+      <button onClick={()=>setShow(!show)} style={{fontSize:11,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
+    </div>
+    {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
+      <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+        <input type="number" placeholder="Monthly premium $" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+      </div>
+    </div>}
+    {entries.length>0&&<div style={{maxHeight:120,overflowY:"auto"}}>
+      {entries.slice().reverse().map((e,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:11}}>
+        <span style={{color:C.text}}>{e.client}</span>
+        <span style={{color:C.teal,fontWeight:600}}>${e.premium}/mo</span>
+      </div>)}
+    </div>}
+  </Card>;
+}
+
 // ── BIRTHDAY & ANNIVERSARY TRACKER ──
 function BirthdayAnniversaryWidget({data}) {
   const reps = data.reps||[];
@@ -2217,18 +2356,20 @@ function ActivityAlerts({data,userRole,userId}) {
     else if(ds!==null&&ds>=7) alerts.push({name:rep.name,msg:`No check-in for ${ds} days`,color:C.danger,id:rep.id});
     if(pct===0&&rep.createdAt&&Date.now()-rep.createdAt>2*86400000) alerts.push({name:rep.name,msg:"No checklist progress yet",color:C.warning,id:rep.id});
   });
+  const [showAll,setShowAll] = useState(false);
   if(alerts.length===0) return null;
+  const visible = showAll?alerts:alerts.slice(0,5);
   return <div style={{background:"white",borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.danger}}/>
       <div style={{fontSize:13,fontWeight:700,color:C.text}}>Activity Alerts ({alerts.length})</div>
     </div>
-    {alerts.slice(0,5).map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<Math.min(alerts.length,5)-1?`1px solid ${C.border}`:"none"}}>
+    {visible.map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none"}}>
       <div style={{width:6,height:6,borderRadius:3,background:a.color,flexShrink:0}}/>
       <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
       <span style={{fontSize:11,color:a.color,fontWeight:500}}>{a.msg}</span>
     </div>)}
-    {alerts.length>5&&<div style={{fontSize:11,color:C.textLight,marginTop:6,textAlign:"center"}}>+{alerts.length-5} more alerts — check your rep list</div>}
+    {alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>{showAll?"Show Less":"Show All "+alerts.length+" Alerts"}</button>}
   </div>;
 }
 
@@ -2498,9 +2639,8 @@ function CareerPath({rep,data,onUpdate}) {
     {key:"new",label:"New Rep",color:C.teal},
     {key:"licensed",label:"Licensed Agent",color:C.gold},
     {key:"trainer",label:"Field Trainer",color:C.purple},
-    {key:"rvp",label:"RVP",color:C.success},
   ];
-  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
   const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
 
