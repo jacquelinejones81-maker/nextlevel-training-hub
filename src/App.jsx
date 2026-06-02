@@ -543,7 +543,8 @@ function RepCounters({rep,onUpdate,readOnly,data,repId}) {
     {showInvModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div style={{background:"white",borderRadius:14,padding:"20px",maxWidth:360,width:"100%"}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Log Investment</div>
-        <input placeholder="Client Name" value={invForm.clientName} onChange={e=>setInvForm({...invForm,clientName:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,marginBottom:12,boxSizing:"border-box",color:C.text}}/>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:6,lineHeight:1.4}}>Log the name of the person you observed an investment appointment with.</div>
+        <input placeholder="Contact Name" value={invForm.clientName} onChange={e=>setInvForm({...invForm,clientName:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,marginBottom:12,boxSizing:"border-box",color:C.text}}/>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>setShowInvModal(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
           <button onClick={saveInvestment} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Investment</button>
@@ -560,6 +561,7 @@ function RepCounters({rep,onUpdate,readOnly,data,repId}) {
         <button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button>}
       </div>}
       <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
+      {c.isInv&&<RepInvestmentLog repId={repId} data={data}/>}
     </Card>)}
     </div>
   </div>;
@@ -744,7 +746,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   const cl=track?.checklist||[];
   const repDone=cl.filter(i=>(rep.checked||{})[i.id]).length;
   const [ciNote,setCiNote]=useState("");
-  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"rvp",l:"RVP Path"},{k:"schedule",l:"Schedule"}];
+  const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"schedule",l:"Schedule"}];
   const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
   const addCI=()=>{if(!ciNote.trim())return;onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]});setCiNote("");};
 
@@ -869,7 +871,7 @@ function ProdDash({data,onUpdateData}) {
   const totRecs=reps.length;
   const totLic=reps.filter(r=>r.isLicensed).length;
   return <Card style={{marginBottom:14}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear all rep premium and trainer production? Use after BD-9 reset."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,premiumSubmitted:0,selfPremium:[]})),myProduction:{}});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear All</button><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Reset Annual Premium, Recruits, and Licensed Agents counters to zero? This will not delete any rep or production data."))onUpdateData({...data,prodDisplay:{annualPremium:0,recruits:0,licensed:0}});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>{[["premium","Annual Premium $",gd.premium],["recruits","Recruits",gd.recruits],["licensed","Licensed Agents",gd.licensed]].map(([k,l,v])=><div key={k}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>{l}</div><input type="number" value={v} onChange={e=>setGd({...gd,[k]:Number(e.target.value)})} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,boxSizing:"border-box",color:C.text}}/></div>)}</div>
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
@@ -993,8 +995,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <InvestmentLog data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <ActivityAlerts data={data} userRole={userRole} userId={userId}/>
+    <ActivityAlerts data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
@@ -1894,6 +1895,80 @@ function SidebarPhotoUpload({userId}) {
   </div>;
 }
 
+
+// ── MY PROFILE PAGE ──
+function MyProfilePage({session,data,onUpdate}) {
+  const storageKey = "profilePhoto_"+(session.role||"")+"_"+(session.name||"").replace(/\s+/g,"_");
+  const [photo,setPhoto] = useState(()=>{try{return localStorage.getItem(storageKey)||null;}catch(e){return null;}});
+  const [showLightbox,setShowLightbox] = useState(false);
+
+  const handleUpload = (e) => {
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const result=ev.target.result;
+      setPhoto(result);
+      try{localStorage.setItem(storageKey,result);}catch(ex){}
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const remove = () => {
+    setPhoto(null);
+    try{localStorage.removeItem(storageKey);}catch(e){}
+  };
+
+  return <div>
+    {showLightbox&&photo&&<div onClick={()=>setShowLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{maxWidth:340,width:"100%",textAlign:"center"}}>
+        <img src={photo} alt="Profile" style={{width:"100%",borderRadius:14,marginBottom:14,boxShadow:"0 10px 40px rgba(0,0,0,0.5)"}}/>
+        <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+          <label style={{padding:"8px 16px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+            Change Photo<input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
+          </label>
+          <button onClick={remove} style={{padding:"8px 16px",borderRadius:8,background:C.danger+"22",color:C.danger,border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>
+          <button onClick={()=>setShowLightbox(false)} style={{padding:"8px 16px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"none",cursor:"pointer",fontSize:12}}>Close</button>
+        </div>
+      </div>
+    </div>}
+
+    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Profile</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:20}}>Your profile photo is used for Wall of Fame recognition and team displays.</div>
+
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Profile Photo</div>
+      <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+        {photo
+          ?<img src={photo} onClick={()=>setShowLightbox(true)} style={{width:80,height:80,borderRadius:12,objectFit:"cover",border:"2px solid "+C.teal,cursor:"pointer",flexShrink:0}}/>
+          :<div style={{width:80,height:80,borderRadius:12,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:800,color:C.teal,border:"2px dashed "+C.teal+"44",flexShrink:0}}>
+            {session.name?.charAt(0)?.toUpperCase()}
+          </div>}
+        <div style={{flex:1}}>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.6}}>{photo?"Click your photo to view full size, or use the buttons below to update it.":"Upload a professional headshot. This photo will be used when you are recognized on the Wall of Fame."}</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              {photo?"Change Photo":"Upload Photo"}
+              <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
+            </label>
+            {photo&&<button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>}
+            {photo&&<button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.surface,color:C.textMid,border:"1px solid "+C.border,cursor:"pointer",fontSize:12}}>View Full Size</button>}
+          </div>
+        </div>
+      </div>
+    </Card>
+
+    <Card>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Account Info</div>
+      {[{l:"Name",v:session.name},{l:"Role",v:session.role?.charAt(0)?.toUpperCase()+session.role?.slice(1)},{l:"App",v:"NextLevel Field Training Hub"}].map((item,i)=><div key={i} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:i<2?"1px solid "+C.border:"none"}}>
+        <span style={{fontSize:12,color:C.textMid,width:60,flexShrink:0}}>{item.l}</span>
+        <span style={{fontSize:12,fontWeight:600,color:C.text}}>{item.v}</span>
+      </div>)}
+    </Card>
+  </div>;
+}
+
 // ── NEED HELP ──
 function NeedHelpModal({rep,data,onUpdate,onClose}) {
   const [msg,setMsg] = useState("");
@@ -1981,8 +2056,15 @@ function WallOfFame({data,onUpdate,userRole}) {
   const getPhoto = (personId) => {
     const rep = (data.reps||[]).find(r=>r.id===personId);
     if(rep?.dgoPhoto) return rep.dgoPhoto;
-    // Check localStorage for trainer/admin photos
-    try{const stored=localStorage.getItem("profilePhoto_"+personId);if(stored) return stored;}catch(e){}
+    // Check localStorage for trainer/admin profile photos
+    const person = [...(data.trainers||[]),(data.admins||[])].flat().find(p=>p.id===personId);
+    if(person){
+      try{
+        const key="profilePhoto_"+(person.role||"trainer")+"_"+(person.name||"").replace(/\s+/g,"_");
+        const stored=localStorage.getItem(key);
+        if(stored) return stored;
+      }catch(e){}
+    }
     return null;
   };
 
@@ -2096,10 +2178,21 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
   if(goals.length===0&&!isAdmin) return null;
 
   return <Card style={{marginBottom:14,border:"1px solid "+C.gold+"33"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:goals.length>0?10:0}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Goals</div>
-      {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Goal</button>}
+      {isAdmin&&<div style={{display:"flex",gap:5}}>
+        <button onClick={()=>setShowAddTeam(!showAddTeam)} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>+ Team</button>
+        <button onClick={()=>setShowForm(!showForm)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Goal</button>
+      </div>}
     </div>
+    {isAdmin&&showAddTeam&&<div style={{background:C.surface,borderRadius:8,padding:8,marginBottom:8,display:"flex",gap:6}}>
+      <input placeholder="New team name..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
+      <button onClick={addTeam} style={{padding:"5px 10px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+      <button onClick={()=>setShowAddTeam(false)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>x</button>
+    </div>}
+    {teams.length>1&&<div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+      {["All",...teams].map(t=><button key={t} onClick={()=>setSelectedTeam(t)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"none",cursor:"pointer",background:selectedTeam===t?C.navy:C.surface,color:selectedTeam===t?"white":C.textMid,fontWeight:selectedTeam===t?600:400}}>{t}</button>)}
+    </div>}
     {isAdmin&&showForm&&<div style={{background:C.surface,borderRadius:9,padding:10,marginBottom:10}}>
       <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
@@ -2125,12 +2218,12 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
       </div>
     </div>}
     {goals.length===0&&isAdmin&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No team goals yet — add one above!</div>}
-    {goals.map(g=>{
+    {goals.filter(g=>selectedTeam==="All"||g.team===selectedTeam).map(g=>{
       const pct=Math.min(Math.round((g.current/g.target)*100),100);
       const daysLeft=g.deadline?Math.ceil((new Date(g.deadline+"T12:00:00")-new Date())/86400000):null;
       return <div key={g.id} style={{marginBottom:10,paddingBottom:10,borderBottom:"1px solid "+C.border}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.text}}>{g.title}</div>
+          <div><div style={{fontSize:12,fontWeight:700,color:C.text}}>{g.title}</div>{g.team&&g.team!=="Main Team"&&<div style={{fontSize:10,color:C.textLight}}>{g.team}</div>}</div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             {daysLeft!==null&&<span style={{fontSize:10,color:daysLeft<=7?C.danger:C.textLight}}>{daysLeft<=0?"Deadline passed":daysLeft+"d left"}</span>}
             {isAdmin&&<button onClick={()=>remove(g.id)} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
@@ -2303,13 +2396,56 @@ function LicensedPremiumEntry({rep,onUpdate}) {
         <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
       </div>
     </div>}
-    {entries.length>0&&<div style={{maxHeight:120,overflowY:"auto"}}>
-      {entries.slice().reverse().map((e,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:11}}>
-        <span style={{color:C.text}}>{e.client}</span>
-        <span style={{color:C.teal,fontWeight:600}}>${e.premium}/mo</span>
-      </div>)}
+    {entries.length>0&&<div style={{maxHeight:140,overflowY:"auto",marginTop:6}}>
+      {entries.slice().reverse().map((e,i)=>{
+        const realIdx=entries.length-1-i;
+        return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:11}}>
+          <span style={{color:C.text,flex:1}}>{e.client}</span>
+          <span style={{color:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
+          <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+        </div>;
+      })}
     </div>}
   </Card>;
+}
+
+
+// ── INVESTMENT LOG PAGE ──
+function InvestmentLogPage({data,onUpdate}) {
+  const allLogs = Object.entries(data.investmentLogs||{}).flatMap(([repId,entries])=>
+    entries.map(e=>({...e,repName:(data.reps||[]).find(r=>r.id===repId)?.name||"Unknown"}))
+  ).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  const clearAll = () => {
+    if(window.confirm("Clear all investment observation logs?")) onUpdate({...data,investmentLogs:{}});
+  };
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.text}}>Investment Observations</div>
+      {allLogs.length>0&&<button onClick={clearAll} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontWeight:600}}>Clear All</button>}
+    </div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>All investment observation entries logged by reps.</div>
+    {allLogs.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>No investment observations logged yet</div>}
+    {allLogs.map((e,i)=><Card key={i} style={{marginBottom:8,padding:"10px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{e.clientName}</div>
+          <div style={{fontSize:11,color:C.textMid}}>{e.repName} — {new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+        </div>
+        <Badge color={C.gold} small>Investment Obs</Badge>
+      </div>
+    </Card>)}
+  </div>;
+}
+
+// ── INVESTMENT LOG (rep view below counter) ──
+function RepInvestmentLog({repId,data}) {
+  const entries = (data.investmentLogs||{})[repId]||[];
+  if(entries.length===0) return null;
+  return <div style={{marginTop:4}}>
+    {entries.slice().reverse().slice(0,5).map((e,i)=><div key={i} style={{fontSize:10,color:C.textMid,padding:"2px 0",borderBottom:"1px solid "+C.border}}>{e.clientName} — {new Date(e.date).toLocaleDateString()}</div>)}
+  </div>;
 }
 
 // ── BIRTHDAY & ANNIVERSARY TRACKER ──
@@ -2345,7 +2481,8 @@ function BirthdayAnniversaryWidget({data}) {
 
 
 // ── ACTIVITY ALERTS ──
-function ActivityAlerts({data,userRole,userId}) {
+function ActivityAlerts({data,onUpdate,userRole,userId}) {
+  const [dismissed,setDismissed] = useState([]);
   const reps = userRole==="trainer" ? (data.reps||[]).filter(r=>r.trainerId===userId) : (data.reps||[]);
   const alerts = [];
   reps.forEach(rep => {
@@ -2360,19 +2497,25 @@ function ActivityAlerts({data,userRole,userId}) {
     if(pct===0&&rep.createdAt&&Date.now()-rep.createdAt>2*86400000) alerts.push({name:rep.name,msg:"No checklist progress yet",color:C.warning,id:rep.id});
   });
   const [showAll,setShowAll] = useState(false);
-  if(alerts.length===0) return null;
-  const visible = showAll?alerts:alerts.slice(0,5);
+  const visible_alerts = alerts.filter(a=>!dismissed.includes(a.id||a.name+a.msg));
+  if(visible_alerts.length===0) return null;
+  const visible = showAll?visible_alerts:visible_alerts.slice(0,5);
   return <div style={{background:"white",borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.danger}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Activity Alerts ({alerts.length})</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,flex:1}}>Activity Alerts ({visible_alerts.length})</div>
+      <button onClick={()=>setDismissed(alerts.map(a=>a.id||a.name+a.msg))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Clear All</button>
     </div>
-    {visible.map((a,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none"}}>
-      <div style={{width:6,height:6,borderRadius:3,background:a.color,flexShrink:0}}/>
-      <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
-      <span style={{fontSize:11,color:a.color,fontWeight:500}}>{a.msg}</span>
-    </div>)}
-    {alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>{showAll?"Show Less":"Show All "+alerts.length+" Alerts"}</button>}
+    {visible.map((a,i)=>{
+      const key=a.id||a.name+a.msg;
+      return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{width:6,height:6,borderRadius:3,background:a.color,flexShrink:0}}/>
+        <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
+        <span style={{fontSize:11,color:a.color,fontWeight:500,flex:1}}>{a.msg}</span>
+        <button onClick={()=>setDismissed(d=>[...d,key])} style={{fontSize:10,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
+      </div>;
+    })}
+    {visible_alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>{showAll?"Show Less":"Show All "+visible_alerts.length+" Alerts"}</button>}
   </div>;
 }
 
@@ -2816,7 +2959,9 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
+    {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7Z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
+    {k:"investlog",l:"Investment Log",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
   ];
@@ -2931,6 +3076,8 @@ export default function App() {
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="investlog") return <InvestmentLogPage data={data} onUpdate={upd}/>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
