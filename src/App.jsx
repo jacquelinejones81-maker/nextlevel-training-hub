@@ -481,10 +481,8 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
             <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
               const file=e.target.files[0];
               if(!file) return;
-              if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
-              const reader=new FileReader();
-              reader.onload=ev=>onUpdate({...rep,dgoPhoto:ev.target.result});
-              reader.readAsDataURL(file);
+              if(file.size>10*1024*1024){alert("Photo must be under 10MB");return;}
+              compressImage(file, compressed=>onUpdate({...rep,dgoPhoto:compressed}), 600, 0.8);
             }}/>
           </label>
         </div>}
@@ -1883,11 +1881,22 @@ function MyProfilePage({session,data,onUpdate}) {
 
   const handleUpload = (e) => {
     const file=e.target.files[0]; if(!file) return;
-    if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
+    if(file.size>10*1024*1024){alert("Photo must be under 10MB");return;}
     const reader=new FileReader();
     reader.onload=ev=>{
-      const result=ev.target.result;
-      onUpdate({...data,profilePhotos:{...profilePhotos,[session.id]:result}});
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement("canvas");
+        const MAX=400;
+        let w=img.width,h=img.height;
+        if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+        else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        const compressed=canvas.toDataURL("image/jpeg",0.7);
+        onUpdate({...data,profilePhotos:{...profilePhotos,[session.id]:compressed}});
+      };
+      img.src=ev.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -1985,6 +1994,26 @@ function WallOfFameBanner({data}) {
       })}
     </div>
   </div>;
+}
+
+
+// ── IMAGE COMPRESSION HELPER ──
+function compressImage(file, callback, maxSize=400, quality=0.7) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w=img.width, h=img.height;
+      if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize;}}
+      else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize;}}
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      callback(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── NEED HELP ──
@@ -2132,9 +2161,7 @@ function WallOfFame({data,onUpdate,userRole}) {
           <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
             const file=e.target.files[0];
             if(!file) return;
-            const reader=new FileReader();
-            reader.onload=ev=>setForm({...form,customPhoto:ev.target.result});
-            reader.readAsDataURL(file);
+            compressImage(file, compressed=>setForm({...form,customPhoto:compressed}), 400, 0.8);
           }}/>
         </label>
         {form.customPhoto&&<span style={{fontSize:10,color:C.success,marginLeft:8}}>Custom photo ready</span>}
