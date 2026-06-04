@@ -522,7 +522,7 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
 
 // ── REP COUNTERS ──
 function RepCounters({rep,onUpdate,readOnly}) {
-  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
     {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
       <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
       <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
@@ -629,7 +629,20 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},{k:"prospects",l:"Prospects"},{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"fame",l:"Wall of Fame"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"}];
+  const tabs=[
+    {k:"checklist",l:"Checklist"},
+    {k:"milestones",l:"Milestones"},
+    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),
+    {k:"prospects",l:"Prospects"},
+    {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
+    {k:"scorecard",l:"Scorecard"},
+    {k:"recruits",l:"Recruits ("+myRecruits.length+")"},
+    {k:"refs",l:"Refs"},
+    {k:"scripts",l:"Scripts"},
+    {k:"resources",l:"Resources"},
+    {k:"fame",l:"Wall of Fame"},
+    {k:"schedule",l:"Schedule"},
+  ];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
