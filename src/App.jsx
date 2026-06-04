@@ -629,7 +629,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
-  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"fame",l:"Wall of Fame"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"}];
+  const tabs=[{k:"checklist",l:"Checklist"},{k:"milestones",l:"Milestones"},{k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},{k:"prospects",l:"Prospects"},{k:"refs",l:"Refs"},{k:"scripts",l:"Scripts"},{k:"resources",l:"Resources"},{k:"scorecard",l:"Scorecard"},{k:"recruits",l:"Recruits ("+myRecruits.length+")"},{k:"fame",l:"Wall of Fame"},...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),{k:"schedule",l:"Schedule"}];
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -693,6 +693,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
+    {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
@@ -2875,6 +2876,148 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
         <button onClick={addRecruit} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Recruit</button>
       </div>
     </Card>}
+  </div>;
+}
+
+
+// ── PROSPECTS TAB ──
+const PROSPECT_QUESTIONS = [
+  {
+    cat:"Purpose & Protection",
+    color:"#e11d48",
+    questions:[
+      {id:"q1",q:"Who would you hate to see have to do a GoFundMe if something happened to them?"},
+      {id:"q2",q:"Who would struggle financially if they lost their income tomorrow?"},
+      {id:"q3",q:"Who has people depending on them but no protection in place?"},
+      {id:"q4",q:"Who do you know that is the backbone of their family?"},
+      {id:"q5",q:"Who would you feel guilty about NOT telling about this opportunity?"},
+      {id:"q6",q:"Who is too young to be thinking about this but really should be?"},
+    ]
+  },
+  {
+    cat:"Life Events",
+    color:C.teal,
+    questions:[
+      {id:"q7",q:"Who is getting married soon?"},
+      {id:"q8",q:"Who just had or is expecting a baby?"},
+      {id:"q9",q:"Who recently bought a home?"},
+      {id:"q10",q:"Who just graduated or started a new job?"},
+    ]
+  },
+  {
+    cat:"Relationships",
+    color:C.purple,
+    questions:[
+      {id:"q11",q:"Who would be your bridesmaid or groomsman?"},
+      {id:"q12",q:"Who would you call first in an emergency? Who would be second?"},
+      {id:"q13",q:"Who did you grow up with that you are still close to?"},
+      {id:"q14",q:"Who do you respect at work?"},
+    ]
+  },
+  {
+    cat:"Financial Moments",
+    color:C.gold,
+    questions:[
+      {id:"q15",q:"Who just got a promotion or raise?"},
+      {id:"q16",q:"Who recently started their own business?"},
+      {id:"q17",q:"Who do you know that worries about money or their family's future?"},
+    ]
+  },
+  {
+    cat:"Community",
+    color:C.success,
+    questions:[
+      {id:"q18",q:"Who do you go to church with?"},
+      {id:"q19",q:"Who is in your gym, sports team, or hobby group?"},
+      {id:"q20",q:"Who did you go to school with that you are still in touch with?"},
+    ]
+  },
+];
+
+function ProspectsTab({rep,onUpdate}) {
+  const prospects = rep.prospects||{};
+  const [openCats,setOpenCats] = useState({"Purpose & Protection":true});
+  const [inputs,setInputs] = useState({});
+
+  const toggleCat = (cat) => setOpenCats(prev=>({...prev,[cat]:!prev[cat]}));
+
+  const addName = (qId) => {
+    const name = (inputs[qId]||"").trim();
+    if(!name) return;
+    const existing = prospects[qId]||[];
+    if(existing.some(n=>n.toLowerCase()===name.toLowerCase())) return;
+    onUpdate({...rep,prospects:{...prospects,[qId]:[...existing,name]}});
+    setInputs(prev=>({...prev,[qId]:""}));
+  };
+
+  const removeName = (qId,name) => {
+    onUpdate({...rep,prospects:{...prospects,[qId]:(prospects[qId]||[]).filter(n=>n!==name)}});
+  };
+
+  // Build master list
+  const masterList = [];
+  PROSPECT_QUESTIONS.forEach(cat=>{
+    cat.questions.forEach(q=>{
+      (prospects[q.id]||[]).forEach(name=>{
+        masterList.push({name,question:q.q,cat:cat.cat,color:cat.color,qId:q.id});
+      });
+    });
+  });
+
+  const totalProspects = masterList.length;
+
+  return <div>
+    {/* Header */}
+    <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,color:"white"}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Who Do You Know?</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Answer each question honestly and write down every name that comes to mind. <strong style={{color:"white"}}>Don't overthink it.</strong> These are people who already know and trust you — they deserve to know about this opportunity.</div>
+      <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"rgba(255,255,255,0.7)"}}>
+        {totalProspects===0?"Start with the first section below — it is the most important one.":"You have identified "+totalProspects+" prospect"+(totalProspects!==1?"s":"")+". Keep going!"}
+      </div>
+    </div>
+
+    {/* Question categories */}
+    {PROSPECT_QUESTIONS.map((cat,ci)=><div key={ci} style={{marginBottom:10}}>
+      <button onClick={()=>toggleCat(cat.cat)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderRadius:10,background:"white",border:"2px solid "+cat.color+"33",cursor:"pointer",marginBottom:openCats[cat.cat]?0:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:10,height:10,borderRadius:5,background:cat.color,flexShrink:0}}/>
+          <span style={{fontSize:13,fontWeight:700,color:C.text}}>{cat.cat}</span>
+          {(()=>{const count=cat.questions.reduce((s,q)=>s+(prospects[q.id]||[]).length,0);return count>0?<span style={{fontSize:10,background:cat.color+"22",color:cat.color,padding:"2px 7px",borderRadius:10,fontWeight:600}}>{count} name{count!==1?"s":""}</span>:null;})()}
+        </div>
+        <span style={{fontSize:14,color:C.textLight,transform:openCats[cat.cat]?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
+      </button>
+
+      {openCats[cat.cat]&&<div style={{background:"white",borderRadius:"0 0 10px 10px",border:"2px solid "+cat.color+"33",borderTop:"none",padding:"10px 14px"}}>
+        {cat.questions.map((q,qi)=><div key={q.id} style={{marginBottom:qi<cat.questions.length-1?14:0,paddingBottom:qi<cat.questions.length-1?14:0,borderBottom:qi<cat.questions.length-1?"1px solid "+C.border:"none"}}>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.5,marginBottom:8,fontWeight:500}}>{q.q}</div>
+          {/* Existing names */}
+          {(prospects[q.id]||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+            {(prospects[q.id]||[]).map((name,ni)=><div key={ni} style={{display:"flex",alignItems:"center",gap:4,background:cat.color+"15",border:"1px solid "+cat.color+"33",borderRadius:20,padding:"3px 10px"}}>
+              <span style={{fontSize:12,color:C.text,fontWeight:500}}>{name}</span>
+              <button onClick={()=>removeName(q.id,name)} style={{background:"none",border:"none",cursor:"pointer",color:C.textLight,fontSize:13,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
+            </div>)}
+          </div>}
+          {/* Add name input */}
+          <div style={{display:"flex",gap:6}}>
+            <input placeholder="Type a name and press Add..." value={inputs[q.id]||""} onChange={e=>setInputs(prev=>({...prev,[q.id]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addName(q.id)} style={{flex:1,padding:"6px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+            <button onClick={()=>addName(q.id)} style={{padding:"6px 12px",borderRadius:8,border:"none",background:cat.color,color:"white",cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>Add</button>
+          </div>
+        </div>)}
+      </div>}
+    </div>)}
+
+    {/* Master prospect list */}
+    {masterList.length>0&&<div style={{marginTop:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>My Prospect List ({masterList.length})</div>
+      {masterList.map((item,i)=><div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"8px 12px",borderRadius:8,background:"white",border:"1px solid "+C.border,marginBottom:6}}>
+        <div style={{width:8,height:8,borderRadius:4,background:item.color,flexShrink:0,marginTop:4}}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div>
+          <div style={{fontSize:10,color:C.textLight,lineHeight:1.4,marginTop:2}}>{item.question}</div>
+        </div>
+        <button onClick={()=>removeName(item.qId,item.name)} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:16,flexShrink:0,padding:"0 2px"}}>×</button>
+      </div>)}
+    </div>}
   </div>;
 }
 
