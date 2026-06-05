@@ -644,7 +644,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const tabs=[
     {k:"checklist",l:"Checklist"},
     {k:"milestones",l:"Milestones"},
-    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),
+    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"pipeline",l:"My Pipeline"}]:[]),
     {k:"prospects",l:"Prospects"},
     {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
     {k:"scorecard",l:"Scorecard"},
@@ -721,6 +721,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
+    {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
@@ -3320,6 +3321,180 @@ function MyLeads({repName}) {
   </div>;
 }
 
+
+// ── LEAD PIPELINE ──
+const PIPELINE_STAGES = [
+  {key:"new",label:"New Lead",color:C.teal},
+  {key:"called",label:"Called",color:"#3b82f6"},
+  {key:"bookSent",label:"HMW Book Sent",color:C.purple},
+  {key:"apptScheduled",label:"Appt Scheduled",color:C.gold},
+  {key:"apptDone",label:"Appt Done",color:"#f97316"},
+  {key:"closedClient",label:"Closed - Client",color:C.success},
+  {key:"closedNo",label:"Closed - Not Interested",color:C.danger},
+];
+
+function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
+  const [activeStage,setActiveStage] = useState("all");
+  const [search,setSearch] = useState("");
+  const pipelineData = data.leadPipeline||{};
+  const repPipeline = pipelineData[rep.id]||{};
+
+  // Get all leads for this rep from MoneyMap leads merged with pipeline stage data
+  const [mmLeads,setMmLeads] = useState([]);
+  const safeName = (rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+
+  useEffect(()=>{
+    const fetchLeads = async()=>{
+      try{
+        const q = query(collection(mmDb,"leads"),orderBy("submittedAt","desc"));
+        const snap = await getDocs(q);
+        const all = snap.docs.map(d=>({...d.data(),docId:d.id}));
+        const mine = all.filter(l=>!l.archived&&(l.referredBy||"").toLowerCase()===safeName);
+        setMmLeads(mine);
+      }catch(e){console.error(e);}
+    };
+    fetchLeads();
+  },[safeName]);
+
+  // Merge MoneyMap leads with pipeline stage from NextLevel Firebase
+  const leads = mmLeads.map(l=>({
+    ...l,
+    stage: (repPipeline[l.docId]||{}).stage||"new",
+    stageUpdatedAt: (repPipeline[l.docId]||{}).stageUpdatedAt||l.submittedAt,
+    notes: (repPipeline[l.docId]||{}).notes||"",
+  }));
+
+  const updateStage = (docId,stage) => {
+    const updated = {
+      ...pipelineData,
+      [rep.id]:{
+        ...repPipeline,
+        [docId]:{
+          ...(repPipeline[docId]||{}),
+          stage,
+          stageUpdatedAt:new Date().toISOString(),
+        }
+      }
+    };
+    onUpdate({...data,leadPipeline:updated});
+  };
+
+  const stageCounts = PIPELINE_STAGES.reduce((acc,s)=>{
+    acc[s.key]=leads.filter(l=>l.stage===s.key).length;
+    return acc;
+  },{});
+
+  const filtered = leads.filter(l=>{
+    const matchStage = activeStage==="all"||l.stage===activeStage;
+    const matchSearch = !search||(l.name||"").toLowerCase().includes(search.toLowerCase())||(l.phone||"").includes(search);
+    return matchStage&&matchSearch;
+  });
+
+  const getDaysInStage = (stageUpdatedAt) => {
+    return Math.floor((Date.now()-new Date(stageUpdatedAt))/(86400000));
+  };
+
+  if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:12}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
+
+  return <div>
+    {/* Stage selector */}
+    <div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:6,marginBottom:12,WebkitOverflowScrolling:"touch"}}>
+      <button onClick={()=>setActiveStage("all")} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage==="all"?700:400,background:activeStage==="all"?C.navy:C.surface,color:activeStage==="all"?"white":C.textMid,fontSize:11}}>
+        All ({leads.length})
+      </button>
+      {PIPELINE_STAGES.map(s=><button key={s.key} onClick={()=>setActiveStage(s.key)} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage===s.key?700:400,background:activeStage===s.key?s.color:C.surface,color:activeStage===s.key?"white":C.textMid,fontSize:11,whiteSpace:"nowrap"}}>
+        {s.label} {stageCounts[s.key]>0&&<span style={{background:"rgba(255,255,255,0.3)",borderRadius:10,padding:"1px 5px"}}>{stageCounts[s.key]}</span>}
+      </button>)}
+    </div>
+
+    {/* Search */}
+    {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
+
+    {/* Lead cards */}
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"16px 0",color:C.textLight,fontSize:12}}>No leads in this stage</div>}
+    {filtered.map((lead,i)=>{
+      const stage = PIPELINE_STAGES.find(s=>s.key===lead.stage)||PIPELINE_STAGES[0];
+      const daysInStage = getDaysInStage(lead.stageUpdatedAt);
+      const isStale = daysInStage>=7&&lead.stage!=="closedClient"&&lead.stage!=="closedNo";
+      return <div key={i} style={{borderRadius:10,border:"2px solid "+stage.color+"33",padding:"10px 12px",marginBottom:8,background:"white"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{lead.name||"Unknown"}</div>
+            <div style={{fontSize:11,color:C.textMid}}>{lead.phone}</div>
+            <div style={{fontSize:10,color:C.textLight,marginTop:2}}>
+              Received: {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"Unknown"}
+            </div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontSize:10,fontWeight:700,color:stage.color,background:stage.color+"15",borderRadius:6,padding:"2px 8px",marginBottom:4}}>{stage.label}</div>
+            <div style={{fontSize:10,color:isStale?C.danger:C.textLight,fontWeight:isStale?600:400}}>{daysInStage}d in stage{isStale?" ⚠":""}
+            </div>
+          </div>
+        </div>
+        {/* Stage update */}
+        {!isAdmin&&<select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:11,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
+          {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>}
+      </div>;
+    })}
+  </div>;
+}
+
+// ── ADMIN PIPELINE VIEW ──
+function AdminPipeline({data,onUpdate}) {
+  const [expandedRep,setExpandedRep] = useState(null);
+  const [allLeads,setAllLeads] = useState([]);
+  const [loading,setLoading] = useState(true);
+  const pipelineData = data.leadPipeline||{};
+
+  useEffect(()=>{
+    const fetch = async()=>{
+      try{
+        const q = query(collection(mmDb,"leads"),orderBy("submittedAt","desc"));
+        const snap = await getDocs(q);
+        setAllLeads(snap.docs.map(d=>({...d.data(),docId:d.id})).filter(l=>!l.archived));
+      }catch(e){console.error(e);}
+      finally{setLoading(false);}
+    };
+    fetch();
+  },[]);
+
+  const repsWithLeads = (data.reps||[]).filter(r=>r.track==="licensed").map(rep=>{
+    const safeName = (rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+    const repLeads = allLeads.filter(l=>(l.referredBy||"").toLowerCase()===safeName).map(l=>({
+      ...l,
+      stage:(pipelineData[rep.id]||{})[l.docId]?.stage||"new",
+      stageUpdatedAt:(pipelineData[rep.id]||{})[l.docId]?.stageUpdatedAt||l.submittedAt,
+    }));
+    const staleCount = repLeads.filter(l=>Math.floor((Date.now()-new Date(l.stageUpdatedAt))/86400000)>=7&&l.stage!=="closedClient"&&l.stage!=="closedNo").length;
+    return {...rep,repLeads,staleCount};
+  }).filter(r=>r.repLeads.length>0);
+
+  if(loading) return <div style={{textAlign:"center",padding:"20px",color:C.textMid,fontSize:12}}>Loading pipeline data...</div>;
+  if(repsWithLeads.length===0) return <div style={{textAlign:"center",padding:"20px",color:C.textLight,fontSize:12}}>No pipeline data yet</div>;
+
+  return <div>
+    {repsWithLeads.map((rep,i)=>{
+      const isExpanded = expandedRep===rep.id;
+      const stageSummary = PIPELINE_STAGES.reduce((acc,s)=>{acc[s.key]=rep.repLeads.filter(l=>l.stage===s.key).length;return acc;},{});
+      return <div key={rep.id} style={{borderRadius:10,border:"1px solid "+C.border,marginBottom:8,overflow:"hidden"}}>
+        <div onClick={()=>setExpandedRep(isExpanded?null:rep.id)} style={{padding:"10px 14px",background:isExpanded?C.navy:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</div>
+            <div style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>{rep.repLeads.length} lead{rep.repLeads.length!==1?"s":""}{rep.staleCount>0&&<span style={{color:C.danger,fontWeight:600}}> • {rep.staleCount} stale</span>}</div>
+          </div>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:200}}>
+            {PIPELINE_STAGES.filter(s=>stageSummary[s.key]>0).map(s=><span key={s.key} style={{fontSize:9,background:s.color+"22",color:s.color,borderRadius:4,padding:"1px 5px",fontWeight:600}}>{stageSummary[s.key]} {s.label.split(" ")[0]}</span>)}
+          </div>
+        </div>
+        {isExpanded&&<div style={{padding:"10px 14px"}}>
+          <LeadPipeline rep={rep} data={data} onUpdate={onUpdate} isAdmin={true}/>
+        </div>}
+      </div>;
+    })}
+  </div>;
+}
+
 // ── CAREER PATH ──
 function CareerPath({rep,data,onUpdate}) {
   const stages = [
@@ -3622,7 +3797,7 @@ export default function App() {
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
     if(section==="leadlink") return <LeadLinkPage session={session}/>;
-    if(section==="teamleads") return <TeamLeads userRole={session.role}/>;
+    if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
