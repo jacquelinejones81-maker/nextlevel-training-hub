@@ -706,8 +706,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     </div>
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
-    {!readOnly&&<MyLeadLink name={rep.name}/>}
-    {!readOnly&&<MyLeads repName={rep.name}/>}
+    {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name}/>}
+    {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
