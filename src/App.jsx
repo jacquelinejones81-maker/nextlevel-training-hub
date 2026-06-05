@@ -3459,7 +3459,13 @@ function AdminPipeline({data,onUpdate}) {
     fetch();
   },[]);
 
-  const repsWithLeads = (data.reps||[]).filter(r=>r.track==="licensed").map(rep=>{
+  const allUsers = [
+    ...(data.reps||[]).filter(r=>r.track==="licensed").map(r=>({...r,userRole:"rep"})),
+    ...(data.trainers||[]).map(t=>({...t,userRole:"trainer"})),
+    ...(data.admins||[]).map(a=>({...a,userRole:"admin"})),
+  ];
+
+  const repsWithLeads = allUsers.map(rep=>{
     const safeName = (rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
     const repLeads = allLeads.filter(l=>(l.referredBy||"").toLowerCase()===safeName).map(l=>({
       ...l,
@@ -3480,7 +3486,7 @@ function AdminPipeline({data,onUpdate}) {
       return <div key={rep.id} style={{borderRadius:10,border:"1px solid "+C.border,marginBottom:8,overflow:"hidden"}}>
         <div onClick={()=>setExpandedRep(isExpanded?null:rep.id)} style={{padding:"10px 14px",background:isExpanded?C.navy:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</div>
+            <div style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name} {rep.userRole!=="rep"&&<span style={{fontSize:10,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid,fontWeight:400}}>({rep.userRole})</span>}</div>
             <div style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>{rep.repLeads.length} lead{rep.repLeads.length!==1?"s":""}{rep.staleCount>0&&<span style={{color:C.danger,fontWeight:600}}> • {rep.staleCount} stale</span>}</div>
           </div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:200}}>
@@ -3492,6 +3498,16 @@ function AdminPipeline({data,onUpdate}) {
         </div>}
       </div>;
     })}
+  </div>;
+}
+
+// ── MY PIPELINE PAGE (admin/trainer sidebar) ──
+function MyPipelinePage({session,data,onUpdate}) {
+  const pseudoRep = {id:session.id, name:session.name, track:"licensed"};
+  return <div>
+    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Pipeline</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Leads from your personal MoneyMap link and their current stage.</div>
+    <LeadPipeline rep={pseudoRep} data={data} onUpdate={onUpdate}/>
   </div>;
 }
 
@@ -3679,6 +3695,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
     {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
+    {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
@@ -3797,6 +3814,7 @@ export default function App() {
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
     if(section==="leadlink") return <LeadLinkPage session={session}/>;
+    if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
