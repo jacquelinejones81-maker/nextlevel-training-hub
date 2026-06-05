@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -3244,18 +3245,23 @@ function TeamLeads({userRole}) {
 
       {/* Leads list */}
       {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>No leads found</div>}
-      {filtered.map((lead,i)=><div key={i} style={{borderRadius:10,border:"1px solid "+C.border,padding:"12px 14px",marginBottom:8,background:"white"}}>
+      {filtered.map((lead,i)=><div key={i} style={{borderRadius:10,border:"1px solid "+(lead.archived?C.border+"88":C.border),padding:"12px 14px",marginBottom:8,background:lead.archived?C.surface:"white",opacity:lead.archived?0.7:1}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:3}}>{lead.name||"Unknown"}</div>
-            <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>{lead.phone&&<span style={{marginRight:12}}>{lead.phone}</span>}{lead.email&&<span style={{color:C.teal}}>{lead.email}</span>}</div>
+            <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>
+              {lead.phone&&<span style={{marginRight:12}}>{lead.phone}</span>}
+              {lead.email&&<span style={{color:C.teal}}>{lead.email}</span>}
+            </div>
+            {lead.referredBy&&<div style={{fontSize:11,color:C.purple,fontWeight:600,marginBottom:2}}>Rep: {lead.referredBy}</div>}
             <div style={{fontSize:10,color:C.textLight}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",flexShrink:0}}>
             {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
             {lead.reviewCalled&&<Badge color={C.purple} small>Review Called</Badge>}
             {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
-            {!lead.reviewCalled&&!lead.bookSent&&<Badge color={C.teal} small>New</Badge>}
+            {!lead.reviewCalled&&!lead.bookSent&&!lead.archived&&<Badge color={C.teal} small>New</Badge>}
+            {isAdmin&&<button onClick={()=>lead.archived?unarchiveLead(lead.docId):archiveLead(lead.docId)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+(lead.archived?C.success+"33":C.danger+"33"),background:lead.archived?C.success+"11":C.danger+"11",color:lead.archived?C.success:C.danger,cursor:"pointer",marginTop:2}}>{lead.archived?"Restore":"Archive"}</button>}
           </div>
         </div>
       </div>)}
