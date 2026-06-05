@@ -707,6 +707,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
     {!readOnly&&<MyLeadLink name={rep.name}/>}
+    {!readOnly&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
@@ -3138,29 +3139,55 @@ function TeamLeads({userRole}) {
   const [error,setError] = useState(null);
   const [search,setSearch] = useState("");
   const [filter,setFilter] = useState("all");
+  const [showArchived,setShowArchived] = useState(false);
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
 
-  useEffect(()=>{
-    const fetchLeads = async () => {
-      try {
-        const q = query(collection(mmDb,"leads"), orderBy("submittedAt","desc"));
-        const snap = await getDocs(q);
-        const data = snap.docs.map(d=>({...d.data(),docId:d.id}));
-        setLeads(data);
-      } catch(e) {
-        setError("Could not load leads. Check Firestore rules.");
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeads();
-  },[]);
+  const fetchLeads = async () => {
+    try {
+      const q = query(collection(mmDb,"leads"), orderBy("submittedAt","desc"));
+      const snap = await getDocs(q);
+      const data = snap.docs.map(d=>({...d.data(),docId:d.id}));
+      setLeads(data);
+    } catch(e) {
+      setError("Could not load leads. Check Firestore rules on MoneyMap Firebase.");
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filtered = leads.filter(l=>{
-    const matchSearch = !search || 
+  useEffect(()=>{ fetchLeads(); },[]);
+
+  const archiveLead = async (docId) => {
+    try {
+      const {doc:fsDoc,updateDoc} = await import("firebase/firestore");
+      await updateDoc(fsDoc(mmDb,"leads",docId),{archived:true});
+      setLeads(prev=>prev.map(l=>l.docId===docId?{...l,archived:true}:l));
+    } catch(e) {
+      alert("Could not archive lead. Check MoneyMap Firestore write rules.");
+    }
+  };
+
+  const unarchiveLead = async (docId) => {
+    try {
+      const {doc:fsDoc,updateDoc} = await import("firebase/firestore");
+      await updateDoc(fsDoc(mmDb,"leads",docId),{archived:false});
+      setLeads(prev=>prev.map(l=>l.docId===docId?{...l,archived:false}:l));
+    } catch(e) {
+      alert("Could not restore lead.");
+    }
+  };
+
+  const activeLeads = leads.filter(l=>!l.archived);
+  const archivedLeads = leads.filter(l=>l.archived);
+  const displayLeads = showArchived ? archivedLeads : activeLeads;
+
+  const filtered = displayLeads.filter(l=>{
+    const matchSearch = !search ||
       (l.name||"").toLowerCase().includes(search.toLowerCase()) ||
       (l.phone||"").includes(search) ||
-      (l.email||"").toLowerCase().includes(search.toLowerCase());
+      (l.email||"").toLowerCase().includes(search.toLowerCase()) ||
+      (l.referredBy||"").toLowerCase().includes(search.toLowerCase());
     if(filter==="wantsReview") return matchSearch && l.wantsReview;
     if(filter==="reviewCalled") return matchSearch && l.reviewCalled;
     if(filter==="bookSent") return matchSearch && l.bookSent;
@@ -3169,11 +3196,11 @@ function TeamLeads({userRole}) {
   });
 
   const stats = {
-    total: leads.length,
-    wantsReview: leads.filter(l=>l.wantsReview).length,
-    reviewCalled: leads.filter(l=>l.reviewCalled).length,
-    bookSent: leads.filter(l=>l.bookSent).length,
-    newLeads: leads.filter(l=>!l.reviewCalled&&!l.bookSent).length,
+    total: activeLeads.length,
+    wantsReview: activeLeads.filter(l=>l.wantsReview).length,
+    reviewCalled: activeLeads.filter(l=>l.reviewCalled).length,
+    bookSent: activeLeads.filter(l=>l.bookSent).length,
+    newLeads: activeLeads.filter(l=>!l.reviewCalled&&!l.bookSent).length,
   };
 
   return <div>
@@ -3197,6 +3224,14 @@ function TeamLeads({userRole}) {
         </Card>)}
       </div>
 
+      {/* Archived toggle */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontSize:11,color:C.textMid}}>{showArchived?"Showing archived leads":"Showing active leads"} ({filtered.length})</div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {archivedLeads.length>0&&<button onClick={()=>{setShowArchived(!showArchived);setFilter("all");}} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer"}}>{showArchived?"View Active":"View Archived ("+archivedLeads.length+")"}</button>}
+          <button onClick={fetchLeads} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Refresh</button>
+        </div>
+      </div>
       {/* Search + Filter */}
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
         <input placeholder="Search by name, phone, or email..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
@@ -3229,6 +3264,54 @@ function TeamLeads({userRole}) {
         Showing {filtered.length} of {leads.length} leads • Refreshes on page load
       </div>
     </div>}
+  </div>;
+}
+
+
+// ── MY LEADS (rep view) ──
+function MyLeads({repName}) {
+  const [leads,setLeads] = useState([]);
+  const [loading,setLoading] = useState(true);
+  const safeName = (repName||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+
+  useEffect(()=>{
+    const fetchMyLeads = async () => {
+      try {
+        const q = query(collection(mmDb,"leads"), orderBy("submittedAt","desc"));
+        const snap = await getDocs(q);
+        const all = snap.docs.map(d=>({...d.data(),docId:d.id}));
+        const mine = all.filter(l=>!l.archived&&(l.referredBy||"").toLowerCase()===safeName);
+        setLeads(mine);
+      } catch(e) {
+        console.error("Could not load leads",e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMyLeads();
+  },[safeName]);
+
+  if(loading) return null;
+  if(leads.length===0) return null;
+
+  return <div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"33",padding:"12px 14px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Leads ({leads.length})</div>
+    </div>
+    {leads.slice(0,5).map((lead,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:i<Math.min(leads.length,5)-1?"1px solid "+C.border:"none"}}>
+      <div>
+        <div style={{fontSize:12,fontWeight:600,color:C.text}}>{lead.name||"Unknown"}</div>
+        <div style={{fontSize:11,color:C.textMid}}>{lead.phone} • {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"No date"}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+        {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
+        {lead.reviewCalled&&<Badge color={C.purple} small>Called</Badge>}
+        {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
+        {!lead.reviewCalled&&!lead.bookSent&&<Badge color={C.teal} small>New</Badge>}
+      </div>
+    </div>)}
+    {leads.length>5&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:6}}>+{leads.length-5} more leads</div>}
   </div>;
 }
 
