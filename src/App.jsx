@@ -706,6 +706,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     </div>
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
+    {!readOnly&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
@@ -750,6 +751,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
     <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <span style={{fontSize:12,color:C.gold,fontWeight:600}}>Viewing as: {rep.name}</span>
       <button onClick={()=>setViewAsRep(false)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Exit Preview</button>
+
     </div>
     <RepView rep={rep} data={data} onUpdate={onUpdate} readOnly={true}/>
   </div>;
@@ -759,6 +761,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
       <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
+      <ReassignTrainer rep={rep} data={data} onUpdate={(u)=>{if(typeof onUpdate==="function")onUpdate(rep.id,{...rep,...u});}} />
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -2084,6 +2087,242 @@ function MyLeadLink({name}) {
         Share
       </button>
     </div>
+  </div>;
+}
+
+
+// ══════════════════════════════════════════════════
+// PROMPT 4 — LEAD TASK CHECKLIST
+// ══════════════════════════════════════════════════
+const LEAD_TASKS = [
+  {id:"call",label:"Call within 24 hours"},
+  {id:"book",label:"Send How Money Works book"},
+  {id:"fna",label:"Schedule FNA appointment"},
+  {id:"status",label:"Update lead status"},
+];
+
+function LeadTaskPopup({rep,data,onUpdate,leads,onClose}) {
+  const taskData = data.leadTasks||{};
+  const repTasks = taskData[rep.id]||{};
+  const newLeads = leads.filter(l=>{
+    const lt = repTasks[l.docId]||{};
+    return LEAD_TASKS.some(t=>!lt[t.id]);
+  });
+  if(newLeads.length===0){onClose();return null;}
+
+  const toggleTask = (docId,taskId) => {
+    const updated = {
+      ...taskData,
+      [rep.id]:{
+        ...repTasks,
+        [docId]:{
+          ...(repTasks[docId]||{}),
+          [taskId]:!(repTasks[docId]||{})[taskId],
+          updatedAt:new Date().toISOString(),
+        }
+      }
+    };
+    onUpdate({...data,leadTasks:updated});
+  };
+
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{background:"white",borderRadius:16,padding:"20px",maxWidth:400,width:"100%",maxHeight:"80vh",overflowY:"auto"}}>
+      <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>Action Required</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>You have uncompleted tasks on {newLeads.length} lead{newLeads.length!==1?"s":""}. Check off tasks as you complete them.</div>
+      {newLeads.map((lead,i)=>{
+        const lt = repTasks[lead.docId]||{};
+        const done = LEAD_TASKS.filter(t=>lt[t.id]).length;
+        return <div key={i} style={{borderRadius:10,border:"1px solid "+C.border,padding:"12px",marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>{lead.name||"Unknown"}</div>
+          <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>{lead.phone} • {done}/{LEAD_TASKS.length} tasks done</div>
+          {LEAD_TASKS.map(task=><label key={task.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+C.border,cursor:"pointer"}}>
+            <input type="checkbox" checked={!!lt[task.id]} onChange={()=>toggleTask(lead.docId,task.id)} style={{width:16,height:16,cursor:"pointer"}}/>
+            <span style={{fontSize:12,color:lt[task.id]?C.textLight:C.text,textDecoration:lt[task.id]?"line-through":"none"}}>{task.label}</span>
+          </label>)}
+        </div>;
+      })}
+      <button onClick={onClose} style={{width:"100%",padding:"10px",borderRadius:9,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,marginTop:6}}>Done for Now</button>
+    </div>
+  </div>;
+}
+
+// ══════════════════════════════════════════════════
+// PROMPT 5 — DAILY ACTIVITY LOG
+// ══════════════════════════════════════════════════
+const DAILY_QUESTIONS = [
+  {id:"talked",label:"How many people did you talk to today about the business or finances?"},
+  {id:"followup",label:"How many follow up calls did you make?"},
+  {id:"apptSet",label:"How many appointments did you set?"},
+  {id:"apptRan",label:"How many appointments did you run?"},
+  {id:"recruited",label:"How many new reps did you prospect for recruiting?"},
+];
+
+function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
+  const today = new Date().toISOString().split("T")[0];
+  const activityLog = data.activityLogs||{};
+  const repLog = activityLog[rep.id]||{};
+  const todayLog = repLog[today];
+  const [form,setForm] = useState({talked:0,followup:0,apptSet:0,apptRan:0,recruited:0});
+  const [submitted,setSubmitted] = useState(!!todayLog);
+  const [showFirst,setShowFirst] = useState(isFirstTime&&!repLog.seenIntro);
+
+  // Calculate streak
+  const streak = (()=>{
+    let count=0;
+    const d=new Date();
+    d.setDate(d.getDate()-1);
+    while(true){
+      const key=d.toISOString().split("T")[0];
+      if(repLog[key]) count++;
+      else break;
+      d.setDate(d.getDate()-1);
+      if(count>365) break;
+    }
+    if(todayLog) count++;
+    return count;
+  })();
+
+  const submit = () => {
+    const updated = {
+      ...activityLog,
+      [rep.id]:{
+        ...repLog,
+        seenIntro:true,
+        [today]:{...form,submittedAt:new Date().toISOString()}
+      }
+    };
+    onUpdate({...data,activityLogs:updated});
+    setSubmitted(true);
+  };
+
+  if(submitted) return null;
+
+  if(showFirst) return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:8}}>Welcome to Your Daily Activity Log</div>
+    <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.7,marginBottom:12}}>Each day you will be asked to log a quick summary of your activity. This log helps your RVP track your progress and provide the right support. It only takes 30 seconds — <strong style={{color:"white"}}>your consistency here directly reflects your commitment to your goals.</strong></div>
+    <button onClick={()=>{setShowFirst(false);const u={...activityLog,[rep.id]:{...(activityLog[rep.id]||{}),seenIntro:true}};onUpdate({...data,activityLogs:u});}} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Got It — Let me Log Today</button>
+  </div>;
+
+  return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.gold+"44",padding:"14px 16px",marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Today's Activity Log</div>
+      {streak>0&&<div style={{fontSize:11,fontWeight:700,color:C.gold}}>🔥 {streak} day streak</div>}
+    </div>
+    <div style={{fontSize:11,color:C.danger,fontWeight:600,marginBottom:12}}>You haven't logged today's activity yet. Your streak is at risk — log now.</div>
+    {DAILY_QUESTIONS.map(q=><div key={q.id} style={{marginBottom:10}}>
+      <div style={{fontSize:11,color:C.text,marginBottom:4,lineHeight:1.4}}>{q.label}</div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <button onClick={()=>setForm(f=>({...f,[q.id]:Math.max(0,f[q.id]-1)}))} style={{width:30,height:30,borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:16,color:C.textMid,fontWeight:700}}>-</button>
+        <div style={{fontSize:18,fontWeight:700,color:C.teal,minWidth:30,textAlign:"center"}}>{form[q.id]}</div>
+        <button onClick={()=>setForm(f=>({...f,[q.id]:f[q.id]+1}))} style={{width:30,height:30,borderRadius:7,border:"none",background:C.teal,cursor:"pointer",fontSize:16,color:"white",fontWeight:700}}>+</button>
+      </div>
+    </div>)}
+    <button onClick={submit} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.gold+",#f97316)",border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700,marginTop:4}}>Submit Today's Log</button>
+    <div style={{fontSize:10,color:C.textMid,textAlign:"center",marginTop:6,lineHeight:1.4}}>Your RVP reviews your activity log to support your growth and celebrate your wins!</div>
+  </div>;
+}
+
+// ══════════════════════════════════════════════════
+// PROMPT 6 — ACCOUNTABILITY DASHBOARD
+// ══════════════════════════════════════════════════
+function AccountabilityDashboard({data}) {
+  const reps = data.reps||[];
+  const activityLogs = data.activityLogs||{};
+  const leadTasks = data.leadTasks||{};
+  const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now()-86400000).toISOString().split("T")[0];
+  const twoDaysAgo = new Date(Date.now()-2*86400000).toISOString().split("T")[0];
+
+  const repStats = reps.map(rep=>{
+    const repLog = activityLogs[rep.id]||{};
+    const submittedToday = !!repLog[today];
+    const submittedYesterday = !!repLog[yesterday];
+    const submitted2Days = !!repLog[twoDaysAgo];
+
+    // Calculate streak
+    let streak=0;
+    const d=new Date();
+    if(submittedToday) {
+      streak=1;
+      d.setDate(d.getDate()-1);
+      while(repLog[d.toISOString().split("T")[0]]){streak++;d.setDate(d.getDate()-1);if(streak>365)break;}
+    }
+
+    // Status color
+    const status = submittedToday?"green":submittedYesterday?"yellow":"red";
+
+    // Open tasks
+    const repTaskData = leadTasks[rep.id]||{};
+    const openTasks = Object.values(repTaskData).reduce((count,lt)=>count+LEAD_TASKS.filter(t=>!lt[t.id]).length,0);
+
+    // Last login (from checkIns as proxy)
+    const cis = rep.checkIns||[];
+    const lastCI = cis.length>0?cis[cis.length-1].date:null;
+
+    return {...rep,submittedToday,streak,status,openTasks,lastCI};
+  });
+
+  const statusColors={green:C.success,yellow:C.gold,red:C.danger};
+  const statusLabels={green:"Active Today",yellow:"1 Day Idle",red:"3+ Days Silent"};
+
+  return <div>
+    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Full picture of who is active and who needs a check-in.</div>
+
+    {/* Summary stats */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+      {[
+        {l:"Active Today",v:repStats.filter(r=>r.status==="green").length,c:C.success},
+        {l:"Needs Attention",v:repStats.filter(r=>r.status==="yellow").length,c:C.gold},
+        {l:"Going Silent",v:repStats.filter(r=>r.status==="red").length,c:C.danger},
+      ].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
+        <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
+        <div style={{fontSize:10,color:C.textMid}}>{s.l}</div>
+      </Card>)}
+    </div>
+
+    {/* Rep list */}
+    {repStats.sort((a,b)=>a.status==="green"?-1:b.status==="green"?1:0).map((rep,i)=><Card key={i} style={{marginBottom:8,borderLeft:"4px solid "+statusColors[rep.status]}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+            <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
+            <span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>
+            <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
+          </div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+            <div style={{fontSize:11,color:C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:C.textLight}}>{rep.streak} day{rep.streak!==1?"s":""}</strong></div>
+            <div style={{fontSize:11,color:C.textMid}}>Today's Log: <strong style={{color:rep.submittedToday?C.success:C.danger}}>{rep.submittedToday?"Submitted":"Not yet"}</strong></div>
+            <div style={{fontSize:11,color:C.textMid}}>Open Tasks: <strong style={{color:rep.openTasks>0?C.danger:C.success}}>{rep.openTasks}</strong></div>
+          </div>
+        </div>
+      </div>
+    </Card>)}
+  </div>;
+}
+
+// ══════════════════════════════════════════════════
+// REASSIGN TRAINER
+// ══════════════════════════════════════════════════
+function ReassignTrainer({rep,data,onUpdate}) {
+  const [editing,setEditing] = useState(false);
+  const trainers = data.trainers||[];
+  const currentTrainer = trainers.find(t=>t.id===rep.trainerId);
+
+  return <div style={{marginBottom:8}}>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{fontSize:11,color:C.textMid}}>Trainer: <strong style={{color:C.text}}>{currentTrainer?.name||"Unassigned"}</strong></div>
+      <button onClick={()=>setEditing(!editing)} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Reassign"}</button>
+    </div>
+    {editing&&<div style={{marginTop:6}}>
+      <select defaultValue={rep.trainerId||""} onChange={e=>{
+        onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,trainerId:e.target.value}:r)});
+        setEditing(false);
+      }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+        <option value="">No trainer</option>
+        {trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+      </select>
+    </div>}
   </div>;
 }
 
@@ -3693,6 +3932,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7Z"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
+    {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
     {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
@@ -3815,6 +4055,7 @@ export default function App() {
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
     if(section==="leadlink") return <LeadLinkPage session={session}/>;
     if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="accountability") return <AccountabilityDashboard data={data}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
