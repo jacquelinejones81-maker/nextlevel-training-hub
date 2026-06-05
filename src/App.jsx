@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 
 
 // ── FIREBASE ──
@@ -15,6 +15,18 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const DATA_DOC = "appdata/main";
+
+// ── MONEYMAP FIREBASE ──
+const mmConfig = {
+  apiKey: "AIzaSyC2x67g3-vOvcPtRQqK5Nln4Er_CD26Ytc",
+  authDomain: "moneymap-app-4da40.firebaseapp.com",
+  projectId: "moneymap-app-4da40",
+  storageBucket: "moneymap-app-4da40.firebasestorage.app",
+  messagingSenderId: "273747664106",
+  appId: "1:273747664106:web:40f852da95597ad06a4b93"
+};
+const mmApp = initializeApp(mmConfig, "moneymap");
+const mmDb = getFirestore(mmApp);
 
 const saveToFirebase = async (data) => {
   try { await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) }); } catch(e) { console.error("Firebase save error", e); }
@@ -3118,6 +3130,108 @@ function LeadLinkPage({session}) {
   </div>;
 }
 
+
+// ── TEAM LEADS ──
+function TeamLeads({userRole}) {
+  const [leads,setLeads] = useState([]);
+  const [loading,setLoading] = useState(true);
+  const [error,setError] = useState(null);
+  const [search,setSearch] = useState("");
+  const [filter,setFilter] = useState("all");
+
+  useEffect(()=>{
+    const fetchLeads = async () => {
+      try {
+        const q = query(collection(mmDb,"leads"), orderBy("submittedAt","desc"));
+        const snap = await getDocs(q);
+        const data = snap.docs.map(d=>({...d.data(),docId:d.id}));
+        setLeads(data);
+      } catch(e) {
+        setError("Could not load leads. Check Firestore rules.");
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeads();
+  },[]);
+
+  const filtered = leads.filter(l=>{
+    const matchSearch = !search || 
+      (l.name||"").toLowerCase().includes(search.toLowerCase()) ||
+      (l.phone||"").includes(search) ||
+      (l.email||"").toLowerCase().includes(search.toLowerCase());
+    if(filter==="wantsReview") return matchSearch && l.wantsReview;
+    if(filter==="reviewCalled") return matchSearch && l.reviewCalled;
+    if(filter==="bookSent") return matchSearch && l.bookSent;
+    if(filter==="new") return matchSearch && !l.reviewCalled && !l.bookSent;
+    return matchSearch;
+  });
+
+  const stats = {
+    total: leads.length,
+    wantsReview: leads.filter(l=>l.wantsReview).length,
+    reviewCalled: leads.filter(l=>l.reviewCalled).length,
+    bookSent: leads.filter(l=>l.bookSent).length,
+    newLeads: leads.filter(l=>!l.reviewCalled&&!l.bookSent).length,
+  };
+
+  return <div>
+    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Team Leads</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>All leads submitted through MoneyMap links.</div>
+
+    {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.textMid}}>Loading leads...</div>}
+    {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"12px",color:C.danger,fontSize:12,marginBottom:14}}>{error}</div>}
+
+    {!loading&&!error&&<div>
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
+        {[
+          {l:"Total Leads",v:stats.total,c:C.teal},
+          {l:"Wants Review",v:stats.wantsReview,c:C.gold},
+          {l:"Review Called",v:stats.reviewCalled,c:C.purple},
+          {l:"New",v:stats.newLeads,c:C.success},
+        ].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
+          <div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div>
+        </Card>)}
+      </div>
+
+      {/* Search + Filter */}
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+        <input placeholder="Search by name, phone, or email..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+        <div style={{display:"flex",gap:4}}>
+          {[["all","All"],["new","New"],["wantsReview","Wants Review"],["reviewCalled","Called"],["bookSent","Book Sent"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setFilter(k)} style={{fontSize:10,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:filter===k?600:400,background:filter===k?C.navy:C.surface,color:filter===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Leads list */}
+      {filtered.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>No leads found</div>}
+      {filtered.map((lead,i)=><div key={i} style={{borderRadius:10,border:"1px solid "+C.border,padding:"12px 14px",marginBottom:8,background:"white"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:3}}>{lead.name||"Unknown"}</div>
+            <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>{lead.phone&&<span style={{marginRight:12}}>{lead.phone}</span>}{lead.email&&<span style={{color:C.teal}}>{lead.email}</span>}</div>
+            <div style={{fontSize:10,color:C.textLight}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",flexShrink:0}}>
+            {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
+            {lead.reviewCalled&&<Badge color={C.purple} small>Review Called</Badge>}
+            {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
+            {!lead.reviewCalled&&!lead.bookSent&&<Badge color={C.teal} small>New</Badge>}
+          </div>
+        </div>
+      </div>)}
+
+      <div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:8}}>
+        Showing {filtered.length} of {leads.length} leads • Refreshes on page load
+      </div>
+    </div>}
+  </div>;
+}
+
 // ── CAREER PATH ──
 function CareerPath({rep,data,onUpdate}) {
   const stages = [
@@ -3300,6 +3414,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7Z"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
+    {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
@@ -3419,6 +3534,7 @@ export default function App() {
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
     if(section==="leadlink") return <LeadLinkPage session={session}/>;
+    if(section==="teamleads") return <TeamLeads userRole={session.role}/>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
