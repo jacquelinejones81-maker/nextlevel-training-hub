@@ -4269,6 +4269,21 @@ export default function App() {
 
   const upd=useCallback((d)=>{setData(d);saveToFirebase(d);},[]);
 
+  // Track login — must be before any conditional returns
+  useEffect(()=>{
+    if(session&&data&&Object.keys(data).length>0){
+      const today=new Date().toISOString().split("T")[0];
+      const logins=data.loginHistory||{};
+      const userLogins=logins[session.id]||[];
+      const todayEntry=userLogins.find(l=>l.date===today);
+      if(!todayEntry){
+        const updated={...logins,[session.id]:[...userLogins,{date:today,ts:new Date().toISOString()}].slice(-60)};
+        setData(d=>({...d,loginHistory:updated}));
+        saveToFirebase({...data,loginHistory:updated});
+      }
+    }
+  },[session?.id]);
+
   const handleLogin=(role,id,userData,newPin)=>{
     if(role==="rep"&&newPin){
       const updated={...data,reps:(data.reps||[]).map(r=>r.id===id?{...r,repPin:newPin}:r)};
@@ -4289,18 +4304,7 @@ export default function App() {
   </div>;
 
   // Track login
-  useEffect(()=>{
-    if(session&&data&&upd){
-      const today=new Date().toISOString().split("T")[0];
-      const logins=data.loginHistory||{};
-      const userLogins=logins[session.id]||[];
-      const todayEntry=userLogins.find(l=>l.date===today);
-      if(!todayEntry){
-        const updated={...logins,[session.id]:[...userLogins,{date:today,ts:new Date().toISOString()}].slice(-60)};
-        upd({...data,loginHistory:updated});
-      }
-    }
-  },[session?.id]);
+  // (handled above before conditional returns)
 
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
 
