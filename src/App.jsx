@@ -2229,8 +2229,11 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
 function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const allReps = data.reps||[];
-  // Trainers only see their assigned reps
-  const reps = isAdmin ? allReps : allReps.filter(r=>r.trainerId===userId);
+  const trainers = data.trainers||[];
+  // Combine reps and trainers — admins see all, trainers see only their reps
+  const reps = isAdmin 
+    ? [...allReps, ...trainers.map(t=>({...t,isTrainer:true,track:"licensed"}))]
+    : allReps.filter(r=>r.trainerId===userId);
   const activityLogs = data.activityLogs||{};
   const leadTasks = data.leadTasks||{};
   const today = new Date().toISOString().split("T")[0];
@@ -2254,10 +2257,13 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     const cl = rep.track==="licensed"?19:13;
     const done = Object.values(rep.checked||{}).filter(Boolean).length;
     const progress = Math.round((done/cl)*100);
-    const recruiter = allReps.find(r=>r.id===rep.recruitedBy)||{name:"Direct"};
-    // 7-day streak calendar
+    const allPeople = [...allReps,...(data.trainers||[]),...(data.admins||[])];
+    const recruiter = allPeople.find(r=>r.id===rep.recruitedBy)||{name:"Not specified"};
+    // 7-day calendar — Sun to Sat of current week
     const last7 = Array.from({length:7},(_,i)=>{
-      const dd=new Date(); dd.setDate(dd.getDate()-6+i);
+      const dd=new Date();
+      const day=dd.getDay(); // 0=Sun
+      dd.setDate(dd.getDate()-day+i); // start from Sunday of this week
       const key=dd.toISOString().split("T")[0];
       return {key,submitted:!!repLog[key],isToday:key===today};
     });
@@ -2331,6 +2337,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
                 <span style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
+                {rep.isTrainer&&<Badge color={C.purple} small>Trainer</Badge>}
                 <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
               </div>
               <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
@@ -2383,7 +2390,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Status</div>
             <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-              {["On Track","Needs Attention","At Risk","Inactive"].map(s=><button key={s} onClick={()=>setRepStatus(rep.id,s)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,cursor:"pointer",fontWeight:rep.accountabilityStatus===s?700:400,background:rep.accountabilityStatus===s?C.navy:"white",color:rep.accountabilityStatus===s?"white":C.textMid}}>{s}</button>)}
+              {["On Track","Needs Attention","At Risk","Inactive"].map(s=><button key={s} onClick={()=>setRepStatus(rep.id,rep.accountabilityStatus===s?null:s)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,cursor:"pointer",fontWeight:rep.accountabilityStatus===s?700:400,background:rep.accountabilityStatus===s?C.navy:"white",color:rep.accountabilityStatus===s?"white":C.textMid}}>{s}</button>)}
             </div>
           </div>
 
