@@ -2474,8 +2474,14 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Recruited By</div>
             <select value={rep.recruitedBy||""} onChange={e=>{
-              const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,recruitedBy:e.target.value}:r);
-              onUpdate({...data,reps:updated});
+              const val=e.target.value;
+              if(rep.isTrainer){
+                const updated=(data.trainers||[]).map(t=>t.id===rep.id?{...t,recruitedBy:val}:t);
+                onUpdate({...data,trainers:updated});
+              } else {
+                const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,recruitedBy:val}:r);
+                onUpdate({...data,reps:updated});
+              }
             }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
               <option value="">Not specified</option>
               {[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])].map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -2552,6 +2558,14 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${rep.weekTotals.apptSet}</div><div class="label">Appointments Set</div></div>
               <div class="card"><div class="big">${rep.weekTotals.apptRan}</div><div class="label">Appointments Ran</div></div>
               <div class="card"><div class="big">${rep.weekTotals.recruited}</div><div class="label">Recruits Prospected</div></div>
+            </div>
+
+            <h2>SCORECARD — WEEKLY PRODUCTION</h2>
+            <p class="note">The scorecard tracks formal weekly production goals. Compare these numbers against the activity totals above to identify where the process is breaking down.</p>
+            <div class="grid">
+              <div class="card"><div class="big">${rep.scorecard?.contacts||0}<span style="font-size:14px;color:#999">/100</span></div><div class="label">Contacts Made</div></div>
+              <div class="card"><div class="big">${rep.scorecard?.apptSet||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Set</div></div>
+              <div class="card"><div class="big">${rep.scorecard?.apptDone||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Done</div></div>
             </div>
 
             <h2>CHECKLIST PROGRESS</h2>
