@@ -995,7 +995,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <ActivityAlerts data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
+
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
@@ -2225,79 +2225,186 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
 // ══════════════════════════════════════════════════
 // PROMPT 6 — ACCOUNTABILITY DASHBOARD
 // ══════════════════════════════════════════════════
-function AccountabilityDashboard({data}) {
-  const reps = data.reps||[];
+function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const allReps = data.reps||[];
+  // Trainers only see their assigned reps
+  const reps = isAdmin ? allReps : allReps.filter(r=>r.trainerId===userId);
   const activityLogs = data.activityLogs||{};
   const leadTasks = data.leadTasks||{};
   const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now()-86400000).toISOString().split("T")[0];
-  const twoDaysAgo = new Date(Date.now()-2*86400000).toISOString().split("T")[0];
+  const [search,setSearch] = useState("");
+  const [statusFilter,setStatusFilter] = useState("all");
+  const [expandedRep,setExpandedRep] = useState(null);
+  const [checkInNote,setCheckInNote] = useState("");
+  const [statusNote,setStatusNote] = useState({});
 
   const repStats = reps.map(rep=>{
     const repLog = activityLogs[rep.id]||{};
     const submittedToday = !!repLog[today];
     const submittedYesterday = !!repLog[yesterday];
-    const submitted2Days = !!repLog[twoDaysAgo];
-
-    // Calculate streak
     let streak=0;
     const d=new Date();
-    if(submittedToday) {
-      streak=1;
-      d.setDate(d.getDate()-1);
-      while(repLog[d.toISOString().split("T")[0]]){streak++;d.setDate(d.getDate()-1);if(streak>365)break;}
-    }
-
-    // Status color
+    if(submittedToday){streak=1;d.setDate(d.getDate()-1);while(repLog[d.toISOString().split("T")[0]]){streak++;d.setDate(d.getDate()-1);if(streak>365)break;}}
     const status = submittedToday?"green":submittedYesterday?"yellow":"red";
-
-    // Open tasks
     const repTaskData = leadTasks[rep.id]||{};
-    const openTasks = Object.values(repTaskData).reduce((count,lt)=>count+LEAD_TASKS.filter(t=>!lt[t.id]).length,0);
+    const openTasks = Object.values(repTaskData).reduce((c,lt)=>c+LEAD_TASKS.filter(t=>!lt[t.id]).length,0);
+    const cl = rep.track==="licensed"?19:13;
+    const done = Object.values(rep.checked||{}).filter(Boolean).length;
+    const progress = Math.round((done/cl)*100);
+    const recruiter = allReps.find(r=>r.id===rep.recruitedBy)||{name:"Direct"};
+    // 7-day streak calendar
+    const last7 = Array.from({length:7},(_,i)=>{
+      const dd=new Date(); dd.setDate(dd.getDate()-6+i);
+      const key=dd.toISOString().split("T")[0];
+      return {key,submitted:!!repLog[key],isToday:key===today};
+    });
+    const todayLog = repLog[today];
+    return {...rep,submittedToday,streak,status,openTasks,progress,recruiter,last7,todayLog};
+  });
 
-    // Last login (from checkIns as proxy)
-    const cis = rep.checkIns||[];
-    const lastCI = cis.length>0?cis[cis.length-1].date:null;
-
-    return {...rep,submittedToday,streak,status,openTasks,lastCI};
+  const filtered = repStats.filter(r=>{
+    const matchSearch = !search||(r.name||"").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter==="all"||r.status===statusFilter;
+    return matchSearch&&matchStatus;
+  }).sort((a,b)=>{
+    const order={red:0,yellow:1,green:2};
+    return order[a.status]-order[b.status];
   });
 
   const statusColors={green:C.success,yellow:C.gold,red:C.danger};
   const statusLabels={green:"Active Today",yellow:"1 Day Idle",red:"3+ Days Silent"};
 
+  const addCheckIn = (repId) => {
+    if(!checkInNote.trim()) return;
+    const note={text:checkInNote,date:new Date().toISOString(),by:userId};
+    const updated=(data.reps||[]).map(r=>r.id===repId?{...r,checkIns:[...(r.checkIns||[]),note]}:r);
+    onUpdate({...data,reps:updated});
+    setCheckInNote("");
+  };
+
+  const setRepStatus = (repId,status) => {
+    const updated=(data.reps||[]).map(r=>r.id===repId?{...r,accountabilityStatus:status}:r);
+    onUpdate({...data,reps:updated});
+  };
+
+  const removeRep = (repId,repName) => {
+    if(!isAdmin) return;
+    if(!window.confirm("Mark "+repName+" as inactive? Their data will be preserved but they will be removed from active views.")) return;
+    const updated=(data.reps||[]).map(r=>r.id===repId?{...r,inactive:true}:r);
+    onUpdate({...data,reps:updated});
+  };
+
   return <div>
     <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Full picture of who is active and who needs a check-in.</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:14,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place. Green means active today. Yellow means 1 day idle. Red means 3+ days with no submission.</div>
 
     {/* Summary stats */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
-      {[
-        {l:"Active Today",v:repStats.filter(r=>r.status==="green").length,c:C.success},
-        {l:"Needs Attention",v:repStats.filter(r=>r.status==="yellow").length,c:C.gold},
-        {l:"Going Silent",v:repStats.filter(r=>r.status==="red").length,c:C.danger},
-      ].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
+      {[{l:"Active Today",v:repStats.filter(r=>r.status==="green").length,c:C.success},{l:"Needs Attention",v:repStats.filter(r=>r.status==="yellow").length,c:C.gold},{l:"Going Silent",v:repStats.filter(r=>r.status==="red").length,c:C.danger}].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
         <div style={{fontSize:10,color:C.textMid}}>{s.l}</div>
       </Card>)}
     </div>
 
-    {/* Rep list */}
-    {repStats.sort((a,b)=>a.status==="green"?-1:b.status==="green"?1:0).map((rep,i)=><Card key={i} style={{marginBottom:8,borderLeft:"4px solid "+statusColors[rep.status]}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-        <div style={{flex:1}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-            <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
-            <span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>
-            <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
-          </div>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-            <div style={{fontSize:11,color:C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:C.textLight}}>{rep.streak} day{rep.streak!==1?"s":""}</strong></div>
-            <div style={{fontSize:11,color:C.textMid}}>Today's Log: <strong style={{color:rep.submittedToday?C.success:C.danger}}>{rep.submittedToday?"Submitted":"Not yet"}</strong></div>
-            <div style={{fontSize:11,color:C.textMid}}>Open Tasks: <strong style={{color:rep.openTasks>0?C.danger:C.success}}>{rep.openTasks}</strong></div>
+    {/* Search + filter */}
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      <input placeholder="Search rep name..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+      <div style={{display:"flex",gap:4}}>
+        {[["all","All"],["red","Silent"],["yellow","Idle"],["green","Active"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setStatusFilter(k)} style={{fontSize:10,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:statusFilter===k?700:400,background:statusFilter===k?(k==="all"?C.navy:statusColors[k]):C.surface,color:statusFilter===k?"white":C.textMid}}>{l}</button>
+        ))}
+      </div>
+    </div>
+
+    {/* Rep cards */}
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No reps match your filter</div>}
+    {filtered.map((rep,i)=>{
+      const isExpanded = expandedRep===rep.id;
+      return <div key={i} style={{borderRadius:10,border:"1px solid "+C.border,marginBottom:10,overflow:"hidden",borderLeft:"4px solid "+statusColors[rep.status]}}>
+        {/* Rep header — clickable */}
+        <div onClick={()=>setExpandedRep(isExpanded?null:rep.id)} style={{padding:"10px 14px",background:isExpanded?C.navy:"white",cursor:"pointer"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
+                <span style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
+                <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
+              </div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:(isExpanded?"rgba(255,255,255,0.5)":C.textLight)}}>{rep.streak}d</strong></span>
+                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Progress: <strong style={{color:isExpanded?"white":C.teal}}>{rep.progress}%</strong></span>
+                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Tasks: <strong style={{color:rep.openTasks>0?C.danger:(isExpanded?"white":C.success)}}>{rep.openTasks} open</strong></span>
+                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Recruited by: <strong style={{color:isExpanded?"white":C.purple}}>{rep.recruiter?.name||"Direct"}</strong></span>
+              </div>
+            </div>
+            <span style={{color:isExpanded?"rgba(255,255,255,0.5)":C.textLight,fontSize:14,transform:isExpanded?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block",flexShrink:0}}>v</span>
           </div>
         </div>
-      </div>
-    </Card>)}
+
+        {/* Expanded details */}
+        {isExpanded&&<div style={{padding:"14px",background:C.surface}}>
+
+          {/* 7-day calendar */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Last 7 Days</div>
+            <div style={{display:"flex",gap:4}}>
+              {rep.last7.map((day,di)=><div key={di} style={{flex:1,textAlign:"center"}}>
+                <div style={{width:"100%",aspectRatio:"1",borderRadius:6,background:day.submitted?C.success:C.danger+"22",border:"2px solid "+(day.isToday?C.teal:(day.submitted?C.success:C.danger+"33")),display:"flex",alignItems:"center",justifyContent:"center",marginBottom:3}}>
+                  <span style={{fontSize:14}}>{day.submitted?"✓":"·"}</span>
+                </div>
+                <div style={{fontSize:9,color:C.textLight}}>{["S","M","T","W","T","F","S"][new Date(day.key).getDay()]}</div>
+              </div>)}
+            </div>
+          </div>
+
+          {/* Today's log answers */}
+          {rep.todayLog&&<div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Today's Activity Log</div>
+            {DAILY_QUESTIONS.map(q=><div key={q.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+C.border}}>
+              <span style={{fontSize:11,color:C.textMid,flex:1,paddingRight:8}}>{q.label.replace("How many ","").replace("?","")}</span>
+              <span style={{fontSize:11,fontWeight:700,color:C.teal}}>{rep.todayLog[q.id]||0}</span>
+            </div>)}
+          </div>}
+          {!rep.todayLog&&<div style={{background:C.danger+"11",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.danger,fontWeight:600}}>No activity log submitted today</div>}
+
+          {/* Checklist progress */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.text}}>Checklist Progress</div>
+              <div style={{fontSize:11,fontWeight:700,color:C.teal}}>{rep.progress}%</div>
+            </div>
+            <Bar pct={rep.progress} color={rep.progress>=100?C.success:C.teal} h={6}/>
+          </div>
+
+          {/* Status note */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Status</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+              {["On Track","Needs Attention","At Risk","Inactive"].map(s=><button key={s} onClick={()=>setRepStatus(rep.id,s)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,cursor:"pointer",fontWeight:rep.accountabilityStatus===s?700:400,background:rep.accountabilityStatus===s?C.navy:"white",color:rep.accountabilityStatus===s?"white":C.textMid}}>{s}</button>)}
+            </div>
+          </div>
+
+          {/* Check-in log */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Coaching Notes</div>
+            {(rep.checkIns||[]).length===0&&<div style={{fontSize:11,color:C.textLight,marginBottom:8}}>No coaching notes yet</div>}
+            {(rep.checkIns||[]).slice(-3).reverse().map((ci,ci_i)=><div key={ci_i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,marginBottom:6}}>
+              <div style={{fontSize:12,color:C.text}}>{ci.text}</div>
+              <div style={{fontSize:10,color:C.textLight,marginTop:2}}>{new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+            </div>)}
+            <div style={{display:"flex",gap:6,marginTop:6}}>
+              <input placeholder="Add a coaching note..." value={checkInNote} onChange={e=>setCheckInNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCheckIn(rep.id)} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
+              <button onClick={()=>addCheckIn(rep.id)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+            </div>
+          </div>
+
+          {/* Remove rep — admin only */}
+          {isAdmin&&<button onClick={()=>removeRep(rep.id,rep.name)} style={{width:"100%",padding:"8px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Mark as Inactive</button>}
+        </div>}
+      </div>;
+    })}
   </div>;
 }
 
@@ -3938,7 +4045,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
-    {k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
+    ...(role==="trainer"||role==="superadmin"?[{k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"}]:[]),
   ];
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
@@ -4055,7 +4162,7 @@ export default function App() {
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
     if(section==="leadlink") return <LeadLinkPage session={session}/>;
     if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
-    if(section==="accountability") return <AccountabilityDashboard data={data}/>;
+    if(section==="accountability") return <AccountabilityDashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
