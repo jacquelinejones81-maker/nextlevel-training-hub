@@ -2268,7 +2268,40 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
       return {key,submitted:!!repLog[key],isToday:key===today};
     });
     const todayLog = repLog[today];
-    return {...rep,submittedToday,streak,status,openTasks,progress,recruiter,last7,todayLog};
+
+    // Weekly activity totals (Sun-Sat)
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+    const weekTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,daysLogged:0};
+    Array.from({length:7},(_,i)=>{
+      const dd=new Date(weekStart); dd.setDate(dd.getDate()+i);
+      const key=dd.toISOString().split("T")[0];
+      const log=repLog[key];
+      if(log){
+        weekTotals.daysLogged++;
+        weekTotals.talked+=(Number(log.talked)||0);
+        weekTotals.followup+=(Number(log.followup)||0);
+        weekTotals.apptSet+=(Number(log.apptSet)||0);
+        weekTotals.apptRan+=(Number(log.apptRan)||0);
+        weekTotals.recruited+=(Number(log.recruited)||0);
+      }
+    });
+
+    // Scorecard
+    const scorecard = (data.scorecards||{})[rep.id]||{};
+
+    // Login history
+    const loginHistory = (data.loginHistory||{})[rep.id]||[];
+    const lastLogin = loginHistory.length>0?loginHistory[loginHistory.length-1].ts:null;
+    const loginsThisWeek = loginHistory.filter(l=>{
+      const dd=new Date(l.ts); return dd>=weekStart;
+    }).length;
+    const loginsThisMonth = loginHistory.filter(l=>{
+      const dd=new Date(l.ts);
+      return dd.getMonth()===new Date().getMonth()&&dd.getFullYear()===new Date().getFullYear();
+    }).length;
+
+    return {...rep,submittedToday,streak,status,openTasks,progress,recruiter,last7,todayLog,weekTotals,scorecard,lastLogin,loginsThisWeek,loginsThisMonth};
   });
 
   const filtered = repStats.filter(r=>{
@@ -2394,6 +2427,61 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             </div>
           </div>
 
+          {/* Weekly Activity Totals */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Weekly Activity Totals ({rep.weekTotals.daysLogged}/7 days logged)</div>
+            {rep.weekTotals.daysLogged===0?<div style={{fontSize:11,color:C.textLight}}>No activity logged this week</div>:
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {[{l:"People Talked To",v:rep.weekTotals.talked},{l:"Follow-up Calls",v:rep.weekTotals.followup},{l:"Appointments Set",v:rep.weekTotals.apptSet},{l:"Appointments Ran",v:rep.weekTotals.apptRan},{l:"Recruits Prospected",v:rep.weekTotals.recruited}].map(item=><div key={item.l} style={{background:C.surface,borderRadius:6,padding:"6px 9px"}}>
+                <div style={{fontSize:18,fontWeight:700,color:C.teal}}>{item.v}</div>
+                <div style={{fontSize:9,color:C.textMid}}>{item.l}</div>
+              </div>)}
+            </div>}
+          </div>
+
+          {/* Scorecard */}
+          {rep.scorecard&&Object.keys(rep.scorecard).length>0&&<div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Scorecard This Week</div>
+            {[{l:"Contacts Made",v:rep.scorecard.contacts||0,goal:100},{l:"Appointments Set",v:rep.scorecard.apptSet||0,goal:20},{l:"Appointments Done",v:rep.scorecard.apptDone||0,goal:20}].map(item=><div key={item.l} style={{marginBottom:6}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                <span style={{fontSize:11,color:C.textMid}}>{item.l}</span>
+                <span style={{fontSize:11,fontWeight:700,color:C.teal}}>{item.v}/{item.goal}</span>
+              </div>
+              <Bar pct={Math.min(Math.round((item.v/item.goal)*100),100)} color={C.teal} h={4}/>
+            </div>)}
+          </div>}
+
+          {/* App Engagement */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>App Engagement</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+              <div style={{background:C.surface,borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
+                <div style={{fontSize:16,fontWeight:700,color:C.purple}}>{rep.loginsThisWeek}</div>
+                <div style={{fontSize:9,color:C.textMid}}>Logins This Week</div>
+              </div>
+              <div style={{background:C.surface,borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
+                <div style={{fontSize:16,fontWeight:700,color:C.purple}}>{rep.loginsThisMonth}</div>
+                <div style={{fontSize:9,color:C.textMid}}>Logins This Month</div>
+              </div>
+              <div style={{background:C.surface,borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.purple}}>{rep.lastLogin?new Date(rep.lastLogin).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Never"}</div>
+                <div style={{fontSize:9,color:C.textMid}}>Last Login</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Editable Recruited By */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Recruited By</div>
+            <select value={rep.recruitedBy||""} onChange={e=>{
+              const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,recruitedBy:e.target.value}:r);
+              onUpdate({...data,reps:updated});
+            }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+              <option value="">Not specified</option>
+              {[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])].map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+
           {/* Check-in log */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Coaching Notes</div>
@@ -2407,6 +2495,78 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <button onClick={()=>addCheckIn(rep.id)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
             </div>
           </div>
+
+          {/* Generate Report */}
+          <button onClick={()=>{
+            const w=window.open("","_blank");
+            const weekDays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            w.document.write(`<!DOCTYPE html><html><head><title>Coaching Report — ${rep.name}</title><style>
+              body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#1a1a2e;}
+              h1{color:#0d1b2a;border-bottom:3px solid #0ea5c9;padding-bottom:10px;}
+              h2{color:#0ea5c9;font-size:14px;margin-top:24px;margin-bottom:4px;}
+              .note{font-size:11px;color:#666;font-style:italic;margin-bottom:10px;}
+              .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0;}
+              .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0;}
+              .card{background:#f8f9fa;border-radius:8px;padding:10px;text-align:center;}
+              .big{font-size:24px;font-weight:700;color:#0ea5c9;}
+              .label{font-size:10px;color:#666;}
+              .cal{display:flex;gap:6px;margin:10px 0;}
+              .day{flex:1;text-align:center;padding:8px 4px;border-radius:6px;}
+              .day-label{font-size:10px;color:#666;margin-top:3px;}
+              .submitted{background:#10b981;color:white;}
+              .missed{background:#fee2e2;color:#dc2626;}
+              .today-border{border:2px solid #0ea5c9;}
+              .note-item{background:#f8f9fa;border-radius:6px;padding:8px;margin:4px 0;font-size:12px;}
+              .note-date{font-size:10px;color:#999;}
+              .status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+              @media print{body{margin:10px;}.no-print{display:none;}}
+            </style></head><body>
+            <button class="no-print" onclick="window.print()" style="background:#0ea5c9;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:16px;">Print / Save as PDF</button>
+            <h1>Coaching Report</h1>
+            <p><strong>${rep.name}</strong> &nbsp;|&nbsp; ${new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
+            ${rep.accountabilityStatus?`<p>Status: <span class="status" style="background:${rep.accountabilityStatus==="On Track"?"#10b981":rep.accountabilityStatus==="Needs Attention"?"#f59e0b":rep.accountabilityStatus==="At Risk"?"#f97316":"#dc2626"};color:white">${rep.accountabilityStatus}</span></p>`:""}
+
+            <h2>APP ENGAGEMENT</h2>
+            <p class="note">Login frequency shows how actively ${rep.name} is using their training tools. Daily logins indicate someone who is working the system.</p>
+            <div class="grid">
+              <div class="card"><div class="big">${rep.loginsThisWeek}</div><div class="label">Logins This Week</div></div>
+              <div class="card"><div class="big">${rep.loginsThisMonth}</div><div class="label">Logins This Month</div></div>
+              <div class="card"><div class="big">${rep.lastLogin?new Date(rep.lastLogin).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Never"}</div><div class="label">Last Login</div></div>
+            </div>
+
+            <h2>ACTIVITY CONSISTENCY</h2>
+            <p class="note">This section shows how consistently ${rep.name} is logging daily activity. Consistency is the foundation of results.</p>
+            <div class="cal">
+              ${rep.last7.map(day=>`<div class="day ${day.submitted?"submitted":"missed"}${day.isToday?" today-border":""}">
+                <div>${day.submitted?"✓":"·"}</div>
+                <div class="day-label">${weekDays[new Date(day.key).getDay()]}</div>
+              </div>`).join("")}
+            </div>
+            <p>Streak: <strong>${rep.streak} day${rep.streak!==1?"s":""}</strong> &nbsp;|&nbsp; Submitted ${rep.weekTotals.daysLogged} of 7 days this week</p>
+
+            <h2>WEEKLY ACTIVITY TOTALS</h2>
+            <p class="note">These are the numbers ${rep.name} reported doing this week. High activity with low results points to a skills gap, not an effort gap.</p>
+            <div class="grid2">
+              <div class="card"><div class="big">${rep.weekTotals.talked}</div><div class="label">People Talked To</div></div>
+              <div class="card"><div class="big">${rep.weekTotals.followup}</div><div class="label">Follow-up Calls</div></div>
+              <div class="card"><div class="big">${rep.weekTotals.apptSet}</div><div class="label">Appointments Set</div></div>
+              <div class="card"><div class="big">${rep.weekTotals.apptRan}</div><div class="label">Appointments Ran</div></div>
+              <div class="card"><div class="big">${rep.weekTotals.recruited}</div><div class="label">Recruits Prospected</div></div>
+            </div>
+
+            <h2>CHECKLIST PROGRESS</h2>
+            <p class="note">Training completion shows how invested ${rep.name} is in learning the system.</p>
+            <p><strong>${rep.progress}% complete</strong></p>
+
+            <h2>COACHING NOTES</h2>
+            <p class="note">Notes from previous coaching sessions.</p>
+            ${(rep.checkIns||[]).length===0?"<p style='color:#999;font-size:12px'>No coaching notes yet</p>":
+            (rep.checkIns||[]).slice(-5).reverse().map(ci=>`<div class="note-item">${ci.text}<div class="note-date">${new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div></div>`).join("")}
+
+            <p style="margin-top:40px;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:10px;">Generated by NextLevel Field Training Hub • ${new Date().toLocaleString()}</p>
+            </body></html>`);
+            w.document.close();
+          }} style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:8}}>Generate Coaching Report</button>
 
           {/* Remove rep — admin only */}
           {isAdmin&&<button onClick={()=>removeRep(rep.id,rep.name)} style={{width:"100%",padding:"8px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Mark as Inactive</button>}
@@ -4129,6 +4289,20 @@ export default function App() {
   </div>;
 
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
+
+  // Track login
+  useEffect(()=>{
+    if(session&&data&&upd){
+      const today=new Date().toISOString().split("T")[0];
+      const logins=data.loginHistory||{};
+      const userLogins=logins[session.id]||[];
+      const todayEntry=userLogins.find(l=>l.date===today);
+      if(!todayEntry){
+        const updated={...logins,[session.id]:[...userLogins,{date:today,ts:new Date().toISOString()}].slice(-60)};
+        upd({...data,loginHistory:updated});
+      }
+    }
+  },[session?.id]);
 
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
