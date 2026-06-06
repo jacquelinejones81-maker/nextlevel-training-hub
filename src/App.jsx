@@ -4288,8 +4288,6 @@ export default function App() {
     <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
   </div>;
 
-  if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
-
   // Track login
   useEffect(()=>{
     if(session&&data&&upd){
@@ -4303,6 +4301,8 @@ export default function App() {
       }
     }
   },[session?.id]);
+
+  if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
 
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
