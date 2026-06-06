@@ -706,7 +706,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     </div>
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
-    {!readOnly&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>}
+    {!readOnly&&rep.track==="licensed"&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
@@ -1002,6 +1002,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<MonthlyHistory data={data} onUpdate={onUpdate}/>}
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
+    {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
     {userRole==="trainer"&&<TopRecruiters data={data}/> }
     {userRole==="trainer"&&<Leaderboard data={data} userId={userId}/>}
     {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>onUpdate({...data,myProduction:{...(data.myProduction||{}),[userId]:p}})}/>}
