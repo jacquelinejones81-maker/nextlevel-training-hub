@@ -3076,40 +3076,41 @@ function MonthEndReport({data}) {
         </div>`},
     ];
 
-    w.document.write(\`<!DOCTYPE html><html><head><title>Month End Report — \${monthName}</title><style>
-      *{margin:0;padding:0;box-sizing:border-box;}
-      body{font-family:Arial,sans-serif;background:#111;color:white;}
-      .slide{width:100vw;height:100vh;display:none;overflow:hidden;position:relative;}
-      .slide.active{display:flex;align-items:stretch;}
-      .slide-inner{width:100%;display:flex;flex-direction:column;}
-      .nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:100;background:rgba(0,0,0,0.5);padding:10px 20px;border-radius:30px;}
-      .nav button{background:rgba(255,255,255,0.2);color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:14px;font-weight:600;}
-      .nav button:hover{background:rgba(255,255,255,0.3);}
-      .nav .counter{font-size:13px;color:rgba(255,255,255,0.7);min-width:60px;text-align:center;}
-      .print-btn{position:fixed;top:16px;right:16px;background:#0ea5c9;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;z-index:100;}
-      @media print{
-        .nav,.print-btn{display:none;}
-        .slide{display:flex!important;page-break-after:always;width:100%;height:100vh;}
-      }
-    </style></head><body>
-    \${slides.map((s,i)=>\`<div class="slide \${i===0?"active":""}" id="slide\${i}" style="background:\${s.bg}"><div class="slide-inner">\${s.content}</div></div>\`).join("")}
-    <div class="nav">
-      <button onclick="changeSlide(-1)">← Prev</button>
-      <span class="counter" id="counter">1 / \${slides.length}</span>
-      <button onclick="changeSlide(1)">Next →</button>
-    </div>
-    <button class="print-btn" onclick="window.print()">🖨️ Print / PDF</button>
-    <script>
-      let cur=0;
-      function changeSlide(dir){
-        document.getElementById("slide"+cur).classList.remove("active");
-        cur=Math.max(0,Math.min(\${slides.length}-1,cur+dir));
-        document.getElementById("slide"+cur).classList.add("active");
-        document.getElementById("counter").textContent=(cur+1)+" / \${slides.length}";
-      }
-      document.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key===" ")changeSlide(1);if(e.key==="ArrowLeft")changeSlide(-1);});
-    <\/script>
-    </body></html>\`);
+    const slideCount = slides.length;
+    const slidesHTML = slides.map((s,i)=>'<div class="slide '+(i===0?"active":"")+'" id="slide'+i+'" style="background:'+s.bg+'"><div class="slide-inner">'+s.content+'</div></div>').join("");
+
+    const html = '<!DOCTYPE html><html><head><title>Month End Report — '+monthName+'</title><style>'
+      +'*{margin:0;padding:0;box-sizing:border-box;}'
+      +'body{font-family:Arial,sans-serif;background:#111;color:white;}'
+      +'.slide{width:100vw;height:100vh;display:none;overflow:hidden;position:relative;}'
+      +'.slide.active{display:flex;align-items:stretch;}'
+      +'.slide-inner{width:100%;display:flex;flex-direction:column;}'
+      +'.nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:100;background:rgba(0,0,0,0.5);padding:10px 20px;border-radius:30px;}'
+      +'.nav button{background:rgba(255,255,255,0.2);color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:14px;font-weight:600;}'
+      +'.nav .counter{font-size:13px;color:rgba(255,255,255,0.7);min-width:60px;text-align:center;}'
+      +'.print-btn{position:fixed;top:16px;right:16px;background:#0ea5c9;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;z-index:100;}'
+      +'@media print{.nav,.print-btn{display:none;}.slide{display:flex!important;page-break-after:always;width:100%;height:100vh;}}'
+      +'</style></head><body>'
+      +slidesHTML
+      +'<div class="nav">'
+      +'<button onclick="changeSlide(-1)">&#8592; Prev</button>'
+      +'<span class="counter" id="counter">1 / '+slideCount+'</span>'
+      +'<button onclick="changeSlide(1)">Next &#8594;</button>'
+      +'</div>'
+      +'<button class="print-btn" onclick="window.print()">Print / PDF</button>'
+      +'<script>'
+      +'var cur=0;'
+      +'function changeSlide(dir){'
+      +'document.getElementById("slide"+cur).classList.remove("active");'
+      +'cur=Math.max(0,Math.min('+slideCount+'-1,cur+dir));'
+      +'document.getElementById("slide"+cur).classList.add("active");'
+      +'document.getElementById("counter").textContent=(cur+1)+" / '+slideCount+'";'
+      +'}'
+      +'document.addEventListener("keydown",function(e){if(e.key==="ArrowRight"||e.key===" ")changeSlide(1);if(e.key==="ArrowLeft")changeSlide(-1);});'
+      +'<\/script>'
+      +'</body></html>';
+
+    w.document.write(html);
     w.document.close();
   };
 
