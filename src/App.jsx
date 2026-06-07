@@ -738,7 +738,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
     {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
-    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData} readOnly={readOnly} data={data}/>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={false} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
@@ -775,7 +775,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <button onClick={()=>setViewAsRep(false)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Exit Preview</button>
 
     </div>
-    <RepView rep={rep} data={data} onUpdate={onUpdate} readOnly={true}/>
+    <RepView rep={rep} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={true}/>
   </div>;
 
   return <div>
@@ -805,10 +805,10 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {tab==="trainer"&&<div>{Object.entries(TRAINER_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
-    {tab==="rep"&&<RepView rep={rep} data={data} onUpdate={onUpdate} readOnly={false}/>}
+    {tab==="rep"&&<RepView rep={rep} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={false}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})}/>}
-    {tab==="refs"&&<div>{(rep.references||[]).filter(r=>r.name).map((r,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:6,display:"flex",gap:10,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal}}>{i+1}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}{r.relationship&&` - ${r.relationship}`}</div></div></div>)}</div>}
-    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData} readOnly={false} data={data}/>}
+    {tab==="refs"&&<div>{(rep.references||[]).filter(r=>r.name).length===0?<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No references entered yet</div>:(rep.references||[]).filter(r=>r.name).map((r,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:6,display:"flex",gap:10,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal}}>{i+1}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}{r.relationship&&` - ${r.relationship}`}</div></div></div>)}</div>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={null} readOnly={false} data={data}/>}
     {tab==="checkins"&&<div>
       {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds!==null&&ds>=7;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins yet - log one below":ds===0?"Checked in today":`Last check-in ${ds} day${ds!==1?"s":""} ago${stalled?" - consider reaching out!":""}`}</div>;})()}
       <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Log</button></div>
