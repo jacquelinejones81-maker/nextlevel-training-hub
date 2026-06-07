@@ -5037,6 +5037,12 @@ export default function App() {
   const [section,setSection]=useState("dashboard");
   const [selRepId,setSelRepId]=useState(null);
   const [mobileOpen,setMobileOpen]=useState(false);
+  const [winWidth,setWinWidth]=useState(window.innerWidth);
+  useEffect(()=>{
+    const handle=()=>{setWinWidth(window.innerWidth);if(window.innerWidth>=768)setMobileOpen(false);};
+    window.addEventListener("resize",handle);
+    return()=>window.removeEventListener("resize",handle);
+  },[]);
   const [showTour,setShowTour]=useState(false);
   const [showPhone,setShowPhone]=useState(false);
   const [showNeedHelp,setShowNeedHelp]=useState(false);
@@ -5148,12 +5154,14 @@ export default function App() {
   return <div style={{display:"flex",height:"100vh",background:C.surface,overflow:"hidden"}}>
     {showTour&&<AppTour role={session.role} onClose={()=>setShowTour(false)}/>}
     {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
-    <div style={{display:"flex",flexShrink:0}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)}/>
+    {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
+    <div style={{display:"flex",flexShrink:0,width:winWidth>=768?240:0,overflow:"hidden"}}>
+      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)}/>}
     </div>
+    {/* Mobile sidebar overlay */}
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
       <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}}/>
-      <div style={{flex:1,background:"rgba(0,0,0,0.4)"}} onClick={()=>setMobileOpen(false)}/>
+      <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
       <div style={{background:"white",borderBottom:`1px solid ${C.border}`,padding:"9px 14px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
