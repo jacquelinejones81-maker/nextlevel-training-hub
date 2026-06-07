@@ -482,10 +482,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
         <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo — DGO & Team Recognition</div>
         <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Upload a professional headshot — used for your DGO presentation and Wall of Fame recognition</div>
-        {rep.dgoPhoto&&<div style={{marginBottom:8,position:"relative",display:"inline-block"}}>
-          <img src={rep.dgoPhoto} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>
-          {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoPhoto:null})} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}
-        </div>}
+{(()=>{let p=rep.dgoPhoto;if(!p){try{p=localStorage.getItem("dgoPhoto_"+rep.id);}catch(ex){}}return p?<div style={{marginBottom:8,position:"relative",display:"inline-block"}}><img src={p} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>{!readOnly&&<button onClick={()=>{try{localStorage.removeItem("dgoPhoto_"+rep.id);}catch(ex){}onUpdate({...rep,dgoPhoto:null});}} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}</div>:null;})()}
         {!readOnly&&<div>
           <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
@@ -513,7 +510,8 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
                       reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,dgoPhoto:compressed}:r)
                     });
                   } else {
-                    onUpdate({...rep,dgoPhoto:compressed});
+                    try{localStorage.setItem("dgoPhoto_"+rep.id,compressed);}catch(ex){}
+                  onUpdate({...rep,dgoPhoto:compressed});
                   }
                 };
                 img.src=ev.target.result;
@@ -742,7 +740,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
-    {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={readOnly} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:readOnly?C.surface:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
+    {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={false} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
     </div>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
