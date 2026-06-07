@@ -3067,8 +3067,7 @@ function MonthEndReport({data}) {
     s9.addText("🚀",{x:3.5,y:0.4,w:3,h:1,fontSize:56,align:"center"});
     s9.addText("Keep Going —",{x:0.5,y:1.5,w:9,h:0.7,fontSize:28,bold:true,color:WHITE,align:"center"});
     s9.addText("Next Month Is Even Bigger!",{x:0.5,y:2.1,w:9,h:0.5,fontSize:22,bold:true,color:TEAL,align:"center"});
-    s9.addText("Every conversation, every appointment, every family protected — it all counts.
-You are building something real. Let's finish strong!",{x:1,y:2.8,w:8,h:1.2,fontSize:13,color:"8899AA",align:"center",wrap:true});
+    s9.addText("Every conversation, every appointment, every family protected. It all counts. You are building something real. Let's finish strong!",{x:1,y:2.8,w:8,h:1.2,fontSize:13,color:"8899AA",align:"center",wrap:true});
 
     pres.writeFile({fileName:"Month-End-Report-"+monthName.replace(" ","-")+".pptx"});
   };
