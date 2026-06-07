@@ -2514,6 +2514,9 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           <button onClick={()=>{
             const w=window.open("","_blank");
             const weekDays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            const totalPremium=(rep.selfPremium||[]).reduce((s,e)=>s+(Number(e.premium)||0),0);
+            const premiumEntries=(rep.selfPremium||[]).length;
+            const recruitsCount=(data.reps||[]).filter(r=>r.recruitedBy===rep.id).length;
             w.document.write(`<!DOCTYPE html><html><head><title>Coaching Report — ${rep.name}</title><style>
               body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#1a1a2e;}
               h1{color:#0d1b2a;border-bottom:3px solid #0ea5c9;padding-bottom:10px;}
@@ -2575,6 +2578,14 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${rep.scorecard?.contacts||0}<span style="font-size:14px;color:#999">/100</span></div><div class="label">Contacts Made</div></div>
               <div class="card"><div class="big">${rep.scorecard?.apptSet||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Set</div></div>
               <div class="card"><div class="big">${rep.scorecard?.apptDone||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Done</div></div>
+            </div>
+
+            <h2>PRODUCTION</h2>
+            <p class="note">Production numbers show the real-world results ${rep.name} is generating. Life apps and premium are the ultimate measure of activity translating into results.</p>
+            <div class="grid">
+              <div class="card"><div class="big">${premiumEntries}</div><div class="label">Premium Entries Logged</div></div>
+              <div class="card"><div class="big">$${totalPremium.toLocaleString()}</div><div class="label">Total Monthly Premium</div></div>
+              <div class="card"><div class="big">${recruitsCount}</div><div class="label">Reps Recruited</div></div>
             </div>
 
             <h2>TRAINING OBSERVATIONS</h2>
