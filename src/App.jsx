@@ -494,7 +494,23 @@ function RepExtras({rep,onUpdate,readOnly,data={}}) {
               const file=e.target.files[0];
               if(!file) return;
               if(file.size>10*1024*1024){alert("Photo must be under 10MB");return;}
-              compressImage(file, compressed=>onUpdate({...rep,dgoPhoto:compressed}), 600, 0.8);
+              const reader=new FileReader();
+              reader.onload=ev=>{
+                const img=new Image();
+                img.onload=()=>{
+                  const canvas=document.createElement("canvas");
+                  let w=img.width,h=img.height;
+                  const MAX=600;
+                  if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+                  else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+                  canvas.width=w;canvas.height=h;
+                  canvas.getContext("2d").drawImage(img,0,0,w,h);
+                  const compressed=canvas.toDataURL("image/jpeg",0.8);
+                  onUpdate({...rep,dgoPhoto:compressed});
+                };
+                img.src=ev.target.result;
+              };
+              reader.readAsDataURL(file);
             }}/>
           </label>
         </div>}
