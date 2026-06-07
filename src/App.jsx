@@ -2530,6 +2530,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <button class="no-print" onclick="window.print()" style="background:#0ea5c9;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:16px;">Print / Save as PDF</button>
             <h1>Coaching Report</h1>
             <p><strong>${rep.name}</strong> &nbsp;|&nbsp; ${new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
+            <p>Track: <strong>${rep.isTrainer?"Field Trainer":(rep.track==="licensed"?"Licensed Now What":rep.track==="fast"?"Fast Start":"Regular Start")}</strong> &nbsp;|&nbsp; Recruited By: <strong>${rep.recruiter?.name||"Not specified"}</strong></p>
             ${rep.accountabilityStatus?`<p>Status: <span class="status" style="background:${rep.accountabilityStatus==="On Track"?"#10b981":rep.accountabilityStatus==="Needs Attention"?"#f59e0b":rep.accountabilityStatus==="At Risk"?"#f97316":"#dc2626"};color:white">${rep.accountabilityStatus}</span></p>`:""}
 
             <h2>APP ENGAGEMENT</h2>
@@ -4039,6 +4040,247 @@ function MyPipelinePage({session,data,onUpdate}) {
   </div>;
 }
 
+
+// ── MY TASKS ──
+const TASK_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const TASK_CATEGORIES = ["Activity","Recruiting","Personal","Business","Custom"];
+const TASK_PRIORITIES = ["High","Medium","Low"];
+const PRIORITY_COLORS = {High:C.danger,Medium:C.gold,Low:C.success};
+
+function MyTasksPage({session,data,onUpdate}) {
+  const userId = session.id;
+  const myTasks = (data.myTasks||{})[userId]||[];
+  const [showForm,setShowForm] = useState(false);
+  const [editId,setEditId] = useState(null);
+  const [form,setForm] = useState({
+    title:"",description:"",startDate:new Date().toISOString().split("T")[0],
+    dueDate:"",recurring:false,days:[0,1,2,3,4,5,6],
+    priority:"Medium",category:"Activity",subtasks:[],newSubtask:""
+  });
+  const today = new Date().toISOString().split("T")[0];
+
+  const resetForm = () => setForm({
+    title:"",description:"",startDate:new Date().toISOString().split("T")[0],
+    dueDate:"",recurring:false,days:[0,1,2,3,4,5,6],
+    priority:"Medium",category:"Activity",subtasks:[],newSubtask:""
+  });
+
+  const saveTask = () => {
+    if(!form.title.trim()) return;
+    const task = {
+      id:editId||Date.now(),
+      title:form.title,description:form.description,
+      startDate:form.startDate,dueDate:form.dueDate,
+      recurring:form.recurring,days:form.days,
+      priority:form.priority,category:form.category,
+      subtasks:form.subtasks,
+      createdAt:new Date().toISOString(),
+      completedDays:{},
+    };
+    const updated = editId
+      ? myTasks.map(t=>t.id===editId?{...t,...task}:t)
+      : [...myTasks,task];
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
+    setShowForm(false);setEditId(null);resetForm();
+  };
+
+  const toggleDayComplete = (taskId,day) => {
+    const updated = myTasks.map(t=>{
+      if(t.id!==taskId) return t;
+      const cd = t.completedDays||{};
+      return {...t,completedDays:{...cd,[day]:!cd[day]}};
+    });
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
+  };
+
+  const deleteTask = (taskId) => {
+    if(!window.confirm("Delete this task?")) return;
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:myTasks.filter(t=>t.id!==taskId)}});
+  };
+
+  const editTask = (task) => {
+    setForm({...task,newSubtask:""});
+    setEditId(task.id);
+    setShowForm(true);
+  };
+
+  const addSubtask = () => {
+    if(!form.newSubtask.trim()) return;
+    setForm(f=>({...f,subtasks:[...f.subtasks,{id:Date.now(),text:f.newSubtask.trim()}],newSubtask:""}));
+  };
+
+  const getDaysLeft = (dueDate) => {
+    if(!dueDate) return null;
+    return Math.ceil((new Date(dueDate+"T12:00:00")-new Date())/86400000);
+  };
+
+  const getStreak = (task) => {
+    const cd = task.completedDays||{};
+    let streak=0;
+    const d=new Date();
+    while(true){
+      const key=d.toISOString().split("T")[0];
+      if(cd[key]) streak++;
+      else break;
+      d.setDate(d.getDate()-1);
+      if(streak>365) break;
+    }
+    return streak;
+  };
+
+  const isTodayActive = (task) => {
+    if(!task.recurring) return true;
+    const dayOfWeek = new Date().getDay();
+    return (task.days||[]).includes(dayOfWeek);
+  };
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.text}}>My Tasks & Goals</div>
+      <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:11,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Task</button>
+    </div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
+
+    {/* Task Form */}
+    {showForm&&<div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"44",padding:"16px",marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>{editId?"Edit Task":"New Task"}</div>
+
+      <input placeholder="Task title..." value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+
+      <textarea placeholder="Description or notes (optional)..." value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:8}}/>
+
+      {/* Sub-tasks */}
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Sub-tasks (optional)</div>
+        {form.subtasks.map((s,i)=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+          <span style={{fontSize:12,color:C.text,flex:1,background:C.surface,padding:"4px 8px",borderRadius:6}}>• {s.text}</span>
+          <button onClick={()=>setForm(f=>({...f,subtasks:f.subtasks.filter((_,j)=>j!==i)}))} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
+        </div>)}
+        <div style={{display:"flex",gap:6}}>
+          <input placeholder="Add sub-task..." value={form.newSubtask} onChange={e=>setForm(f=>({...f,newSubtask:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addSubtask()} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
+          <button onClick={addSubtask} style={{padding:"6px 10px",borderRadius:7,border:"none",background:C.teal+"22",color:C.teal,cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Start Date</div>
+          <input type="date" value={form.startDate} onChange={e=>setForm(f=>({...f,startDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>End Date (optional)</div>
+          <input type="date" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Priority</div>
+          <select value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+            {TASK_PRIORITIES.map(p=><option key={p}>{p}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Category</div>
+          <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+            {TASK_CATEGORIES.map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Recurring */}
+      <div style={{marginBottom:10}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
+          <input type="checkbox" checked={form.recurring} onChange={e=>setForm(f=>({...f,recurring:e.target.checked}))} style={{width:16,height:16}}/>
+          <span style={{fontSize:12,color:C.text,fontWeight:600}}>Recurring task</span>
+        </label>
+        {form.recurring&&<div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:4}}>Repeat on these days:</div>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {TASK_DAYS.map((d,i)=><button key={i} onClick={()=>setForm(f=>({...f,days:f.days.includes(i)?f.days.filter(x=>x!==i):[...f.days,i]}))} style={{padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:form.days.includes(i)?700:400,background:form.days.includes(i)?C.teal:C.surface,color:form.days.includes(i)?"white":C.textMid,fontSize:11}}>{d}</button>)}
+          </div>
+          <div style={{display:"flex",gap:6,marginTop:6}}>
+            <button onClick={()=>setForm(f=>({...f,days:[1,2,3,4,5]}))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekdays</button>
+            <button onClick={()=>setForm(f=>({...f,days:[0,1,2,3,4,5,6]}))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Every Day</button>
+            <button onClick={()=>setForm(f=>({...f,days:[0,6]}))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekends</button>
+          </div>
+        </div>}
+      </div>
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>{setShowForm(false);setEditId(null);resetForm();}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+        <button onClick={saveTask} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Task</button>
+      </div>
+    </div>}
+
+    {/* Task List */}
+    {myTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
+      <div style={{fontSize:28,marginBottom:8}}>✓</div>
+      <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>No tasks yet</div>
+      <div style={{fontSize:11}}>Add your first task or recurring goal above</div>
+    </div>}
+
+    {[...myTasks].sort((a,b)=>{
+      const po={High:0,Medium:1,Low:2};
+      return (po[a.priority]||1)-(po[b.priority]||1);
+    }).map((task,i)=>{
+      const daysLeft = getDaysLeft(task.dueDate);
+      const streak = getStreak(task);
+      const todayActive = isTodayActive(task);
+      const completedToday = !!(task.completedDays||{})[today];
+      const totalDays = task.dueDate&&task.startDate?Math.ceil((new Date(task.dueDate+"T12:00:00")-new Date(task.startDate+"T12:00:00"))/86400000):null;
+      const daysCompleted = Object.values(task.completedDays||{}).filter(Boolean).length;
+      const pct = totalDays?Math.min(Math.round((daysCompleted/totalDays)*100),100):null;
+
+      return <div key={task.id} style={{borderRadius:12,border:"2px solid "+(PRIORITY_COLORS[task.priority]||C.gold)+"33",background:"white",marginBottom:10,overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{padding:"10px 14px",borderBottom:"1px solid "+C.border}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
+                <span style={{fontSize:13,fontWeight:700,color:C.text}}>{task.title}</span>
+                <Badge color={PRIORITY_COLORS[task.priority]||C.gold} small>{task.priority}</Badge>
+                <Badge color={C.teal} small>{task.category}</Badge>
+                {task.recurring&&<Badge color={C.purple} small>Recurring</Badge>}
+              </div>
+              {task.description&&<div style={{fontSize:11,color:C.textMid,lineHeight:1.5,marginBottom:4}}>{task.description}</div>}
+              {task.recurring&&task.days&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                {TASK_DAYS.map((d,di)=><span key={di} style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:task.days.includes(di)?C.teal+"22":C.surface,color:task.days.includes(di)?C.teal:C.textLight,fontWeight:task.days.includes(di)?600:400}}>{d}</span>)}
+              </div>}
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              <button onClick={()=>editTask(task)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+              <button onClick={()=>deleteTask(task.id)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}}>
+            {daysLeft!==null&&<span style={{fontSize:10,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</span>}
+            {streak>0&&<span style={{fontSize:10,color:C.gold,fontWeight:600}}>🔥 {streak} day streak</span>}
+            {pct!==null&&<span style={{fontSize:10,color:C.teal}}>{daysCompleted}/{totalDays} days done ({pct}%)</span>}
+          </div>
+          {pct!==null&&<Bar pct={pct} color={pct>=100?C.success:C.teal} h={4} style={{marginTop:4}}/>}
+        </div>
+
+        {/* Sub-tasks */}
+        {task.subtasks&&task.subtasks.length>0&&<div style={{padding:"8px 14px",borderBottom:"1px solid "+C.border}}>
+          {task.subtasks.map((s,si)=><div key={s.id} style={{fontSize:12,color:C.textMid,padding:"3px 0"}}>• {s.text}</div>)}
+        </div>}
+
+        {/* Today's completion */}
+        {todayActive&&<div style={{padding:"10px 14px",background:completedToday?C.success+"08":C.surface}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+            <input type="checkbox" checked={completedToday} onChange={()=>toggleDayComplete(task.id,today)} style={{width:18,height:18,cursor:"pointer"}}/>
+            <span style={{fontSize:12,fontWeight:600,color:completedToday?C.success:C.text}}>{completedToday?"Completed today!":"Mark today as done"}</span>
+          </label>
+        </div>}
+        {!todayActive&&<div style={{padding:"8px 14px",background:C.surface}}>
+          <span style={{fontSize:11,color:C.textLight}}>Not scheduled for today</span>
+        </div>}
+      </div>;
+    })}
+  </div>;
+}
+
 // ── CAREER PATH ──
 function CareerPath({rep,data,onUpdate}) {
   const stages = [
@@ -4219,6 +4461,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
+    {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7Z"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
@@ -4359,6 +4602,7 @@ export default function App() {
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
     if(section==="leadlink") return <LeadLinkPage session={session}/>;
     if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
