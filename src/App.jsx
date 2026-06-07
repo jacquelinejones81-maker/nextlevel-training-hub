@@ -762,6 +762,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
       <ReassignTrainer rep={rep} data={data} onUpdate={(u)=>{if(typeof onUpdate==="function")onUpdate(rep.id,{...rep,...u});}} />
+      <ResetPinButton person={rep} personType="rep" data={data} onUpdate={onUpdate||upd}/>
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -2251,6 +2252,12 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     let streak=0;
     const d=new Date();
     if(submittedToday){streak=1;d.setDate(d.getDate()-1);while(repLog[d.toISOString().split("T")[0]]){streak++;d.setDate(d.getDate()-1);if(streak>365)break;}}
+    // Auto at-risk flags
+    const loginHistory2 = (data.loginHistory||{})[rep.id]||[];
+    const lastLoginDate = loginHistory2.length>0?new Date(loginHistory2[loginHistory2.length-1].ts):null;
+    const daysSinceLogin = lastLoginDate?Math.floor((Date.now()-lastLoginDate)/86400000):999;
+    const daysSinceChecklist = rep.lastChecklistActivity?Math.floor((Date.now()-new Date(rep.lastChecklistActivity))/86400000):999;
+    const isAtRisk = daysSinceLogin>=30||daysSinceChecklist>=30||(!submittedToday&&!submittedYesterday&&streak===0&&(loginHistory2.length>0));
     const status = submittedToday?"green":submittedYesterday?"yellow":"red";
     const repTaskData = leadTasks[rep.id]||{};
     const openTasks = Object.values(repTaskData).reduce((c,lt)=>c+LEAD_TASKS.filter(t=>!lt[t.id]).length,0);
@@ -2301,7 +2308,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
       return dd.getMonth()===new Date().getMonth()&&dd.getFullYear()===new Date().getFullYear();
     }).length;
 
-    return {...rep,submittedToday,streak,status,openTasks,progress,recruiter,last7,todayLog,weekTotals,scorecard,lastLogin,loginsThisWeek,loginsThisMonth};
+    return {...rep,submittedToday,streak,status,isAtRisk,openTasks,progress,recruiter,last7,todayLog,weekTotals,scorecard,lastLogin,loginsThisWeek,loginsThisMonth};
   });
 
   const filtered = repStats.filter(r=>{
@@ -2372,6 +2379,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 <span style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
                 {rep.isTrainer&&<Badge color={C.purple} small>Trainer</Badge>}
                 <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
+                {rep.isAtRisk&&!rep.inactive&&<Badge color={"#f97316"} small>At Risk</Badge>}
               </div>
               <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
                 <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:(isExpanded?"rgba(255,255,255,0.5)":C.textLight)}}>{rep.streak}d</strong></span>
@@ -2569,6 +2577,14 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${rep.scorecard?.apptDone||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Done</div></div>
             </div>
 
+            <h2>TRAINING OBSERVATIONS</h2>
+            <p class="note">Observations are a core part of the training process. Field Training Observations (FTO) show how actively ${rep.name} is working alongside their trainer in the field.</p>
+            <div class="grid">
+              <div class="card"><div class="big">${rep.ftoCount||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">FTO Observations</div></div>
+              <div class="card"><div class="big">${rep.lifeAppCount||0}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Life Insurance Observations</div></div>
+              <div class="card"><div class="big">${rep.pacCount||0}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Investment Observations</div></div>
+            </div>
+
             <h2>CHECKLIST PROGRESS</h2>
             <p class="note">Training completion shows how invested ${rep.name} is in learning the system.</p>
             <p><strong>${rep.progress}% complete</strong></p>
@@ -2613,6 +2629,72 @@ function ReassignTrainer({rep,data,onUpdate}) {
         {trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
       </select>
     </div>}
+  </div>;
+}
+
+
+// ── RESET PIN ──
+function ResetPinButton({person,personType,data,onUpdate}) {
+  const [showForm,setShowForm] = useState(false);
+  const [newPin,setNewPin] = useState("");
+  const [done,setDone] = useState(false);
+
+  const save = () => {
+    if(newPin.length!==4||isNaN(newPin)) {alert("PIN must be exactly 4 digits");return;}
+    const field = personType==="rep"?"reps":personType==="trainer"?"trainers":"admins";
+    const updated = (data[field]||[]).map(p=>p.id===person.id?{...p,customPin:newPin,pinReset:true}:p);
+    onUpdate({...data,[field]:updated});
+    setDone(true);
+    setTimeout(()=>{setDone(false);setShowForm(false);setNewPin("");},2500);
+  };
+
+  return <div style={{marginBottom:8}}>
+    {!showForm?<button onClick={()=>setShowForm(true)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.gold+"44",background:C.gold+"11",cursor:"pointer",color:C.gold,fontWeight:600}}>Reset PIN</button>:
+    <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",border:"1px solid "+C.gold+"33"}}>
+      {done?<div style={{fontSize:12,color:C.success,fontWeight:600,textAlign:"center"}}>✓ PIN reset! Share the new PIN with {person.name}.</div>:<>
+        <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:6}}>Set Temporary PIN for {person.name}</div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:8,lineHeight:1.5}}>Enter a 4-digit temporary PIN. Share it with {person.name} verbally or by text. They will be prompted to set a new PIN on login.</div>
+        <input type="number" placeholder="4-digit PIN" value={newPin} onChange={e=>setNewPin(e.target.value.slice(0,4))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:16,textAlign:"center",letterSpacing:6,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>{setShowForm(false);setNewPin("");}} style={{flex:1,padding:"7px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+          <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:11,fontWeight:700}}>Set PIN</button>
+        </div>
+      </>}
+    </div>}
+  </div>;
+}
+
+
+// ── FIRST LOGIN PIN CHANGE ──
+function ForceNewPin({session,data,onUpdate,onDone}) {
+  const [pin1,setPin1] = useState("");
+  const [pin2,setPin2] = useState("");
+  const [err,setErr] = useState("");
+
+  const save = () => {
+    if(pin1.length!==4||isNaN(pin1)){setErr("PIN must be exactly 4 digits");return;}
+    if(pin1!==pin2){setErr("PINs do not match");return;}
+    const field = session.role==="rep"?"reps":session.role==="trainer"?"trainers":"admins";
+    const updated = (data[field]||[]).map(p=>p.id===session.id?{...p,customPin:pin1,pinReset:false}:p);
+    onUpdate({...data,[field]:updated});
+    onDone();
+  };
+
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"white",borderRadius:16,padding:"24px 20px",maxWidth:360,width:"100%"}}>
+      <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:4}}>Set Your New PIN</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:16,lineHeight:1.6}}>Your PIN was recently reset. Please set a new personal 4-digit PIN to continue.</div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>New PIN</div>
+        <input type="password" inputMode="numeric" maxLength={4} placeholder="Enter new 4-digit PIN" value={pin1} onChange={e=>setPin1(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid "+C.border,fontSize:18,textAlign:"center",letterSpacing:8,boxSizing:"border-box",color:C.text}}/>
+      </div>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Confirm PIN</div>
+        <input type="password" inputMode="numeric" maxLength={4} placeholder="Confirm your new PIN" value={pin2} onChange={e=>setPin2(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid "+C.border,fontSize:18,textAlign:"center",letterSpacing:8,boxSizing:"border-box",color:C.text}}/>
+      </div>
+      {err&&<div style={{fontSize:11,color:C.danger,marginBottom:10,textAlign:"center"}}>{err}</div>}
+      <button onClick={save} style={{width:"100%",padding:"11px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>Save My PIN</button>
+    </div>
   </div>;
 }
 
@@ -2697,7 +2779,7 @@ function WallOfFame({data,onUpdate,userRole}) {
   const allPeople = [
     ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
     ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
-    ...(data.reps||[]).map(p=>({...p,role:"Rep"})),
+    ...activeReps(data.reps).map(p=>({...p,role:"Rep"})),
   ];
 
   const getPhoto = (personId) => {
@@ -3143,6 +3225,10 @@ function RepInvestmentLog({repId,data}) {
   </div>;
 }
 
+
+// ── ACTIVE REPS FILTER (excludes inactive) ──
+const activeReps = (reps) => (reps||[]).filter(r=>!r.inactive);
+
 // ── BIRTHDAY & ANNIVERSARY TRACKER ──
 function BirthdayAnniversaryWidget({data}) {
   const reps = data.reps||[];
@@ -3336,7 +3422,7 @@ function TopRecruiters({data}) {
   const allPeople = [
     ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
     ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
-    ...(data.reps||[]).map(p=>({...p,role:"Rep"})),
+    ...activeReps(data.reps).map(p=>({...p,role:"Rep"})),
   ];
   const recruitCounts = allPeople.map(p=>({
     ...p,
@@ -3368,7 +3454,7 @@ function TopRecruiters({data}) {
 function CollapsibleRepList({reps,data,onUpdateData}) {
   const [open,setOpen] = useState(false);
   const [search,setSearch] = useState("");
-  const filtered = search ? reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())) : reps;
+  const filtered = search ? activeReps(reps).filter(r=>r.name.toLowerCase().includes(search.toLowerCase())) : reps;
   return <div style={{marginTop:10,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
     <button onClick={()=>setOpen(!open)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer",padding:0}}>
       <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>Update Licensed Status ({reps.length} reps)</div>
@@ -4564,6 +4650,9 @@ export default function App() {
   // (handled above before conditional returns)
 
   if(!session) return <LoginScreen data={data} onLogin={handleLogin}/>;
+  // Check if PIN was reset and needs to be changed
+  const personRecord = [...(data.reps||[]),(data.trainers||[]),...(data.admins||[])].flat().find(p=>p.id===session.id);
+  if(personRecord?.pinReset) return <ForceNewPin session={session} data={data} onUpdate={upd} onDone={()=>upd({...data})}/>;
 
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
