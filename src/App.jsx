@@ -993,6 +993,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
     <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
+    <MonthEndReport data={data}/>
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
@@ -1088,7 +1089,7 @@ function LoginScreen({data,onLogin}) {
         {mode==="select"&&<div>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>Welcome back</div>
           <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>How are you accessing the app?</div>
-          {[{k:"admin",l:"Admin / Super Admin",s:"Full system access"},{k:"trainer",l:"Field Trainer",s:"Manage your reps"},{k:"rep",l:"New Rep",s:"View your checklist"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{color:C.textLight,fontSize:16}}>›</span></button>)}
+          {[{k:"admin",l:"Admin / Super Admin",s:"Full system access"},{k:"trainer",l:"Field Trainer",s:"Manage your reps"},{k:"rep",l:"New Rep / Licensed Agent",s:"View your checklist and tools"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{color:C.textLight,fontSize:16}}>›</span></button>)}
         </div>}
         {(mode==="admin"||mode==="trainer")&&<div>
           <button onClick={()=>{setMode("select");setErr("");setPin("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
@@ -2708,6 +2709,437 @@ function ForceNewPin({session,data,onUpdate,onDone}) {
     </div>
   </div>;
 }
+
+
+// ── MONTH END CELEBRATION REPORT ──
+const INCOME_MILESTONES = ["$25,000","$50,000","$100,000","100k Ring","$200,000","AALC Council Member","$300,000 Ownership","$500,000","$1,000,000"];
+const PROMOTION_RANKS = ["Senior Rep","District Leader","Division Leader","Regional Leader","Field Trainer","Regional Vice President"];
+
+function MonthEndReport({data}) {
+  const [showForm,setShowForm] = useState(false);
+  const now = new Date();
+  const monthName = now.toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  const monthStart = new Date(now.getFullYear(),now.getMonth(),1).toISOString().split("T")[0];
+  const reps = (data.reps||[]).filter(r=>!r.inactive);
+  const trainers = data.trainers||[];
+  const allPeople = [...reps,...trainers];
+  const activityLogs = data.activityLogs||{};
+
+  // Pre-calculate app data
+  const newlyLicensed = reps.filter(r=>r.licensedDate&&r.licensedDate>=monthStart);
+  const newTrainers = reps.filter(r=>r.fieldTrainerGranted&&r.fieldTrainerGrantedAt&&r.fieldTrainerGrantedAt>=monthStart);
+  const withPremium = reps.map(r=>({name:r.name,total:(r.selfPremium||[]).reduce((s,e)=>s+(Number(e.premium)||0),0)})).filter(r=>r.total>0).sort((a,b)=>b.total-a.total);
+  const withRecruits = allPeople.map(p=>({name:p.name,count:(data.reps||[]).filter(r=>r.recruitedBy===p.id).length})).filter(p=>p.count>0).sort((a,b)=>b.count-a.count);
+  const withAppts = allPeople.map(p=>({name:p.name,appts:(data.scorecards||{})[p.id]?.apptDone||0})).filter(p=>p.appts>0).sort((a,b)=>b.appts-a.appts);
+  const withStreak = allPeople.map(p=>{
+    const repLog=activityLogs[p.id]||{};let streak=0;const d=new Date();
+    while(true){const key=d.toISOString().split("T")[0];if(repLog[key])streak++;else break;d.setDate(d.getDate()-1);if(streak>365)break;}
+    return {name:p.name,streak};
+  }).filter(p=>p.streak>0).sort((a,b)=>b.streak-a.streak);
+  const totalPremium = reps.reduce((s,r)=>s+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0);
+  const totalRecruits = withRecruits.reduce((s,r)=>s+r.count,0);
+  const teamTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,logsSubmitted:0};
+  allPeople.forEach(p=>{const repLog=activityLogs[p.id]||{};Object.entries(repLog).forEach(([date,log])=>{if(typeof log==="object"&&log.submittedAt&&date>=monthStart){teamTotals.logsSubmitted++;teamTotals.talked+=(Number(log.talked)||0);teamTotals.followup+=(Number(log.followup)||0);teamTotals.apptSet+=(Number(log.apptSet)||0);teamTotals.apptRan+=(Number(log.apptRan)||0);teamTotals.recruited+=(Number(log.recruited)||0);}});});
+  const wofThisMonth = (data.wallOfFame||[]).filter(r=>r.postedAt&&r.postedAt>=monthStart);
+  const completedChecklists = reps.filter(r=>{const cl=r.track==="licensed"?19:13;return Object.values(r.checked||{}).filter(Boolean).length>=cl;});
+
+  // Editable form state
+  const [form,setForm] = useState({
+    totalPremium:totalPremium,
+    totalRecruits:totalRecruits,
+    apptRan:teamTotals.apptRan,
+    talked:teamTotals.talked,
+    logsSubmitted:teamTotals.logsSubmitted,
+    topProducer:withPremium[0]?.name||"",
+    topRecruiter:withRecruits[0]?.name||"",
+    mostConsistent:withStreak[0]?.name||"",
+    mostAppts:withAppts[0]?.name||"",
+    newlyLicensed:newlyLicensed.map(r=>r.name).join(", "),
+    newTrainers:newTrainers.map(r=>r.name).join(", "),
+    completedChecklists:completedChecklists.map(r=>r.name).join(", "),
+    promotions:PROMOTION_RANKS.reduce((a,r)=>({...a,[r]:""}),{}),
+    milestones:INCOME_MILESTONES.reduce((a,m)=>({...a,[m]:""}),{}),
+    commaChecks:"",
+    customShoutout:"",
+    wofNames:wofThisMonth.map(r=>r.personName+" — "+r.category).join(", "),
+  });
+
+  const generateHTML = (f) => {
+    const w=window.open("","_blank");
+    w.document.write(`<!DOCTYPE html><html><head><title>Month End Report — ${monthName}</title><style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;}
+      .header{background:linear-gradient(135deg,#0d1b2a,#1a2d47);color:white;padding:40px 30px;text-align:center;}
+      .header h1{font-size:28px;font-weight:800;margin-bottom:6px;}
+      .month{font-size:20px;font-weight:700;color:#0ea5c9;margin-top:8px;}
+      .container{max-width:900px;margin:30px auto;padding:0 20px;}
+      .section{background:white;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+      .section-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+      .section-desc{font-size:12px;color:#666;margin-bottom:16px;font-style:italic;}
+      .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+      .stat-card{background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:10px;padding:16px;text-align:center;color:white;}
+      .stat-number{font-size:28px;font-weight:800;color:#0ea5c9;}
+      .stat-label{font-size:10px;opacity:0.7;text-transform:uppercase;margin-top:4px;}
+      .person-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+      .person-card{background:#fef9ec;border:2px solid #f59e0b;border-radius:10px;padding:14px;text-align:center;}
+      .person-name{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px;}
+      .person-label{font-size:10px;color:#666;}
+      .names-list{display:flex;flex-wrap:wrap;gap:8px;}
+      .name-chip{background:linear-gradient(135deg,#0ea5c9,#0891b2);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;}
+      .name-chip.gold{background:linear-gradient(135deg,#f59e0b,#d97706);}
+      .name-chip.purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed);}
+      .name-chip.green{background:linear-gradient(135deg,#10b981,#059669);}
+      .milestone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+      .milestone-card{background:#f8faff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;}
+      .milestone-label{font-size:11px;color:#0ea5c9;font-weight:700;margin-bottom:4px;}
+      .milestone-names{font-size:12px;color:#1a1a2e;}
+      .empty{color:#999;font-size:13px;font-style:italic;}
+      .closing{text-align:center;background:linear-gradient(135deg,#0d1b2a,#1a2d47);color:white;padding:32px;}
+      @media print{.no-print{display:none;}}
+    </style></head><body>
+    <div class="header">
+      <h1>🏆 Month End Celebration Report</h1>
+      <div class="month">${monthName}</div>
+      <p style="margin-top:8px;font-size:12px;opacity:0.5">Generated ${new Date().toLocaleString()}</p>
+    </div>
+    <div class="container">
+      <button class="no-print" onclick="window.print()" style="width:100%;padding:12px;background:linear-gradient(135deg,#0d1b2a,#1a2d47);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px;">Print / Save as PDF</button>
+
+      <div class="section">
+        <div class="section-title">📊 Team Highlights</div>
+        <div class="section-desc">Look what we accomplished together this month!</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-number">$${Number(f.totalPremium).toLocaleString()}</div><div class="stat-label">Total Premium</div></div>
+          <div class="stat-card"><div class="stat-number">${f.totalRecruits}</div><div class="stat-label">New Recruits</div></div>
+          <div class="stat-card"><div class="stat-number">${f.apptRan}</div><div class="stat-label">Appointments Run</div></div>
+          <div class="stat-card"><div class="stat-number">${f.talked}</div><div class="stat-label">Conversations</div></div>
+        </div>
+      </div>
+
+      ${f.newlyLicensed?`<div class="section">
+        <div class="section-title">🎓 Newly Licensed</div>
+        <div class="section-desc">These agents completed their licensing exam and are ready to protect families!</div>
+        <div class="names-list">${f.newlyLicensed.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`<div class="name-chip gold">⭐ ${n}</div>`).join("")}</div>
+      </div>`:""}
+
+      ${f.newTrainers?`<div class="section">
+        <div class="section-title">👑 New Field Trainers</div>
+        <div class="section-desc">Congratulations on earning your Field Trainer designation!</div>
+        <div class="names-list">${f.newTrainers.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`<div class="name-chip purple">👑 ${n}</div>`).join("")}</div>
+      </div>`:""}
+
+      ${Object.entries(f.promotions).some(([,v])=>v)?`<div class="section">
+        <div class="section-title">🚀 Promotions</div>
+        <div class="section-desc">Celebrating team members who leveled up this month!</div>
+        <div class="milestone-grid">${Object.entries(f.promotions).filter(([,v])=>v).map(([rank,names])=>`<div class="milestone-card">
+          <div class="milestone-label">${rank}</div>
+          <div class="milestone-names">${names}</div>
+        </div>`).join("")}</div>
+      </div>`:""}
+
+      ${Object.entries(f.milestones).some(([,v])=>v)||f.commaChecks?`<div class="section">
+        <div class="section-title">💰 Income Milestones & Comma Checks</div>
+        <div class="section-desc">Recognizing the financial wins our team is achieving!</div>
+        ${f.commaChecks?`<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:6px">💵 Comma Check Recipients ($1,000+)</div>
+        <div class="names-list">${f.commaChecks.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`<div class="name-chip green">💵 ${n}</div>`).join("")}</div></div>`:""}
+        <div class="milestone-grid">${Object.entries(f.milestones).filter(([,v])=>v).map(([m,names])=>`<div class="milestone-card">
+          <div class="milestone-label">${m}</div>
+          <div class="milestone-names">${names}</div>
+        </div>`).join("")}</div>
+      </div>`:""}
+
+      <div class="section">
+        <div class="section-title">🏆 Top Performers</div>
+        <div class="section-desc">These team members led the way this month!</div>
+        <div class="person-grid">
+          ${f.topProducer?`<div class="person-card"><div style="font-size:20px">💰</div><div class="person-name">${f.topProducer}</div><div class="person-label">Top Producer</div></div>`:""}
+          ${f.topRecruiter?`<div class="person-card"><div style="font-size:20px">🤝</div><div class="person-name">${f.topRecruiter}</div><div class="person-label">Top Recruiter</div></div>`:""}
+          ${f.mostConsistent?`<div class="person-card"><div style="font-size:20px">🔥</div><div class="person-name">${f.mostConsistent}</div><div class="person-label">Most Consistent</div></div>`:""}
+          ${f.mostAppts?`<div class="person-card"><div style="font-size:20px">📅</div><div class="person-name">${f.mostAppts}</div><div class="person-label">Most Appointments</div></div>`:""}
+        </div>
+      </div>
+
+      ${f.wofNames?`<div class="section">
+        <div class="section-title">⭐ Team Recognition</div>
+        <div class="section-desc">These team members were recognized this month!</div>
+        <div class="names-list">${f.wofNames.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`<div class="name-chip">⭐ ${n}</div>`).join("")}</div>
+      </div>`:""}
+
+      ${f.customShoutout?`<div class="section">
+        <div class="section-title">💪 Special Shoutouts</div>
+        <div style="font-size:13px;color:#1a1a2e;line-height:1.7;white-space:pre-wrap">${f.customShoutout}</div>
+      </div>`:""}
+
+      <div class="closing section">
+        <div style="font-size:28px;margin-bottom:8px">🚀</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:8px;">Keep Going — Next Month Is Even Bigger!</div>
+        <div style="font-size:13px;opacity:0.7;line-height:1.6;">Every conversation, every appointment, every family protected — it all counts. You are building something real. Let's finish strong!</div>
+      </div>
+    </div></body></html>`);
+    w.document.close();
+  };
+
+  // ── Photo lookup helper ──
+  const getPersonPhoto = (nameStr) => {
+    if(!nameStr) return null;
+    const name = nameStr.trim().toLowerCase();
+    const allP = [...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+    const person = allP.find(p=>(p.name||"").toLowerCase()===name||(p.name||"").toLowerCase().startsWith(name.split(" ")[0]));
+    if(!person) return null;
+    const photos = data.profilePhotos||{};
+    if(photos[person.id]) return photos[person.id];
+    if(person.dgoPhoto) return person.dgoPhoto;
+    return null;
+  };
+
+  const getInitialImg = (name,color="0EA5C9") => {
+    const initial = (name||"?").charAt(0).toUpperCase();
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><circle cx='100' cy='100' r='100' fill='%23${color}'/><text x='100' y='130' font-family='Arial' font-size='100' font-weight='bold' fill='white' text-anchor='middle'>${initial}</text></svg>`;
+    return "image/png;base64,"+btoa(unescape(encodeURIComponent(svg)));
+  };
+
+  const addPersonCard = (slide,pres,name,label,x,y,w,h,bgColor="1A2D47") => {
+    const photo = getPersonPhoto(name);
+    slide.addShape(pres.ShapeType.rect,{x,y,w,h,fill:{color:bgColor},rectRadius:0.08});
+    if(photo){
+      try{
+        slide.addImage({data:photo,x:x+(w/2)-0.4,y:y+0.1,w:0.8,h:0.8,rounding:true});
+        slide.addText(name,{x,y:y+0.95,w,h:0.35,fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+        if(label) slide.addText(label,{x,y:y+1.28,w,h:0.25,fontSize:8,color:"AABBCC",align:"center"});
+      }catch(e){
+        slide.addText((name||"?").charAt(0).toUpperCase(),{x,y:y+0.1,w,h:0.6,fontSize:28,bold:true,color:"0EA5C9",align:"center"});
+        slide.addText(name,{x,y:y+0.72,w,h:0.35,fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+        if(label) slide.addText(label,{x,y:y+1.05,w,h:0.25,fontSize:8,color:"AABBCC",align:"center"});
+      }
+    } else {
+      slide.addText((name||"?").charAt(0).toUpperCase(),{x,y:y+0.1,w,h:0.6,fontSize:28,bold:true,color:"0EA5C9",align:"center"});
+      slide.addText(name,{x,y:y+0.72,w,h:0.35,fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+      if(label) slide.addText(label,{x,y:y+1.05,w,h:0.25,fontSize:8,color:"AABBCC",align:"center"});
+    }
+  };
+
+  const generatePPTX = async (f) => {
+    const PptxGenJS = (await import("https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js")).default;
+    const pres = new PptxGenJS();
+    pres.layout = "LAYOUT_16x9";
+    pres.title = "Month End Celebration Report — "+monthName;
+
+    const NAVY = "0D1B2A"; const TEAL = "0EA5C9"; const GOLD = "F59E0B";
+    const WHITE = "FFFFFF"; const LIGHT = "F0F4F8";
+
+    const addNavyBg = (slide) => { slide.background={color:NAVY}; };
+
+    // Slide 1 — Cover
+    const s1 = pres.addSlide();
+    addNavyBg(s1);
+    s1.addShape(pres.ShapeType.rect,{x:0,y:2.2,w:10,h:0.06,fill:{color:TEAL}});
+    s1.addText("🏆",{x:3.5,y:0.4,w:3,h:1.2,fontSize:60,align:"center"});
+    s1.addText("Month End Celebration",{x:0.5,y:1.5,w:9,h:0.8,fontSize:32,bold:true,color:WHITE,align:"center"});
+    s1.addText(monthName,{x:0.5,y:2.35,w:9,h:0.6,fontSize:22,color:TEAL,align:"center",bold:true});
+    s1.addText("Team Performance Report",{x:0.5,y:3.1,w:9,h:0.5,fontSize:14,color:"8899AA",align:"center"});
+
+    // Slide 2 — Team Highlights
+    const s2 = pres.addSlide();
+    s2.background={color:LIGHT};
+    s2.addText("📊 Team Highlights",{x:0.5,y:0.3,w:9,h:0.6,fontSize:26,bold:true,color:NAVY});
+    s2.addText("Look what we accomplished together this month!",{x:0.5,y:0.85,w:9,h:0.3,fontSize:12,color:"666666",italic:true});
+    const highlights=[
+      {label:"Total Premium",val:"$"+Number(f.totalPremium).toLocaleString()},
+      {label:"New Recruits",val:String(f.totalRecruits)},
+      {label:"Appointments Run",val:String(f.apptRan)},
+      {label:"Conversations",val:String(f.talked)},
+    ];
+    highlights.forEach((h,i)=>{
+      const x=0.4+(i*2.3),y=1.4;
+      s2.addShape(pres.ShapeType.rect,{x,y,w:2.1,h:1.6,fill:{color:NAVY},rectRadius:0.1});
+      s2.addText(h.val,{x,y:y+0.15,w:2.1,h:0.8,fontSize:26,bold:true,color:TEAL,align:"center"});
+      s2.addText(h.label,{x,y:y+0.95,w:2.1,h:0.5,fontSize:10,color:"AABBCC",align:"center"});
+    });
+
+    // Slide 3 — Newly Licensed & New Field Trainers (with photos)
+    const s3 = pres.addSlide();
+    addNavyBg(s3);
+    s3.addText("🎓 Newly Licensed",{x:0.5,y:0.15,w:9,h:0.55,fontSize:24,bold:true,color:GOLD});
+    if(f.newlyLicensed){
+      const names3 = f.newlyLicensed.split(",").map(n=>n.trim()).filter(Boolean);
+      const cardW = Math.min(2.1, 9/Math.max(names3.length,1)-0.15);
+      names3.forEach((name,i)=>{
+        const cols = Math.min(names3.length,4);
+        const totalW = cols*(cardW+0.15)-0.15;
+        const startX = (10-totalW)/2;
+        const x=startX+(i%cols)*(cardW+0.15),y=0.8+Math.floor(i/cols)*1.8;
+        addPersonCard(s3,pres,name,"⭐ Licensed",x,y,cardW,1.65,"1A3A1A");
+      });
+    }
+    if(f.newTrainers){
+      const yStart = f.newlyLicensed?3.5:0.9;
+      if(f.newlyLicensed) s3.addText("👑 New Field Trainers",{x:0.5,y:yStart-0.4,w:9,h:0.4,fontSize:16,bold:true,color:"C084FC"});
+      const names3t = f.newTrainers.split(",").map(n=>n.trim()).filter(Boolean);
+      names3t.forEach((name,i)=>{
+        const x=0.5+(i%4)*2.35,y=yStart;
+        addPersonCard(s3,pres,name,"👑 Field Trainer",x,y,2.1,1.65,"2D1A4A");
+      });
+    }
+
+    // Slide 4 — Promotions (with photos)
+    const promoEntries = Object.entries(f.promotions).filter(([,v])=>v);
+    if(promoEntries.length>0){
+      const s4=pres.addSlide();addNavyBg(s4);
+      s4.addText("🚀 Promotions",{x:0.5,y:0.15,w:9,h:0.55,fontSize:26,bold:true,color:WHITE});
+      let cardIdx=0;
+      promoEntries.forEach(([rank,namesStr])=>{
+        const names4 = namesStr.split(",").map(n=>n.trim()).filter(Boolean);
+        names4.forEach(name=>{
+          const x=0.4+(cardIdx%4)*2.35,y=0.85+Math.floor(cardIdx/4)*2.1;
+          addPersonCard(s4,pres,name,rank,x,y,2.1,1.9,"1A2D47");
+          cardIdx++;
+        });
+      });
+    }
+
+    // Slide 5 — Income Milestones & Comma Checks (with photos)
+    const milestoneEntries = Object.entries(f.milestones).filter(([,v])=>v);
+    if(milestoneEntries.length>0||f.commaChecks){
+      const s5=pres.addSlide();addNavyBg(s5);
+      s5.addText("💰 Income Milestones & Comma Checks",{x:0.5,y:0.15,w:9,h:0.5,fontSize:20,bold:true,color:GOLD});
+      let mCardIdx=0;
+      if(f.commaChecks){
+        f.commaChecks.split(",").map(n=>n.trim()).filter(Boolean).forEach(name=>{
+          const x=0.4+(mCardIdx%4)*2.35,y=0.8+Math.floor(mCardIdx/4)*2.0;
+          addPersonCard(s5,pres,name,"💵 Comma Check",x,y,2.1,1.8,"0D3D1A");
+          mCardIdx++;
+        });
+      }
+      milestoneEntries.forEach(([milestone,namesStr])=>{
+        const names5=namesStr.split(",").map(n=>n.trim()).filter(Boolean);
+        names5.forEach(name=>{
+          const x=0.4+(mCardIdx%4)*2.35,y=0.8+Math.floor(mCardIdx/4)*2.0;
+          addPersonCard(s5,pres,name,milestone,x,y,2.1,1.8,"2D1A00");
+          mCardIdx++;
+        });
+      });
+    }
+
+    // Slide 6 — Top Performers (with photos)
+    const s6=pres.addSlide();addNavyBg(s6);
+    s6.addText("🏆 Top Performers",{x:0.5,y:0.15,w:9,h:0.55,fontSize:26,bold:true,color:GOLD});
+    const performers=[
+      {label:"Top Producer",name:f.topProducer},
+      {label:"Top Recruiter",name:f.topRecruiter},
+      {label:"Most Consistent",name:f.mostConsistent},
+      {label:"Most Appointments",name:f.mostAppts},
+    ].filter(p=>p.name);
+    performers.forEach((p,i)=>{
+      const x=0.5+(i%2)*4.8,y=0.85+Math.floor(i/2)*2.2;
+      addPersonCard(s6,pres,p.name,p.label,x,y,4.4,2.0,"1A2D47");
+    });
+
+    // Slide 7 — Team Activity
+    const s7=pres.addSlide();addNavyBg(s7);
+    s7.addText("📈 Team Activity This Month",{x:0.5,y:0.3,w:9,h:0.6,fontSize:26,bold:true,color:WHITE});
+    const activities=[
+      {label:"Daily Logs Submitted",val:String(f.logsSubmitted)},
+      {label:"People Talked To",val:String(f.talked)},
+      {label:"Appointments Set",val:String(f.apptRan)},
+      {label:"Follow-up Calls",val:String(teamTotals.followup)},
+    ];
+    activities.forEach((a,i)=>{
+      const x=0.4+(i%2)*4.8,y=1.1+Math.floor(i/2)*1.9;
+      s7.addShape(pres.ShapeType.rect,{x,y,w:4.4,h:1.6,fill:{color:"1A2D47"},rectRadius:0.1});
+      s7.addText(a.val,{x,y:y+0.2,w:4.4,h:0.7,fontSize:36,bold:true,color:TEAL,align:"center"});
+      s7.addText(a.label,{x,y:y+0.95,w:4.4,h:0.45,fontSize:11,color:"AABBCC",align:"center"});
+    });
+
+    // Slide 8 — Recognition (Wall of Fame)
+    if(f.wofNames){
+      const s8=pres.addSlide();s8.background={color:LIGHT};
+      s8.addText("⭐ Team Recognition",{x:0.5,y:0.3,w:9,h:0.6,fontSize:26,bold:true,color:NAVY});
+      f.wofNames.split(",").map(n=>n.trim()).filter(Boolean).forEach((name,i)=>{
+        const x=0.4+(i%3)*3.1,y=1.0+Math.floor(i/3)*1.1;
+        s8.addShape(pres.ShapeType.rect,{x,y,w:2.9,h:0.9,fill:{color:NAVY},rectRadius:0.1});
+        s8.addText("⭐ "+name,{x,y,w:2.9,h:0.9,fontSize:10,color:GOLD,align:"center",bold:true,wrap:true});
+      });
+    }
+
+    // Slide 9 — Closing
+    const s9=pres.addSlide();addNavyBg(s9);
+    s9.addShape(pres.ShapeType.rect,{x:0,y:2.5,w:10,h:0.06,fill:{color:TEAL}});
+    s9.addText("🚀",{x:3.5,y:0.4,w:3,h:1,fontSize:56,align:"center"});
+    s9.addText("Keep Going —",{x:0.5,y:1.5,w:9,h:0.7,fontSize:28,bold:true,color:WHITE,align:"center"});
+    s9.addText("Next Month Is Even Bigger!",{x:0.5,y:2.1,w:9,h:0.5,fontSize:22,bold:true,color:TEAL,align:"center"});
+    s9.addText("Every conversation, every appointment, every family protected — it all counts.
+You are building something real. Let's finish strong!",{x:1,y:2.8,w:8,h:1.2,fontSize:13,color:"8899AA",align:"center",wrap:true});
+
+    pres.writeFile({fileName:"Month-End-Report-"+monthName.replace(" ","-")+".pptx"});
+  };
+
+  if(!showForm) return <button onClick={()=>setShowForm(true)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,width:"100%",justifyContent:"center",marginBottom:10}}>
+    🏆 Generate Month End Celebration Report
+  </button>;
+
+  return <div style={{background:"white",borderRadius:12,border:"1px solid "+C.gold+"44",padding:"16px",marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Month End Report — {monthName}</div>
+      <button onClick={()=>setShowForm(false)} style={{fontSize:11,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Cancel</button>
+    </div>
+
+    {/* Team Numbers */}
+    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>Team Numbers</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
+      {[["Total Premium $",form.totalPremium,"totalPremium"],["Total Recruits",form.totalRecruits,"totalRecruits"],["Appointments Run",form.apptRan,"apptRan"],["People Talked To",form.talked,"talked"],["Daily Logs Submitted",form.logsSubmitted,"logsSubmitted"]].map(([label,val,key])=><div key={key}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{label}</div>
+        <input type="number" value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>)}
+    </div>
+
+    {/* Names */}
+    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>People to Recognize</div>
+    {[["Newly Licensed (comma separated)",form.newlyLicensed,"newlyLicensed"],["New Field Trainers",form.newTrainers,"newTrainers"],["Completed Checklist",form.completedChecklists,"completedChecklists"],["Top Producer",form.topProducer,"topProducer"],["Top Recruiter",form.topRecruiter,"topRecruiter"],["Most Consistent",form.mostConsistent,"mostConsistent"],["Most Appointments",form.mostAppts,"mostAppts"],["Comma Check Recipients",form.commaChecks,"commaChecks"],["Wall of Fame Recognition",form.wofNames,"wofNames"]].map(([label,val,key])=>{
+      const previewPhotos = (val||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
+        const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+        const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
+        const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+        return {name,photo};
+      });
+      return <div key={key} style={{marginBottom:8}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{label}</div>
+        <input value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:previewPhotos.length>0?4:0}}/>
+        {previewPhotos.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          {previewPhotos.map((p,pi)=><div key={pi} style={{display:"flex",alignItems:"center",gap:4,background:C.surface,borderRadius:6,padding:"2px 6px"}}>
+            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
+            <span style={{fontSize:10,color:C.text}}>{p.name}</span>
+          </div>)}
+        </div>}
+      </div>;
+    })}
+
+    {/* Promotions */}
+    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Promotions</div>
+    {PROMOTION_RANKS.map(rank=><div key={rank} style={{marginBottom:6}}>
+      <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{rank}</div>
+      <input placeholder="Names..." value={form.promotions[rank]||""} onChange={e=>setForm(f=>({...f,promotions:{...f.promotions,[rank]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+    </div>)}
+
+    {/* Income Milestones */}
+    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Income Milestones</div>
+    {INCOME_MILESTONES.map(m=><div key={m} style={{marginBottom:6}}>
+      <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{m}</div>
+      <input placeholder="Names..." value={form.milestones[m]||""} onChange={e=>setForm(f=>({...f,milestones:{...f.milestones,[m]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+    </div>)}
+
+    {/* Custom Shoutout */}
+    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Special Shoutouts</div>
+    <textarea placeholder="Any additional shoutouts or notes..." value={form.customShoutout} onChange={e=>setForm(f=>({...f,customShoutout:e.target.value}))} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:12}}/>
+
+    {/* Generate buttons */}
+    <div style={{display:"flex",gap:8}}>
+      <button onClick={()=>generateHTML(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📄 Generate PDF Version</button>
+      <button onClick={()=>generatePPTX(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.gold+",#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📊 Download PowerPoint</button>
+    </div>
+    <div style={{fontSize:10,color:C.textMid,textAlign:"center",marginTop:6}}>PowerPoint can be uploaded to Google Drive and opened as Google Slides</div>
+  </div>;
+}
+
 
 // ── NEED HELP ──
 function NeedHelpModal({rep,data,onUpdate,onClose}) {
