@@ -993,7 +993,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
     </div>
     <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <MonthEndReport data={data}/>
+    {(userRole==="admin"||userRole==="superadmin")&&<MonthEndReport data={data}/>}
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
@@ -3107,7 +3107,7 @@ function MonthEndReport({data}) {
       +'document.getElementById("counter").textContent=(cur+1)+" / '+slideCount+'";'
       +'}'
       +'document.addEventListener("keydown",function(e){if(e.key==="ArrowRight"||e.key===" ")changeSlide(1);if(e.key==="ArrowLeft")changeSlide(-1);});'
-      +'<\/script>'
+      +'<'+'/script>'
       +'</body></html>';
 
     w.document.write(html);
