@@ -2900,7 +2900,7 @@ function MonthEndReport({data}) {
 
   const addPersonCard = (slide,pres,name,label,x,y,w,h,bgColor="1A2D47") => {
     const photo = getPersonPhoto(name);
-    slide.addShape(pres.ShapeType.rect,{x,y,w,h,fill:{color:bgColor},rectRadius:0.08});
+    slide.addShape("rect",{x,y,w,h,fill:{color:bgColor},rectRadius:0.08});
     if(photo){
       try{
         slide.addImage({data:photo,x:x+(w/2)-0.4,y:y+0.1,w:0.8,h:0.8,rounding:true});
@@ -2918,158 +2918,199 @@ function MonthEndReport({data}) {
     }
   };
 
-  const generatePPTX = async (f) => {
-    const PptxGenJS = (await import("https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js")).default;
-    const pres = new PptxGenJS();
-    pres.layout = "LAYOUT_16x9";
-    pres.title = "Month End Celebration Report — "+monthName;
-
-    const NAVY = "0D1B2A"; const TEAL = "0EA5C9"; const GOLD = "F59E0B";
-    const WHITE = "FFFFFF"; const LIGHT = "F0F4F8";
-
-    const addNavyBg = (slide) => { slide.background={color:NAVY}; };
-
-    // Slide 1 — Cover
-    const s1 = pres.addSlide();
-    addNavyBg(s1);
-    s1.addShape(pres.ShapeType.rect,{x:0,y:2.2,w:10,h:0.06,fill:{color:TEAL}});
-    s1.addText("🏆",{x:3.5,y:0.4,w:3,h:1.2,fontSize:60,align:"center"});
-    s1.addText("Month End Celebration",{x:0.5,y:1.5,w:9,h:0.8,fontSize:32,bold:true,color:WHITE,align:"center"});
-    s1.addText(monthName,{x:0.5,y:2.35,w:9,h:0.6,fontSize:22,color:TEAL,align:"center",bold:true});
-    s1.addText("Team Performance Report",{x:0.5,y:3.1,w:9,h:0.5,fontSize:14,color:"8899AA",align:"center"});
-
-    // Slide 2 — Team Highlights
-    const s2 = pres.addSlide();
-    s2.background={color:LIGHT};
-    s2.addText("📊 Team Highlights",{x:0.5,y:0.3,w:9,h:0.6,fontSize:26,bold:true,color:NAVY});
-    s2.addText("Look what we accomplished together this month!",{x:0.5,y:0.85,w:9,h:0.3,fontSize:12,color:"666666",italic:true});
-    const highlights=[
-      {label:"Total Premium",val:"$"+Number(f.totalPremium).toLocaleString()},
-      {label:"New Recruits",val:String(f.totalRecruits)},
-      {label:"Appointments Run",val:String(f.apptRan)},
-      {label:"Conversations",val:String(f.talked)},
+  const generateSlideshow = (f) => {
+    const w = window.open("","_blank");
+    const slides = [
+      // Slide 1 - Cover
+      {bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:40px">
+          <div style="font-size:72px;margin-bottom:20px">🏆</div>
+          <div style="font-size:48px;font-weight:900;color:white;margin-bottom:12px;line-height:1.1">Month End<br>Celebration</div>
+          <div style="font-size:28px;font-weight:700;color:#0ea5c9;margin-bottom:16px">${monthName}</div>
+          <div style="width:80px;height:4px;background:#0ea5c9;border-radius:2px;margin-bottom:16px"></div>
+          <div style="font-size:16px;color:rgba(255,255,255,0.5)">Team Performance Report</div>
+        </div>`},
+      // Slide 2 - Team Highlights
+      {bg:"#f0f4f8",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#0d1b2a;margin-bottom:6px">📊 Team Highlights</div>
+          <div style="font-size:14px;color:#666;margin-bottom:28px;font-style:italic">Look what we accomplished together this month!</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+            ${[["$"+Number(f.totalPremium).toLocaleString(),"Total Premium"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
+            <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:16px;padding:24px;text-align:center">
+              <div style="font-size:36px;font-weight:900;color:#0ea5c9">${v}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:6px">${l}</div>
+            </div>`).join("")}
+          </div>
+        </div>`},
+      // Slide 3 - Newly Licensed
+      ...(f.newlyLicensed?[{bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-bottom:6px">🎓 Newly Licensed</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:28px;font-style:italic">These agents are ready to protect families!</div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">
+            ${f.newlyLicensed.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
+              const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+              const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
+              const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+              return `<div style="background:rgba(245,158,11,0.15);border:2px solid #f59e0b;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:12px">
+                ${photo?`<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #f59e0b">`:`<div style="width:48px;height:48px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0d1b2a">${n.charAt(0)}</div>`}
+                <div><div style="font-size:18px;font-weight:700;color:white">⭐ ${n}</div><div style="font-size:11px;color:#f59e0b">Licensed Agent</div></div>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`}]:[]),
+      // Slide 4 - New Field Trainers
+      ...(f.newTrainers?[{bg:"linear-gradient(135deg,#2d1a47,#1a0d2e)",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#c084fc;margin-bottom:6px">👑 New Field Trainers</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:28px;font-style:italic">Congratulations on earning your Field Trainer designation!</div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">
+            ${f.newTrainers.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
+              const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+              const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
+              const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+              return `<div style="background:rgba(139,92,246,0.2);border:2px solid #8b5cf6;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:12px">
+                ${photo?`<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #8b5cf6">`:`<div style="width:48px;height:48px;border-radius:50%;background:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:white">${n.charAt(0)}</div>`}
+                <div><div style="font-size:18px;font-weight:700;color:white">👑 ${n}</div><div style="font-size:11px;color:#c084fc">Field Trainer</div></div>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`}]:[]),
+      // Slide 5 - Promotions
+      ...(Object.entries(f.promotions).some(([,v])=>v)?[{bg:"#f0f4f8",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#0d1b2a;margin-bottom:6px">🚀 Promotions</div>
+          <div style="font-size:14px;color:#666;margin-bottom:24px;font-style:italic">Celebrating team members who leveled up!</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            ${Object.entries(f.promotions).filter(([,v])=>v).map(([rank,names])=>`
+            <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:12px;padding:16px">
+              <div style="font-size:11px;color:#0ea5c9;font-weight:700;text-transform:uppercase;margin-bottom:8px">${rank}</div>
+              ${names.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
+                const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+                const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
+                const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+                return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  ${photo?`<img src="${photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #0ea5c9">`:`<div style="width:32px;height:32px;border-radius:50%;background:#0ea5c9;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#0d1b2a;flex-shrink:0">${n.charAt(0)}</div>`}
+                  <span style="font-size:13px;color:white;font-weight:600">${n}</span>
+                </div>`;
+              }).join("")}
+            </div>`).join("")}
+          </div>
+        </div>`}]:[]),
+      // Slide 6 - Income Milestones & Comma Checks
+      ...((Object.entries(f.milestones).some(([,v])=>v)||f.commaChecks)?[{bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-bottom:6px">💰 Income Milestones & Comma Checks</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:20px;font-style:italic">Recognizing financial wins!</div>
+          ${f.commaChecks?`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#34d399;margin-bottom:8px">💵 Comma Check Recipients ($1,000+)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${f.commaChecks.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
+              const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+              const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
+              const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+              return `<div style="background:rgba(5,150,105,0.2);border:1px solid #059669;border-radius:10px;padding:8px 14px;display:flex;align-items:center;gap:8px">
+                ${photo?`<img src="${photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`:`<div style="width:28px;height:28px;border-radius:50%;background:#059669;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:white">${n.charAt(0)}</div>`}
+                <span style="font-size:13px;color:white;font-weight:600">💵 ${n}</span>
+              </div>`;
+            }).join("")}
+          </div></div>`:""}
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+            ${Object.entries(f.milestones).filter(([,v])=>v).map(([m,names])=>`
+            <div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b44;border-radius:10px;padding:12px">
+              <div style="font-size:10px;color:#f59e0b;font-weight:700;margin-bottom:6px">${m}</div>
+              ${names.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`<div style="font-size:12px;color:white;font-weight:600">${n}</div>`).join("")}
+            </div>`).join("")}
+          </div>
+        </div>`}]:[]),
+      // Slide 7 - Top Performers
+      {bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-bottom:6px">🏆 Top Performers</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;font-style:italic">These team members led the way this month!</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+            ${[["💰","Top Producer",f.topProducer],["🤝","Top Recruiter",f.topRecruiter],["🔥","Most Consistent",f.mostConsistent],["📅","Most Appointments",f.mostAppts]].filter(([,,n])=>n).map(([emoji,label,name])=>{
+              const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+              const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
+              const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+              return `<div style="background:rgba(245,158,11,0.1);border:2px solid #f59e0b44;border-radius:16px;padding:20px;text-align:center">
+                ${photo?`<img src="${photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #f59e0b;margin-bottom:10px">`:`<div style="width:72px;height:72px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#0d1b2a;margin:0 auto 10px">${name.charAt(0)}</div>`}
+                <div style="font-size:20px;margin-bottom:6px">${emoji}</div>
+                <div style="font-size:15px;font-weight:700;color:white;margin-bottom:4px">${name}</div>
+                <div style="font-size:11px;color:#f59e0b">${label}</div>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`},
+      // Slide 8 - Team Activity
+      {bg:"#f0f4f8",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:#0d1b2a;margin-bottom:6px">📈 Team Activity This Month</div>
+          <div style="font-size:14px;color:#666;margin-bottom:28px;font-style:italic">Combined activity reported by the entire team</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+            ${[[""+f.logsSubmitted,"Daily Logs Submitted","#0ea5c9"],[""+f.talked,"People Talked To","#10b981"],[""+f.apptRan,"Appointments Run","#f59e0b"],[""+f.followup||teamTotals.followup,"Follow-up Calls","#8b5cf6"]].map(([v,l,c])=>`
+            <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:16px;padding:28px;display:flex;align-items:center;gap:20px">
+              <div style="font-size:48px;font-weight:900;color:${c}">${v}</div>
+              <div style="font-size:14px;color:rgba(255,255,255,0.7)">${l}</div>
+            </div>`).join("")}
+          </div>
+        </div>`},
+      // Slide 9 - Recognition
+      ...(f.wofNames?[{bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
+        <div style="padding:40px;height:100%;box-sizing:border-box">
+          <div style="font-size:32px;font-weight:900;color:white;margin-bottom:6px">⭐ Team Recognition</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;font-style:italic">Recognized for going above and beyond!</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            ${f.wofNames.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`
+            <div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b44;border-radius:10px;padding:10px 16px;font-size:14px;color:#f59e0b;font-weight:600">⭐ ${n}</div>`).join("")}
+          </div>
+        </div>`}]:[]),
+      // Closing slide
+      {bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:40px">
+          <div style="font-size:72px;margin-bottom:20px">🚀</div>
+          <div style="font-size:42px;font-weight:900;color:white;margin-bottom:12px;line-height:1.1">Keep Going!</div>
+          <div style="font-size:24px;font-weight:700;color:#0ea5c9;margin-bottom:20px">Next Month Is Even Bigger!</div>
+          <div style="width:80px;height:4px;background:#0ea5c9;border-radius:2px;margin-bottom:20px"></div>
+          <div style="font-size:15px;color:rgba(255,255,255,0.6);max-width:600px;line-height:1.7">Every conversation, every appointment, every family protected — it all counts. You are building something real. Let's finish strong!</div>
+        </div>`},
     ];
-    highlights.forEach((h,i)=>{
-      const x=0.4+(i*2.3),y=1.4;
-      s2.addShape(pres.ShapeType.rect,{x,y,w:2.1,h:1.6,fill:{color:NAVY},rectRadius:0.1});
-      s2.addText(h.val,{x,y:y+0.15,w:2.1,h:0.8,fontSize:26,bold:true,color:TEAL,align:"center"});
-      s2.addText(h.label,{x,y:y+0.95,w:2.1,h:0.5,fontSize:10,color:"AABBCC",align:"center"});
-    });
 
-    // Slide 3 — Newly Licensed & New Field Trainers (with photos)
-    const s3 = pres.addSlide();
-    addNavyBg(s3);
-    s3.addText("🎓 Newly Licensed",{x:0.5,y:0.15,w:9,h:0.55,fontSize:24,bold:true,color:GOLD});
-    if(f.newlyLicensed){
-      const names3 = f.newlyLicensed.split(",").map(n=>n.trim()).filter(Boolean);
-      const cardW = Math.min(2.1, 9/Math.max(names3.length,1)-0.15);
-      names3.forEach((name,i)=>{
-        const cols = Math.min(names3.length,4);
-        const totalW = cols*(cardW+0.15)-0.15;
-        const startX = (10-totalW)/2;
-        const x=startX+(i%cols)*(cardW+0.15),y=0.8+Math.floor(i/cols)*1.8;
-        addPersonCard(s3,pres,name,"⭐ Licensed",x,y,cardW,1.65,"1A3A1A");
-      });
-    }
-    if(f.newTrainers){
-      const yStart = f.newlyLicensed?3.5:0.9;
-      if(f.newlyLicensed) s3.addText("👑 New Field Trainers",{x:0.5,y:yStart-0.4,w:9,h:0.4,fontSize:16,bold:true,color:"C084FC"});
-      const names3t = f.newTrainers.split(",").map(n=>n.trim()).filter(Boolean);
-      names3t.forEach((name,i)=>{
-        const x=0.5+(i%4)*2.35,y=yStart;
-        addPersonCard(s3,pres,name,"👑 Field Trainer",x,y,2.1,1.65,"2D1A4A");
-      });
-    }
-
-    // Slide 4 — Promotions (with photos)
-    const promoEntries = Object.entries(f.promotions).filter(([,v])=>v);
-    if(promoEntries.length>0){
-      const s4=pres.addSlide();addNavyBg(s4);
-      s4.addText("🚀 Promotions",{x:0.5,y:0.15,w:9,h:0.55,fontSize:26,bold:true,color:WHITE});
-      let cardIdx=0;
-      promoEntries.forEach(([rank,namesStr])=>{
-        const names4 = namesStr.split(",").map(n=>n.trim()).filter(Boolean);
-        names4.forEach(name=>{
-          const x=0.4+(cardIdx%4)*2.35,y=0.85+Math.floor(cardIdx/4)*2.1;
-          addPersonCard(s4,pres,name,rank,x,y,2.1,1.9,"1A2D47");
-          cardIdx++;
-        });
-      });
-    }
-
-    // Slide 5 — Income Milestones & Comma Checks (with photos)
-    const milestoneEntries = Object.entries(f.milestones).filter(([,v])=>v);
-    if(milestoneEntries.length>0||f.commaChecks){
-      const s5=pres.addSlide();addNavyBg(s5);
-      s5.addText("💰 Income Milestones & Comma Checks",{x:0.5,y:0.15,w:9,h:0.5,fontSize:20,bold:true,color:GOLD});
-      let mCardIdx=0;
-      if(f.commaChecks){
-        f.commaChecks.split(",").map(n=>n.trim()).filter(Boolean).forEach(name=>{
-          const x=0.4+(mCardIdx%4)*2.35,y=0.8+Math.floor(mCardIdx/4)*2.0;
-          addPersonCard(s5,pres,name,"💵 Comma Check",x,y,2.1,1.8,"0D3D1A");
-          mCardIdx++;
-        });
+    w.document.write(\`<!DOCTYPE html><html><head><title>Month End Report — \${monthName}</title><style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:Arial,sans-serif;background:#111;color:white;}
+      .slide{width:100vw;height:100vh;display:none;overflow:hidden;position:relative;}
+      .slide.active{display:flex;align-items:stretch;}
+      .slide-inner{width:100%;display:flex;flex-direction:column;}
+      .nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:100;background:rgba(0,0,0,0.5);padding:10px 20px;border-radius:30px;}
+      .nav button{background:rgba(255,255,255,0.2);color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:14px;font-weight:600;}
+      .nav button:hover{background:rgba(255,255,255,0.3);}
+      .nav .counter{font-size:13px;color:rgba(255,255,255,0.7);min-width:60px;text-align:center;}
+      .print-btn{position:fixed;top:16px;right:16px;background:#0ea5c9;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;z-index:100;}
+      @media print{
+        .nav,.print-btn{display:none;}
+        .slide{display:flex!important;page-break-after:always;width:100%;height:100vh;}
       }
-      milestoneEntries.forEach(([milestone,namesStr])=>{
-        const names5=namesStr.split(",").map(n=>n.trim()).filter(Boolean);
-        names5.forEach(name=>{
-          const x=0.4+(mCardIdx%4)*2.35,y=0.8+Math.floor(mCardIdx/4)*2.0;
-          addPersonCard(s5,pres,name,milestone,x,y,2.1,1.8,"2D1A00");
-          mCardIdx++;
-        });
-      });
-    }
-
-    // Slide 6 — Top Performers (with photos)
-    const s6=pres.addSlide();addNavyBg(s6);
-    s6.addText("🏆 Top Performers",{x:0.5,y:0.15,w:9,h:0.55,fontSize:26,bold:true,color:GOLD});
-    const performers=[
-      {label:"Top Producer",name:f.topProducer},
-      {label:"Top Recruiter",name:f.topRecruiter},
-      {label:"Most Consistent",name:f.mostConsistent},
-      {label:"Most Appointments",name:f.mostAppts},
-    ].filter(p=>p.name);
-    performers.forEach((p,i)=>{
-      const x=0.5+(i%2)*4.8,y=0.85+Math.floor(i/2)*2.2;
-      addPersonCard(s6,pres,p.name,p.label,x,y,4.4,2.0,"1A2D47");
-    });
-
-    // Slide 7 — Team Activity
-    const s7=pres.addSlide();addNavyBg(s7);
-    s7.addText("📈 Team Activity This Month",{x:0.5,y:0.3,w:9,h:0.6,fontSize:26,bold:true,color:WHITE});
-    const activities=[
-      {label:"Daily Logs Submitted",val:String(f.logsSubmitted)},
-      {label:"People Talked To",val:String(f.talked)},
-      {label:"Appointments Set",val:String(f.apptRan)},
-      {label:"Follow-up Calls",val:String(teamTotals.followup)},
-    ];
-    activities.forEach((a,i)=>{
-      const x=0.4+(i%2)*4.8,y=1.1+Math.floor(i/2)*1.9;
-      s7.addShape(pres.ShapeType.rect,{x,y,w:4.4,h:1.6,fill:{color:"1A2D47"},rectRadius:0.1});
-      s7.addText(a.val,{x,y:y+0.2,w:4.4,h:0.7,fontSize:36,bold:true,color:TEAL,align:"center"});
-      s7.addText(a.label,{x,y:y+0.95,w:4.4,h:0.45,fontSize:11,color:"AABBCC",align:"center"});
-    });
-
-    // Slide 8 — Recognition (Wall of Fame)
-    if(f.wofNames){
-      const s8=pres.addSlide();s8.background={color:LIGHT};
-      s8.addText("⭐ Team Recognition",{x:0.5,y:0.3,w:9,h:0.6,fontSize:26,bold:true,color:NAVY});
-      f.wofNames.split(",").map(n=>n.trim()).filter(Boolean).forEach((name,i)=>{
-        const x=0.4+(i%3)*3.1,y=1.0+Math.floor(i/3)*1.1;
-        s8.addShape(pres.ShapeType.rect,{x,y,w:2.9,h:0.9,fill:{color:NAVY},rectRadius:0.1});
-        s8.addText("⭐ "+name,{x,y,w:2.9,h:0.9,fontSize:10,color:GOLD,align:"center",bold:true,wrap:true});
-      });
-    }
-
-    // Slide 9 — Closing
-    const s9=pres.addSlide();addNavyBg(s9);
-    s9.addShape(pres.ShapeType.rect,{x:0,y:2.5,w:10,h:0.06,fill:{color:TEAL}});
-    s9.addText("🚀",{x:3.5,y:0.4,w:3,h:1,fontSize:56,align:"center"});
-    s9.addText("Keep Going —",{x:0.5,y:1.5,w:9,h:0.7,fontSize:28,bold:true,color:WHITE,align:"center"});
-    s9.addText("Next Month Is Even Bigger!",{x:0.5,y:2.1,w:9,h:0.5,fontSize:22,bold:true,color:TEAL,align:"center"});
-    s9.addText("Every conversation, every appointment, every family protected. It all counts. You are building something real. Let's finish strong!",{x:1,y:2.8,w:8,h:1.2,fontSize:13,color:"8899AA",align:"center",wrap:true});
-
-    pres.writeFile({fileName:"Month-End-Report-"+monthName.replace(" ","-")+".pptx"});
+    </style></head><body>
+    \${slides.map((s,i)=>\`<div class="slide \${i===0?"active":""}" id="slide\${i}" style="background:\${s.bg}"><div class="slide-inner">\${s.content}</div></div>\`).join("")}
+    <div class="nav">
+      <button onclick="changeSlide(-1)">← Prev</button>
+      <span class="counter" id="counter">1 / \${slides.length}</span>
+      <button onclick="changeSlide(1)">Next →</button>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ Print / PDF</button>
+    <script>
+      let cur=0;
+      function changeSlide(dir){
+        document.getElementById("slide"+cur).classList.remove("active");
+        cur=Math.max(0,Math.min(\${slides.length}-1,cur+dir));
+        document.getElementById("slide"+cur).classList.add("active");
+        document.getElementById("counter").textContent=(cur+1)+" / \${slides.length}";
+      }
+      document.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key===" ")changeSlide(1);if(e.key==="ArrowLeft")changeSlide(-1);});
+    <\/script>
+    </body></html>\`);
+    w.document.close();
   };
 
   if(!showForm) return <button onClick={()=>setShowForm(true)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,width:"100%",justifyContent:"center",marginBottom:10}}>
@@ -3133,7 +3174,7 @@ function MonthEndReport({data}) {
     {/* Generate buttons */}
     <div style={{display:"flex",gap:8}}>
       <button onClick={()=>generateHTML(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📄 Generate PDF Version</button>
-      <button onClick={()=>generatePPTX(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.gold+",#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📊 Download PowerPoint</button>
+      <button onClick={()=>generateSlideshow(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.gold+",#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📊 View as Slideshow</button>
     </div>
     <div style={{fontSize:10,color:C.textMid,textAlign:"center",marginTop:6}}>PowerPoint can be uploaded to Google Drive and opened as Google Slides</div>
   </div>;
