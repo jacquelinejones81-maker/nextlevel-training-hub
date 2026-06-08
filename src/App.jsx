@@ -49,6 +49,9 @@ const findPerson = (id, data) => {
   return [...(data.admins||[]),...(data.trainers||[]),...(data.reps||[])].find(p=>p.id===id)||null;
 };
 
+// ── ACTIVE REPS FILTER (excludes inactive) ──
+const activeReps = (reps) => (reps||[]).filter(r=>!r.inactive);
+
 const MOTIVATIONS = [
   "Success is not final, failure is not fatal — it is the courage to continue that counts.",
   "The secret of getting ahead is getting started.",
@@ -4002,8 +4005,6 @@ function RepInvestmentLog({repId,data}) {
 
 
 
-// ── ACTIVE REPS FILTER (excludes inactive) ──
-const activeReps = (reps) => (reps||[]).filter(r=>!r.inactive);
 
 // ── BIRTHDAY & ANNIVERSARY TRACKER ──
 function BirthdayAnniversaryWidget({data}) {
