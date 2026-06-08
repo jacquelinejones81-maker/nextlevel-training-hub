@@ -660,7 +660,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const done=cl.filter(i=>checked[i.id]).length;
   const pct=cl.length>0?Math.round((done/cl.length)*100):0;
   const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
-  const trainer=data.trainers?.find(t=>t.id===rep.trainerId);
+  const trainer=[...(data.trainers||[]),...(data.admins||[])].find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
   const tabs=[
@@ -783,6 +783,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
       <ReassignTrainer rep={rep} data={data} onUpdate={onUpdate} />
+      <RecruitedByEditor rep={rep} data={data} onUpdate={onUpdate}/>
       <ResetPinButton person={rep} personType="rep" data={data} onUpdate={onUpdate||upd}/>
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
@@ -1044,7 +1045,11 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
           <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
-            <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track} • {([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"No trainer"}</div>
+            <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:1}}>
+              <span style={{fontSize:10,color:C.textMid}}>Trainer: <strong style={{color:([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?C.teal:C.textLight}}>{([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"Not assigned"}</strong></span>
+              <span style={{fontSize:10,color:C.textMid}}>Rec: <strong style={{color:findPerson(r.recruitedBy,data)?C.purple:C.textLight}}>{findPerson(r.recruitedBy,data)?.name||"Not specified"}</strong></span>
+            </div>
           </div>
           <div style={{textAlign:"right",flexShrink:0}}>
             <div style={{fontSize:12,fontWeight:700,color:track?.color||C.teal}}>{pct}%</div>
@@ -1148,7 +1153,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       // Stalled = only if they have at least one check-in AND it's been 7+ days
       const stalled=lastCI!==null&&ds>=7;
       const grad=cl.length>0&&cl.every(i=>(rep.checked||{})[i.id]);
-      const trainer=trainers.find(t=>t.id===rep.trainerId);
+      const trainer=[...trainers,...(data.admins||[])].find(t=>t.id===rep.trainerId);
       return <div key={rep.id} onClick={()=>onSelectRep(rep.id)} style={{background:"white",borderRadius:12,border:`1px solid ${stalled&&!grad?C.danger+"44":C.border}`,padding:"12px 14px",marginBottom:7,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=grad?C.success:C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=stalled&&!grad?C.danger+"44":C.border}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
           <div style={{flex:1}}>
@@ -1158,7 +1163,11 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
               {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
             </div>
-            <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}{trainer&&<span> - {trainer.name}</span>}{rep.recruitedBy&&(()=>{const recruiter=[...(data.admins||[]),(data.trainers||[]),(data.reps||[])].flat().find(p=>p.id===rep.recruitedBy);return recruiter?<span style={{color:C.purple}}> - Recruited by {recruiter.name}</span>:null;})()}</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}</div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:2}}>
+              <span style={{fontSize:10,color:C.textMid}}>Trainer: <strong style={{color:trainer?C.teal:C.textLight}}>{trainer?.name||"Not assigned"}</strong></span>
+              <span style={{fontSize:10,color:C.textMid}}>Recruited by: <strong style={{color:(()=>{const r=findPerson(rep.recruitedBy,data);return r?C.purple:C.textLight;})()}}>{findPerson(rep.recruitedBy,data)?.name||"Not specified"}</strong></span>
+            </div>
           </div>
           <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
         </div>
@@ -2355,6 +2364,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const allReps = data.reps||[];
   const trainers = data.trainers||[];
+  const allTrainers = [...trainers,...(data.admins||[])];
   // Combine reps and trainers — admins see all, trainers see only their reps
   const reps = isAdmin 
     ? [...allReps, ...trainers.map(t=>({...t,isTrainer:true,track:"licensed"}))]
@@ -2779,6 +2789,38 @@ function ReassignTrainer({rep,data,onUpdate}) {
   </div>;
 }
 
+
+
+// ── RECRUITED BY EDITOR ──
+function RecruitedByEditor({rep,data,onUpdate}) {
+  const [editing,setEditing] = useState(false);
+  const [selected,setSelected] = useState(rep.recruitedBy||"");
+  const current = findPerson(rep.recruitedBy,data);
+  const allPeople = [
+    ...(data.admins||[]).map(a=>({...a,label:a.name+" (Admin)"})),
+    ...(data.trainers||[]).map(t=>({...t,label:t.name+" (Trainer)"})),
+    ...(data.reps||[]).filter(r=>r.id!==rep.id).map(r=>({...r,label:r.name+" (Rep)"})),
+  ];
+
+  const save = () => {
+    onUpdate(rep.id,{...rep,recruitedBy:selected});
+    setEditing(false);
+  };
+
+  return <div style={{marginBottom:8}}>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{fontSize:11,color:C.textMid}}>Recruited by: <strong style={{color:current?C.purple:C.textLight}}>{current?.name||"Not specified"}</strong></div>
+      <button onClick={()=>{setSelected(rep.recruitedBy||"");setEditing(!editing);}} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Edit"}</button>
+    </div>
+    {editing&&<div style={{marginTop:6,display:"flex",gap:6}}>
+      <select value={selected} onChange={e=>setSelected(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+        <option value="">Not specified</option>
+        {allPeople.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
+      </select>
+      <button onClick={save} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+    </div>}
+  </div>;
+}
 
 // ── RESET PIN ──
 function ResetPinButton({person,personType,data,onUpdate}) {
@@ -3902,6 +3944,13 @@ function RepInvestmentLog({repId,data}) {
   </div>;
 }
 
+
+
+// ── PERSON LOOKUP HELPER ──
+const findPerson = (id, data) => {
+  if(!id||!data) return null;
+  return [...(data.admins||[]),...(data.trainers||[]),...(data.reps||[])].find(p=>p.id===id)||null;
+};
 
 // ── ACTIVE REPS FILTER (excludes inactive) ──
 const activeReps = (reps) => (reps||[]).filter(r=>!r.inactive);
