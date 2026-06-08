@@ -896,7 +896,8 @@ function ProdDash({data,onUpdateData}) {
   // PAC and lump sum totals from investment logs
   const allInvLogs = [
     ...reps.reduce((a,r)=>([...a,...(r.investments||[])]),[]),
-    ...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[])
+    ...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[]),
+    ...(data.admins||[]).reduce((a,adm)=>([...a,...(adm.investments||[])]),[]),
   ];
   const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const totLump = allInvLogs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
@@ -2041,7 +2042,7 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
 // ── MY PROFILE PAGE ──
 function MyProfilePage({session,data,onUpdate}) {
   const profilePhotos = data.profilePhotos||{};
-  const photo = profilePhotos[session.id]||null;
+  const photo = profilePhotos[session.id]||(()=>{try{return localStorage.getItem("profilePhoto_"+session.id)||null;}catch(e){return null;}})();
   const [showLightbox,setShowLightbox] = useState(false);
 
   const handleUpload = (e) => {
@@ -2052,13 +2053,15 @@ function MyProfilePage({session,data,onUpdate}) {
       const img=new Image();
       img.onload=()=>{
         const canvas=document.createElement("canvas");
-        const MAX=400;
+        const MAX=200; // Smaller size to stay under Firebase 1MB limit
         let w=img.width,h=img.height;
         if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
         else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
         canvas.width=w;canvas.height=h;
         canvas.getContext("2d").drawImage(img,0,0,w,h);
-        const compressed=canvas.toDataURL("image/jpeg",0.7);
+        const compressed=canvas.toDataURL("image/jpeg",0.5);
+        // Save to localStorage as reliable fallback
+        try{localStorage.setItem("profilePhoto_"+session.id,compressed);}catch(ex){}
         onUpdate({...data,profilePhotos:{...profilePhotos,[session.id]:compressed}});
       };
       img.src=ev.target.result;
@@ -2913,9 +2916,11 @@ function MonthEndReport({data}) {
     while(true){const key=d.toISOString().split("T")[0];if(repLog[key])streak++;else break;d.setDate(d.getDate()-1);if(streak>365)break;}
     return {name:p.name,streak};
   }).filter(p=>p.streak>0).sort((a,b)=>b.streak-a.streak);
-  const totalPremium = reps.reduce((s,r)=>s+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0);
-    const teamPAC = [...reps,...trainers].reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.pac)||0),0),0);
-    const teamLump = [...reps,...trainers].reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.lumpSum)||0),0),0);
+  const totalPremium = reps.reduce((s,r)=>s+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)
+    +[...(data.trainers||[]),...(data.admins||[])].reduce((s,t)=>{const a=(data.myProduction||{})[t.id]?.lifeApps||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+    const allInvestors = [...reps,...trainers,...(data.admins||[])];
+    const teamPAC = allInvestors.reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.pac)||0),0),0);
+    const teamLump = allInvestors.reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.lumpSum)||0),0),0);
   const totalRecruits = withRecruits.reduce((s,r)=>s+r.count,0);
   const teamTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,logsSubmitted:0};
   allPeople.forEach(p=>{const repLog=activityLogs[p.id]||{};Object.entries(repLog).forEach(([date,log])=>{if(typeof log==="object"&&log.submittedAt&&date>=monthStart){teamTotals.logsSubmitted++;teamTotals.talked+=(Number(log.talked)||0);teamTotals.followup+=(Number(log.followup)||0);teamTotals.apptSet+=(Number(log.apptSet)||0);teamTotals.apptRan+=(Number(log.apptRan)||0);teamTotals.recruited+=(Number(log.recruited)||0);}});});
@@ -4036,7 +4041,7 @@ function MonthlyHistory({data,onUpdate}) {
   const currentMonth = new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"});
   const reps = data.reps||[];
   const trainers = data.trainers||[];
-  const totPremMo = reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0)+trainers.reduce((s,t)=>{const a=(data.myProduction||{})[t.id]?.lifeApps||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+  const totPremMo = reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0),0)+[...(data.trainers||[]),...(data.admins||[])].reduce((s,t)=>{const a=(data.myProduction||{})[t.id]?.lifeApps||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
 
   const archiveMonth = () => {
     if(!window.confirm(`Archive ${currentMonth} production data and reset for next month?`)) return;
