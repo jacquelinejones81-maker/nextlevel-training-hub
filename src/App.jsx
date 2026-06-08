@@ -931,8 +931,9 @@ function ManageTeam({data,onUpdate,onClose}) {
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       <div style={{marginBottom:14}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
         {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
-          <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:a.isSuperAdmin?0:4}}>
-            <span style={{fontSize:12,flex:1,color:C.text,fontWeight:600}}>{a.name}{a.isSuperAdmin&&<span style={{fontSize:10,color:C.gold,marginLeft:6}}>Super Admin</span>}</span>
+          <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
+            <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,fontWeight:600}} placeholder="Admin name"/>
+            {a.isSuperAdmin&&<span style={{fontSize:10,color:C.gold,whiteSpace:"nowrap"}}>Super Admin</span>}
             <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
             {!a.isSuperAdmin&&<button onClick={()=>onUpdate({...data,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
           </div>
