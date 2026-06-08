@@ -737,7 +737,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
-    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&isOwnView&&<InvestmentLog data={data} onUpdate={onUpdateData||(u=>{})} userRole="rep" repId={rep.id}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={false} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
@@ -749,7 +749,6 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
-    {rep.track==="licensed"&&tab==="checklist"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
   </div>;
@@ -891,8 +890,12 @@ function ProdDash({data,onUpdateData}) {
   const [gd,setGd]=useState(goals);
   const allStaff=[...(data.trainers||[]),...(data.admins||[])];
   const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0)+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)+allStaff.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
-  const totRecs=reps.length;
+  const totRecs = data.prodOverride?.recruits!==undefined ? data.prodOverride.recruits : reps.filter(r=>!r.inactive).length;
   const totLic=reps.filter(r=>r.isLicensed).length;
+  // PAC and lump sum totals from investment logs
+  const allInvLogs = [...(data.investmentLogs||[]),...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[]),(reps.reduce((a,r)=>([...a,...(r.investments||[])]),[])) ].flat();
+  const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
+  const totLump = allInvLogs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
   return <Card style={{marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear Annual Premium, New Recruits display, and Licensed Agents? This resets premium entries, licensed flags, and recruit counter."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,selfPremium:[],isLicensed:false,premiumSubmitted:0})),myProduction:{},prodOverride:{recruits:0}});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
@@ -900,6 +903,16 @@ function ProdDash({data,onUpdateData}) {
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
     </div>}
     {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:C.textMid}}>{g.l}</span><span style={{fontSize:12,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:10,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
+    {(totPAC>0||totLump>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:4,marginBottom:10}}>
+      <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Monthly PAC</div>
+        <div style={{fontSize:16,fontWeight:700,color:C.teal}}>${totPAC.toLocaleString()}</div>
+      </div>
+      <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Lump Sum</div>
+        <div style={{fontSize:16,fontWeight:700,color:C.purple}}>${totLump.toLocaleString()}</div>
+      </div>
+    </div>}
     <CollapsibleRepList reps={reps} data={data} onUpdateData={onUpdateData}/>
   </Card>;
 }
@@ -1028,7 +1041,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
           <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
-            <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track} • {trainers.find(t=>t.id===r.trainerId)?.name||"No trainer"}</div>
+            <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track} • {([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"No trainer"}</div>
           </div>
           <div style={{textAlign:"right",flexShrink:0}}>
             <div style={{fontSize:12,fontWeight:700,color:track?.color||C.teal}}>{pct}%</div>
@@ -1197,7 +1210,8 @@ function LoginScreen({data,onLogin}) {
         {(mode==="admin"||mode==="trainer")&&<div>
           <button onClick={()=>{setMode("select");setErr("");setPin("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:14}}>{mode==="admin"?"Admin Login":"Trainer Login"}</div>
-          <input type="password" maxLength={6} placeholder="Enter PIN" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/,""));setErr("");}} onKeyDown={e=>e.key==="Enter"&&(mode==="admin"?doAdminLogin():doTrainerLogin())} style={{...inp,marginBottom:10,letterSpacing:"6px",textAlign:"center"}}/>
+          <input type="password" maxLength={6} placeholder="Enter PIN" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/,""));setErr("");}} onKeyDown={e=>e.key==="Enter"&&(mode==="admin"?doAdminLogin():doTrainerLogin())} style={{...inp,marginBottom:6,letterSpacing:"6px",textAlign:"center"}}/>
+          <button onClick={()=>alert("Contact the Super Admin to reset your PIN. They can set a temporary PIN from the Team Management section.")} style={{background:"none",border:"none",color:C.teal,fontSize:11,cursor:"pointer",marginBottom:10,padding:0,textDecoration:"underline"}}>Forgot PIN?</button>
           {err&&<div style={{color:C.danger,fontSize:11,marginBottom:8}}>{err}</div>}
           <button onClick={mode==="admin"?doAdminLogin:doTrainerLogin} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer"}}>Sign In</button>
         </div>}
@@ -1213,7 +1227,8 @@ function LoginScreen({data,onLogin}) {
           <button onClick={()=>{setStep("find");setErr("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{step==="create"?"Create Your PIN":`Welcome, ${selRep.name}`}</div>
           <div style={{fontSize:11,color:C.textMid,marginBottom:14}}>{step==="create"?"Choose a 4-digit PIN":"Enter your 4-digit PIN"}</div>
-          <input type="password" maxLength={4} placeholder="4-digit PIN" value={rPin} onChange={e=>{setRPin(e.target.value.replace(/\D/,""));setErr("");}} style={{...inp,marginBottom:9,textAlign:"center",fontSize:22,letterSpacing:"10px"}} autoFocus/>
+          <input type="password" maxLength={4} placeholder="4-digit PIN" value={rPin} onChange={e=>{setRPin(e.target.value.replace(/\D/,""));setErr("");}} style={{...inp,marginBottom:step==="create"?9:6,textAlign:"center",fontSize:22,letterSpacing:"10px"}} autoFocus/>
+          {step==="enter"&&<button onClick={()=>alert("Contact your trainer or admin to reset your PIN. They can set a temporary PIN from your profile.")} style={{background:"none",border:"none",color:C.teal,fontSize:11,cursor:"pointer",marginBottom:9,padding:0,textDecoration:"underline"}}>Forgot PIN?</button>}
           {step==="create"&&<input type="password" maxLength={4} placeholder="Confirm PIN" value={rPinC} onChange={e=>{setRPinC(e.target.value.replace(/\D/,""));setErr("");}} onKeyDown={e=>e.key==="Enter"&&doRepLogin()} style={{...inp,marginBottom:9,textAlign:"center",fontSize:22,letterSpacing:"10px"}}/>}
           {err&&<div style={{color:C.danger,fontSize:11,marginBottom:8}}>{err}</div>}
           <button onClick={doRepLogin} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer"}}>{step==="create"?"Create PIN and Continue":"Sign In"}</button>
@@ -2370,8 +2385,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     const cl = rep.track==="licensed"?19:13;
     const done = Object.values(rep.checked||{}).filter(Boolean).length;
     const progress = Math.round((done/cl)*100);
-    const allPeople = [...allReps,...(data.trainers||[]),...(data.admins||[])];
-    const recruiter = allPeople.find(r=>r.id===rep.recruitedBy)||{name:"Not specified"};
+    const allPeople2 = [...allReps,...(data.trainers||[]),...(data.admins||[])];
+    const recruiter = allPeople2.find(r=>r.id===rep.recruitedBy)||{name:"Not specified"};
     // 7-day calendar — Sun to Sat of current week
     const last7 = Array.from({length:7},(_,i)=>{
       const dd=new Date();
@@ -2691,6 +2706,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <div class="grid">
               <div class="card"><div class="big">${premiumEntries}</div><div class="label">Premium Entries Logged</div></div>
               <div class="card"><div class="big">$${totalPremium.toLocaleString()}</div><div class="label">Total Monthly Premium</div></div>
+              <div class="card"><div class="big">$${(rep.investments||[]).reduce((s,i)=>s+(Number(i.pac)||0),0).toLocaleString()}</div><div class="label">Monthly PAC</div></div>
+              <div class="card"><div class="big">$${(rep.investments||[]).reduce((s,i)=>s+(Number(i.lumpSum)||0),0).toLocaleString()}</div><div class="label">Lump Sum</div></div>
               <div class="card"><div class="big">${recruitsCount}</div><div class="label">Reps Recruited</div></div>
             </div>
 
@@ -2852,6 +2869,8 @@ function MonthEndReport({data}) {
     return {name:p.name,streak};
   }).filter(p=>p.streak>0).sort((a,b)=>b.streak-a.streak);
   const totalPremium = reps.reduce((s,r)=>s+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0);
+    const teamPAC = [...reps,...trainers].reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.pac)||0),0),0);
+    const teamLump = [...reps,...trainers].reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.lumpSum)||0),0),0);
   const totalRecruits = withRecruits.reduce((s,r)=>s+r.count,0);
   const teamTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,logsSubmitted:0};
   allPeople.forEach(p=>{const repLog=activityLogs[p.id]||{};Object.entries(repLog).forEach(([date,log])=>{if(typeof log==="object"&&log.submittedAt&&date>=monthStart){teamTotals.logsSubmitted++;teamTotals.talked+=(Number(log.talked)||0);teamTotals.followup+=(Number(log.followup)||0);teamTotals.apptSet+=(Number(log.apptSet)||0);teamTotals.apptRan+=(Number(log.apptRan)||0);teamTotals.recruited+=(Number(log.recruited)||0);}});});
@@ -3051,7 +3070,7 @@ function MonthEndReport({data}) {
           <div style="font-size:32px;font-weight:900;color:#0d1b2a;margin-bottom:6px">📊 Team Highlights</div>
           <div style="font-size:14px;color:#666;margin-bottom:28px;font-style:italic">Look what we accomplished together this month!</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
-            ${[["$"+Number(f.totalPremium).toLocaleString(),"Total Premium"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
+            ${[["$"+Number(f.totalPremium).toLocaleString(),"Total Premium"],["$"+teamPAC.toLocaleString(),"Monthly PAC"],["$"+teamLump.toLocaleString(),"Lump Sum"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
             <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:16px;padding:24px;text-align:center">
               <div style="font-size:36px;font-weight:900;color:#0ea5c9">${v}</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:6px">${l}</div>
