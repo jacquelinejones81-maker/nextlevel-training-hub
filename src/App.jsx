@@ -2934,6 +2934,8 @@ function MonthEndReport({data}) {
     apptRan:teamTotals.apptRan,
     talked:teamTotals.talked,
     logsSubmitted:teamTotals.logsSubmitted,
+    teamPAC:teamPAC,
+    teamLump:teamLump,
     topProducer:withPremium[0]?.name||"",
     topRecruiter:withRecruits[0]?.name||"",
     mostConsistent:withStreak[0]?.name||"",
@@ -2945,7 +2947,7 @@ function MonthEndReport({data}) {
     milestones:INCOME_MILESTONES.reduce((a,m)=>({...a,[m]:""}),{}),
     commaChecks:"",
     customShoutout:"",
-    wofNames:wofThisMonth.map(r=>r.personName+" — "+r.category).join(", "),
+    wofNames:wofNamesDefault,
   });
 
   const generateHTML = (f) => {
@@ -3120,7 +3122,7 @@ function MonthEndReport({data}) {
           <div style="font-size:32px;font-weight:900;color:#0d1b2a;margin-bottom:6px">📊 Team Highlights</div>
           <div style="font-size:14px;color:#666;margin-bottom:28px;font-style:italic">Look what we accomplished together this month!</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
-            ${[["$"+Number(f.totalPremium).toLocaleString(),"Total Premium"],["$"+teamPAC.toLocaleString(),"Monthly PAC"],["$"+teamLump.toLocaleString(),"Lump Sum"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
+            ${[["$"+Number(f.totalPremium).toLocaleString(),"Life Premium"],["$"+Number(f.teamPAC||0).toLocaleString(),"Monthly PAC"],["$"+Number(f.teamLump||0).toLocaleString(),"Lump Sum"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
             <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:16px;padding:24px;text-align:center">
               <div style="font-size:36px;font-weight:900;color:#0ea5c9">${v}</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:6px">${l}</div>
@@ -3311,7 +3313,7 @@ function MonthEndReport({data}) {
     {/* Team Numbers */}
     <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>Team Numbers</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
-      {[["Total Premium $",form.totalPremium,"totalPremium"],["Total Recruits",form.totalRecruits,"totalRecruits"],["Appointments Run",form.apptRan,"apptRan"],["People Talked To",form.talked,"talked"],["Daily Logs Submitted",form.logsSubmitted,"logsSubmitted"]].map(([label,val,key])=><div key={key}>
+      {[["Total Life Premium $",form.totalPremium,"totalPremium"],["Total Recruits",form.totalRecruits,"totalRecruits"],["Appointments Run",form.apptRan,"apptRan"],["People Talked To",form.talked,"talked"],["Daily Logs Submitted",form.logsSubmitted,"logsSubmitted"],["Monthly PAC $",form.teamPAC,"teamPAC"],["Lump Sum $",form.teamLump,"teamLump"]].map(([label,val,key])=><div key={key}>
         <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{label}</div>
         <input type="number" value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
       </div>)}
@@ -3340,17 +3342,45 @@ function MonthEndReport({data}) {
 
     {/* Promotions */}
     <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Promotions</div>
-    {PROMOTION_RANKS.map(rank=><div key={rank} style={{marginBottom:6}}>
-      <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{rank}</div>
-      <input placeholder="Names..." value={form.promotions[rank]||""} onChange={e=>setForm(f=>({...f,promotions:{...f.promotions,[rank]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-    </div>)}
+    {PROMOTION_RANKS.map(rank=>{
+      const previews=(form.promotions[rank]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
+        const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+        const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
+        const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+        return {name,photo};
+      });
+      return <div key={rank} style={{marginBottom:8}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{rank}</div>
+        <input placeholder="Names (comma separated)..." value={form.promotions[rank]||""} onChange={e=>setForm(f=>({...f,promotions:{...f.promotions,[rank]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:previews.length>0?4:0}}/>
+        {previews.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          {previews.map((p,pi)=><div key={pi} style={{display:"flex",alignItems:"center",gap:4,background:C.surface,borderRadius:6,padding:"2px 6px"}}>
+            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
+            <span style={{fontSize:10,color:C.text}}>{p.name}</span>
+          </div>)}
+        </div>}
+      </div>;
+    })}
 
     {/* Income Milestones */}
     <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Income Milestones</div>
-    {INCOME_MILESTONES.map(m=><div key={m} style={{marginBottom:6}}>
-      <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{m}</div>
-      <input placeholder="Names..." value={form.milestones[m]||""} onChange={e=>setForm(f=>({...f,milestones:{...f.milestones,[m]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-    </div>)}
+    {INCOME_MILESTONES.map(m=>{
+      const previews=(form.milestones[m]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
+        const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+        const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
+        const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+        return {name,photo};
+      });
+      return <div key={m} style={{marginBottom:8}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{m}</div>
+        <input placeholder="Names (comma separated)..." value={form.milestones[m]||""} onChange={e=>setForm(f=>({...f,milestones:{...f.milestones,[m]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:previews.length>0?4:0}}/>
+        {previews.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          {previews.map((p,pi)=><div key={pi} style={{display:"flex",alignItems:"center",gap:4,background:"#064e3b22",borderRadius:6,padding:"2px 6px",border:"1px solid #34d39944"}}>
+            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:"#059669",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
+            <span style={{fontSize:10,color:"#059669",fontWeight:600}}>{p.name}</span>
+          </div>)}
+        </div>}
+      </div>;
+    })}
 
     {/* Custom Shoutout */}
     <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Special Shoutouts</div>
