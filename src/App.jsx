@@ -783,7 +783,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
       <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
-      <ReassignTrainer rep={rep} data={data} onUpdate={(u)=>{if(typeof onUpdate==="function")onUpdate(rep.id,{...rep,...u});}} />
+      <ReassignTrainer rep={rep} data={data} onUpdate={onUpdate} />
       <ResetPinButton person={rep} personType="rep" data={data} onUpdate={onUpdate||upd}/>
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
@@ -1015,7 +1015,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
     </div>
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
-      {["all","fast","regular","licensed"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:filter===f?600:400,background:filter===f?C.navy:C.surface,color:filter===f?"white":C.textMid,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="fast"?"Fast Start":f==="regular"?"Regular":f==="licensed"?"Licensed":f}</button>)}
+      {["all","fast","regular","licensed"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:filter===f?600:400,background:filter===f?C.navy:C.surface,color:filter===f?"white":C.textMid,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="fast"?"Fast Start":f==="regular"?"Regular Start":f==="licensed"?"Licensed Now What":f}</button>)}
     </div>
     {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No reps found</div>}
     {filtered.map(r=>{
@@ -2738,7 +2738,8 @@ function ReassignTrainer({rep,data,onUpdate}) {
   const current = allOptions.find(o=>o.id===rep.trainerId);
 
   const save = () => {
-    onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,trainerId:selected}:r)});
+    const updatedReps = (data.reps||[]).map(r=>r.id===rep.id?{...r,trainerId:selected}:r);
+    onUpdate(rep.id, {...rep, trainerId:selected});
     setEditing(false);
   };
 
