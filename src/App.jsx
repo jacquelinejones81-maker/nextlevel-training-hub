@@ -43,6 +43,12 @@ const C = {
   purple:"#8b5cf6", gold:"#f59e0b",
 };
 
+// ── PERSON LOOKUP HELPER ──
+const findPerson = (id, data) => {
+  if(!id||!data) return null;
+  return [...(data.admins||[]),...(data.trainers||[]),...(data.reps||[])].find(p=>p.id===id)||null;
+};
+
 const MOTIVATIONS = [
   "Success is not final, failure is not fatal — it is the courage to continue that counts.",
   "The secret of getting ahead is getting started.",
@@ -3073,8 +3079,14 @@ function MonthEndReport({data}) {
     const person = allP.find(p=>(p.name||"").toLowerCase()===name||(p.name||"").toLowerCase().startsWith(name.split(" ")[0]));
     if(!person) return null;
     const photos = data.profilePhotos||{};
+    // Check Firebase profilePhotos first
     if(photos[person.id]) return photos[person.id];
+    // Check localStorage fallback (where compressed photos are saved)
+    try{const lsPhoto=localStorage.getItem("profilePhoto_"+person.id);if(lsPhoto)return lsPhoto;}catch(e){}
+    // Check DGO photo
     if(person.dgoPhoto) return person.dgoPhoto;
+    // Check localStorage DGO fallback
+    try{const lgDgo=localStorage.getItem("dgoPhoto_"+person.id);if(lgDgo)return lgDgo;}catch(e){}
     return null;
   };
 
@@ -3121,8 +3133,8 @@ function MonthEndReport({data}) {
         <div style="padding:40px;height:100%;box-sizing:border-box">
           <div style="font-size:32px;font-weight:900;color:#0d1b2a;margin-bottom:6px">📊 Team Highlights</div>
           <div style="font-size:14px;color:#666;margin-bottom:28px;font-style:italic">Look what we accomplished together this month!</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
-            ${[["$"+Number(f.totalPremium).toLocaleString(),"Life Premium"],["$"+Number(f.teamPAC||0).toLocaleString(),"Monthly PAC"],["$"+Number(f.teamLump||0).toLocaleString(),"Lump Sum"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+            ${[["$"+Number(f.totalPremium).toLocaleString(),"Life Premium"],["$"+Number(f.teamPAC||0).toLocaleString(),"Monthly PAC"],["$"+Number(f.teamLump||0).toLocaleString(),"Total Lump Sum"],[""+f.totalRecruits,"New Recruits"],[""+f.apptRan,"Appointments Run"],[""+f.talked,"Conversations"]].map(([v,l])=>`
             <div style="background:linear-gradient(135deg,#0d1b2a,#1a2d47);border-radius:16px;padding:24px;text-align:center">
               <div style="font-size:36px;font-weight:900;color:#0ea5c9">${v}</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:6px">${l}</div>
@@ -3214,7 +3226,7 @@ function MonthEndReport({data}) {
         <div style="padding:40px;height:100%;box-sizing:border-box">
           <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-bottom:6px">🏆 Top Performers</div>
           <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;font-style:italic">These team members led the way this month!</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
             ${[["💰","Top Producer",f.topProducer],["🤝","Top Recruiter",f.topRecruiter],["🔥","Most Consistent",f.mostConsistent],["📅","Most Appointments",f.mostAppts]].filter(([,,n])=>n).map(([emoji,label,name])=>{
               const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
               const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
@@ -3325,7 +3337,10 @@ function MonthEndReport({data}) {
       const previewPhotos = (val||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
         const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-        const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+        let photo=(data.profilePhotos||{})[person?.id]||null;
+        if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+        if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+        if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
         return {name,photo};
       });
       return <div key={key} style={{marginBottom:8}}>
@@ -3346,7 +3361,10 @@ function MonthEndReport({data}) {
       const previews=(form.promotions[rank]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
         const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-        const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+        let photo=(data.profilePhotos||{})[person?.id]||null;
+        if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+        if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+        if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
         return {name,photo};
       });
       return <div key={rank} style={{marginBottom:8}}>
@@ -3367,7 +3385,10 @@ function MonthEndReport({data}) {
       const previews=(form.milestones[m]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
         const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-        const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+        let photo=(data.profilePhotos||{})[person?.id]||null;
+        if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+        if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+        if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
         return {name,photo};
       });
       return <div key={m} style={{marginBottom:8}}>
@@ -3980,12 +4001,6 @@ function RepInvestmentLog({repId,data}) {
 }
 
 
-
-// ── PERSON LOOKUP HELPER ──
-const findPerson = (id, data) => {
-  if(!id||!data) return null;
-  return [...(data.admins||[]),...(data.trainers||[]),...(data.reps||[])].find(p=>p.id===id)||null;
-};
 
 // ── ACTIVE REPS FILTER (excludes inactive) ──
 const activeReps = (reps) => (reps||[]).filter(r=>!r.inactive);
