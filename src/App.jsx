@@ -3200,31 +3200,42 @@ function MonthEndReport({data}) {
             </div>`).join("")}
           </div>
         </div>`}]:[]),
-      // Slide 6 - Income Milestones & Comma Checks
-      ...((Object.entries(f.milestones).some(([,v])=>v)||f.commaChecks)?[{bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
-        <div style="padding:40px;height:100%;box-sizing:border-box">
-          <div style="font-size:32px;font-weight:900;color:#f59e0b;margin-bottom:6px">💰 Income Milestones & Comma Checks</div>
-          <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:20px;font-style:italic">Recognizing financial wins!</div>
-          ${f.commaChecks?`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#34d399;margin-bottom:8px">💵 Comma Check Recipients ($1,000+)</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
+      // Slide 6 - Comma Checks (all recipients on ONE slide, green)
+      ...(f.commaChecks?[{bg:"linear-gradient(135deg,#064e3b,#065f46)",content:`
+        <div style="display:flex;flex-direction:column;height:100%;text-align:center;padding:32px">
+          <div style="font-size:13px;color:#34d399;font-weight:700;text-transform:uppercase;letter-spacing:3px;margin-bottom:8px">💵 Comma Check Recipients</div>
+          <div style="font-size:40px;font-weight:900;color:#34d399;margin-bottom:6px">$1,000+</div>
+          <div style="width:60px;height:4px;background:#34d399;border-radius:2px;margin:0 auto 24px"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:center;flex:1">
             ${f.commaChecks.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
-              const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
-              const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
-              const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
-              return `<div style="background:rgba(5,150,105,0.2);border:1px solid #059669;border-radius:10px;padding:8px 14px;display:flex;align-items:center;gap:8px">
-                ${photo?`<img src="${photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`:`<div style="width:28px;height:28px;border-radius:50%;background:#059669;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:white">${n.charAt(0)}</div>`}
-                <span style="font-size:13px;color:white;font-weight:600">💵 ${n}</span>
+              const photo=getPersonPhoto(n);
+              return `<div style="text-align:center">
+                ${photo?`<img src="${photo}" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid #34d399;margin-bottom:10px;box-shadow:0 0 30px rgba(52,211,153,0.4)">`:`<div style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:900;color:white;margin-bottom:10px">${n.charAt(0)}</div>`}
+                <div style="font-size:18px;font-weight:800;color:white">${n}</div>
               </div>`;
             }).join("")}
-          </div></div>`:""}
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-            ${Object.entries(f.milestones).filter(([,v])=>v).map(([m,names])=>`
-            <div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b44;border-radius:10px;padding:12px">
-              <div style="font-size:10px;color:#f59e0b;font-weight:700;margin-bottom:6px">${m}</div>
-              ${names.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`<div style="font-size:12px;color:white;font-weight:600">${n}</div>`).join("")}
-            </div>`).join("")}
           </div>
         </div>`}]:[]),
+      // Slide 6b - Income Milestones (one slide PER MILESTONE LEVEL, all recipients together)
+      ...Object.entries(f.milestones).filter(([,v])=>v).map(([milestone,namesStr])=>{
+        const names=namesStr.split(",").map(n=>n.trim()).filter(Boolean);
+        return {bg:"linear-gradient(135deg,#052e16,#064e3b)",content:`
+          <div style="display:flex;flex-direction:column;height:100%;text-align:center;padding:32px">
+            <div style="font-size:13px;color:#34d399;font-weight:700;text-transform:uppercase;letter-spacing:3px;margin-bottom:8px">🏆 Income Milestone</div>
+            <div style="font-size:44px;font-weight:900;color:#fbbf24;margin-bottom:6px">${milestone}</div>
+            <div style="width:60px;height:4px;background:#fbbf24;border-radius:2px;margin:0 auto 24px"></div>
+            <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:center;flex:1">
+              ${names.map(n=>{
+                const photo=getPersonPhoto(n);
+                return `<div style="text-align:center">
+                  ${photo?`<img src="${photo}" style="width:${names.length===1?"200px":"130px"};height:${names.length===1?"200px":"130px"};border-radius:50%;object-fit:cover;border:5px solid #fbbf24;margin-bottom:12px;box-shadow:0 0 40px rgba(251,191,36,0.5)">`:`<div style="width:${names.length===1?"200px":"130px"};height:${names.length===1?"200px":"130px"};border-radius:50%;background:linear-gradient(135deg,#d97706,#b45309);display:flex;align-items:center;justify-content:center;font-size:${names.length===1?"80px":"52px"};font-weight:900;color:white;margin-bottom:12px">${n.charAt(0)}</div>`}
+                  <div style="font-size:${names.length===1?"28px":"20px"};font-weight:800;color:white">${n}</div>
+                </div>`;
+              }).join("")}
+            </div>
+            <div style="font-size:16px;color:rgba(255,255,255,0.5);margin-top:16px">Congratulations on this incredible achievement!</div>
+          </div>`};
+      }),
       // Slide 7 - Top Performers
       {bg:"linear-gradient(135deg,#0d1b2a,#1a2d47)",content:`
         <div style="padding:40px;height:100%;box-sizing:border-box">
