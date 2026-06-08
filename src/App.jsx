@@ -2934,6 +2934,7 @@ function MonthEndReport({data}) {
   const teamTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,logsSubmitted:0};
   allPeople.forEach(p=>{const repLog=activityLogs[p.id]||{};Object.entries(repLog).forEach(([date,log])=>{if(typeof log==="object"&&log.submittedAt&&date>=monthStart){teamTotals.logsSubmitted++;teamTotals.talked+=(Number(log.talked)||0);teamTotals.followup+=(Number(log.followup)||0);teamTotals.apptSet+=(Number(log.apptSet)||0);teamTotals.apptRan+=(Number(log.apptRan)||0);teamTotals.recruited+=(Number(log.recruited)||0);}});});
   const wofThisMonth = (data.wallOfFame||[]).filter(r=>r.postedAt&&r.postedAt>=monthStart);
+  const wofNamesDefault = wofThisMonth.map(r=>r.personName+" — "+r.category+(r.message?" — "+r.message:"")).join(", ");
   const completedChecklists = reps.filter(r=>{const cl=r.track==="licensed"?19:13;return Object.values(r.checked||{}).filter(Boolean).length>=cl;});
 
   // Editable form state
