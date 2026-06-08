@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -930,7 +931,18 @@ function ManageTeam({data,onUpdate,onClose}) {
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       <div style={{marginBottom:14}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
-        {admins.map((a,i)=><div key={a.id} style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:12,flex:1,color:C.text}}>{a.name}</span><input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/>{!a.isSuperAdmin&&<button onClick={()=>onUpdate({...data,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}</div>)}
+        {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
+          <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:a.isSuperAdmin?0:4}}>
+            <span style={{fontSize:12,flex:1,color:C.text,fontWeight:600}}>{a.name}{a.isSuperAdmin&&<span style={{fontSize:10,color:C.gold,marginLeft:6}}>Super Admin</span>}</span>
+            <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+            {!a.isSuperAdmin&&<button onClick={()=>onUpdate({...data,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
+          </div>
+          {!a.isSuperAdmin&&<label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
+            <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);onUpdate({...data,admins:u});}}/>
+            <span style={{fontSize:11,color:C.textMid}}>Also actively recruits and trains</span>
+            {a.alsoRecruits&&<span style={{fontSize:10,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
+          </label>}
+        </div>)}
         <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){onUpdate({...data,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
       </div>
       <div><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
@@ -962,6 +974,72 @@ function ManageTeam({data,onUpdate,onClose}) {
         </div>
       </div>
     </div>
+  </div>;
+}
+
+// ── MY REPS PAGE (separate from dashboard) ──
+function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
+  const [search,setSearch]=useState("");
+  const [filter,setFilter]=useState("all");
+  const [showAdd,setShowAdd]=useState(false);
+  const [showManage,setShowManage]=useState(false);
+  const [showInactive,setShowInactive]=useState(false);
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const allReps=data.reps||[];
+  const activeR=allReps.filter(r=>!r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
+  const inactiveR=allReps.filter(r=>r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
+  const displayR=showInactive?inactiveR:activeR;
+  const filtered=displayR.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
+  const addRep=f=>onUpdate({...data,reps:[...allReps,{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
+  const trainers=data.trainers||[];
+
+  const restoreRep=(id)=>onUpdate({...data,reps:allReps.map(r=>r.id===id?{...r,inactive:false}:r)});
+  const deleteRep=(id,name)=>{
+    if(!window.confirm("PERMANENTLY DELETE "+name+"? This cannot be undone.")) return;
+    if(!window.confirm("Are you absolutely sure?")) return;
+    onUpdate({...data,reps:allReps.filter(r=>r.id!==id)});
+  };
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:12,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
+      <div style={{display:"flex",gap:6}}>
+        {inactiveR.length>0&&<button onClick={()=>setShowInactive(!showInactive)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+(showInactive?C.danger:C.border),background:showInactive?C.danger+"11":"white",cursor:"pointer",color:showInactive?C.danger:C.textMid,fontWeight:600}}>{showInactive?"View Active":"Inactive ("+inactiveR.length+")"}</button>}
+        {isAdmin&&!showInactive&&<button onClick={()=>setShowManage(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Manage Team</button>}
+        {isAdmin&&!showInactive&&<button onClick={()=>setShowAdd(true)} style={{fontSize:11,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Rep</button>}
+      </div>
+    </div>
+    <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
+      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
+      {["all","fast","regular","licensed"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:filter===f?600:400,background:filter===f?C.navy:C.surface,color:filter===f?"white":C.textMid,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="fast"?"Fast Start":f==="regular"?"Regular":f==="licensed"?"Licensed":f}</button>)}
+    </div>
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No reps found</div>}
+    {filtered.map(r=>{
+      const track=TRACK_INFO[r.track];
+      const cl=track?.checklist||[];
+      const done=cl.filter(i=>(r.checked||{})[i.id]).length;
+      const pct=cl.length>0?Math.round((done/cl.length)*100):0;
+      return <div key={r.id} style={{borderRadius:10,background:"white",border:`1px solid ${showInactive?C.danger+"33":C.border}`,marginBottom:7,overflow:"hidden"}}>
+        <div onClick={()=>!showInactive&&onSelectRep(r.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:showInactive?"default":"pointer"}}>
+          <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+            <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track} • {trainers.find(t=>t.id===r.trainerId)?.name||"No trainer"}</div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontSize:12,fontWeight:700,color:track?.color||C.teal}}>{pct}%</div>
+            <div style={{fontSize:10,color:C.textLight}}>{done}/{cl.length}</div>
+          </div>
+          {!showInactive&&<div style={{fontSize:11,color:C.textLight}}>›</div>}
+        </div>
+        {showInactive&&isAdmin&&<div style={{display:"flex",gap:6,padding:"8px 12px",borderTop:`1px solid ${C.danger}22`,background:C.danger+"05"}}>
+          <button onClick={()=>restoreRep(r.id)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.success,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Restore</button>
+          <button onClick={()=>deleteRep(r.id,r.name)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.danger,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Delete Forever</button>
+        </div>}
+      </div>;
+    })}
+    {showAdd&&<AddRepModal data={data} onAdd={f=>{addRep(f);setShowAdd(false);}} onClose={()=>setShowAdd(false)} trainers={trainers}/>}
+    {showManage&&<TeamMgmt data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
   </div>;
 }
 
@@ -5194,7 +5272,8 @@ export default function App() {
 
   const renderContent=()=>{
     if(selRep&&(section==="reps"||section==="dashboard")) return <RepProfile rep={selRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...data,reps:data.reps.filter(r=>r.id!==id)});setSelRepId(null);}}/>;
-    if(section==="dashboard"||section==="reps") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
+    if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
+    if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
     if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>upd({...data,myProduction:{...(data.myProduction||{}),[session.id]:p}})}/></div>;
     if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
