@@ -737,7 +737,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
-    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&isOwnView&&<InvestmentLog data={data} onUpdate={onUpdateData||(u=>{})} userRole="rep" repId={rep.id}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track==="licensed"&&isOwnView&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&isOwnView&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={false} onChange={e=>{const refs=Array.from({length:5},(_,j)=>(rep.references||[])[j]||{});refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div></div>;})}
@@ -893,7 +893,10 @@ function ProdDash({data,onUpdateData}) {
   const totRecs = data.prodOverride?.recruits!==undefined ? data.prodOverride.recruits : reps.filter(r=>!r.inactive).length;
   const totLic=reps.filter(r=>r.isLicensed).length;
   // PAC and lump sum totals from investment logs
-  const allInvLogs = [...(data.investmentLogs||[]),...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[]),(reps.reduce((a,r)=>([...a,...(r.investments||[])]),[])) ].flat();
+  const allInvLogs = [
+    ...reps.reduce((a,r)=>([...a,...(r.investments||[])]),[]),
+    ...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[])
+  ];
   const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const totLump = allInvLogs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
   return <Card style={{marginBottom:14}}>
@@ -3728,6 +3731,62 @@ function QuickMessages({data,onUpdate,userRole}) {
 
 
 // ── INVESTMENT LOG ──
+function RepInvestmentEntry({rep,onUpdate}) {
+  const [show,setShow] = useState(false);
+  const [form,setForm] = useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund",date:new Date().toISOString().split("T")[0]});
+  const entries = rep.investments||[];
+  const totPAC = entries.reduce((s,e)=>s+(Number(e.pac)||0),0);
+  const totLump = entries.reduce((s,e)=>s+(Number(e.lumpSum)||0),0);
+
+  const save = () => {
+    if(!form.clientName) return;
+    onUpdate({...rep,investments:[...entries,{...form,id:Date.now()}]});
+    setForm({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund",date:new Date().toISOString().split("T")[0]});
+    setShow(false);
+  };
+
+  return <Card style={{marginBottom:12,border:"1px solid "+C.purple+"33"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+      <div>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>My Investments</div>
+        <div style={{fontSize:11,color:C.textMid}}>PAC: <span style={{color:C.purple,fontWeight:700}}>${totPAC.toLocaleString()}/mo</span> &nbsp;|&nbsp; Lump Sum: <span style={{color:C.gold,fontWeight:700}}>${totLump.toLocaleString()}</span></div>
+      </div>
+      <button onClick={()=>setShow(!show)} style={{fontSize:11,padding:"4px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
+    </div>
+    {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
+      <input placeholder="Client name" value={form.clientName} onChange={e=>setForm({...form,clientName:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+        <input type="number" placeholder="Monthly PAC $" value={form.pac} onChange={e=>setForm({...form,pac:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input type="number" placeholder="Lump Sum $" value={form.lumpSum} onChange={e=>setForm({...form,lumpSum:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+        <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          {["Mutual Fund","IBA","Fixed Annuity","Indexed Annuity","Other"].map(t=><option key={t}>{t}</option>)}
+        </select>
+        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+      </div>
+    </div>}
+    {entries.length>0&&<div style={{maxHeight:140,overflowY:"auto",marginTop:6}}>
+      {entries.slice().reverse().map((e,i)=>{
+        const realIdx=entries.length-1-i;
+        return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:11}}>
+          <span style={{color:C.text,flex:1}}>{e.clientName}</span>
+          <span style={{color:C.textMid,fontSize:10,marginRight:6}}>{e.type}</span>
+          <div style={{textAlign:"right",marginRight:8}}>
+            {e.pac&&<div style={{color:C.purple,fontWeight:600}}>${e.pac}/mo</div>}
+            {e.lumpSum&&<div style={{color:C.gold,fontWeight:600}}>${e.lumpSum}</div>}
+          </div>
+          <button onClick={()=>onUpdate({...rep,investments:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+        </div>;
+      })}
+    </div>}
+  </Card>;
+}
+
 function InvestmentLog({data,onUpdate,userRole}) {
   if(userRole!=="admin"&&userRole!=="superadmin") return null;
   const [open,setOpen] = useState(false);
