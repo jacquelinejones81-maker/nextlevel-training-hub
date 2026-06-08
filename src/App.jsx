@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -730,7 +729,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
     {!readOnly&&rep.track==="licensed"&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>}
-    {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name}/>}
+    {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name} data={data}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
@@ -926,7 +925,7 @@ function ManageTeam({data,onUpdate,onClose}) {
   const [nt,setNt]=useState({name:"",pin:"",bookingLink:""});
   const [na,setNa]=useState({name:"",pin:""});
   const trainers=data.trainers||[];
-  const admins=data.admins||[{id:"superadmin",name:"Admin (You)",pin:"1234",isSuperAdmin:true}];
+  const admins=data.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
@@ -937,11 +936,13 @@ function ManageTeam({data,onUpdate,onClose}) {
             <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
             {!a.isSuperAdmin&&<button onClick={()=>onUpdate({...data,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
           </div>
-          {!a.isSuperAdmin&&<label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
+          <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
             <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);onUpdate({...data,admins:u});}}/>
             <span style={{fontSize:11,color:C.textMid}}>Also actively recruits and trains</span>
             {a.alsoRecruits&&<span style={{fontSize:10,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
-          </label>}
+          </label>
+          {a.alsoRecruits&&<input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box",marginTop:4}}/>
+          {a.alsoRecruits&&<input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box",marginTop:4}}/>}
         </div>)}
         <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){onUpdate({...data,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
       </div>
@@ -1039,7 +1040,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
       </div>;
     })}
     {showAdd&&<AddRepModal data={data} onAdd={f=>{addRep(f);setShowAdd(false);}} onClose={()=>setShowAdd(false)} trainers={trainers}/>}
-    {showManage&&<TeamMgmt data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
+    {showManage&&<ManageTeam data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
   </div>;
 }
 
@@ -1164,7 +1165,7 @@ function LoginScreen({data,onLogin}) {
   const [rPinC,setRPinC]=useState("");
   const [step,setStep]=useState("find");
   const [err,setErr]=useState("");
-  const admins=data.admins||[{id:"superadmin",name:"Admin (You)",pin:"1234",isSuperAdmin:true}];
+  const admins=data.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   const trainers=data.trainers||[];
   const reps=data.reps||[];
   const doAdminLogin=()=>{const f=admins.find(a=>a.pin===pin);if(f){setErr("");onLogin("admin",f.id,f);}else setErr("Incorrect PIN");};
@@ -2152,9 +2153,11 @@ function compressImage(file, callback, maxSize=400, quality=0.7) {
 
 
 // ── MY LEAD LINK ──
-function MyLeadLink({name}) {
+function MyLeadLink({name,data}) {
   const [copied,setCopied] = useState(false);
-  const safeName = (name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+  // Check if this admin has a custom link name set
+  const adminRecord = (typeof data!=="undefined")&&(data.admins||[]).find(a=>a.name===name);
+  const safeName = adminRecord?.linkName||(name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
   const link = "https://moneymap-app-two.vercel.app?rep="+safeName;
 
   const copy = () => {
@@ -2738,6 +2741,7 @@ function ReassignTrainer({rep,data,onUpdate}) {
       }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
         <option value="">No trainer</option>
         {trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+        {(data.admins||[]).filter(a=>a.alsoRecruits||a.isSuperAdmin).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}
       </select>
     </div>}
   </div>;
@@ -4308,11 +4312,11 @@ function ProspectsPage({session,data,onUpdate}) {
 
 
 // ── LEAD LINK PAGE (sidebar) ──
-function LeadLinkPage({session}) {
+function LeadLinkPage({session,data}) {
   return <div>
     <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
-    <MyLeadLink name={session.name}/>
+    <MyLeadLink name={session.name} data={data}/>
     <Card>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>How to use your link</div>
       {[
@@ -5283,7 +5287,7 @@ export default function App() {
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
-    if(section==="leadlink") return <LeadLinkPage session={session}/>;
+    if(section==="leadlink") return <LeadLinkPage session={session} data={data}/>;
     if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="accountability") return <AccountabilityDashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id}/>;
     // Admin trainer tools — only if alsoRecruits is enabled
