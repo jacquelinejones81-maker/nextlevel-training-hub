@@ -2728,23 +2728,31 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 // ══════════════════════════════════════════════════
 function ReassignTrainer({rep,data,onUpdate}) {
   const [editing,setEditing] = useState(false);
+  const [selected,setSelected] = useState(rep.trainerId||"");
   const trainers = data.trainers||[];
-  const currentTrainer = trainers.find(t=>t.id===rep.trainerId);
+  const allOptions = [
+    ...trainers.map(t=>({id:t.id,label:t.name})),
+    ...(data.admins||[]).filter(a=>a.alsoRecruits||a.isSuperAdmin).map(a=>({id:a.id,label:a.name+" (Admin)"}))
+  ];
+  const current = allOptions.find(o=>o.id===rep.trainerId);
+
+  const save = () => {
+    onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,trainerId:selected}:r)});
+    setEditing(false);
+  };
 
   return <div style={{marginBottom:8}}>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div style={{fontSize:11,color:C.textMid}}>Trainer: <strong style={{color:C.text}}>{currentTrainer?.name||"Unassigned"}</strong></div>
-      <button onClick={()=>setEditing(!editing)} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Reassign"}</button>
+      <div style={{fontSize:11,color:C.textMid}}>Trainer: <strong style={{color:C.text}}>{current?.label||"Unassigned"}</strong></div>
+      <button onClick={()=>{setSelected(rep.trainerId||"");setEditing(!editing);}} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Reassign"}</button>
     </div>
-    {editing&&<div style={{marginTop:6}}>
-      <select defaultValue={rep.trainerId||""} onChange={e=>{
-        onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,trainerId:e.target.value}:r)});
-        setEditing(false);
-      }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+    {editing&&<div style={{marginTop:6,display:"flex",gap:6}}>
+      <select value={selected} onChange={e=>setSelected(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
         <option value="">No trainer</option>
         {trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
         {(data.admins||[]).filter(a=>a.alsoRecruits||a.isSuperAdmin).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}
       </select>
+      <button onClick={save} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
     </div>}
   </div>;
 }
