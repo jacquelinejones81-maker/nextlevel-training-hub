@@ -43,6 +43,18 @@ const C = {
   purple:"#8b5cf6", gold:"#f59e0b",
 };
 
+
+// ── PHONE CALL BUTTON ──
+const PhoneLink = ({phone}) => {
+  if(!phone) return null;
+  return <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
+    <span>{phone}</span>
+    <a href={"tel:"+phone.replace(/\D/g,"")} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:5,background:C.success+"22",border:"1px solid "+C.success+"44",textDecoration:"none"}} title="Call">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.22 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.2 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
+    </a>
+  </span>;
+};
+
 // ── PERSON LOOKUP HELPER ──
 const findPerson = (id, data) => {
   if(!id||!data) return null;
@@ -661,6 +673,46 @@ function CareerJourneyBanner({rep,onUpdate}) {
 
 // ── REP VIEW ──
 
+
+// ── SCHEDULE VIEW WITH ZOOM LINKS ──
+function ScheduleView({data,onUpdate,userRole}) {
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const zoomLinks = data.scheduleZoomLinks||{};
+  const [editingIdx,setEditingIdx] = useState(null);
+  const [editVal,setEditVal] = useState("");
+
+  const saveZoom = (idx) => {
+    onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[idx]:editVal.trim()}});
+    setEditingIdx(null);
+    setEditVal("");
+  };
+
+  return <div>
+    {TEAM_SCHEDULE.map((s,i)=>{
+      const zoom = zoomLinks[i]||"";
+      return <Card key={i} style={{marginBottom:8}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} — {s.title}</div>
+            <div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" · "+s.note}</div>
+            {zoom&&editingIdx!==i&&<a href={zoom} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,background:"#2D8CFF22",border:"1px solid #2D8CFF55",borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#2D8CFF"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+              <span style={{fontSize:11,fontWeight:600,color:"#2D8CFF"}}>Join Zoom</span>
+            </a>}
+          </div>
+          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);}} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>{zoom?"Edit Zoom":"+ Zoom"}</button>}
+        </div>
+        {editingIdx===i&&<div style={{marginTop:8,display:"flex",gap:6}}>
+          <input placeholder="Paste Zoom link..." value={editVal} onChange={e=>setEditVal(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
+          <button onClick={()=>saveZoom(i)} style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#2D8CFF",color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+          <button onClick={()=>{setEditingIdx(null);setEditVal("");}} style={{padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        </div>}
+        {editingIdx===i&&zoom&&<button onClick={()=>{onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[i]:""}});setEditingIdx(null);}} style={{marginTop:4,fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:0}}>Remove Zoom link</button>}
+      </Card>;
+    })}
+  </div>;
+}
+
 // ── ADVANCEMENT & PROMOTIONS LIBRARY ──
 const ADVANCEMENT_CATEGORIES = ["RVP Path","Promotions","Licensing","Income Milestones","Recognition","Other"];
 
@@ -910,7 +962,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
-    {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
+    {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
       </div>
     </div>
   </div>;
@@ -942,7 +994,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   return <div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
-      <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>{rep.phone} - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
+      <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:5}}><PhoneLink phone={rep.phone}/> - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
       <ReassignTrainer rep={rep} data={data} onUpdate={onUpdate} />
       <RecruitedByEditor rep={rep} data={data} onUpdate={onUpdate}/>
@@ -977,7 +1029,7 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
       {(rep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:C.text}}>{ci.note}</div><div style={{fontSize:10,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>)}
     </div>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
-    {tab==="schedule"&&<div>{TEAM_SCHEDULE.map((s,i)=><div key={i} style={{padding:"10px 0",borderBottom:"1px solid "+C.border}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight}}>{s.time}{s.note&&" - "+s.note}</div></div>)}</div>}
+    {tab==="schedule"&&<ScheduleView data={data} onUpdate={onUpdateData||(()=>{})} userRole={readOnly?"rep":"rep"}/>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})}/>)}</div>)}</div>}
   </div>;
 }
@@ -1332,7 +1384,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
               {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
             </div>
-            <div style={{fontSize:11,color:C.textMid,marginTop:1}}>{rep.phone}</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:1}}><PhoneLink phone={rep.phone}/></div>
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:2}}>
               <span style={{fontSize:10,color:C.textMid}}>Trainer: <strong style={{color:trainer?C.teal:C.textLight}}>{trainer?.name||"Not assigned"}</strong></span>
               <span style={{fontSize:10,color:C.textMid}}>Recruited by: <strong style={{color:(()=>{const r=findPerson(rep.recruitedBy,data);return r?C.purple:C.textLight;})()}}>{findPerson(rep.recruitedBy,data)?.name||"Not specified"}</strong></span>
@@ -4473,7 +4525,7 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
         const pct=cl.length>0?Math.round((done/cl.length)*100):0;
         return <div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:7,background:"white"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}</div></div>
+            <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}><PhoneLink phone={r.phone}/></div></div>
             <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
           </div>
           <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Their progress {pct}%</div>
@@ -5654,7 +5706,7 @@ export default function App() {
       }
       upd(newData);
     }}/></div>;
-    if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
+    if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div><ScheduleView data={data} onUpdate={upd} userRole={session.role}/></div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="advancement") return <AdvancementLibrary data={data} onUpdate={upd} userRole={session.role}/>;
