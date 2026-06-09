@@ -3081,8 +3081,11 @@ function MonthEndReport({data}) {
   const totalPremium = reps.reduce((s,r)=>s+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)
     +[...(data.trainers||[]),...(data.admins||[])].reduce((s,t)=>{const a=(data.myProduction||{})[t.id]?.lifeApps||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
     const allInvestors = [...reps,...trainers,...(data.admins||[])];
-    const teamPAC = allInvestors.reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.pac)||0),0),0);
-    const teamLump = allInvestors.reduce((s,p)=>s+(p.investments||[]).reduce((ss,i)=>ss+(Number(i.lumpSum)||0),0),0);
+    const repInv = reps.reduce((a,r)=>[...a,...(r.investments||[])],[]);
+    const staffInv = [...trainers,...(data.admins||[])].reduce((a,p)=>[...a,...((data.myProduction||{})[p.id]?.investments||[])],[]);
+    const allInv = [...repInv,...staffInv];
+    const teamPAC = allInv.reduce((s,i)=>s+(Number(i.pac)||0),0);
+    const teamLump = allInv.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
   const totalRecruits = withRecruits.reduce((s,r)=>s+r.count,0);
   const teamTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,logsSubmitted:0};
   allPeople.forEach(p=>{const repLog=activityLogs[p.id]||{};Object.entries(repLog).forEach(([date,log])=>{if(typeof log==="object"&&log.submittedAt&&date>=monthStart){teamTotals.logsSubmitted++;teamTotals.talked+=(Number(log.talked)||0);teamTotals.followup+=(Number(log.followup)||0);teamTotals.apptSet+=(Number(log.apptSet)||0);teamTotals.apptRan+=(Number(log.apptRan)||0);teamTotals.recruited+=(Number(log.recruited)||0);}});});
