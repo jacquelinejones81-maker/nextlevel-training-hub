@@ -1294,7 +1294,13 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
     {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
 
-    {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>onUpdate({...data,myProduction:{...(data.myProduction||{}),[userId]:p}})}/>}
+    {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>{
+      const newData={...data,myProduction:{...(data.myProduction||{}),[userId]:p}};
+      if(p.investments){
+        newData.trainers=(data.trainers||[]).map(t=>t.id===userId?{...t,investments:p.investments}:t);
+      }
+      onUpdate(newData);
+    }}/>}
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
       <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
@@ -5639,7 +5645,15 @@ export default function App() {
     if(selRep&&(section==="reps"||section==="dashboard")) return <RepProfile rep={selRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...data,reps:data.reps.filter(r=>r.id!==id)});setSelRepId(null);}}/>;
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
-    if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>upd({...data,myProduction:{...(data.myProduction||{}),[session.id]:p}})}/></div>;
+    if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
+      const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
+      // Also sync investments directly to admin record so team totals pick them up
+      const isAdminRole=session.role==="admin"||session.role==="superadmin";
+      if(isAdminRole&&p.investments){
+        newData.admins=(data.admins||[]).map(a=>a.id===session.id?{...a,investments:p.investments}:a);
+      }
+      upd(newData);
+    }}/></div>;
     if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
