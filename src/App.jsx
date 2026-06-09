@@ -682,7 +682,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {k:"recruits",l:"Recruits ("+myRecruits.length+")"},
     {k:"refs",l:"Refs"},
     {k:"scripts",l:"Scripts"},
-    {k:"resources",l:"Resources"},
+    {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
     {k:"fame",l:"Wall of Fame"},
     {k:"schedule",l:"Schedule"},
   ];
@@ -755,6 +755,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
+    {tab==="advancement"&&<AdvancementLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
@@ -3216,24 +3217,26 @@ function MonthEndReport({data}) {
             }).join("")}
           </div>
         </div>`}]:[]),
-      // Slide 6b - Income Milestones (one slide PER MILESTONE LEVEL, all recipients together)
+      // Slide 6b - Income Milestones (one slide PER MILESTONE LEVEL, bigger photos)
       ...Object.entries(f.milestones).filter(([,v])=>v).map(([milestone,namesStr])=>{
         const names=namesStr.split(",").map(n=>n.trim()).filter(Boolean);
+        const photoSize=names.length===1?"200px":"140px";
+        const fontSize=names.length===1?"30px":"22px";
         return {bg:"linear-gradient(135deg,#052e16,#064e3b)",content:`
           <div style="display:flex;flex-direction:column;height:100%;text-align:center;padding:32px">
             <div style="font-size:13px;color:#34d399;font-weight:700;text-transform:uppercase;letter-spacing:3px;margin-bottom:8px">🏆 Income Milestone</div>
             <div style="font-size:44px;font-weight:900;color:#fbbf24;margin-bottom:6px">${milestone}</div>
             <div style="width:60px;height:4px;background:#fbbf24;border-radius:2px;margin:0 auto 24px"></div>
-            <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:center;flex:1">
+            <div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:center;flex:1">
               ${names.map(n=>{
                 const photo=getPersonPhoto(n);
                 return `<div style="text-align:center">
-                  ${photo?`<img src="${photo}" style="width:${names.length===1?"200px":"130px"};height:${names.length===1?"200px":"130px"};border-radius:50%;object-fit:cover;border:5px solid #fbbf24;margin-bottom:12px;box-shadow:0 0 40px rgba(251,191,36,0.5)">`:`<div style="width:${names.length===1?"200px":"130px"};height:${names.length===1?"200px":"130px"};border-radius:50%;background:linear-gradient(135deg,#d97706,#b45309);display:flex;align-items:center;justify-content:center;font-size:${names.length===1?"80px":"52px"};font-weight:900;color:white;margin-bottom:12px">${n.charAt(0)}</div>`}
-                  <div style="font-size:${names.length===1?"28px":"20px"};font-weight:800;color:white">${n}</div>
+                  ${photo?`<img src="${photo}" style="width:${photoSize};height:${photoSize};border-radius:50%;object-fit:cover;border:5px solid #fbbf24;margin-bottom:14px;box-shadow:0 0 40px rgba(251,191,36,0.5)">`:`<div style="width:${photoSize};height:${photoSize};border-radius:50%;background:linear-gradient(135deg,#d97706,#b45309);display:flex;align-items:center;justify-content:center;font-size:80px;font-weight:900;color:white;margin-bottom:14px">${n.charAt(0)}</div>`}
+                  <div style="font-size:${fontSize};font-weight:800;color:white">${n}</div>
                 </div>`;
               }).join("")}
             </div>
-            <div style="font-size:16px;color:rgba(255,255,255,0.5);margin-top:16px">Congratulations on this incredible achievement!</div>
+            <div style="font-size:15px;color:rgba(255,255,255,0.5);margin-top:16px">Congratulations on this incredible achievement!</div>
           </div>`};
       }),
       // Slide 7 - Top Performers
@@ -5342,6 +5345,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
     {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
+    {k:"advancement",l:"Advancement",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
     {k:"schedule",l:"Schedule",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7Z"},
@@ -5484,6 +5488,7 @@ export default function App() {
     if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div>{TEAM_SCHEDULE.map((s,i)=><Card key={i} style={{marginBottom:8}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} - {s.title}</div><div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" - "+s.note}</div></Card>)}</div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="advancement") return <AdvancementLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
