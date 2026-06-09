@@ -1106,6 +1106,61 @@ function MyProd({myProd,onUpdate}) {
   </Card>;
 }
 
+// ── INVESTMENT BREAKDOWN ──
+function InvestmentBreakdown({data,reps,allStaff,totPAC,totLump}) {
+  const [open,setOpen] = useState(false);
+
+  // Build per-person breakdown
+  const breakdown = [];
+  reps.forEach(r=>{
+    const inv = r.investments||[];
+    const pac = inv.reduce((s,i)=>s+(Number(i.pac)||0),0);
+    const lump = inv.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+    if(pac>0||lump>0) breakdown.push({name:r.name,role:"Rep",pac,lump,entries:inv});
+  });
+  allStaff.forEach(t=>{
+    const inv = (data.myProduction||{})[t.id]?.investments||[];
+    const inv2 = t.investments||[];
+    const allInv = [...inv,...inv2.filter(i=>!inv.find(j=>j.id===i.id))];
+    const pac = allInv.reduce((s,i)=>s+(Number(i.pac)||0),0);
+    const lump = allInv.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+    if(pac>0||lump>0) breakdown.push({name:t.name,role:t.isSuperAdmin?"Super Admin":"Admin/Trainer",pac,lump,entries:allInv});
+  });
+
+  return <div style={{marginTop:4,marginBottom:10}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
+      <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Monthly PAC</div>
+        <div style={{fontSize:16,fontWeight:700,color:C.teal}}>${totPAC.toLocaleString()}</div>
+      </div>
+      <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
+        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Lump Sum</div>
+        <div style={{fontSize:16,fontWeight:700,color:C.purple}}>${totLump.toLocaleString()}</div>
+      </div>
+    </div>
+    {breakdown.length>0&&<button onClick={()=>setOpen(!open)} style={{fontSize:10,color:C.teal,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>
+      {open?"Hide":"Show"} breakdown ({breakdown.length} contributor{breakdown.length!==1?"s":""})
+    </button>}
+    {open&&<div style={{marginTop:6,background:C.surface,borderRadius:8,padding:"8px 10px"}}>
+      {breakdown.map((b,i)=><div key={i} style={{marginBottom:8}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+          <div>
+            <span style={{fontSize:12,fontWeight:600,color:C.text}}>{b.name}</span>
+            <span style={{fontSize:10,color:C.textLight,marginLeft:6}}>{b.role}</span>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            {b.pac>0&&<span style={{fontSize:11,color:C.teal,fontWeight:600}}>${b.pac}/mo PAC</span>}
+            {b.lump>0&&<span style={{fontSize:11,color:C.purple,fontWeight:600}}>${b.lump.toLocaleString()} Lump</span>}
+          </div>
+        </div>
+        {b.entries.map((e,ei)=><div key={ei} style={{fontSize:10,color:C.textMid,paddingLeft:10,borderLeft:"2px solid "+C.border,marginBottom:2}}>
+          {e.clientName} — {e.type}{e.pac?` · $${e.pac}/mo`:""}{e.lumpSum?` · $${Number(e.lumpSum).toLocaleString()} lump`:""}
+        </div>)}
+      </div>)}
+    </div>}
+  </div>;
+}
+
 // ── PRODUCTION DASHBOARD ──
 function ProdDash({data,onUpdateData}) {
   const reps=data.reps||[];
@@ -1132,16 +1187,7 @@ function ProdDash({data,onUpdateData}) {
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
     </div>}
     {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:C.textMid}}>{g.l}</span><span style={{fontSize:12,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:10,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
-    {(totPAC>0||totLump>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:4,marginBottom:10}}>
-      <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Monthly PAC</div>
-        <div style={{fontSize:16,fontWeight:700,color:C.teal}}>${totPAC.toLocaleString()}</div>
-      </div>
-      <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Lump Sum</div>
-        <div style={{fontSize:16,fontWeight:700,color:C.purple}}>${totLump.toLocaleString()}</div>
-      </div>
-    </div>}
+    {(totPAC>0||totLump>0)&&<InvestmentBreakdown data={data} reps={reps} allStaff={allStaff} totPAC={totPAC} totLump={totLump}/>}
     <CollapsibleRepList reps={reps} data={data} onUpdateData={onUpdateData}/>
   </Card>;
 }
