@@ -699,7 +699,79 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       }
     }
   };
-  return <div>
+  const [mobileOpen,setMobileOpen]=useState(false);
+  const tabIcons={
+    checklist:"M9 11L12 14L22 4M21 12V19C21 19.5 20.8 20 20.4 20.4C20 20.8 19.5 21 19 21H5C4.5 21 4 20.8 3.6 20.4C3.2 20 3 19.5 3 19V5C3 4.5 3.2 4 3.6 3.6C4 3.2 4.5 3 5 3H16",
+    milestones:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z",
+    career:"M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999",
+    pipeline:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15",
+    prospects:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11Z",
+    appointments:"M19 4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM16 2V6M8 2V6M3 10H21",
+    scorecard:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19Z",
+    recruits:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M23 21V19C23 17.9 22.1 17 21 17H19M16 3.13C17.7 3.35 19 4.8 19 6.5C19 8.2 17.7 9.65 16 9.87M13 7C13 9.2 11.2 11 9 11C6.8 11 5 9.2 5 7C5 4.8 6.8 3 9 3C11.2 3 13 4.8 13 7Z",
+    refs:"M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z",
+    scripts:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5",
+    resources:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12",
+    advancement:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z",
+    fame:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z",
+    schedule:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
+  };
+
+  const RepSidebar = ({onClose}) => <div style={{width:220,background:`linear-gradient(180deg,${C.navy} 0%,${C.navyMid} 100%)`,height:"100%",display:"flex",flexDirection:"column",flexShrink:0}}>
+    {/* Header */}
+    <div style={{padding:"16px 14px 12px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:9,background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:C.teal}}>{rep.name?.charAt(0)}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rep.name}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>{track?.label}</div>
+        </div>
+        {onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:18,padding:0}}>×</button>}
+      </div>
+      <div style={{marginTop:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>Progress</span>
+          <span style={{fontSize:10,fontWeight:700,color:C.teal}}>{pct}%</span>
+        </div>
+        <div style={{height:4,background:"rgba(255,255,255,0.1)",borderRadius:2}}>
+          <div style={{height:4,background:C.teal,borderRadius:2,width:pct+"%",transition:"width 0.3s"}}/>
+        </div>
+      </div>
+    </div>
+    {/* Nav items */}
+    <div style={{flex:1,overflowY:"auto",padding:"8px 8px"}}>
+      {tabs.map(t=><button key={t.k} onClick={()=>{setTab(t.k);if(onClose)onClose();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"9px 10px",background:tab===t.k?"rgba(14,165,160,0.18)":"transparent",border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,textAlign:"left"}}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={tab===t.k?C.teal:"rgba(255,255,255,0.4)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d={tabIcons[t.k]||tabIcons.resources}/>
+        </svg>
+        <span style={{fontSize:12,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400}}>{t.l}</span>
+      </button>)}
+    </div>
+    {/* Footer */}
+    <div style={{padding:"10px 12px",borderTop:"1px solid rgba(255,255,255,0.08)",fontSize:10,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>NextLevel Field Training Hub</div>
+  </div>;
+
+  return <div style={{display:"flex",height:"100vh",background:C.surface,overflow:"hidden"}}>
+    {/* Desktop sidebar */}
+    {typeof window!=="undefined"&&window.innerWidth>=768&&<RepSidebar/>}
+    {/* Mobile sidebar overlay */}
+    {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
+      <RepSidebar onClose={()=>setMobileOpen(false)}/>
+      <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
+    </div>}
+    {/* Main content */}
+    <div style={{flex:1,overflowY:"auto",padding:"0 0 40px 0"}}>
+      {/* Mobile header */}
+      {typeof window!=="undefined"&&window.innerWidth<768&&<div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:100}}>
+        <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:3}}>
+          <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
+          <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
+          <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
+        </button>
+        <span style={{fontSize:13,fontWeight:600,color:"white"}}>{tabs.find(t=>t.k===tab)?.l||"Checklist"}</span>
+        <div style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:C.teal}}>{pct}%</div>
+      </div>}
+      <div style={{padding:"14px 16px"}}>
     <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`,borderRadius:12,padding:"14px 18px",marginBottom:14,color:"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:2}}>{track?.label} - {track?.days}</div></div>
@@ -742,9 +814,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
-    <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
-      {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.teal:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
-    </div>
+
     {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
     {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
