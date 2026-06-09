@@ -5608,11 +5608,11 @@ export default function App() {
   if(session.role==="rep"){
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
-    return <div style={{minHeight:"100vh",background:C.surface}}>
+    return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
-      <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <div style={{color:"white",fontWeight:700,fontSize:13}}>NextLevel Field Training Hub</div>
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Tour</button>
@@ -5621,7 +5621,7 @@ export default function App() {
           <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
         </div>
       </div>
-      <div style={{maxWidth:580,margin:"0 auto",padding:14}}>
+      <div style={{flex:1,overflow:"hidden",display:"flex"}}>
         <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
         <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
         <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/>
