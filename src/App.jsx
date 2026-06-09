@@ -680,34 +680,44 @@ function ScheduleView({data,onUpdate,userRole}) {
   const zoomLinks = data.scheduleZoomLinks||{};
   const [editingIdx,setEditingIdx] = useState(null);
   const [editVal,setEditVal] = useState("");
+  const [editPass,setEditPass] = useState("");
 
   const saveZoom = (idx) => {
-    onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[idx]:editVal.trim()}});
+    onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[idx]:{url:editVal.trim(),password:editPass.trim()}}});
     setEditingIdx(null);
     setEditVal("");
+    setEditPass("");
   };
 
   return <div>
     {TEAM_SCHEDULE.map((s,i)=>{
-      const zoom = zoomLinks[i]||"";
+      const entry = zoomLinks[i]||{};
+      const zoom = typeof entry==="string"?entry:entry.url||"";
+      const zoomPass = typeof entry==="string"?"":entry.password||"";
       return <Card key={i} style={{marginBottom:8}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
           <div style={{flex:1}}>
             <div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} — {s.title}</div>
             <div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" · "+s.note}</div>
-            {zoom&&editingIdx!==i&&<a href={zoom} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,background:"#2D8CFF22",border:"1px solid #2D8CFF55",borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#2D8CFF"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
-              <span style={{fontSize:11,fontWeight:600,color:"#2D8CFF"}}>Join Zoom</span>
-            </a>}
+            {zoom&&editingIdx!==i&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <a href={zoom} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,background:"#2D8CFF22",border:"1px solid #2D8CFF55",borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#2D8CFF"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+                <span style={{fontSize:11,fontWeight:600,color:"#2D8CFF"}}>Join Zoom</span>
+              </a>
+              {zoomPass&&<span style={{fontSize:11,color:C.textMid}}>Password: <strong style={{color:C.text,userSelect:"all"}}>{zoomPass}</strong></span>}
+            </div>}
           </div>
-          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);}} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>{zoom?"Edit Zoom":"+ Zoom"}</button>}
+          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);setEditPass(zoomPass);}} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>{zoom?"Edit Zoom":"+ Zoom"}</button>}
         </div>
-        {editingIdx===i&&<div style={{marginTop:8,display:"flex",gap:6}}>
-          <input placeholder="Paste Zoom link..." value={editVal} onChange={e=>setEditVal(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
-          <button onClick={()=>saveZoom(i)} style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#2D8CFF",color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
-          <button onClick={()=>{setEditingIdx(null);setEditVal("");}} style={{padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        {editingIdx===i&&<div style={{marginTop:8}}>
+          <input placeholder="Paste Zoom link..." value={editVal} onChange={e=>setEditVal(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text,marginBottom:5,boxSizing:"border-box"}}/>
+          <input placeholder="Meeting password (optional)" value={editPass} onChange={e=>setEditPass(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>saveZoom(i)} style={{flex:2,padding:"5px 10px",borderRadius:6,border:"none",background:"#2D8CFF",color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+            <button onClick={()=>{setEditingIdx(null);setEditVal("");setEditPass("");}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+            {zoom&&<button onClick={()=>{onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[i]:{}}});setEditingIdx(null);}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",fontSize:11,color:C.danger}}>Remove</button>}
+          </div>
         </div>}
-        {editingIdx===i&&zoom&&<button onClick={()=>{onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[i]:""}});setEditingIdx(null);}} style={{marginTop:4,fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:0}}>Remove Zoom link</button>}
       </Card>;
     })}
   </div>;
