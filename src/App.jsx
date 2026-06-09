@@ -95,7 +95,7 @@ const TRAINER_CHECKLIST = [
   {id:"t5",cat:"Apps & Access",task:"Give recruit access to new student folder",link:"https://drive.google.com/drive/folders/1IrsYPZyMlaClTLftKSkK6pCxAzVavTPl",linkLabel:"Student Folder"},
   {id:"t6",cat:"References",task:"Get 5 character references (names and phone numbers - MACHO people)",note:"Character references can be found in the Refs tab"},
   {id:"t7",cat:"Onboarding Videos",task:"Send welcome video link",link:"https://us06web.zoom.us/clips/share/HkOwxveSSd6QaYTXZ0gUgg",linkLabel:"Welcome Video"},
-  {id:"t8",cat:"Onboarding Videos",task:"Send orientation video to watch",note:"Video can be found in the Resources tab"},
+  {id:"t8",cat:"Onboarding Videos",task:"Send orientation video to watch",note:"Find the orientation video in the Resources tab → Onboarding Videos"},
   {id:"t9",cat:"References",task:"Complete character reference calls and book 5 training appointments",link:"https://docs.google.com/document/d/1ju_kh_QbSc5whqLpm8r9190Jr7raYfcGoi2jdDxP49U/edit?usp=sharing",linkLabel:"Call Script"},
   {id:"t10",cat:"Appointments",task:"Share training appointment link with rep",link:"https://calendly.com/jacquelinejones81/trainingappointment",linkLabel:"Schedule Appointment",note:"Add yourself as guest"},
   {id:"t11",cat:"Events",task:"Choose Digital Grand Opening (DGO) date",note:"DGO date can be scheduled in the Milestones tab"},
