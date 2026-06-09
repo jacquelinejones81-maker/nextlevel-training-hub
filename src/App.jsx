@@ -660,6 +660,83 @@ function CareerJourneyBanner({rep,onUpdate}) {
 }
 
 // ── REP VIEW ──
+
+// ── ADVANCEMENT & PROMOTIONS LIBRARY ──
+const ADVANCEMENT_CATEGORIES = ["RVP Path","Promotions","Licensing","Income Milestones","Recognition","Other"];
+
+function AdvancementLibrary({data,onUpdate,userRole}) {
+  const resources=data.advancementResources||[];
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({title:"",url:"",description:"",category:"Promotions"});
+  const [editing,setEditing]=useState(null);
+  const [filter,setFilter]=useState("All");
+
+  const save=()=>{
+    if(!form.title||!form.url) return;
+    if(editing!==null){
+      onUpdate({...data,advancementResources:resources.map((r,i)=>i===editing?{...form}:r)});
+      setEditing(null);
+    } else {
+      onUpdate({...data,advancementResources:[...resources,{...form,id:Date.now()}]});
+    }
+    setForm({title:"",url:"",description:"",category:"Promotions"});
+    setShowForm(false);
+  };
+
+  const del=(i)=>onUpdate({...data,advancementResources:resources.filter((_,idx)=>idx!==i)});
+  const cats=["All",...ADVANCEMENT_CATEGORIES.filter(c=>resources.some(r=>r.category===c))];
+  const filtered=filter==="All"?resources:resources.filter(r=>r.category===filter);
+  const catColors={"RVP Path":C.gold,"Promotions":C.purple,"Licensing":C.teal,"Income Milestones":C.success,"Recognition":C.warning,"Other":C.textMid};
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div>
+        <div style={{fontSize:17,fontWeight:700,color:C.text}}>Advancement & Promotions</div>
+        <div style={{fontSize:12,color:C.textMid,marginTop:2}}>Promotion guidelines, income milestones, and advancement resources</div>
+      </div>
+      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Promotions"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Link</button>}
+    </div>
+    {showForm&&<Card style={{marginBottom:14,border:`1px solid ${C.purple}44`}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Advancement Link</div>
+      <input placeholder="Title (e.g. RVP Promotion Requirements)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:10}}>
+        {ADVANCEMENT_CATEGORIES.map(c=><option key={c}>{c}</option>)}
+      </select>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Link</button>
+      </div>
+    </Card>}
+    {resources.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>{isAdmin?"No advancement resources yet — add your first link above":"No advancement resources added yet — check back soon!"}</div>}
+    {resources.length>0&&<div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.purple:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+    </div>}
+    {ADVANCEMENT_CATEGORIES.filter(cat=>filtered.some(r=>r.category===cat)).map(cat=><div key={cat}>
+      <SecHead title={cat}/>
+      {filtered.filter(r=>r.category===cat).map((r,i)=>{
+        const realIdx=resources.indexOf(r);
+        return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:6,background:"white",display:"flex",gap:10,alignItems:"flex-start"}}>
+          <div style={{width:32,height:32,borderRadius:8,background:(catColors[r.category]||C.purple)+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={catColors[r.category]||C.purple} strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:2}}>{r.title}</div>
+            {r.description&&<div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{r.description}</div>}
+            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.purple,textDecoration:"none",fontWeight:600}}>Open Link →</a>
+          </div>
+          {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+            <button onClick={()=>{setForm(r);setEditing(realIdx);setShowForm(true);}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+            <button onClick={()=>del(realIdx)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+          </div>}
+        </div>;
+      })}
+    </div>)}
+  </div>;
+}
+
 function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
@@ -700,6 +777,9 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     }
   };
   const [mobileOpen,setMobileOpen]=useState(false);
+  const [repWinWidth,setRepWinWidth]=useState(typeof window!=="undefined"?window.innerWidth:768);
+  useEffect(()=>{const h=()=>setRepWinWidth(window.innerWidth);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
+  const isDesktop=repWinWidth>=768;
   const tabIcons={
     checklist:"M9 11L12 14L22 4M21 12V19C21 19.5 20.8 20 20.4 20.4C20 20.8 19.5 21 19 21H5C4.5 21 4 20.8 3.6 20.4C3.2 20 3 19.5 3 19V5C3 4.5 3.2 4 3.6 3.6C4 3.2 4.5 3 5 3H16",
     milestones:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z",
@@ -753,16 +833,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
 
   return <div style={{display:"flex",height:"100vh",background:C.surface,overflow:"hidden"}}>
     {/* Desktop sidebar */}
-    {typeof window!=="undefined"&&window.innerWidth>=768&&<RepSidebar/>}
+    {isDesktop&&<RepSidebar/>}
     {/* Mobile sidebar overlay */}
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
       <RepSidebar onClose={()=>setMobileOpen(false)}/>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     {/* Main content */}
-    <div style={{flex:1,overflowY:"auto",padding:"0 0 40px 0"}}>
+    <div style={{flex:1,overflowY:"auto",minWidth:0,padding:"0 0 40px 0"}}>
       {/* Mobile header */}
-      {typeof window!=="undefined"&&window.innerWidth<768&&<div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:100}}>
+      {!isDesktop&&<div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:100}}>
         <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:3}}>
           <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
           <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
