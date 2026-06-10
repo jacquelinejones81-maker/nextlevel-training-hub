@@ -113,7 +113,7 @@ const FAST_START = [
   {id:"f6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
   {id:"f7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
   {id:"f8",cat:"Events",task:"Attend DGO and debrief afterward"},
-  {id:"f9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)"},
+  {id:"f9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)",note:"Set your class type and access ExamFX study materials in the Milestones tab"},
   {id:"f10",cat:"Licensing",task:"Schedule exam within 5 days of completing class"},
   {id:"f11",cat:"Licensing",task:"Access exam simulator"},
   {id:"f12",cat:"Licensing",task:"Pass exam - upload pass notice and required docs in Primerica app"},
@@ -129,7 +129,7 @@ const REGULAR_START = [
   {id:"r6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
   {id:"r7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
   {id:"r8",cat:"Events",task:"Attend DGO and debrief afterward"},
-  {id:"r9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)"},
+  {id:"r9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)",note:"Set your class type and access ExamFX study materials in the Milestones tab"},
   {id:"r10",cat:"Licensing",task:"Schedule exam within 5 days of completing class"},
   {id:"r11",cat:"Licensing",task:"Access exam simulator"},
   {id:"r12",cat:"Licensing",task:"Pass exam - upload pass notice and required docs in Primerica app"},
@@ -339,10 +339,24 @@ function DailyEventsBanner({data,onUpdateData,userRole}) {
     {todayEvents.map((evt,i)=>{
       const key=`${todayKey}_${i}`;
       const cancelled=cancelledEvents[key];
-      return <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<todayEvents.length-1?6:0}}>
-        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div><div style={{fontSize:11,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div></div>
-        {cancelled&&<Badge color={C.danger} small>Cancelled</Badge>}
-        {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&<button onClick={()=>{const ce={...cancelledEvents,[key]:!cancelled};onUpdateData({...data,cancelledEvents:ce});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:cancelled?"rgba(16,185,129,0.2)":"rgba(239,68,68,0.2)",border:`1px solid ${cancelled?"rgba(16,185,129,0.4)":"rgba(239,68,68,0.4)"}`,color:cancelled?"#6ee7b7":"#fca5a5",cursor:"pointer"}}>{cancelled?"Restore":"Cancel"}</button>}
+      const zoomLinks=data.scheduleZoomLinks||{};
+      const schedIdx=TEAM_SCHEDULE.findIndex(s=>s.title===evt.title&&s.dayIndex===today);
+      const zEntry=zoomLinks[schedIdx]||{};
+      const zUrl=typeof zEntry==="string"?zEntry:zEntry.url||"";
+      const zPass=typeof zEntry==="string"?"":zEntry.password||"";
+      return <div key={i} style={{marginBottom:i<todayEvents.length-1?8:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div><div style={{fontSize:11,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div></div>
+          {cancelled&&<Badge color={C.danger} small>Cancelled</Badge>}
+          {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&<button onClick={()=>{const ce={...cancelledEvents,[key]:!cancelled};onUpdateData({...data,cancelledEvents:ce});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:cancelled?"rgba(16,185,129,0.2)":"rgba(239,68,68,0.2)",border:`1px solid ${cancelled?"rgba(16,185,129,0.4)":"rgba(239,68,68,0.4)"}`,color:cancelled?"#6ee7b7":"#fca5a5",cursor:"pointer"}}>{cancelled?"Restore":"Cancel"}</button>}
+        </div>
+        {zUrl&&!cancelled&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <a href={zUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(45,140,255,0.25)",border:"1px solid rgba(45,140,255,0.5)",borderRadius:6,padding:"5px 12px",textDecoration:"none"}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#60a5fa"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <span style={{fontSize:12,fontWeight:600,color:"#60a5fa"}}>Join Zoom</span>
+          </a>
+          {zPass&&<span style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>Password: <strong style={{color:"white",userSelect:"all"}}>{zPass}</strong></span>}
+        </div>}
       </div>;
     })}
   </div>;
@@ -356,8 +370,8 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
   const done=slots.filter(a=>a.status==="Completed").length;
   const qualified=slots.filter(a=>a.name&&Object.values(a.macho||{}).filter(Boolean).length>=3).length;
   const fmt=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
-  const upd=(i,field,val)=>{const arr=[...slots];arr[i]={...arr[i],[field]:field==="phone"?fmt(val):val};onChange(arr.filter(a=>a.name||a.phone||a.date));};
-  const updM=(i,macho)=>{const arr=[...slots];arr[i]={...arr[i],macho};onChange(arr.filter(a=>a.name||a.phone||a.date));};
+  const upd=(i,field,val)=>{const arr=[...slots];arr[i]={...arr[i],[field]:field==="phone"?fmt(val):val};onChange(arr.filter(a=>a.name||a.phone||a.email||a.date||a.notes));};
+  const updM=(i,macho)=>{const arr=[...slots];arr[i]={...arr[i],macho};onChange(arr.filter(a=>a.name||a.phone||a.email||a.date||a.notes));};
   return <div>
     {showPurpose&&<div style={{background:C.navyMid,borderRadius:12,padding:"16px 18px",marginBottom:14,position:"relative",border:`1px solid ${C.gold}44`}}>
       <button onClick={()=>setShowPurpose(false)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16}}>x</button>
@@ -432,10 +446,10 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       </div>}
       {readOnly&&rep.preLicType&&<div style={{marginBottom:10}}><Badge color={C.purple} small>{rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online Course"}</Badge></div>}
 
-      {/* Online course details */}
-      {rep.preLicType==="online"&&<div>
+      {/* Online course details - show for ALL types */}
+      {rep.preLicType&&<div>
         <div style={{background:C.purple+"11",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.purple,marginBottom:4}}>Access your online course here:</div>
+          <div style={{fontSize:11,fontWeight:700,color:C.purple,marginBottom:4}}>Get your study materials here:</div>
           <a href="https://www-ucanpass.examfx.com" target="_blank" rel="noreferrer"
             style={{fontSize:13,fontWeight:700,color:C.teal,textDecoration:"none",display:"block",marginBottom:3}}>www-ucanpass.examfx.com &rarr;</a>
           <div style={{fontSize:11,color:C.textMid}}>Log in or create your account to begin your online licensing course.</div>
