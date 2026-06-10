@@ -1190,7 +1190,6 @@ function ProdDash({data,onUpdateData}) {
   const allInvLogs = [
     ...reps.reduce((a,r)=>([...a,...(r.investments||[])]),[]),
     ...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[]),
-    ...(data.admins||[]).reduce((a,adm)=>([...a,...(adm.investments||[])]),[]),
   ];
   const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const totLump = allInvLogs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
