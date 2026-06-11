@@ -1399,7 +1399,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       </div>;
     })()}
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
-      {stats.map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div></Card>)}
+      {stats.map(s=><Card key={s.l} style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:s.c}}>{s.v}</div><div style={{fontSize:11,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px",marginTop:2}}>{s.l}</div></Card>)}
     </div>
     <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
     {(userRole==="admin"||userRole==="superadmin")&&<MonthEndReport data={data}/>}
@@ -5820,7 +5820,7 @@ export default function App() {
         <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal}}>{session.name?.charAt(0)?.toUpperCase()}</div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:14}}>
-        <div style={{maxWidth:820,margin:"0 auto"}}>
+        <div style={{maxWidth:1400,margin:"0 auto",padding:"0 4px"}}>
           <AnnouncementsBanner data={data} onUpdate={upd} userRole={session.role}/>
           <DailyEventsBanner data={data} onUpdateData={upd} userRole={session.role}/>
           {renderContent()}
