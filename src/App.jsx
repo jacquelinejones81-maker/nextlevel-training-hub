@@ -5601,13 +5601,13 @@ function ScriptsPage({data,onUpdate,userRole}) {
       ):(
         <div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
+            <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
             {isAdmin&&<div style={{display:"flex",gap:5,marginLeft:8}}>
               <button onClick={()=>{setEditing(i);setDraft({title:s.title,content:s.content});}} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
               <button onClick={()=>deleteScript(i)} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
             </div>}
           </div>
-          <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div>
+          <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:dv(12,15),color:C.textMid,lineHeight:1.7}}>"{s.content}"</div>
         </div>
       )}
     </Card>)}
