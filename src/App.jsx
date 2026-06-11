@@ -55,6 +55,9 @@ const PhoneLink = ({phone}) => {
   </span>;
 };
 
+// ── DESKTOP RESPONSIVE HELPER ──
+const dv = (mobile, desktop) => typeof window!=="undefined"&&window.innerWidth>=900 ? desktop : mobile;
+
 // ── PERSON LOOKUP HELPER ──
 const findPerson = (id, data) => {
   if(!id||!data) return null;
@@ -768,7 +771,7 @@ function AdvancementLibrary({data,onUpdate,userRole}) {
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div>
-        <div style={{fontSize:17,fontWeight:700,color:C.text}}>Advancement & Promotions</div>
+        <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Advancement & Promotions</div>
         <div style={{fontSize:12,color:C.textMid,marginTop:2}}>Promotion guidelines, income milestones, and advancement resources</div>
       </div>
       {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Promotions"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Link</button>}
@@ -1307,7 +1310,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={{fontSize:17,fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:12,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:12,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
         {inactiveR.length>0&&<button onClick={()=>setShowInactive(!showInactive)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+(showInactive?C.danger:C.border),background:showInactive?C.danger+"11":"white",cursor:"pointer",color:showInactive?C.danger:C.textMid,fontWeight:600}}>{showInactive?"View Active":"Inactive ("+inactiveR.length+")"}</button>}
         {isAdmin&&!showInactive&&<button onClick={()=>setShowManage(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Manage Team</button>}
@@ -1328,7 +1331,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
         <div onClick={()=>!showInactive&&onSelectRep(r.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:showInactive?"default":"pointer"}}>
           <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+            <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
             <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:1}}>
               <span style={{fontSize:10,color:C.textMid}}>Trainer: <strong style={{color:([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?C.teal:C.textLight}}>{([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"Not assigned"}</strong></span>
@@ -1399,7 +1402,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       </div>;
     })()}
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
-      {stats.map(s=><Card key={s.l} style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:s.c}}>{s.v}</div><div style={{fontSize:11,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px",marginTop:2}}>{s.l}</div></Card>)}
+      {stats.map(s=><Card key={s.l} style={{padding:dv("14px 16px","20px 24px"),textAlign:"center"}}><div style={{fontSize:dv(28,36),fontWeight:800,color:s.c}}>{s.v}</div><div style={{fontSize:dv(11,13),color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px",marginTop:2}}>{s.l}</div></Card>)}
     </div>
     <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
     {(userRole==="admin"||userRole==="superadmin")&&<MonthEndReport data={data}/>}
@@ -1453,9 +1456,9 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
               {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
             </div>
-            <div style={{fontSize:11,color:C.textMid,marginTop:1}}><PhoneLink phone={rep.phone}/></div>
+            <div style={{fontSize:dv(11,13),color:C.textMid,marginTop:1}}><PhoneLink phone={rep.phone}/></div>
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:2}}>
-              <span style={{fontSize:10,color:C.textMid}}>Trainer: <strong style={{color:trainer?C.teal:C.textLight}}>{trainer?.name||"Not assigned"}</strong></span>
+              <span style={{fontSize:dv(10,12),color:C.textMid}}>Trainer: <strong style={{color:trainer?C.teal:C.textLight}}>{trainer?.name||"Not assigned"}</strong></span>
               <span style={{fontSize:10,color:C.textMid}}>Recruited by: <strong style={{color:(()=>{const r=findPerson(rep.recruitedBy,data);return r?C.purple:C.textLight;})()}}>{findPerson(rep.recruitedBy,data)?.name||"Not specified"}</strong></span>
             </div>
           </div>
@@ -1701,7 +1704,7 @@ function ResourceLibrary({data,onUpdate,userRole}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-      <div style={{fontSize:17,fontWeight:700,color:C.text}}>Resource Library</div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Resource Library</div>
       {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Resource</button>}
     </div>
     {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>Add links to documents, training videos, and company materials for your team. <strong>Tip:</strong> Upload files to Google Drive, set sharing to "Anyone with the link", and paste the link here.</div>}
@@ -1814,7 +1817,7 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
   }):[];
 
   return <div>
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Weekly Scorecard</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Weekly Scorecard</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>Week of {new Date(weekKey+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
 
     {/* Why this matters banner */}
@@ -2137,7 +2140,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
   return <div>
     {showCelebration&&<Confetti name={session.name} onClose={()=>setShowCelebration(false)}/>}
 
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>My Career Path</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>My Career Path</div>
 
     {/* Roadmap */}
     <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14}}>
@@ -2378,7 +2381,7 @@ function MyProfilePage({session,data,onUpdate}) {
       </div>
     </div>}
 
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Profile</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Profile</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:20}}>Your profile photo is used for Wall of Fame recognition and team displays.</div>
 
     <Card style={{marginBottom:14}}>
@@ -2770,7 +2773,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   };
 
   return <div>
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place. Green means active today. Yellow means 1 day idle. Red means 3+ days with no submission.</div>
 
     {/* Summary stats */}
@@ -2802,7 +2805,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
-                <span style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
+                <span style={{fontSize:dv(13,16),fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
                 {rep.isTrainer&&<Badge color={C.purple} small>Trainer</Badge>}
                 <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
                 {rep.isAtRisk&&!rep.inactive&&<Badge color={"#f97316"} small>At Risk</Badge>}
@@ -3825,7 +3828,7 @@ function WallOfFame({data,onUpdate,userRole}) {
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div>
-        <div style={{fontSize:17,fontWeight:700,color:C.text}}>Wall of Fame</div>
+        <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Wall of Fame</div>
         <div style={{fontSize:11,color:C.textMid}}>Celebrating our team's achievements</div>
       </div>
       {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:11,padding:"6px 12px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700}}>+ Add Recognition</button>}
@@ -4089,7 +4092,7 @@ function QuickMessages({data,onUpdate,userRole}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div><div style={{fontSize:17,fontWeight:700,color:C.text}}>Quick Messages</div><div style={{fontSize:11,color:C.textMid}}>Copy and paste to send via text</div></div>
+      <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Quick Messages</div><div style={{fontSize:11,color:C.textMid}}>Copy and paste to send via text</div></div>
       {isAdmin&&<div style={{display:"flex",gap:6}}>
         <button onClick={reset} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>
         <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>
@@ -4274,7 +4277,7 @@ function InvestmentLogPage({data,onUpdate}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-      <div style={{fontSize:17,fontWeight:700,color:C.text}}>Investment Observations</div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Investment Observations</div>
       {allLogs.length>0&&<button onClick={clearAll} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontWeight:600}}>Clear All</button>}
     </div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>All investment observation entries logged by reps.</div>
@@ -4791,7 +4794,7 @@ function ProspectsPage({session,data,onUpdate}) {
     onUpdate({...data,staffProspects:{...(data.staffProspects||{}),[session.id]:updated.prospects}});
   };
   return <div>
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Prospects</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Prospects</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Your personal prospect list — separate from your reps' lists.</div>
     <ProspectsTab rep={rep} onUpdate={updateProspects}/>
   </div>;
@@ -4801,7 +4804,7 @@ function ProspectsPage({session,data,onUpdate}) {
 // ── LEAD LINK PAGE (sidebar) ──
 function LeadLinkPage({session,data}) {
   return <div>
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
     <MyLeadLink name={session.name} data={data}/>
     <Card>
@@ -4894,7 +4897,7 @@ function TeamLeads({userRole}) {
   };
 
   return <div>
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Team Leads</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Team Leads</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>All leads submitted through MoneyMap links.</div>
 
     {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.textMid}}>Loading leads...</div>}
@@ -5194,7 +5197,7 @@ function AdminPipeline({data,onUpdate}) {
 function MyPipelinePage({session,data,onUpdate}) {
   const pseudoRep = {id:session.id, name:session.name, track:"licensed"};
   return <div>
-    <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>My Pipeline</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Pipeline</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Leads from your personal MoneyMap link and their current stage.</div>
     <LeadPipeline rep={pseudoRep} data={data} onUpdate={onUpdate}/>
   </div>;
@@ -5296,7 +5299,7 @@ function MyTasksPage({session,data,onUpdate}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-      <div style={{fontSize:17,fontWeight:700,color:C.text}}>My Tasks & Goals</div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks & Goals</div>
       <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:11,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Task</button>
     </div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
@@ -5567,7 +5570,7 @@ function ScriptsPage({data,onUpdate,userRole}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-      <div style={{fontSize:17,fontWeight:700,color:C.text}}>Scripts</div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Scripts</div>
       {isAdmin&&<div style={{display:"flex",gap:7}}>
         <button onClick={resetToDefault} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset Defaults</button>
         <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Script</button>
@@ -5671,6 +5674,7 @@ export default function App() {
   const [selRepId,setSelRepId]=useState(null);
   const [mobileOpen,setMobileOpen]=useState(false);
   const [winWidth,setWinWidth]=useState(window.innerWidth);
+  const isDesktopView=winWidth>=900;
   useEffect(()=>{
     const handle=()=>{setWinWidth(window.innerWidth);if(window.innerWidth>=768)setMobileOpen(false);};
     window.addEventListener("resize",handle);
@@ -5766,7 +5770,7 @@ export default function App() {
     if(selRep&&(section==="reps"||section==="dashboard")) return <RepProfile rep={selRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...data,reps:data.reps.filter(r=>r.id!==id)});setSelRepId(null);}}/>;
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
-    if(section==="production") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
+    if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
       const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
       // Also sync investments directly to admin record so team totals pick them up
       const isAdminRole=session.role==="admin"||session.role==="superadmin";
@@ -5775,7 +5779,7 @@ export default function App() {
       }
       upd(newData);
     }}/></div>;
-    if(section==="schedule") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div><ScheduleView data={data} onUpdate={upd} userRole={session.role}/></div>;
+    if(section==="schedule") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div><ScheduleView data={data} onUpdate={upd} userRole={session.role}/></div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="advancement") return <AdvancementLibrary data={data} onUpdate={upd} userRole={session.role}/>;
@@ -5795,7 +5799,7 @@ export default function App() {
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
-    if(section==="team") return <div><div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
+    if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
 
@@ -5803,7 +5807,7 @@ export default function App() {
     {showTour&&<AppTour role={session.role} onClose={()=>setShowTour(false)}/>}
     {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
     {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
-    <div style={{display:"flex",flexShrink:0,width:winWidth>=768?240:0,overflow:"hidden"}}>
+    <div style={{display:"flex",flexShrink:0,width:winWidth>=768?(winWidth>=900?260:240):0,overflow:"hidden"}}>
       {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"}/>}
     </div>
     {/* Mobile sidebar overlay */}
