@@ -1690,14 +1690,28 @@ function LoginScreen({data,onLogin}) {
   return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 60%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{width:"100%",maxWidth:420}}>
       <div style={{textAlign:"center",marginBottom:28}}>
-        <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:60,height:60,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.3)",borderRadius:15,marginBottom:10}}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 3L2 9V19L14 25L26 19V9L14 3Z" stroke={C.teal} strokeWidth="2" fill="none"/><path d="M8 14L12 18L20 10" stroke={C.teal} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {/* Shield logo */}
+        <div style={{position:"relative",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
+          <svg width="90" height="100" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M45 4L8 18V52C8 72 45 96 45 96C45 96 82 72 82 52V18L45 4Z" fill="rgba(14,165,160,0.15)" stroke={C.teal} strokeWidth="2.5"/>
+            <path d="M45 4L8 18V52C8 72 45 96 45 96C45 96 82 72 82 52V18L45 4Z" fill="url(#shieldGrad)"/>
+            <defs><linearGradient id="shieldGrad" x1="45" y1="4" x2="45" y2="96" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor={C.teal} stopOpacity="0.25"/><stop offset="100%" stopColor={C.teal} stopOpacity="0.05"/></linearGradient></defs>
+            <path d="M30 50L40 60L62 38" stroke={C.teal} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+            <text x="45" y="85" textAnchor="middle" fill={C.teal} fontSize="9" fontWeight="700" fontFamily="Arial" letterSpacing="1">NL</text>
+          </svg>
+          {/* Glow effect */}
+          <div style={{position:"absolute",width:90,height:90,borderRadius:"50%",background:C.teal,opacity:0.08,filter:"blur(20px)",zIndex:-1}}/>
         </div>
-        <div style={{color:"white",fontSize:20,fontWeight:700}}>NextLevel Field Training Hub</div>
-        <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:3}}>Team Onboarding and Production Tracker</div>
-        <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:10}}>
-          <div style={{padding:"4px 14px",borderRadius:20,background:"rgba(245,158,11,0.2)",border:"1px solid rgba(245,158,11,0.5)",fontSize:11,fontWeight:600,color:"#f59e0b"}}>Team PrimeTime</div>
-          <div style={{padding:"4px 14px",borderRadius:20,background:"rgba(14,165,160,0.2)",border:"1px solid rgba(14,165,160,0.5)",fontSize:11,fontWeight:600,color:"#0ea5a0"}}>Triumphant Families</div>
+        {/* Welcome banner */}
+        <div style={{background:"linear-gradient(90deg,rgba(245,158,11,0.15),rgba(14,165,160,0.15),rgba(245,158,11,0.15))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:30,padding:"6px 20px",display:"inline-block",marginBottom:12}}>
+          <span style={{fontSize:12,fontWeight:700,color:"#f59e0b",letterSpacing:"2px",textTransform:"uppercase"}}>✦ Welcome to the Team ✦</span>
+        </div>
+        <div style={{color:"white",fontSize:22,fontWeight:800,letterSpacing:"0.5px",lineHeight:1.2}}>NextLevel</div>
+        <div style={{color:C.teal,fontSize:14,fontWeight:600,letterSpacing:"3px",textTransform:"uppercase",marginBottom:14}}>Field Training Hub</div>
+        {/* Team badges */}
+        <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.5)",fontSize:11,fontWeight:700,color:"#f59e0b",letterSpacing:"0.5px"}}>⚡ Team PrimeTime</div>
+          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>🏆 Triumphant Families</div>
         </div>
       </div>
       <div style={{background:"white",borderRadius:16,padding:24,boxShadow:"0 20px 50px rgba(0,0,0,0.3)"}}>
