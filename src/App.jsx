@@ -740,6 +740,179 @@ function ScheduleView({data,onUpdate,userRole}) {
   </div>;
 }
 
+
+// ── DEFAULT EMAIL TEMPLATES ──
+const DEFAULT_EMAIL_TEMPLATES = [
+  // Welcome & Onboarding
+  {id:"e1",cat:"Welcome & Onboarding",subject:"Welcome to the Team!",body:"Hi [Name],\n\nWelcome to NextLevel! We are so excited to have you on the team. Your checklist is ready and waiting for you in the app.\n\nLog in daily, complete each step, and don't hesitate to reach out if you need anything. We are here to support you every step of the way!\n\nLet's build something great together.\n\n[Your Name]"},
+  {id:"e2",cat:"Welcome & Onboarding",subject:"Getting Started — Your Checklist is Ready",body:"Hi [Name],\n\nJust checking in to make sure you got logged into the NextLevel app. Your checklist is waiting and it's the roadmap to getting licensed and building your business.\n\nIf you need help logging in or have any questions just reply to this email.\n\nLet's get started!\n\n[Your Name]"},
+  {id:"e3",cat:"Welcome & Onboarding",subject:"How to Access the App",body:"Hi [Name],\n\nHere is how to access the NextLevel Field Training Hub:\n\n1. Go to: nextlevel-hub.vercel.app\n2. Select New Rep / Licensed Agent\n3. Enter your name and create your PIN\n\nYou can also add it to your phone home screen for quick access.\n\nReach out if you need help!\n\n[Your Name]"},
+  {id:"e4",cat:"Welcome & Onboarding",subject:"First Week Check-In",body:"Hi [Name],\n\nYou have been with us for a week now — how is everything going? I wanted to check in and see how you are feeling about the process.\n\nHave you had a chance to log into the app and start your checklist? If you have any questions or need guidance I am here for you.\n\n[Your Name]"},
+  // Accountability
+  {id:"e5",cat:"Accountability",subject:"We Miss You — Come Back!",body:"Hi [Name],\n\nI noticed you haven't logged into the NextLevel app recently. Life gets busy — I understand! But your goals are still waiting for you.\n\nLog in today, pick up where you left off, and let's get your momentum back. Even 10 minutes makes a difference.\n\n[Your Name]"},
+  {id:"e6",cat:"Accountability",subject:"Daily Activity Log Reminder",body:"Hi [Name],\n\nYour daily activity log hasn't been submitted this week. Consistency is everything in this business — even on slow days, logging your activity keeps you accountable and helps me support you better.\n\nLog in to the app and submit today's activity. It only takes 2 minutes!\n\n[Your Name]"},
+  {id:"e7",cat:"Accountability",subject:"I've Been Trying to Reach You",body:"Hi [Name],\n\nI have reached out a few times and haven't heard back. I want to make sure you are okay and still committed to your goals.\n\nPlease reply to this email or give me a call when you get a chance. I am not giving up on you — I just want to make sure you have the support you need.\n\n[Your Name]"},
+  {id:"e8",cat:"Accountability",subject:"Your Checklist Progress Has Stalled",body:"Hi [Name],\n\nI noticed your checklist progress hasn't moved in a while. I know life can get in the way but I don't want you to lose the ground you've already gained.\n\nLet's schedule some time to talk, figure out what's getting in the way, and make a plan to get you back on track. Reply to this email to set up a time.\n\n[Your Name]"},
+  {id:"e9",cat:"Accountability",subject:"No Activity Logged This Week",body:"Hi [Name],\n\nI checked in on your activity this week and didn't see any logs submitted. Activity is the foundation of results — no activity means no pipeline, no appointments, no income.\n\nLet's reconnect and talk about what's going on. I am here to help, not judge. Reply when you can.\n\n[Your Name]"},
+  {id:"e10",cat:"Accountability",subject:"Missed Training Appointment",body:"Hi [Name],\n\nI noticed you missed our scheduled training appointment. No worries — let's get it rescheduled.\n\nClick my booking link to find a new time: [Booking Link]\n\nLooking forward to connecting with you!\n\n[Your Name]"},
+  // Encouragement
+  {id:"e11",cat:"Encouragement",subject:"You Are Making Great Progress!",body:"Hi [Name],\n\nI just checked your checklist and wanted to say — you are doing amazing! Your progress shows real commitment and I am proud of the work you are putting in.\n\nKeep that momentum going. You are closer to your goal than you think!\n\n[Your Name]"},
+  {id:"e12",cat:"Encouragement",subject:"Your Exam is Coming Up — You've Got This!",body:"Hi [Name],\n\nYour licensing exam is coming up and I want you to know I believe in you! Here are a few tips:\n\n1. Log into ExamFX daily and complete practice exams\n2. Review the sections you feel least confident about\n3. Get good sleep the night before\n4. You have prepared for this — trust yourself!\n\nYou've got this. Reach out if you need anything.\n\n[Your Name]"},
+  {id:"e13",cat:"Encouragement",subject:"Halfway There — Keep Going!",body:"Hi [Name],\n\nYou are halfway through your checklist — that is a big deal! Half the battle is showing up and staying consistent, and you are doing exactly that.\n\nDon't stop now. The finish line is closer than the starting line. Let's keep building!\n\n[Your Name]"},
+  {id:"e14",cat:"Encouragement",subject:"Almost Licensed — The Finish Line is Close!",body:"Hi [Name],\n\nYou are so close to getting licensed! This is the moment that separates those who dream from those who do.\n\nStay focused, keep studying, and remember why you started. Once you are licensed the real opportunity opens up.\n\nI am cheering for you every step of the way!\n\n[Your Name]"},
+  {id:"e15",cat:"Encouragement",subject:"We Miss You — Your Comeback Starts Today",body:"Hi [Name],\n\nLife happens to all of us. Whatever has been going on I hope you are okay.\n\nWhenever you are ready to get back on track I am here. Your spot on the team is still yours and your goals are still achievable. No judgment — just support.\n\nReply when you are ready and we will pick up right where we left off.\n\n[Your Name]"},
+  // Scheduling
+  {id:"e16",cat:"Scheduling",subject:"Let's Schedule Your Training Appointment",body:"Hi [Name],\n\nI would love to schedule some one-on-one training time with you. Click the link below to find a time that works for your schedule:\n\n[Booking Link]\n\nCome prepared with your checklist open and any questions you have. Looking forward to it!\n\n[Your Name]"},
+  {id:"e17",cat:"Scheduling",subject:"DGO Date Reminder",body:"Hi [Name],\n\nHave you set your Digital Grand Opening (DGO) date yet? Your DGO is one of the most important steps in launching your business.\n\nLog into the app → Milestones tab → and set your DGO date today. Once it's set we can start planning and promoting!\n\n[Your Name]"},
+  {id:"e18",cat:"Scheduling",subject:"Upcoming Team Meeting — You're Invited",body:"Hi [Name],\n\nWe have an upcoming team meeting and I would love for you to be there!\n\nDate: [Date]\nTime: [Time]\nLocation/Zoom: [Link]\n\nThese meetings are where the real learning happens. Come ready to take notes and connect with the team!\n\n[Your Name]"},
+  {id:"e19",cat:"Scheduling",subject:"One-on-One with Your RVP",body:"Hi [Name],\n\nI would love to connect with you one-on-one to talk about your goals, your progress, and how I can best support you.\n\nClick here to schedule a time: [Booking Link]\n\nThis is your time — bring your questions and let's make a plan!\n\n[Your Name]"},
+  // Recognition
+  {id:"e20",cat:"Recognition",subject:"Congratulations — You're Licensed!",body:"Hi [Name],\n\nCONGRATULATIONS! You passed your licensing exam and are now an official licensed agent!\n\nThis is just the beginning. The real work — and the real rewards — start now. I am so proud of you and excited to watch you build your business.\n\nWelcome to the next chapter!\n\n[Your Name]"},
+  {id:"e21",cat:"Recognition",subject:"Congratulations on Your First Life App!",body:"Hi [Name],\n\nYou wrote your first life app — this is a HUGE milestone! You just protected a family and earned your first commission. That is something to be proud of.\n\nThis is just the first of many. Keep going — the momentum is everything now!\n\n[Your Name]"},
+  {id:"e22",cat:"Recognition",subject:"Top Recruiter — Amazing Work!",body:"Hi [Name],\n\nI wanted to personally recognize you for your incredible recruiting effort. Bringing new people into this business and giving them an opportunity is one of the most impactful things you can do.\n\nYou are building a team and a legacy. Keep it up!\n\n[Your Name]"},
+  {id:"e23",cat:"Recognition",subject:"Congratulations on Your Comma Check!",body:"Hi [Name],\n\nCOMMMA CHECK! You received a $1,000+ check this period and that is something to celebrate!\n\nThis is proof that the work you are putting in is paying off — literally. Keep building, keep protecting families, and the checks will keep coming.\n\nSo proud of you!\n\n[Your Name]"},
+  {id:"e24",cat:"Recognition",subject:"Income Milestone Achievement!",body:"Hi [Name],\n\nYou have reached an incredible income milestone and I could not be more proud!\n\nThis did not happen by accident — it happened because of your consistency, your commitment, and your belief in what you are building. You are an inspiration to this entire team.\n\nCelebrate this moment. You earned it!\n\n[Your Name]"},
+  // Business Building
+  {id:"e25",cat:"Business Building",subject:"Follow Up on Your Prospects",body:"Hi [Name],\n\nHave you followed up with the prospects on your list recently? The fortune is in the follow-up!\n\nLog into the app → Prospects tab to review your list. Reach out to at least 3 people today. A simple check-in can turn into an appointment.\n\n[Your Name]"},
+  {id:"e26",cat:"Business Building",subject:"Pipeline Check-In",body:"Hi [Name],\n\nI wanted to check in on your pipeline. How are your leads progressing? Are there any appointments you need help preparing for?\n\nLog into your pipeline in the app and update your lead statuses. Let me know if you need any support!\n\n[Your Name]"},
+  {id:"e27",cat:"Business Building",subject:"Share Your Lead Link",body:"Hi [Name],\n\nAre you sharing your personal lead link? Every time someone completes a financial needs analysis through your link it comes directly to you as a lead.\n\nLog into the app → My Lead Link to find and share your personal link. Post it on social media, text it to people, add it to your email signature!\n\n[Your Name]"},
+  {id:"e28",cat:"Business Building",subject:"Investment Conversation Starter",body:"Hi [Name],\n\nDon't forget — your clients need more than just life insurance. Many of them are looking for ways to save and invest for the future.\n\nAsk every client about their investment goals. A simple question can open the door to a PAC or lump sum conversation. Let me know if you need help with the script!\n\n[Your Name]"},
+  {id:"e29",cat:"Business Building",subject:"Ask for Referrals",body:"Hi [Name],\n\nOne of the fastest ways to grow your business is through referrals. Every client you serve knows at least 3 people who could benefit from what you offer.\n\nAfter every appointment ask: 'Who do you know that could also benefit from protecting their family?' It is that simple.\n\nLet me know how it goes!\n\n[Your Name]"},
+  // Team Communication
+  {id:"e30",cat:"Team Communication",subject:"Team Announcement",body:"Hi Team,\n\n[Your announcement here]\n\nPlease reach out if you have any questions.\n\n[Your Name]"},
+  {id:"e31",cat:"Team Communication",subject:"Important Update",body:"Hi Team,\n\nI wanted to share an important update with everyone:\n\n[Update details here]\n\nPlease read carefully and reach out if you have any questions.\n\n[Your Name]"},
+  {id:"e32",cat:"Team Communication",subject:"Reminder — Upcoming Event",body:"Hi [Name],\n\nJust a reminder about our upcoming event:\n\nDate: [Date]\nTime: [Time]\nLocation/Zoom: [Link]\n\nMake sure this is on your calendar. These events are where the magic happens!\n\n[Your Name]"},
+  {id:"e33",cat:"Team Communication",subject:"Study Group — You're Invited!",body:"Hi [Name],\n\nWe are hosting a study group for everyone working toward their license. This is a great opportunity to review material, ask questions, and connect with others on the same journey.\n\nDate: [Date]\nTime: [Time]\nZoom Link: [Link]\n\nHope to see you there!\n\n[Your Name]"},
+];
+
+
+// ── EMAIL TEMPLATES PAGE ──
+const EMAIL_CATS = ["Welcome & Onboarding","Accountability","Encouragement","Scheduling","Recognition","Business Building","Team Communication"];
+
+function EmailTemplatesPage({data,onUpdate,userRole,reps,trainers,admins}) {
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const templates = data.emailTemplates||DEFAULT_EMAIL_TEMPLATES;
+  const [filter,setFilter] = useState("All");
+  const [editing,setEditing] = useState(null);
+  const [draft,setDraft] = useState({cat:"",subject:"",body:""});
+  const [showAdd,setShowAdd] = useState(false);
+  const [newTpl,setNewTpl] = useState({cat:"Welcome & Onboarding",subject:"",body:""});
+  const [copied,setCopied] = useState(null);
+  const [showEmailAll,setShowEmailAll] = useState(false);
+
+  const copy = (id,text) => {navigator.clipboard.writeText(text);setCopied(id);setTimeout(()=>setCopied(null),2000);};
+  const del = (id) => {if(window.confirm("Delete this template?"))onUpdate({...data,emailTemplates:templates.filter(t=>t.id!==id)});};
+  const save = () => {
+    if(!draft.subject||!draft.body) return;
+    onUpdate({...data,emailTemplates:templates.map(t=>t.id===editing?{...t,...draft}:t)});
+    setEditing(null);
+  };
+  const add = () => {
+    if(!newTpl.subject||!newTpl.body) return;
+    onUpdate({...data,emailTemplates:[...templates,{...newTpl,id:"e_"+Date.now()}]});
+    setNewTpl({cat:"Welcome & Onboarding",subject:"",body:""});
+    setShowAdd(false);
+  };
+  const reset = () => {if(window.confirm("Reset all email templates to defaults?"))onUpdate({...data,emailTemplates:DEFAULT_EMAIL_TEMPLATES});};
+
+  const cats = ["All",...EMAIL_CATS.filter(c=>templates.some(t=>t.cat===c))];
+  const filtered = filter==="All"?templates:templates.filter(t=>t.cat===filter);
+
+  // Email all helpers
+  const allEmails = (reps||[]).filter(r=>r.email&&!r.inactive).map(r=>r.email).join(",");
+  const trackEmails = (track) => (reps||[]).filter(r=>r.email&&!r.inactive&&r.track===track).map(r=>r.email).join(",");
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Email Templates</div>
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={()=>setShowEmailAll(!showEmailAll)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",cursor:"pointer",color:C.teal,fontWeight:600}}>Email All</button>
+        {isAdmin&&<button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>}
+        {isAdmin&&<button onClick={reset} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>}
+      </div>
+    </div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>Click Email to open in your email app with the template pre-filled. Edit [Name] and [Your Name] before sending.</div>
+
+    {/* Email All section */}
+    {showEmailAll&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Email All</div>
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {allEmails&&<a href={"mailto:"+allEmails} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,textDecoration:"none"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+          <span style={{fontSize:12,color:C.teal,fontWeight:600}}>Email All Active Reps ({(reps||[]).filter(r=>r.email&&!r.inactive).length})</span>
+        </a>}
+        {trackEmails("fast")&&<a href={"mailto:"+trackEmails("fast")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.navy+"11",border:`1px solid ${C.navy}33`,textDecoration:"none"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.navy} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+          <span style={{fontSize:12,color:C.navy,fontWeight:600}}>Email Fast Start Reps ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="fast").length})</span>
+        </a>}
+        {trackEmails("regular")&&<a href={"mailto:"+trackEmails("regular")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.gold+"11",border:`1px solid ${C.gold}33`,textDecoration:"none"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+          <span style={{fontSize:12,color:C.gold,fontWeight:600}}>Email Regular Start Reps ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="regular").length})</span>
+        </a>}
+        {trackEmails("licensed")&&<a href={"mailto:"+trackEmails("licensed")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.success+"11",border:`1px solid ${C.success}33`,textDecoration:"none"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+          <span style={{fontSize:12,color:C.success,fontWeight:600}}>Email Licensed Now What ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="licensed").length})</span>
+        </a>}
+        {!allEmails&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",padding:8}}>No rep emails on file. Add emails to rep profiles to use this feature.</div>}
+      </div>
+    </Card>}
+
+    {/* Add new template */}
+    {showAdd&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>New Email Template</div>
+      <select value={newTpl.cat} onChange={e=>setNewTpl({...newTpl,cat:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7}}>
+        {EMAIL_CATS.map(c=><option key={c}>{c}</option>)}
+      </select>
+      <input placeholder="Subject line" value={newTpl.subject} onChange={e=>setNewTpl({...newTpl,subject:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <textarea placeholder="Email body... Use [Name] for recipient name and [Your Name] for your name" value={newTpl.body} onChange={e=>setNewTpl({...newTpl,body:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:120,boxSizing:"border-box",lineHeight:1.6,marginBottom:7}}/>
+      <div style={{display:"flex",gap:7}}>
+        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+        <button onClick={add} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Template</button>
+      </div>
+    </Card>}
+
+    {/* Category filters */}
+    <div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.teal:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+    </div>
+
+    {/* Templates */}
+    {EMAIL_CATS.filter(cat=>filtered.some(t=>t.cat===cat)).map(cat=><div key={cat}>
+      <SecHead title={cat}/>
+      {filtered.filter(t=>t.cat===cat).map(t=><Card key={t.id} style={{marginBottom:8}}>
+        {editing===t.id?(
+          <div>
+            <select value={draft.cat} onChange={e=>setDraft({...draft,cat:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,marginBottom:6}}>
+              {EMAIL_CATS.map(c=><option key={c}>{c}</option>)}
+            </select>
+            <input value={draft.subject} onChange={e=>setDraft({...draft,subject:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box",fontWeight:600}}/>
+            <textarea value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:12,color:C.text,resize:"vertical",minHeight:120,boxSizing:"border-box",lineHeight:1.6,marginBottom:6}}/>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
+              <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+            </div>
+          </div>
+        ):(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+              <div style={{fontSize:dv(13,15),fontWeight:700,color:C.text,flex:1,paddingRight:8}}>{t.subject}</div>
+              {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+                <button onClick={()=>{setEditing(t.id);setDraft({cat:t.cat,subject:t.subject,body:t.body});}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+                <button onClick={()=>del(t.id)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+              </div>}
+            </div>
+            <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",fontSize:dv(11,13),color:C.textMid,lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:8}}>{t.body}</div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>copy(t.id+"_body",t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid,fontWeight:500}}>{copied===t.id+"_body"?"✓ Copied!":"Copy Body"}</button>
+              <a href={"mailto:?subject="+encodeURIComponent(t.subject)+"&body="+encodeURIComponent(t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600,textDecoration:"none",textAlign:"center",display:"block"}}>✉ Email</a>
+            </div>
+          </div>
+        )}
+      </Card>)}
+    </div>)}
+  </div>;
+}
+
 // ── ADVANCEMENT & PROMOTIONS LIBRARY ──
 const ADVANCEMENT_CATEGORIES = ["RVP Path","Promotions","Licensing","Income Milestones","Recognition","Other"];
 
@@ -1456,7 +1629,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
               {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
             </div>
-            <div style={{fontSize:dv(11,13),color:C.textMid,marginTop:1}}><PhoneLink phone={rep.phone}/></div>
+            <div style={{fontSize:dv(11,13),color:C.textMid,marginTop:1,display:"flex",alignItems:"center",gap:8}}><PhoneLink phone={rep.phone}/>{rep.email&&<a href={"mailto:"+rep.email} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:5,background:C.teal+"22",border:"1px solid "+C.teal+"44",textDecoration:"none"}} title="Email"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg></a>}</div>
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:2}}>
               <span style={{fontSize:dv(10,12),color:C.textMid}}>Trainer: <strong style={{color:trainer?C.teal:C.textLight}}>{trainer?.name||"Not assigned"}</strong></span>
               <span style={{fontSize:10,color:C.textMid}}>Recruited by: <strong style={{color:(()=>{const r=findPerson(rep.recruitedBy,data);return r?C.purple:C.textLight;})()}}>{findPerson(rep.recruitedBy,data)?.name||"Not specified"}</strong></span>
@@ -5625,6 +5798,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
+    {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
@@ -5806,6 +5980,7 @@ export default function App() {
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
+    if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;
     if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
