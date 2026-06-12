@@ -4008,13 +4008,14 @@ function WallOfFame({data,onUpdate,userRole}) {
   const [form,setForm] = useState({personId:"",category:"First Life App",message:"",customPhoto:null});
   const [personSearch,setPersonSearch] = useState("");
   const [showPersonList,setShowPersonList] = useState(false);
-  const filteredPeople = personSearch.length>0 ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(personSearch.toLowerCase())) : allPeople.slice(0,8);
 
   const allPeople = [
     ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
     ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
     ...activeReps(data.reps).map(p=>({...p,role:"Rep"})),
   ];
+
+  const filteredPeople = personSearch.length>0 ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(personSearch.toLowerCase())) : allPeople.slice(0,8);
 
   const getPhoto = (personId) => {
     // 1. Check Firebase profilePhotos (My Profile page uploads)
