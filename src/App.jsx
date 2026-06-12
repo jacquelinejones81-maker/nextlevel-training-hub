@@ -5725,6 +5725,15 @@ export default function App() {
 
   const signOut=()=>{setSession(null);setSelRepId(null);};
 
+  // Prevent phone back button from logging out
+  useEffect(()=>{
+    if(!session) return;
+    window.history.pushState(null,'',window.location.href);
+    const handler=()=>window.history.pushState(null,'',window.location.href);
+    window.addEventListener('popstate',handler);
+    return()=>window.removeEventListener('popstate',handler);
+  },[session]);
+
   if(loading) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"white",flexDirection:"column",gap:12}}>
     <div style={{width:40,height:40,border:`3px solid ${C.teal}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
     <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Loading...</div>
