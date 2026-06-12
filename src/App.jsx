@@ -4018,12 +4018,14 @@ function WallOfFame({data,onUpdate,userRole}) {
   const filteredPeople = personSearch.length>0 ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(personSearch.toLowerCase())) : allPeople.slice(0,8);
 
   const getPhoto = (personId) => {
-    // 1. Check Firebase profilePhotos (My Profile page uploads)
     const profilePhotos = data.profilePhotos||{};
     if(profilePhotos[personId]) return profilePhotos[personId];
-    // 2. Check rep DGO photo
+    try{const ls=localStorage.getItem("profilePhoto_"+personId);if(ls)return ls;}catch(e){}
     const rep = (data.reps||[]).find(r=>r.id===personId);
-    if(rep&&rep.dgoPhoto) return rep.dgoPhoto;
+    if(rep?.dgoPhoto) return rep.dgoPhoto;
+    try{const ls=localStorage.getItem("dgoPhoto_"+personId);if(ls)return ls;}catch(e){}
+    const trainer = (data.trainers||[]).find(t=>t.id===personId);
+    if(trainer?.photo) return trainer.photo;
     return null;
   };
 
@@ -4068,6 +4070,7 @@ function WallOfFame({data,onUpdate,userRole}) {
         <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Select Person</div>
         {form.personId?(
           <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,border:"1px solid "+C.teal,background:C.teal+"11"}}>
+            {(()=>{const p=getPhoto(form.personId);return p?<img src={p} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:"2px solid "+C.teal}}/>:<div style={{width:32,height:32,borderRadius:"50%",background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal}}>{allPeople.find(p=>p.id===form.personId)?.name?.charAt(0)}</div>;})()}
             <span style={{flex:1,fontSize:12,fontWeight:600,color:C.text}}>{allPeople.find(p=>p.id===form.personId)?.name}</span>
             <button onClick={()=>{setForm({...form,personId:""});setPersonSearch("");}} style={{fontSize:11,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>✕ Change</button>
           </div>
