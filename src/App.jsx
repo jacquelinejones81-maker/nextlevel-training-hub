@@ -1695,6 +1695,10 @@ function LoginScreen({data,onLogin}) {
         </div>
         <div style={{color:"white",fontSize:20,fontWeight:700}}>NextLevel Field Training Hub</div>
         <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:3}}>Team Onboarding and Production Tracker</div>
+        <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:10}}>
+          <div style={{padding:"4px 14px",borderRadius:20,background:"rgba(245,158,11,0.2)",border:"1px solid rgba(245,158,11,0.5)",fontSize:11,fontWeight:600,color:"#f59e0b"}}>Team PrimeTime</div>
+          <div style={{padding:"4px 14px",borderRadius:20,background:"rgba(14,165,160,0.2)",border:"1px solid rgba(14,165,160,0.5)",fontSize:11,fontWeight:600,color:"#0ea5a0"}}>Triumphant Families</div>
+        </div>
       </div>
       <div style={{background:"white",borderRadius:16,padding:24,boxShadow:"0 20px 50px rgba(0,0,0,0.3)"}}>
         {mode==="select"&&<div>
