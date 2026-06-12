@@ -1178,6 +1178,9 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   const cl=track?.checklist||[];
   const repDone=cl.filter(i=>(rep.checked||{})[i.id]).length;
   const [ciNote,setCiNote]=useState("");
+  const [editContact,setEditContact]=useState(false);
+  const [contactForm,setContactForm]=useState({phone:rep.phone||"",email:rep.email||""});
+  const saveContact=()=>{onUpdate(rep.id,{...rep,phone:contactForm.phone,email:contactForm.email});setEditContact(false);};
   const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"schedule",l:"Schedule"}];
   const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
   const addCI=()=>{if(!ciNote.trim())return;onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]});setCiNote("");};
@@ -1194,7 +1197,21 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   return <div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
-      <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:5}}><PhoneLink phone={rep.phone}/> - <Badge color={track?.color||C.teal} small>{track?.label}</Badge></div></div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div>
+        {!editContact&&<div style={{fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+          <PhoneLink phone={rep.phone}/>
+          {rep.email&&<a href={"mailto:"+rep.email} style={{fontSize:11,color:C.teal,textDecoration:"none"}}>✉ {rep.email}</a>}
+          <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
+          <button onClick={()=>{setContactForm({phone:rep.phone||"",email:rep.email||""});setEditContact(true);}} style={{fontSize:10,padding:"1px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+        </div>}
+        {editContact&&<div style={{marginTop:4,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+          <input placeholder="Phone" value={contactForm.phone} onChange={e=>setContactForm({...contactForm,phone:e.target.value})} style={{width:120,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <input placeholder="Email" value={contactForm.email} onChange={e=>setContactForm({...contactForm,email:e.target.value})} style={{width:160,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <button onClick={saveContact} style={{padding:"3px 8px",borderRadius:5,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:10,fontWeight:600}}>Save</button>
+          <button onClick={()=>setEditContact(false)} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:10,color:C.textMid}}>Cancel</button>
+        </div>}
+      </div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
       <ReassignTrainer rep={rep} data={data} onUpdate={onUpdate} />
       <RecruitedByEditor rep={rep} data={data} onUpdate={onUpdate}/>
