@@ -2559,9 +2559,10 @@ function MyProfilePage({session,data,onUpdate}) {
         else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
         canvas.width=w;canvas.height=h;
         canvas.getContext("2d").drawImage(img,0,0,w,h);
-        const compressed=canvas.toDataURL("image/jpeg",0.5);
+        const compressed=canvas.toDataURL("image/jpeg",0.4);
         // Save to localStorage as reliable fallback
         try{localStorage.setItem("profilePhoto_"+session.id,compressed);}catch(ex){}
+        // Save to profilePhotos only — not inside rep object
         onUpdate({...data,profilePhotos:{...profilePhotos,[session.id]:compressed}});
       };
       img.src=ev.target.result;
@@ -4005,6 +4006,9 @@ function WallOfFame({data,onUpdate,userRole}) {
   const recognitions = data.wallOfFame||[];
   const [showForm,setShowForm] = useState(false);
   const [form,setForm] = useState({personId:"",category:"First Life App",message:"",customPhoto:null});
+  const [personSearch,setPersonSearch] = useState("");
+  const [showPersonList,setShowPersonList] = useState(false);
+  const filteredPeople = personSearch.length>0 ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(personSearch.toLowerCase())) : allPeople.slice(0,8);
 
   const allPeople = [
     ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
@@ -4025,9 +4029,24 @@ function WallOfFame({data,onUpdate,userRole}) {
   const save = () => {
     if(!form.personId||!form.message) return;
     const person = allPeople.find(p=>p.id===form.personId);
-    const entry = {...form,personName:person?.name||"",personRole:person?.role||"",postedAt:new Date().toISOString(),id:Date.now()};
-    onUpdate({...data,wallOfFame:[entry,...recognitions]});
+    // Save custom photo to profilePhotos to avoid Firestore 1MB limit
+    let newData = {...data};
+    if(form.customPhoto){
+      newData = {...newData,profilePhotos:{...(data.profilePhotos||{}),[form.personId]:form.customPhoto}};
+    }
+    const entry = {
+      personId:form.personId,
+      category:form.category,
+      message:form.message,
+      personName:person?.name||"",
+      personRole:person?.role||"",
+      postedAt:new Date().toISOString(),
+      id:Date.now()
+      // NO customPhoto stored here — photo is in profilePhotos
+    };
+    onUpdate({...newData,wallOfFame:[entry,...recognitions]});
     setForm({personId:"",category:"First Life App",message:"",customPhoto:null});
+    setPersonSearch("");
     setShowForm(false);
   };
 
@@ -4044,12 +4063,31 @@ function WallOfFame({data,onUpdate,userRole}) {
 
     {isAdmin&&showForm&&<Card style={{marginBottom:14,border:"1px solid "+C.gold+"44"}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>New Recognition</div>
-      <div style={{marginBottom:8}}>
+      <div style={{marginBottom:8,position:"relative"}}>
         <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Select Person</div>
-        <select value={form.personId} onChange={e=>setForm({...form,personId:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
-          <option value="">Choose someone to recognize...</option>
-          {allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
-        </select>
+        {form.personId?(
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,border:"1px solid "+C.teal,background:C.teal+"11"}}>
+            <span style={{flex:1,fontSize:12,fontWeight:600,color:C.text}}>{allPeople.find(p=>p.id===form.personId)?.name}</span>
+            <button onClick={()=>{setForm({...form,personId:""});setPersonSearch("");}} style={{fontSize:11,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>✕ Change</button>
+          </div>
+        ):(
+          <div>
+            <input
+              placeholder="Search name..."
+              value={personSearch}
+              onChange={e=>{setPersonSearch(e.target.value);setShowPersonList(true);}}
+              onFocus={()=>setShowPersonList(true)}
+              style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}
+            />
+            {showPersonList&&(personSearch.length>0||true)&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"white",border:"1px solid "+C.border,borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)",zIndex:100,maxHeight:200,overflowY:"auto"}}>
+              {filteredPeople.length===0&&<div style={{padding:"10px",fontSize:12,color:C.textLight,textAlign:"center"}}>No results</div>}
+              {filteredPeople.map(p=><button key={p.id} onClick={()=>{setForm({...form,personId:p.id});setPersonSearch("");setShowPersonList(false);}} style={{width:"100%",padding:"8px 12px",background:"white",border:"none",borderBottom:"1px solid "+C.border,cursor:"pointer",textAlign:"left",fontSize:12,color:C.text}}>
+                <span style={{fontWeight:600}}>{p.name}</span>
+                <span style={{fontSize:10,color:C.textMid,marginLeft:6}}>({p.role})</span>
+              </button>)}
+            </div>}
+          </div>
+        )}
       </div>
       <div style={{marginBottom:8}}>
         <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Category</div>
