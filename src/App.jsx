@@ -6027,10 +6027,10 @@ export default function App() {
           <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
         </div>
       </div>
-      <div style={{flex:1,overflow:"hidden",display:"flex"}}>
-        <AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/>
-        <DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/>
-        <RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/>
+      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+        <div style={{width:"100%"}}><AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/></div>
+        <div style={{width:"100%"}}><DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/></div>
+        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/></div>
       </div>
     </div>;
   }
