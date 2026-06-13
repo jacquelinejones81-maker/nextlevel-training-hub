@@ -2636,9 +2636,18 @@ function WallOfFameBanner({data}) {
 
   const getPhotoB = (r) => {
     if(r.customPhoto) return r.customPhoto;
-    if(profilePhotos[r.personId]) return profilePhotos[r.personId];
+    const wofPhotos = data.wofPhotos||{};
+    if(wofPhotos[r.personId]) return wofPhotos[r.personId];
+    const profilePhotos2 = data.profilePhotos||{};
+    if(profilePhotos2[r.personId]) return profilePhotos2[r.personId];
+    try{const ls=localStorage.getItem("profilePhoto_"+r.personId);if(ls)return ls;}catch(e){}
     const rep = (data.reps||[]).find(rp=>rp.id===r.personId);
-    if(rep&&rep.dgoPhoto) return rep.dgoPhoto;
+    if(rep?.dgoPhoto) return rep.dgoPhoto;
+    try{const ls=localStorage.getItem("dgoPhoto_"+r.personId);if(ls)return ls;}catch(e){}
+    const trainer = (data.trainers||[]).find(t=>t.id===r.personId);
+    if(trainer?.photo) return trainer.photo;
+    const admin = (data.admins||[]).find(a=>a.id===r.personId);
+    if(admin?.photo) return admin.photo;
     return null;
   };
 
@@ -4035,7 +4044,8 @@ function WallOfFame({data,onUpdate,userRole}) {
     // Save custom photo to profilePhotos to avoid Firestore 1MB limit
     let newData = {...data};
     if(form.customPhoto){
-      newData = {...newData,profilePhotos:{...(data.profilePhotos||{}),[form.personId]:form.customPhoto}};
+      // Save to a separate wofPhotos collection to avoid overwriting profile photos
+      newData = {...newData,wofPhotos:{...(data.wofPhotos||{}),[form.personId]:form.customPhoto}};
     }
     const entry = {
       personId:form.personId,
@@ -4134,7 +4144,9 @@ function WallOfFame({data,onUpdate,userRole}) {
 
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
       {recognitions.map((r,i)=>{
-        const photo = r.customPhoto||getPhoto(r.personId);
+        const photo = r.customPhoto||(data.wofPhotos||{})[r.personId]||(data.profilePhotos||{})[r.personId]||(()=>{try{return localStorage.getItem("profilePhoto_"+r.personId)||null;}catch(e){return null;}})()
+          ||(data.reps||[]).find(rp=>rp.id===r.personId)?.dgoPhoto
+          ||(()=>{try{return localStorage.getItem("dgoPhoto_"+r.personId)||null;}catch(e){return null;}})();
         const catColor = FAME_COLORS[r.category]||C.gold;
         return <div key={i} style={{borderRadius:12,border:"2px solid "+catColor+"33",background:"white",overflow:"hidden",position:"relative"}}>
           {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
