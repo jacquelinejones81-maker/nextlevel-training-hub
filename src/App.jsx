@@ -496,8 +496,8 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
           <div style={{fontSize:12,fontWeight:600,color:C.text}}>{rep.preLicEnd||"Not set"}</div>}
         </div>}
       </div>
-    </Card>
-    <Card style={{marginBottom:12}}>
+    </Card>}
+    {rep.track!=="licensed"&&<Card style={{marginBottom:12}}>
       <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:11,color:C.textMid}}>{g.desc}</div></div></button>;})}
