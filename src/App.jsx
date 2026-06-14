@@ -1024,17 +1024,15 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   ];
   const tog=(id)=>{
     if(!readOnly){
-      const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;
-      const liveChecked=liveRep.checked||{};
-      const newChecked={...liveChecked,[id]:!liveChecked[id]};
-      const newDone=cl.filter(i=>newChecked[i.id]).length;
-      const justCompleted=newDone===cl.length&&cl.length>0&&(cl.filter(i=>liveChecked[i.id]).length)<cl.length;
-      if(justCompleted&&!liveRep.celebrationShown){
-        setShowCelebration(true);
-        onUpdate(rep.id,{...liveRep,checked:newChecked,celebrationShown:true});
-      } else {
-        onUpdate(rep.id,{...liveRep,checked:newChecked});
-      }
+      onUpdate(rep.id,(prev)=>{
+        const liveRep=prev||rep;
+        const liveChecked=liveRep.checked||{};
+        const newChecked={...liveChecked,[id]:!liveChecked[id]};
+        const newDone=cl.filter(i=>newChecked[i.id]).length;
+        const justCompleted=newDone===cl.length&&cl.length>0&&(cl.filter(i=>liveChecked[i.id]).length)<cl.length;
+        if(justCompleted&&!liveRep.celebrationShown){setShowCelebration(true);return{...liveRep,checked:newChecked,celebrationShown:true};}
+        return{...liveRep,checked:newChecked};
+      });
     }
   };
   const [mobileOpen,setMobileOpen]=useState(false);
@@ -6068,7 +6066,7 @@ export default function App() {
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         <div style={{width:"100%"}}><AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/></div>
         <div style={{width:"100%"}}><DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/></div>
-        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/></div>
+        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={data} onUpdate={(id,u)=>{const cur=dataRef.current;const curRep=(cur.reps||[]).find(r=>r.id===id)||rep;const updated=typeof u==="function"?u(curRep):u;upd({...cur,reps:(cur.reps||[]).map(r=>r.id===id?updated:r)});}} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/></div>
       </div>
     </div>;
   }
@@ -6077,7 +6075,7 @@ export default function App() {
   const navTo=(s)=>{setSection(s);setSelRepId(null);};
 
   const renderContent=()=>{
-    if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(dataRef.current.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={dataRef.current} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).filter(r=>r.id!==id)});setSelRepId(null);}}/>;}
+    if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(dataRef.current.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={dataRef.current} onUpdate={(id,u)=>{const cur=dataRef.current;const curRep=(cur.reps||[]).find(r=>r.id===id)||latestRep;const updated=typeof u==="function"?u(curRep):u;upd({...cur,reps:(cur.reps||[]).map(r=>r.id===id?updated:r)});}} onUpdateData={upd} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).filter(r=>r.id!==id)});setSelRepId(null);}}/>;}
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
     if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
