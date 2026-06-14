@@ -6011,7 +6011,7 @@ export default function App() {
       if(snap.exists()){
         try{
           const d=JSON.parse(snap.data().payload||"{}");
-          if(Date.now()-lastSaveRef.current>2000){
+          if(Date.now()-lastSaveRef.current>5000){
             // Migrate photos to localStorage to free Firebase space
             const profilePhotos=d.profilePhotos||{};
             const wofPhotos=d.wofPhotos||{};
@@ -6047,7 +6047,13 @@ export default function App() {
   const upd=useCallback((d)=>{
     lastSaveRef.current=Date.now();
     setData(d);
-    saveToFirebase(d);
+    // Always save photos to localStorage, strip from Firebase doc to stay under 1MB
+    const profilePhotos=d.profilePhotos||{};
+    const wofPhotos=d.wofPhotos||{};
+    Object.entries(profilePhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("profilePhoto_"+id,photo);}catch(e){}});
+    Object.entries(wofPhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}});
+    const lean={...d,profilePhotos:{},wofPhotos:{}};
+    saveToFirebase(lean);
   },[]);
   const dataRef=useRef(data);
   useEffect(()=>{dataRef.current=data;},[data]);
