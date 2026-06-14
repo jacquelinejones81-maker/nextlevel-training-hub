@@ -141,24 +141,24 @@ const REGULAR_START = [
 
 const LICENSED_NOW_WHAT = [
   {id:"l1",cat:"Milestones",task:"Become Life Licensed"},
-  {id:"l2",cat:"Securities License",task:"Start SIE securities license process"},
-  {id:"l2b",cat:"Securities License",task:"Series 6"},
-  {id:"l2c",cat:"Securities License",task:"Series 63"},
-  {id:"l2d",cat:"Securities License",task:"Series 65"},
-  {id:"l2e",cat:"Securities License",task:"Series 26 (if RVP desired)"},
+  {id:"l2",cat:"Securities License",task:"Pass SIE"},
+  {id:"l2b",cat:"Securities License",task:"Pass Series 6"},
+  {id:"l2c",cat:"Securities License",task:"Pass Series 63"},
+  {id:"l2d",cat:"Securities License",task:"Pass Series 65"},
+  {id:"l2e",cat:"Securities License",task:"Pass Series 26 (if RVP desired)"},
   {id:"l3",cat:"Learning Activity",task:"Complete Life Training Hub: POL > Products > Life Insurance > Life Training Hub"},
   {id:"l4",cat:"Learning Activity",task:"Get certified for Indexed and Fixed annuities"},
-  {id:"l5",cat:"Learning Activity",task:"Master the 7 Fundamentals - Prospecting"},
-  {id:"l6",cat:"Learning Activity",task:"Master the 7 Fundamentals - Setting Appointments"},
-  {id:"l7",cat:"Learning Activity",task:"Master the 7 Fundamentals - Giving a Winning Presentation"},
-  {id:"l8",cat:"Learning Activity",task:"Master the 7 Fundamentals - Overcoming Objections"},
-  {id:"l9",cat:"Learning Activity",task:"Master the 7 Fundamentals - Closing (Life Insurance)"},
-  {id:"l10",cat:"Learning Activity",task:"Master the 7 Fundamentals - Getting Referrals"},
-  {id:"l11",cat:"Learning Activity",task:"Master the 7 Fundamentals - Getting a New Rep Started"},
+  {id:"l14",cat:"Learning Activity",task:"Complete 3 practice life apps in Primerica online",note:"Login at primericalife.com to complete practice apps"},
+  {id:"l15",cat:"Learning Activity",task:"Complete 3 practice IBAs in Primerica app",note:"Login to the Primerica app to complete practice IBAs"},
+  {id:"l5",cat:"Learning Activity",task:"Master the 7 Fundamentals - Prospecting",note:"Fundamentals link in Resources tab"},
+  {id:"l6",cat:"Learning Activity",task:"Master the 7 Fundamentals - Setting Appointments",note:"Fundamentals link in Resources tab"},
+  {id:"l7",cat:"Learning Activity",task:"Master the 7 Fundamentals - Giving a Winning Presentation",note:"Fundamentals link in Resources tab"},
+  {id:"l8",cat:"Learning Activity",task:"Master the 7 Fundamentals - Overcoming Objections",note:"Fundamentals link in Resources tab"},
+  {id:"l9",cat:"Learning Activity",task:"Master the 7 Fundamentals - Closing (Life Insurance)",note:"Fundamentals link in Resources tab"},
+  {id:"l10",cat:"Learning Activity",task:"Master the 7 Fundamentals - Getting Referrals",note:"Fundamentals link in Resources tab"},
+  {id:"l11",cat:"Learning Activity",task:"Master the 7 Fundamentals - Getting a New Rep Started",note:"Fundamentals link in Resources tab"},
   {id:"l12",cat:"Income Producing",task:"Add 30-60 qualified contacts to CRM weekly"},
   {id:"l13",cat:"Income Producing",task:"Set 15-30 qualified appointments weekly"},
-  {id:"l14",cat:"Income Producing",task:"Complete 3 practice life apps in Primerica app"},
-  {id:"l15",cat:"Income Producing",task:"Complete 3 practice IBAs in Primerica app"},
 
 ];
 
@@ -427,8 +427,8 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       {!readOnly?<input type="date" value={rep.birthday||""} onChange={e=>onUpdate({...rep,birthday:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:13,fontWeight:600,color:C.purple}}>{rep.birthday?new Date(rep.birthday+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}</div>}
     </Card>
-    {/* Pre-Licensing Class */}
-    <Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
+    {/* Pre-Licensing Class — hidden for licensed reps */}
+    {rep.track!=="licensed"&&<Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div style={{fontSize:12,fontWeight:700,color:C.text}}>Pre-Licensing Class</div>
         {!readOnly&&<button onClick={()=>onUpdate({...rep,preLicDone:!rep.preLicDone})}
@@ -502,7 +502,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:11,color:C.textMid}}>{g.desc}</div></div></button>;})}
       </div>
-    </Card>
+    </Card>}
     <Card style={{marginBottom:12}}>
       <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
       <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Dollar amount committed to your business</div>
@@ -562,6 +562,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       </div>
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
+      {rep.track!=="licensed"&&<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <div style={{fontSize:12,fontWeight:700,color:C.text}}>Exam Date</div>
         {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
@@ -569,6 +570,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
       {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:12}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.gold,marginBottom:12}}>{rep.examDate||"Not set"}</div>}
+      </div>}
       {/* T-Shirt Size */}
       <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
         <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>T-Shirt Size</div>
