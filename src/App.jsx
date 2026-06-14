@@ -1024,14 +1024,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   ];
   const tog=(id)=>{
     if(!readOnly){
-      const newChecked={...checked,[id]:!checked[id]};
+      const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;
+      const liveChecked=liveRep.checked||{};
+      const newChecked={...liveChecked,[id]:!liveChecked[id]};
       const newDone=cl.filter(i=>newChecked[i.id]).length;
-      const justCompleted=newDone===cl.length&&cl.length>0&&done<cl.length;
-      if(justCompleted&&!rep.celebrationShown){
+      const justCompleted=newDone===cl.length&&cl.length>0&&(cl.filter(i=>liveChecked[i.id]).length)<cl.length;
+      if(justCompleted&&!liveRep.celebrationShown){
         setShowCelebration(true);
-        onUpdate(rep.id,{...rep,checked:newChecked,celebrationShown:true});
+        onUpdate(rep.id,{...liveRep,checked:newChecked,celebrationShown:true});
       } else {
-        onUpdate(rep.id,{...rep,checked:newChecked});
+        onUpdate(rep.id,{...liveRep,checked:newChecked});
       }
     }
   };
@@ -1119,7 +1121,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       <Bar pct={pct} h={5}/>
       {pct===100&&<div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"6px 10px",fontSize:12,color:C.success,textAlign:"center",fontWeight:600}}>All tasks complete!</div>}
       {pct===100&&(rep.track==="fast"||rep.track==="regular")&&!rep.nextLevelRequested&&!rep.nextLevelGranted&&(
-        <button onClick={()=>onUpdate(rep.id,{...rep,nextLevelRequested:true,nextLevelRequestedAt:new Date().toISOString()})}
+        <button onClick={()=>{const lr=(data.reps||[]).find(r=>r.id===rep.id)||rep;onUpdate(rep.id,{...lr,nextLevelRequested:true,nextLevelRequestedAt:new Date().toISOString()});}}
           style={{width:"100%",marginTop:8,padding:"10px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:13,cursor:"pointer"}}>
           Request Access to Licensed Now What
         </button>
