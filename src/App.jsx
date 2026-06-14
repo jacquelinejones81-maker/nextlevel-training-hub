@@ -5983,11 +5983,17 @@ export default function App() {
   const [showNeedHelp,setShowNeedHelp]=useState(false);
 
   // Subscribe to Firebase
-  const savingRef=useRef(false);
+  const lastSaveRef=useRef(0);
   useEffect(()=>{
     const unsub=onSnapshot(doc(db,"appdata","main"),(snap)=>{
-      if(snap.exists()&&!savingRef.current){
-        try{const d=JSON.parse(snap.data().payload||"{}");setData(d);}catch{}
+      if(snap.exists()){
+        try{
+          const d=JSON.parse(snap.data().payload||"{}");
+          // Only update from Firebase if we haven't saved more recently
+          if(Date.now()-lastSaveRef.current>2000){
+            setData(d);
+          }
+        }catch{}
       }
       setLoading(false);
     },(err)=>{console.error("Firebase read error",err);setLoading(false);});
@@ -5995,9 +6001,9 @@ export default function App() {
   },[]);
 
   const upd=useCallback((d)=>{
+    lastSaveRef.current=Date.now();
     setData(d);
-    savingRef.current=true;
-    saveToFirebase(d).finally(()=>{savingRef.current=false;});
+    saveToFirebase(d);
   },[]);
   const dataRef=useRef(data);
   useEffect(()=>{dataRef.current=data;},[data]);
