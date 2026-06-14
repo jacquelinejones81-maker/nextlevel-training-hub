@@ -1189,10 +1189,11 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   const [contactForm,setContactForm]=useState({phone:rep.phone||"",email:rep.email||""});
   const saveContact=()=>{onUpdate(rep.id,{...rep,phone:contactForm.phone,email:contactForm.email});setEditContact(false);};
   const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"schedule",l:"Schedule"}];
-  const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
+  const togT=(id)=>{const lr=(data.reps||[]).find(r=>r.id===rep.id)||rep;const tc2=lr.trainerChecked||{};onUpdate(rep.id,{...lr,trainerChecked:{...tc2,[id]:!tc2[id]}});};
   const addCI=()=>{
     if(!ciNote.trim())return;
-    const updated={...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]};
+    const latestRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;
+    const updated={...latestRep,checkIns:[...(latestRep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]};
     try{localStorage.setItem("checkins_"+rep.id,JSON.stringify(updated.checkIns));}catch(e){}
     onUpdate(rep.id,updated);
     setCiNote("");
