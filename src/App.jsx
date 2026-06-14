@@ -6072,7 +6072,7 @@ export default function App() {
   const navTo=(s)=>{setSection(s);setSelRepId(null);};
 
   const renderContent=()=>{
-    if(selRep&&(section==="reps"||section==="dashboard")) return <RepProfile rep={selRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...data,reps:data.reps.filter(r=>r.id!==id)});setSelRepId(null);}}/>;
+    if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(data.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...data,reps:data.reps.filter(r=>r.id!==id)});setSelRepId(null);}}/>;
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
     if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
