@@ -111,7 +111,7 @@ const FAST_START = [
   {id:"f1",cat:"Getting Started",task:"Download Primerica app, register and log in within 24 hrs (earn $50 bonus)"},
   {id:"f2",cat:"Apps & Access",task:"Download Telegram app (team communication)"},
   {id:"f3",cat:"References",task:"Provide 5 professional character references to your trainer",note:"Character references can be found in the Refs tab"},
-  {id:"f4",cat:"Onboarding",task:"Complete Orientation"},
+  {id:"f4",cat:"Onboarding",task:"Complete Orientation",note:"Orientation video is in the Resources tab"},
   {id:"f5",cat:"Business Commitment",task:"Business Commitment - pay POL fee and set up business account"},
   {id:"f6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
   {id:"f7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
@@ -127,7 +127,7 @@ const REGULAR_START = [
   {id:"r1",cat:"Getting Started",task:"Download Primerica app, register and log in within 24 hrs (earn $50 bonus)"},
   {id:"r2",cat:"Apps & Access",task:"Download Telegram app (team communication)"},
   {id:"r3",cat:"References",task:"Provide 5 character references to your trainer",note:"Character references can be found in the Refs tab"},
-  {id:"r4",cat:"Onboarding",task:"Complete Orientation"},
+  {id:"r4",cat:"Onboarding",task:"Complete Orientation",note:"Orientation video is in the Resources tab"},
   {id:"r5",cat:"Business Commitment",task:"Business Commitment - build your financial and business house"},
   {id:"r6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
   {id:"r7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
@@ -4326,7 +4326,7 @@ const DEFAULT_TEMPLATES = [
 
 function QuickMessages({data,onUpdate,userRole}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
-  const templates = data.quickMessages||DEFAULT_TEMPLATES;
+  const templates = data.quickMessages||(()=>{try{const ls=localStorage.getItem("quickMessages_backup");return ls?JSON.parse(ls):DEFAULT_TEMPLATES;}catch(e){return DEFAULT_TEMPLATES;}})();
   const [copied,setCopied] = useState(null);
   const [showAdd,setShowAdd] = useState(false);
   const [form,setForm] = useState({cat:"Encouragement",msg:""});
@@ -4342,7 +4342,10 @@ function QuickMessages({data,onUpdate,userRole}) {
 
   const add = () => {
     if(!form.msg) return;
-    onUpdate({...data,quickMessages:[...templates,{...form,id:Date.now()}]});
+    const newTemplates = [...templates,{...form,id:Date.now()}];
+    onUpdate({...data,quickMessages:newTemplates});
+    // Also save to localStorage as backup
+    try{localStorage.setItem("quickMessages_backup",JSON.stringify(newTemplates));}catch(e){}
     setForm({cat:"Encouragement",msg:""});
     setShowAdd(false);
   };
