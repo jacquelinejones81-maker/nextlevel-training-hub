@@ -1176,7 +1176,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
 }
 
 // ── REP PROFILE (trainer/admin view) ──
-function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
+function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
   const [tab,setTab]=useState("trainer");
   const [viewAsRep,setViewAsRep]=useState(false);
   const track=TRACK_INFO[rep.track];
@@ -1257,10 +1257,10 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
     {tab==="checkins"&&<div>
       {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds!==null&&ds>=7;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins yet - log one below":ds===0?"Checked in today":`Last check-in ${ds} day${ds!==1?"s":""} ago${stalled?" - consider reaching out!":""}`}</div>;})()}
       <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Log</button></div>
-      {(rep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:C.text}}>{ci.note}</div><div style={{fontSize:10,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>)}
+      {(()=>{const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;return(liveRep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:C.text}}>{ci.note}</div><div style={{fontSize:10,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>);})()}
     </div>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
-    {tab==="schedule"&&<ScheduleView data={data} onUpdate={onUpdateData||(()=>{})} userRole={readOnly?"rep":"rep"}/>}
+    {tab==="schedule"&&<ScheduleView data={data} onUpdate={onUpdateData||((u)=>{})} userRole="rep"/>}
     {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})}/>)}</div>)}</div>}
   </div>;
 }
@@ -5993,6 +5993,8 @@ export default function App() {
   },[]);
 
   const upd=useCallback((d)=>{setData(d);saveToFirebase(d);},[]);
+  const dataRef=useRef(data);
+  useEffect(()=>{dataRef.current=data;},[data]);
 
   // Track login — must be before any conditional returns
   useEffect(()=>{
@@ -6073,7 +6075,7 @@ export default function App() {
   const navTo=(s)=>{setSection(s);setSelRepId(null);};
 
   const renderContent=()=>{
-    if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(data.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={data} onUpdate={(id,u)=>upd({...data,reps:data.reps.map(r=>r.id===id?u:r)})} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...data,reps:data.reps.filter(r=>r.id!==id)});setSelRepId(null);}}/>;}
+    if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(dataRef.current.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={dataRef.current} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).filter(r=>r.id!==id)});setSelRepId(null);}}/>;}
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
     if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
