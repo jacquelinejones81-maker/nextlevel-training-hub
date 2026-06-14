@@ -5299,7 +5299,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
 
   // Get all leads for this rep from MoneyMap leads merged with pipeline stage data
   const [mmLeads,setMmLeads] = useState([]);
-  const safeName = (rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+  const safeName = rep.linkName||(rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
 
   useEffect(()=>{
     const fetchLeads = async()=>{
@@ -5470,7 +5470,11 @@ function AdminPipeline({data,onUpdate}) {
 
 // ── MY PIPELINE PAGE (admin/trainer sidebar) ──
 function MyPipelinePage({session,data,onUpdate}) {
-  const pseudoRep = {id:session.id, name:session.name, track:"licensed"};
+  // For admins use their linkName if set, otherwise use first name
+  const adminRecord = (data.admins||[]).find(a=>a.id===session.id);
+  const trainerRecord = (data.trainers||[]).find(t=>t.id===session.id);
+  const linkName = adminRecord?.linkName||trainerRecord?.linkName||null;
+  const pseudoRep = {id:session.id, name:linkName||session.name, linkName:linkName||null, track:"licensed"};
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Pipeline</div>
     <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Leads from your personal MoneyMap link and their current stage.</div>
