@@ -5282,6 +5282,7 @@ function MyLeads({repName}) {
 // ── LEAD PIPELINE ──
 const PIPELINE_STAGES = [
   {key:"new",label:"New Lead",color:C.teal},
+  {key:"wantsReview",label:"Wants Review 🔔",color:"#f97316"},
   {key:"called",label:"Called",color:"#3b82f6"},
   {key:"bookSent",label:"HMW Book Sent",color:C.purple},
   {key:"apptScheduled",label:"Appt Scheduled",color:C.gold},
@@ -5316,7 +5317,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   // Merge MoneyMap leads with pipeline stage from NextLevel Firebase
   const leads = mmLeads.map(l=>({
     ...l,
-    stage: (repPipeline[l.docId]||{}).stage||"new",
+    stage: (repPipeline[l.docId]||{}).stage||(l.wantsReview?"wantsReview":"new"),
     stageUpdatedAt: (repPipeline[l.docId]||{}).stageUpdatedAt||l.submittedAt,
     notes: (repPipeline[l.docId]||{}).notes||"",
   }));
@@ -5354,6 +5355,14 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:12}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
 
   return <div>
+    {/* Wants Review notification banner */}
+    {leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length>0&&<div style={{background:"linear-gradient(135deg,#f97316,#ea580c)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:16}}>🔔</span>
+      <div style={{flex:1}}>
+        <div style={{fontSize:13,fontWeight:700,color:"white"}}>{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length} lead{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length!==1?"s":""} requesting a review!</div>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.8)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
+      </div>
+    </div>}
     {/* Stage selector */}
     <div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:6,marginBottom:12,WebkitOverflowScrolling:"touch"}}>
       <button onClick={()=>setActiveStage("all")} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage==="all"?700:400,background:activeStage==="all"?C.navy:C.surface,color:activeStage==="all"?"white":C.textMid,fontSize:11}}>
