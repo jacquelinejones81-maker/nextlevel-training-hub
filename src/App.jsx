@@ -5984,9 +5984,10 @@ export default function App() {
   const [showNeedHelp,setShowNeedHelp]=useState(false);
 
   // Subscribe to Firebase
+  const savingRef=useRef(false);
   useEffect(()=>{
     const unsub=onSnapshot(doc(db,"appdata","main"),(snap)=>{
-      if(snap.exists()){
+      if(snap.exists()&&!savingRef.current){
         try{const d=JSON.parse(snap.data().payload||"{}");setData(d);}catch{}
       }
       setLoading(false);
@@ -5994,7 +5995,11 @@ export default function App() {
     return ()=>unsub();
   },[]);
 
-  const upd=useCallback((d)=>{setData(d);saveToFirebase(d);},[]);
+  const upd=useCallback((d)=>{
+    setData(d);
+    savingRef.current=true;
+    saveToFirebase(d).finally(()=>{savingRef.current=false;});
+  },[]);
   const dataRef=useRef(data);
   useEffect(()=>{dataRef.current=data;},[data]);
 
