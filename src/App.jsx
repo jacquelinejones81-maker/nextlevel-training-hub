@@ -29,6 +29,11 @@ const mmApp = initializeApp(mmConfig, "moneymap");
 const mmDb = getFirestore(mmApp);
 
 const saveToFirebase = async (data) => {
+  // Warn if document is getting too large
+  const size = new Blob([JSON.stringify(data)]).size;
+  if(size > 900000) {
+    console.warn("Firebase document size warning:", Math.round(size/1024)+"KB — approaching 1MB limit");
+  }
   try { await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) }); } catch(e) { console.error("Firebase save error", e); }
 };
 
@@ -1185,7 +1190,13 @@ function RepProfile({rep,data,onUpdate,onBack,onDelete}) {
   const saveContact=()=>{onUpdate(rep.id,{...rep,phone:contactForm.phone,email:contactForm.email});setEditContact(false);};
   const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"schedule",l:"Schedule"}];
   const togT=(id)=>onUpdate(rep.id,{...rep,trainerChecked:{...tc,[id]:!tc[id]}});
-  const addCI=()=>{if(!ciNote.trim())return;onUpdate(rep.id,{...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]});setCiNote("");};
+  const addCI=()=>{
+    if(!ciNote.trim())return;
+    const updated={...rep,checkIns:[...(rep.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]};
+    try{localStorage.setItem("checkins_"+rep.id,JSON.stringify(updated.checkIns));}catch(e){}
+    onUpdate(rep.id,updated);
+    setCiNote("");
+  };
 
   if(viewAsRep) return <div>
     <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -4824,11 +4835,12 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
 function RecruitsTab({rep,data,myRecruits,onUpdate}) {
   const [showForm,setShowForm] = useState(false);
   const [form,setForm] = useState({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
-  const myLoggedRecruits = rep.myRecruitLog||[];
+  const myLoggedRecruits = rep.myRecruitLog||(()=>{try{const ls=localStorage.getItem("recruitLog_"+rep.id);return ls?JSON.parse(ls):[];}catch(e){return [];}})();
 
   const addRecruit = () => {
     if(!form.name) return;
     const updated = [...myLoggedRecruits,{...form,addedAt:new Date().toISOString(),id:Date.now()}];
+    try{localStorage.setItem("recruitLog_"+rep.id,JSON.stringify(updated));}catch(e){}
     onUpdate(rep.id,{...rep,myRecruitLog:updated});
     setForm({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
     setShowForm(false);
@@ -4964,7 +4976,7 @@ const PROSPECT_QUESTIONS = [
 ];
 
 function ProspectsTab({rep,onUpdate}) {
-  const prospects = rep.prospects||{};
+  const prospects = rep.prospects||(()=>{try{const ls=localStorage.getItem("prospects_"+rep.id);return ls?JSON.parse(ls):{};}catch(e){return {};}})();
   const [openCats,setOpenCats] = useState({"Purpose & Protection":true});
   const [inputs,setInputs] = useState({});
 
@@ -4975,7 +4987,9 @@ function ProspectsTab({rep,onUpdate}) {
     if(!name) return;
     const existing = prospects[qId]||[];
     if(existing.some(n=>n.toLowerCase()===name.toLowerCase())) return;
-    onUpdate({...rep,prospects:{...prospects,[qId]:[...existing,name]}});
+    const updatedProspects = {...prospects,[qId]:[...existing,name]};
+    try{localStorage.setItem("prospects_"+rep.id,JSON.stringify(updatedProspects));}catch(e){}
+    onUpdate({...rep,prospects:updatedProspects});
     setInputs(prev=>({...prev,[qId]:""}));
   };
 
