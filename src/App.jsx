@@ -1002,7 +1002,13 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const track=TRACK_INFO[rep.track];
   const cl=track?.checklist||[];
   const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;
-  const checked=liveRep.checked||{};
+  const [localChecked,setLocalChecked]=useState(liveRep.checked||{});
+  // Keep localChecked in sync when data updates from Firebase
+  useEffect(()=>{
+    const fresh=(data.reps||[]).find(r=>r.id===rep.id);
+    if(fresh?.checked) setLocalChecked(fresh.checked);
+  },[data,rep.id]);
+  const checked=localChecked;
   const done=cl.filter(i=>checked[i.id]).length;
   const pct=cl.length>0?Math.round((done/cl.length)*100):0;
   const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
@@ -1026,6 +1032,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
+      setLocalChecked(newChecked); // Update UI immediately
       const newDone=cl.filter(i=>newChecked[i.id]).length;
       const justCompleted=newDone===cl.length&&cl.length>0&&done<cl.length;
       if(justCompleted&&!liveRep.celebrationShown){
@@ -6073,7 +6080,7 @@ export default function App() {
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         <div style={{width:"100%"}}><AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/></div>
         <div style={{width:"100%"}}><DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/></div>
-        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={dataRef.current} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/></div>
+        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/></div>
       </div>
     </div>;
   }
