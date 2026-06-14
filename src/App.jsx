@@ -1001,14 +1001,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const [showCelebration,setShowCelebration]=useState(false);
   const track=TRACK_INFO[rep.track];
   const cl=track?.checklist||[];
-  const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;
-  const [localChecked,setLocalChecked]=useState(liveRep.checked||{});
-  // Keep localChecked in sync when data updates from Firebase
-  useEffect(()=>{
-    const fresh=(data.reps||[]).find(r=>r.id===rep.id);
-    if(fresh?.checked) setLocalChecked(fresh.checked);
-  },[data,rep.id]);
-  const checked=localChecked;
+  const checked=rep.checked||{};
   const done=cl.filter(i=>checked[i.id]).length;
   const pct=cl.length>0?Math.round((done/cl.length)*100):0;
   const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
@@ -1032,14 +1025,13 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
-      setLocalChecked(newChecked); // Update UI immediately
       const newDone=cl.filter(i=>newChecked[i.id]).length;
       const justCompleted=newDone===cl.length&&cl.length>0&&done<cl.length;
-      if(justCompleted&&!liveRep.celebrationShown){
+      if(justCompleted&&!rep.celebrationShown){
         setShowCelebration(true);
-        onUpdate(rep.id,{...liveRep,checked:newChecked,celebrationShown:true});
+        onUpdate(rep.id,{...rep,checked:newChecked,celebrationShown:true});
       } else {
-        onUpdate(rep.id,{...liveRep,checked:newChecked});
+        onUpdate(rep.id,{...rep,checked:newChecked});
       }
     }
   };
