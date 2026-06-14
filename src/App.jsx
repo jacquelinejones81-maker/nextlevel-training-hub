@@ -29,12 +29,29 @@ const mmApp = initializeApp(mmConfig, "moneymap");
 const mmDb = getFirestore(mmApp);
 
 const saveToFirebase = async (data) => {
-  // Warn if document is getting too large
   const size = new Blob([JSON.stringify(data)]).size;
   if(size > 900000) {
     console.warn("Firebase document size warning:", Math.round(size/1024)+"KB — approaching 1MB limit");
   }
-  try { await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) }); } catch(e) { console.error("Firebase save error", e); }
+  try {
+    await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) });
+    return true;
+  } catch(e) {
+    console.error("Firebase save error", e);
+    // If document too large, try saving without photos
+    if(e.message&&(e.message.includes("maximum")||e.message.includes("size")||size>900000)){
+      try {
+        const stripped={...data};
+        // Remove large photo data to make room
+        if(stripped.profilePhotos) stripped.profilePhotos={};
+        if(stripped.wofPhotos) stripped.wofPhotos={};
+        await setDoc(doc(db,"appdata","main"),{payload:JSON.stringify(stripped)});
+        console.warn("Saved without photos due to size limit");
+        return true;
+      } catch(e2){ console.error("Emergency save also failed",e2); }
+    }
+    return false;
+  }
 };
 
 // ── DESIGN TOKENS ──
@@ -2557,7 +2574,12 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
 // ── MY PROFILE PAGE ──
 function MyProfilePage({session,data,onUpdate}) {
   const profilePhotos = data.profilePhotos||{};
-  const photo = profilePhotos[session.id]||(()=>{try{return localStorage.getItem("profilePhoto_"+session.id)||null;}catch(e){return null;}})();
+  const photo = (()=>{
+    // Check localStorage first (photos migrated from Firebase)
+    try{const ls=localStorage.getItem("profilePhoto_"+session.id);if(ls)return ls;}catch(e){}
+    // Fallback to Firebase profilePhotos
+    return profilePhotos[session.id]||null;
+  })();
   const [showLightbox,setShowLightbox] = useState(false);
 
   const handleUpload = (e) => {
@@ -5989,9 +6011,31 @@ export default function App() {
       if(snap.exists()){
         try{
           const d=JSON.parse(snap.data().payload||"{}");
-          // Only update from Firebase if we haven't saved more recently
           if(Date.now()-lastSaveRef.current>2000){
-            setData(d);
+            // Migrate photos to localStorage to free Firebase space
+            const profilePhotos=d.profilePhotos||{};
+            const wofPhotos=d.wofPhotos||{};
+            let needsClean=false;
+            Object.entries(profilePhotos).forEach(([id,photo])=>{
+              if(photo){
+                try{localStorage.setItem("profilePhoto_"+id,photo);}catch(e){}
+                needsClean=true;
+              }
+            });
+            Object.entries(wofPhotos).forEach(([id,photo])=>{
+              if(photo){
+                try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}
+                needsClean=true;
+              }
+            });
+            // Strip photos from Firebase doc to save space
+            if(needsClean&&(Object.keys(profilePhotos).length>0||Object.keys(wofPhotos).length>0)){
+              const cleaned={...d,profilePhotos:{},wofPhotos:{}};
+              setData(cleaned);
+              saveToFirebase(cleaned);
+            } else {
+              setData(d);
+            }
           }
         }catch{}
       }
