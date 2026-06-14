@@ -5377,7 +5377,8 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:700,color:C.text}}>{lead.name||"Unknown"}</div>
-            <div style={{fontSize:11,color:C.textMid}}>{lead.phone}</div>
+            {lead.phone&&<div style={{fontSize:11,color:C.textMid}}><PhoneLink phone={lead.phone}/></div>}
+            {lead.email&&<div style={{fontSize:11,color:C.teal}}><a href={"mailto:"+lead.email} style={{color:C.teal,textDecoration:"none"}}>✉ {lead.email}</a></div>}
             <div style={{fontSize:10,color:C.textLight,marginTop:2}}>
               Received: {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"Unknown"}
             </div>
