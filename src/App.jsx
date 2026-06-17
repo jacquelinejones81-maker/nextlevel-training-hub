@@ -16,27 +16,6 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const DATA_DOC = "appdata/main";
 
-// ── PHOTO UPLOAD HELPER (localStorage-based — Firebase Storage requires Blaze plan upgrade) ──
-// Saves a base64 data URL image to localStorage on this device and returns it directly
-async function uploadPhotoToStorage(dataUrl, path) {
-  try {
-    const key = path.replace(/[\/]/g,"_");
-    localStorage.setItem(key, dataUrl);
-    return dataUrl;
-  } catch (e) {
-    console.error("Photo save failed", e);
-    return null;
-  }
-}
-// Removes a photo from localStorage given its path
-async function deletePhotoFromStorage(path) {
-  try {
-    const key = path.replace(/[\/]/g,"_");
-    localStorage.removeItem(key);
-  } catch (e) {
-    // Ignore errors
-  }
-}
 
 // ── MONEYMAP FIREBASE ──
 const mmConfig = {
@@ -564,11 +543,11 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
         <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo — DGO & Team Recognition</div>
         <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Upload a professional headshot — used for your DGO presentation and Wall of Fame recognition</div>
-{(()=>{const p=(data?.photoURLs||{})[rep.id]||null;return p?<div style={{marginBottom:8,position:"relative",display:"inline-block"}}><img src={p} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>{!readOnly&&<button onClick={()=>{const updated={...(data.photoURLs||{})};delete updated[rep.id];if(onUpdateData)onUpdateData({...data,photoURLs:updated});deletePhotoFromStorage(`profilePhotos/${rep.id}.jpg`);}} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}</div>:null;})()}
+{(()=>{let p=rep.dgoPhoto;if(!p){try{p=localStorage.getItem("dgoPhoto_"+rep.id);}catch(ex){}}return p?<div style={{marginBottom:8,position:"relative",display:"inline-block"}}><img src={p} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>{!readOnly&&<button onClick={()=>{try{localStorage.removeItem("dgoPhoto_"+rep.id);}catch(ex){}onUpdate({...rep,dgoPhoto:null});}} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}</div>:null;})()}
         {!readOnly&&<div>
           <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-            {(data?.photoURLs||{})[rep.id]?"Change Photo":"Upload Profile Photo"}
+            {rep.dgoPhoto?"Change Photo":"Upload Profile Photo"}
             <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
               const file=e.target.files[0];
               if(!file) return;
@@ -576,7 +555,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
               const reader=new FileReader();
               reader.onload=ev=>{
                 const img=new Image();
-                img.onload=async()=>{
+                img.onload=()=>{
                   const canvas=document.createElement("canvas");
                   let w=img.width,h=img.height;
                   const MAX=400;
@@ -585,11 +564,14 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
                   canvas.width=w;canvas.height=h;
                   canvas.getContext("2d").drawImage(img,0,0,w,h);
                   const compressed=canvas.toDataURL("image/jpeg",0.7);
-                  const url=await uploadPhotoToStorage(compressed,`profilePhotos/${rep.id}.jpg`);
-                  if(url&&onUpdateData&&data){
-                    onUpdateData({...data,photoURLs:{...(data.photoURLs||{}),[rep.id]:url}});
-                  } else if(!url){
-                    alert("Photo upload failed. Please check your connection and try again.");
+                  if(onUpdateData&&data){
+                    onUpdateData({...data,
+                      profilePhotos:{...(data.profilePhotos||{}),[rep.id]:compressed},
+                      reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,dgoPhoto:compressed}:r)
+                    });
+                  } else {
+                    try{localStorage.setItem("dgoPhoto_"+rep.id,compressed);}catch(ex){}
+                  onUpdate({...rep,dgoPhoto:compressed});
                   }
                 };
                 img.src=ev.target.result;
@@ -598,7 +580,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
             }}/>
           </label>
         </div>}
-        {readOnly&&!(data?.photoURLs||{})[rep.id]&&<div style={{fontSize:11,color:C.textLight}}>No photo uploaded yet</div>}
+        {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:11,color:C.textLight}}>No photo uploaded yet</div>}
       </div>
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
@@ -1301,7 +1283,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
         {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
       {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:11,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
       {rep.preLicType&&<div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}><Badge color={C.purple} small>Pre-Lic: {rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online"}</Badge>{rep.preLicDone&&<Badge color={C.success} small>Complete</Badge>}{rep.selectedRVP&&<Badge color={C.gold} small>RVP: {rep.selectedRVP}</Badge>}</div>}
-      {(data.photoURLs||{})[rep.id]&&<DgoPhotoPanel photo={(data.photoURLs||{})[rep.id]} name={rep.name}/>}
+      {rep.dgoPhoto&&<DgoPhotoPanel photo={rep.dgoPhoto} name={rep.name}/>}
       {rep.tshirtSize&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:8}}><div style={{padding:"4px 12px",borderRadius:6,background:C.gold,color:"white",fontSize:12,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:11,color:C.textMid}}>T-Shirt Size</span></div>}
       </div>
     </Card>
@@ -2602,39 +2584,23 @@ function TrainerCareerPath({data,onUpdate,session}) {
 
 // ── SIDEBAR PHOTO UPLOAD ──
 function SidebarPhotoUpload({userId,data,onUpdateData}) {
-  const photo = (data?.photoURLs||{})[userId]||null;
+  const profilePhotos = (data&&data.profilePhotos)||{};
+  const photo = profilePhotos[userId]||null;
   const [showLightbox,setShowLightbox] = useState(false);
-  const [uploading,setUploading] = useState(false);
   const handle = (e) => {
     const file=e.target.files[0]; if(!file) return;
-    if(file.size>10*1024*1024){alert("Photo must be under 10MB");return;}
-    setUploading(true);
+    if(file.size>5*1024*1024){alert("Photo must be under 5MB");return;}
     const reader=new FileReader();
     reader.onload=ev=>{
-      const img=new Image();
-      img.onload=async()=>{
-        const canvas=document.createElement("canvas");
-        const MAX=400;
-        let w=img.width,h=img.height;
-        if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
-        else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
-        canvas.width=w;canvas.height=h;
-        canvas.getContext("2d").drawImage(img,0,0,w,h);
-        const compressed=canvas.toDataURL("image/jpeg",0.7);
-        const url=await uploadPhotoToStorage(compressed,`profilePhotos/${userId}.jpg`);
-        setUploading(false);
-        if(url&&onUpdateData&&data) onUpdateData({...data,photoURLs:{...(data.photoURLs||{}),[userId]:url}});
-      };
-      img.src=ev.target.result;
+      if(onUpdateData&&data) onUpdateData({...data,profilePhotos:{...profilePhotos,[userId]:ev.target.result}});
     };
     reader.readAsDataURL(file);
   };
   const remove = () => {
     if(onUpdateData&&data){
-      const updated={...(data.photoURLs||{})};
+      const updated=Object.assign({},profilePhotos);
       delete updated[userId];
-      onUpdateData({...data,photoURLs:updated});
-      deletePhotoFromStorage(`profilePhotos/${userId}.jpg`);
+      onUpdateData({...data,profilePhotos:updated});
     }
   };
   return <div style={{position:"relative",flexShrink:0}}>
@@ -2662,44 +2628,41 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
 
 // ── MY PROFILE PAGE ──
 function MyProfilePage({session,data,onUpdate}) {
-  const photo = data.photoURLs?.[session.id]||null;
+  const profilePhotos = data.profilePhotos||{};
+  const photo = (()=>{
+    try{const ls=localStorage.getItem("profilePhoto_"+session.id);if(ls)return ls;}catch(e){}
+    return profilePhotos[session.id]||null;
+  })();
   const [showLightbox,setShowLightbox] = useState(false);
-  const [uploading,setUploading] = useState(false);
 
   const handleUpload = (e) => {
     const file=e.target.files[0]; if(!file) return;
     if(file.size>10*1024*1024){alert("Photo must be under 10MB");return;}
-    setUploading(true);
     const reader=new FileReader();
     reader.onload=ev=>{
       const img=new Image();
-      img.onload=async()=>{
+      img.onload=()=>{
         const canvas=document.createElement("canvas");
-        const MAX=400; // Can use larger size now since Storage has no document limit
+        const MAX=200;
         let w=img.width,h=img.height;
         if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
         else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
         canvas.width=w;canvas.height=h;
         canvas.getContext("2d").drawImage(img,0,0,w,h);
-        const compressed=canvas.toDataURL("image/jpeg",0.7);
-        const url=await uploadPhotoToStorage(compressed,`profilePhotos/${session.id}.jpg`);
-        setUploading(false);
-        if(url){
-          onUpdate({...data,photoURLs:{...(data.photoURLs||{}),[session.id]:url}});
-        } else {
-          alert("Photo upload failed. Please check your connection and try again.");
-        }
+        const compressed=canvas.toDataURL("image/jpeg",0.4);
+        try{localStorage.setItem("profilePhoto_"+session.id,compressed);}catch(ex){}
+        onUpdate({...data,profilePhotos:{...profilePhotos,[session.id]:compressed}});
       };
       img.src=ev.target.result;
     };
     reader.readAsDataURL(file);
   };
 
-  const remove = async () => {
-    const updated = {...(data.photoURLs||{})};
+  const remove = () => {
+    const updated = Object.assign({},profilePhotos);
     delete updated[session.id];
-    onUpdate({...data,photoURLs:updated});
-    deletePhotoFromStorage(`profilePhotos/${session.id}.jpg`);
+    try{localStorage.removeItem("profilePhoto_"+session.id);}catch(e){}
+    onUpdate({...data,profilePhotos:updated});
   };
 
   return <div>
@@ -2725,15 +2688,15 @@ function MyProfilePage({session,data,onUpdate}) {
         {photo
           ?<img src={photo} onClick={()=>setShowLightbox(true)} style={{width:80,height:80,borderRadius:12,objectFit:"cover",border:"2px solid "+C.teal,cursor:"pointer",flexShrink:0}}/>
           :<div style={{width:80,height:80,borderRadius:12,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:800,color:C.teal,border:"2px dashed "+C.teal+"44",flexShrink:0}}>
-            {uploading?<div style={{fontSize:10,textAlign:"center"}}>Uploading...</div>:session.name?.charAt(0)?.toUpperCase()}
+            {session.name?.charAt(0)?.toUpperCase()}
           </div>}
         <div style={{flex:1}}>
           <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.6}}>{photo?"Click your photo to view full size, or use the buttons below to update it.":"Upload a professional headshot. This photo will be used when you are recognized on the Wall of Fame."}</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,background:uploading?C.textLight:C.teal,color:"white",cursor:uploading?"default":"pointer",fontSize:12,fontWeight:600}}>
+            <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-              {uploading?"Uploading...":(photo?"Change Photo":"Upload Photo")}
-              <input type="file" accept="image/*" disabled={uploading} style={{display:"none"}} onChange={handleUpload}/>
+              {photo?"Change Photo":"Upload Photo"}
+              <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
             </label>
             {photo&&<button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>}
             {photo&&<button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.surface,color:C.textMid,border:"1px solid "+C.border,cursor:"pointer",fontSize:12}}>View Full Size</button>}
@@ -2759,7 +2722,22 @@ function WallOfFameBanner({data}) {
   if(recognitions.length===0) return null;
   const FAME_COLORS_B = {"First Life App":C.teal,"Licensed!":C.gold,"Top Producer":C.success,"Field Trainer Approved":C.purple,"Recruiter of the Month":C.teal,"Most Improved":C.gold,"Going Above and Beyond":C.success,"Custom":C.textMid};
 
-  const getPhotoB = (r) => (data.photoURLs||{})[r.personId]||null;
+  const getPhotoB = (r) => {
+    if(r.customPhoto) return r.customPhoto;
+    const wofPhotos = data.wofPhotos||{};
+    if(wofPhotos[r.personId]) return wofPhotos[r.personId];
+    const profilePhotos2 = data.profilePhotos||{};
+    if(profilePhotos2[r.personId]) return profilePhotos2[r.personId];
+    try{const ls=localStorage.getItem("profilePhoto_"+r.personId);if(ls)return ls;}catch(e){}
+    const rep = (data.reps||[]).find(rp=>rp.id===r.personId);
+    if(rep?.dgoPhoto) return rep.dgoPhoto;
+    try{const ls=localStorage.getItem("dgoPhoto_"+r.personId);if(ls)return ls;}catch(e){}
+    const trainer = (data.trainers||[]).find(t=>t.id===r.personId);
+    if(trainer?.photo) return trainer.photo;
+    const admin = (data.admins||[]).find(a=>a.id===r.personId);
+    if(admin?.photo) return admin.photo;
+    return null;
+  };
 
   return <div style={{marginBottom:12}}>
     <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:8,paddingLeft:2}}>Wall of Fame</div>
@@ -3696,7 +3674,12 @@ function MonthEndReport({data}) {
     const allP = [...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
     const person = allP.find(p=>(p.name||"").toLowerCase()===name||(p.name||"").toLowerCase().startsWith(name.split(" ")[0]));
     if(!person) return null;
-    return (data.photoURLs||{})[person.id]||null;
+    const photos = data.profilePhotos||{};
+    if(photos[person.id]) return photos[person.id];
+    try{const lsPhoto=localStorage.getItem("profilePhoto_"+person.id);if(lsPhoto)return lsPhoto;}catch(e){}
+    if(person.dgoPhoto) return person.dgoPhoto;
+    try{const lgDgo=localStorage.getItem("dgoPhoto_"+person.id);if(lgDgo)return lgDgo;}catch(e){}
+    return null;
   };
 
   const getInitialImg = (name,color="0EA5C9") => {
@@ -3759,7 +3742,10 @@ function MonthEndReport({data}) {
             ${f.newlyLicensed.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
               const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
               const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
-              const photo=(data.photoURLs||{})[person?.id]||null;
+              let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
               return `<div style="background:rgba(245,158,11,0.15);border:2px solid #f59e0b;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:12px">
                 ${photo?`<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #f59e0b">`:`<div style="width:48px;height:48px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0d1b2a">${n.charAt(0)}</div>`}
                 <div><div style="font-size:18px;font-weight:700;color:white">⭐ ${n}</div><div style="font-size:11px;color:#f59e0b">Licensed Agent</div></div>
@@ -3776,7 +3762,10 @@ function MonthEndReport({data}) {
             ${f.newTrainers.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
               const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
               const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
-              const photo=(data.photoURLs||{})[person?.id]||null;
+              let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
               return `<div style="background:rgba(139,92,246,0.2);border:2px solid #8b5cf6;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:12px">
                 ${photo?`<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #8b5cf6">`:`<div style="width:48px;height:48px;border-radius:50%;background:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:white">${n.charAt(0)}</div>`}
                 <div><div style="font-size:18px;font-weight:700;color:white">👑 ${n}</div><div style="font-size:11px;color:#c084fc">Field Trainer</div></div>
@@ -3796,7 +3785,10 @@ function MonthEndReport({data}) {
               ${names.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
                 const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
                 const person=allP.find(p=>(p.name||"").toLowerCase()===n.toLowerCase()||(p.name||"").toLowerCase().startsWith(n.split(" ")[0].toLowerCase()));
-                const photo=(data.photoURLs||{})[person?.id]||null;
+                let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
                 return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                   ${photo?`<img src="${photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #0ea5c9">`:`<div style="width:32px;height:32px;border-radius:50%;background:#0ea5c9;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#0d1b2a;flex-shrink:0">${n.charAt(0)}</div>`}
                   <span style="font-size:13px;color:white;font-weight:600">${n}</span>
@@ -3852,7 +3844,10 @@ function MonthEndReport({data}) {
             ${[["💰","Top Producer",f.topProducer],["🤝","Top Recruiter",f.topRecruiter],["🔥","Most Consistent",f.mostConsistent],["📅","Most Appointments",f.mostAppts]].filter(([,,n])=>n).map(([emoji,label,name])=>{
               const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
               const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-              const photo=(data.photoURLs||{})[person?.id]||null;
+              let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
               return `<div style="background:rgba(245,158,11,0.1);border:2px solid #f59e0b44;border-radius:16px;padding:20px;text-align:center">
                 ${photo?`<img src="${photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #f59e0b;margin-bottom:10px">`:`<div style="width:72px;height:72px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#0d1b2a;margin:0 auto 10px">${name.charAt(0)}</div>`}
                 <div style="font-size:20px;margin-bottom:6px">${emoji}</div>
@@ -3885,7 +3880,10 @@ function MonthEndReport({data}) {
               const allP2=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
               const nameOnly=n.split("—")[0].trim();
               const personW=allP2.find(p=>(p.name||"").toLowerCase()===nameOnly.toLowerCase()||(p.name||"").toLowerCase().startsWith(nameOnly.split(" ")[0].toLowerCase()));
-              const photoW=(data.photoURLs||{})[personW?.id]||null;
+              let photoW=(data.wofPhotos||{})[personW?.id]||(data.profilePhotos||{})[personW?.id]||null;
+              if(!photoW&&personW?.id){try{photoW=localStorage.getItem("wofPhoto_"+personW.id)||localStorage.getItem("profilePhoto_"+personW.id)||null;}catch(e){}}
+              if(!photoW&&personW?.dgoPhoto){photoW=personW.dgoPhoto;}
+              if(!photoW&&personW?.id){try{photoW=localStorage.getItem("dgoPhoto_"+personW.id)||null;}catch(e){}}
               return `<div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b44;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;max-width:320px">
                 ${photoW?`<img src="${photoW}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #f59e0b;flex-shrink:0">`:`<div style="width:40px;height:40px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#0d1b2a;flex-shrink:0">${nameOnly.charAt(0)}</div>`}
                 <span style="font-size:13px;color:#f59e0b;font-weight:600">⭐ ${n}</span>
@@ -3967,7 +3965,10 @@ function MonthEndReport({data}) {
       const previewPhotos = (val||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
         const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-        const photo=(data.photoURLs||{})[person?.id]||null;
+        let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
         return {name,photo};
       });
       return <div key={key} style={{marginBottom:8}}>
@@ -3988,7 +3989,10 @@ function MonthEndReport({data}) {
       const previews=(form.promotions[rank]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
         const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-        const photo=(data.photoURLs||{})[person?.id]||null;
+        let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
         return {name,photo};
       });
       return <div key={rank} style={{marginBottom:8}}>
@@ -4009,7 +4013,10 @@ function MonthEndReport({data}) {
       const previews=(form.milestones[m]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
         const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-        const photo=(data.photoURLs||{})[person?.id]||null;
+        let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
         return {name,photo};
       });
       return <div key={m} style={{marginBottom:8}}>
@@ -4126,20 +4133,24 @@ function WallOfFame({data,onUpdate,userRole}) {
 
   const filteredPeople = personSearch.length>0 ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(personSearch.toLowerCase())) : allPeople.slice(0,8);
 
-  const getPhoto = (personId) => (data.photoURLs||{})[personId]||null;
+  const getPhoto = (personId) => {
+    const profilePhotos = data.profilePhotos||{};
+    if(profilePhotos[personId]) return profilePhotos[personId];
+    try{const ls=localStorage.getItem("profilePhoto_"+personId);if(ls)return ls;}catch(e){}
+    const rep = (data.reps||[]).find(r=>r.id===personId);
+    if(rep?.dgoPhoto) return rep.dgoPhoto;
+    try{const ls=localStorage.getItem("dgoPhoto_"+personId);if(ls)return ls;}catch(e){}
+    const trainer = (data.trainers||[]).find(t=>t.id===personId);
+    if(trainer?.photo) return trainer.photo;
+    return null;
+  };
 
-  const [saving,setSaving] = useState(false);
-  const save = async () => {
+  const save = () => {
     if(!form.personId||!form.message) return;
-    setSaving(true);
     const person = allPeople.find(p=>p.id===form.personId);
     let newData = {...data};
     if(form.customPhoto){
-      // Upload custom photo to Firebase Storage instead of storing base64
-      const url = await uploadPhotoToStorage(form.customPhoto,`profilePhotos/${form.personId}.jpg`);
-      if(url){
-        newData = {...newData,photoURLs:{...(data.photoURLs||{}),[form.personId]:url}};
-      }
+      newData = {...newData,wofPhotos:{...(data.wofPhotos||{}),[form.personId]:form.customPhoto}};
     }
     const entry = {
       personId:form.personId,
@@ -4154,7 +4165,6 @@ function WallOfFame({data,onUpdate,userRole}) {
     setForm({personId:"",category:"First Life App",message:"",customPhoto:null});
     setPersonSearch("");
     setShowForm(false);
-    setSaving(false);
   };
 
   const remove = (id) => onUpdate({...data,wallOfFame:recognitions.filter(r=>r.id!==id)});
@@ -4238,7 +4248,9 @@ function WallOfFame({data,onUpdate,userRole}) {
 
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
       {recognitions.map((r,i)=>{
-        const photo = (data.photoURLs||{})[r.personId]||null;
+        const photo = r.customPhoto||(data.wofPhotos||{})[r.personId]||(data.profilePhotos||{})[r.personId]||(()=>{try{return localStorage.getItem("profilePhoto_"+r.personId)||null;}catch(e){return null;}})()
+          ||(data.reps||[]).find(rp=>rp.id===r.personId)?.dgoPhoto
+          ||(()=>{try{return localStorage.getItem("dgoPhoto_"+r.personId)||null;}catch(e){return null;}})();
         const catColor = FAME_COLORS[r.category]||C.gold;
         return <div key={i} style={{borderRadius:12,border:"2px solid "+catColor+"33",background:"white",overflow:"hidden",position:"relative"}}>
           {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
@@ -6067,19 +6079,29 @@ export default function App() {
         try{
           const d=JSON.parse(snap.data().payload||"{}");
           if(Date.now()-lastSaveRef.current>5000){
-            // Repopulate photoURLs from this device's localStorage (photos are device-local since Storage requires Blaze plan)
-            const photoURLs={};
-            try{
-              for(let i=0;i<localStorage.length;i++){
-                const key=localStorage.key(i);
-                if(key&&key.startsWith("profilePhotos_")){
-                  const personId=key.replace("profilePhotos_","").replace(/\.jpg$/,"");
-                  const val=localStorage.getItem(key);
-                  if(val)photoURLs[personId]=val;
-                }
+            // Migrate photos to localStorage to free Firebase space
+            const profilePhotos=d.profilePhotos||{};
+            const wofPhotos=d.wofPhotos||{};
+            let needsClean=false;
+            Object.entries(profilePhotos).forEach(([id,photo])=>{
+              if(photo){
+                try{localStorage.setItem("profilePhoto_"+id,photo);}catch(e){}
+                needsClean=true;
               }
-            }catch(e){}
-            setData({...d,photoURLs});
+            });
+            Object.entries(wofPhotos).forEach(([id,photo])=>{
+              if(photo){
+                try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}
+                needsClean=true;
+              }
+            });
+            if(needsClean&&(Object.keys(profilePhotos).length>0||Object.keys(wofPhotos).length>0)){
+              const cleaned={...d,profilePhotos:{},wofPhotos:{}};
+              setData(cleaned);
+              saveToFirebase(cleaned);
+            } else {
+              setData(d);
+            }
           }
         }catch{}
       }
@@ -6091,9 +6113,11 @@ export default function App() {
   const upd=useCallback((d)=>{
     lastSaveRef.current=Date.now();
     setData(d);
-    // Photos are data URLs stored locally — keep them OUT of the Firebase document entirely
-    // (Firebase Storage requires the paid Blaze plan, so photos stay device-local for now)
-    const lean={...d,photoURLs:{}};
+    const profilePhotos=d.profilePhotos||{};
+    const wofPhotos=d.wofPhotos||{};
+    Object.entries(profilePhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("profilePhoto_"+id,photo);}catch(e){}});
+    Object.entries(wofPhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}});
+    const lean={...d,profilePhotos:{},wofPhotos:{}};
     saveToFirebase(lean);
   },[]);
   const dataRef=useRef(data);
