@@ -3875,9 +3875,20 @@ function MonthEndReport({data}) {
         <div style="padding:40px;height:100%;box-sizing:border-box">
           <div style="font-size:32px;font-weight:900;color:white;margin-bottom:6px">⭐ Team Recognition</div>
           <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;font-style:italic">Recognized for going above and beyond!</div>
-          <div style="display:flex;flex-wrap:wrap;gap:10px">
-            ${f.wofNames.split(",").map(n=>n.trim()).filter(Boolean).map(n=>`
-            <div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b44;border-radius:10px;padding:10px 16px;font-size:14px;color:#f59e0b;font-weight:600">⭐ ${n}</div>`).join("")}
+          <div style="display:flex;flex-wrap:wrap;gap:14px">
+            ${f.wofNames.split(",").map(n=>n.trim()).filter(Boolean).map(n=>{
+              const allP2=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+              const nameOnly=n.split("—")[0].trim();
+              const personW=allP2.find(p=>(p.name||"").toLowerCase()===nameOnly.toLowerCase()||(p.name||"").toLowerCase().startsWith(nameOnly.split(" ")[0].toLowerCase()));
+              let photoW=(data.wofPhotos||{})[personW?.id]||(data.profilePhotos||{})[personW?.id]||null;
+              if(!photoW&&personW?.id){try{photoW=localStorage.getItem("wofPhoto_"+personW.id)||localStorage.getItem("profilePhoto_"+personW.id)||null;}catch(e){}}
+              if(!photoW&&personW?.dgoPhoto){photoW=personW.dgoPhoto;}
+              if(!photoW&&personW?.id){try{photoW=localStorage.getItem("dgoPhoto_"+personW.id)||null;}catch(e){}}
+              return `<div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b44;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;max-width:320px">
+                ${photoW?`<img src="${photoW}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #f59e0b;flex-shrink:0">`:`<div style="width:40px;height:40px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#0d1b2a;flex-shrink:0">${nameOnly.charAt(0)}</div>`}
+                <span style="font-size:13px;color:#f59e0b;font-weight:600">⭐ ${n}</span>
+              </div>`;
+            }).join("")}
           </div>
         </div>`}]:[]),
       // Closing slide
