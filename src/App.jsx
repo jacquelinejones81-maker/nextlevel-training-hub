@@ -1113,7 +1113,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       {(data.rvpBookingLinks||[]).filter(r=>r.link).length>0&&<div style={{marginTop:6}}>
         {(data.rvpBookingLinks||[]).filter(r=>r.link).map((rvp,i)=><a key={i} href={rvp.link} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none",marginBottom:i<(data.rvpBookingLinks||[]).filter(r=>r.link).length-1?5:0}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
-          <span style={{fontSize:10,color:"#fbbf24",fontWeight:600}}>Meet with {rvp.name}</span>
+          <span style={{fontSize:10,color:"#fbbf24",fontWeight:600}}>Meet with RVP - {rvp.name}</span>
         </a>)}
       </div>}
     </div>
