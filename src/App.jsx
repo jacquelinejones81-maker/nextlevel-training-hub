@@ -2665,6 +2665,7 @@ function MyProfilePage({session,data,onUpdate}) {
   const remove = () => {
     const updated = Object.assign({},profilePhotos);
     delete updated[session.id];
+    try{localStorage.removeItem("profilePhoto_"+session.id);}catch(e){}
     onUpdate({...data,profilePhotos:updated});
   };
 
@@ -3843,7 +3844,10 @@ function MonthEndReport({data}) {
             ${[["💰","Top Producer",f.topProducer],["🤝","Top Recruiter",f.topRecruiter],["🔥","Most Consistent",f.mostConsistent],["📅","Most Appointments",f.mostAppts]].filter(([,,n])=>n).map(([emoji,label,name])=>{
               const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
               const person=allP.find(p=>(p.name||"").toLowerCase()===name.toLowerCase()||(p.name||"").toLowerCase().startsWith(name.split(" ")[0].toLowerCase()));
-              const photo=(data.profilePhotos||{})[person?.id]||person?.dgoPhoto||null;
+              let photo=(data.profilePhotos||{})[person?.id]||null;
+              if(!photo&&person?.id){try{photo=localStorage.getItem("profilePhoto_"+person.id)||null;}catch(e){}}
+              if(!photo&&person?.dgoPhoto){photo=person.dgoPhoto;}
+              if(!photo&&person?.id){try{photo=localStorage.getItem("dgoPhoto_"+person.id)||null;}catch(e){}}
               return `<div style="background:rgba(245,158,11,0.1);border:2px solid #f59e0b44;border-radius:16px;padding:20px;text-align:center">
                 ${photo?`<img src="${photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #f59e0b;margin-bottom:10px">`:`<div style="width:72px;height:72px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#0d1b2a;margin:0 auto 10px">${name.charAt(0)}</div>`}
                 <div style="font-size:20px;margin-bottom:6px">${emoji}</div>
