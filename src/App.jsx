@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
-import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 
 
 // ── FIREBASE ──
@@ -15,29 +14,27 @@ const firebaseConfig = {
 };
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
 const DATA_DOC = "appdata/main";
 
-// ── PHOTO UPLOAD HELPER (Firebase Storage) ──
-// Uploads a base64 data URL image to Firebase Storage and returns a public download URL
+// ── PHOTO UPLOAD HELPER (localStorage-based — Firebase Storage requires Blaze plan upgrade) ──
+// Saves a base64 data URL image to localStorage on this device and returns it directly
 async function uploadPhotoToStorage(dataUrl, path) {
   try {
-    const photoRef = ref(storage, path);
-    await uploadString(photoRef, dataUrl, "data_url");
-    const url = await getDownloadURL(photoRef);
-    return url;
+    const key = path.replace(/[\/]/g,"_");
+    localStorage.setItem(key, dataUrl);
+    return dataUrl;
   } catch (e) {
-    console.error("Photo upload failed", e);
+    console.error("Photo save failed", e);
     return null;
   }
 }
-// Deletes a photo from Firebase Storage given its path
+// Removes a photo from localStorage given its path
 async function deletePhotoFromStorage(path) {
   try {
-    const photoRef = ref(storage, path);
-    await deleteObject(photoRef);
+    const key = path.replace(/[\/]/g,"_");
+    localStorage.removeItem(key);
   } catch (e) {
-    // Ignore errors if file doesn't exist
+    // Ignore errors
   }
 }
 
@@ -6070,7 +6067,19 @@ export default function App() {
         try{
           const d=JSON.parse(snap.data().payload||"{}");
           if(Date.now()-lastSaveRef.current>5000){
-            setData(d);
+            // Repopulate photoURLs from this device's localStorage (photos are device-local since Storage requires Blaze plan)
+            const photoURLs={};
+            try{
+              for(let i=0;i<localStorage.length;i++){
+                const key=localStorage.key(i);
+                if(key&&key.startsWith("profilePhotos_")){
+                  const personId=key.replace("profilePhotos_","").replace(/\.jpg$/,"");
+                  const val=localStorage.getItem(key);
+                  if(val)photoURLs[personId]=val;
+                }
+              }
+            }catch(e){}
+            setData({...d,photoURLs});
           }
         }catch{}
       }
@@ -6082,7 +6091,10 @@ export default function App() {
   const upd=useCallback((d)=>{
     lastSaveRef.current=Date.now();
     setData(d);
-    saveToFirebase(d);
+    // Photos are data URLs stored locally — keep them OUT of the Firebase document entirely
+    // (Firebase Storage requires the paid Blaze plan, so photos stay device-local for now)
+    const lean={...d,photoURLs:{}};
+    saveToFirebase(lean);
   },[]);
   const dataRef=useRef(data);
   useEffect(()=>{dataRef.current=data;},[data]);
