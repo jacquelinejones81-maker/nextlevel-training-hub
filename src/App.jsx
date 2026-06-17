@@ -80,6 +80,7 @@ const PhoneLink = ({phone}) => {
 
 // ── DESKTOP RESPONSIVE HELPER ──
 const dv = (mobile, desktop) => typeof window!=="undefined"&&window.innerWidth>=900 ? desktop : mobile;
+const REF_STAGES=[{k:"textSent",l:"Text Sent"},{k:"callScheduled",l:"Call Scheduled"},{k:"called",l:"Called Ref"},{k:"callComplete",l:"Reference Call Complete"},{k:"trainingApptSet",l:"Training Appt Set"}];
 
 // ── PERSON LOOKUP HELPER ──
 const findPerson = (id, data) => {
@@ -1013,6 +1014,48 @@ function AdvancementLibrary({data,onUpdate,userRole}) {
   </div>;
 }
 
+// ── REFERENCES EDITOR (race-condition-proof: local state is the only source of truth while editing) ──
+function RefsEditor({rep,data,onUpdate}) {
+  // Initialize local state ONCE from the rep prop at mount. After this, local state
+  // is the single source of truth for what's displayed — we never read back from
+  // rep/data while the user is actively editing, which is what caused the scrambling.
+  const [localRefs,setLocalRefs]=useState(()=>Array.from({length:5},(_,j)=>({...((rep.references||[])[j]||{})})));
+  const initializedForRepId=useRef(rep.id);
+
+  // Only re-initialize if we've switched to looking at a DIFFERENT rep entirely
+  // (e.g. admin closes one rep's profile and opens another). Never resync on data changes.
+  useEffect(()=>{
+    if(initializedForRepId.current!==rep.id){
+      setLocalRefs(Array.from({length:5},(_,j)=>({...((rep.references||[])[j]||{})})));
+      initializedForRepId.current=rep.id;
+    }
+  },[rep.id]);
+
+  const fmtRefPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
+
+  const updateField=(i,f,val)=>{
+    setLocalRefs(prev=>{
+      const newRefs=prev.map((r,j)=>j===i?{...r,[f]:f==="phone"?fmtRefPhone(val):val}:r);
+      // Save in the background using the LOCAL state as the base — never the stale rep prop
+      onUpdate(rep.id,{...rep,references:newRefs});
+      return newRefs;
+    });
+  };
+
+  return <div>{localRefs.map((r,i)=>{const status=r.status||{};const completedCount=REF_STAGES.filter(s=>status[s.k]).length;return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
+    <div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+      {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
+    </div>
+    {r.name&&completedCount>0&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:7,marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
+      {REF_STAGES.map(s=><div key={s.k} style={{display:"flex",alignItems:"center",gap:6}}>
+        <div style={{width:14,height:14,borderRadius:7,background:status[s.k]?C.success:C.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{status[s.k]&&<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}</div>
+        <span style={{fontSize:11,color:status[s.k]?C.success:C.textLight,fontWeight:status[s.k]?600:400}}>{s.l}</span>
+      </div>)}
+    </div>}
+  </div>;})}</div>;
+}
+
 function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
@@ -1198,8 +1241,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
-    {tab==="refs"&&<div>{Array.from({length:5},(_,i)=>{const r=(rep.references||[])[i]||{};const refStatus=r.status||{};const REF_STAGES=[{k:"textSent",l:"Text Sent"},{k:"callScheduled",l:"Call Scheduled"},{k:"called",l:"Called Ref"},{k:"callComplete",l:"Reference Call Complete"},{k:"trainingApptSet",l:"Training Appt Set"}];const setRefStatus=(stageKey)=>{const existing=rep.references||[];const refsArr=Array.from({length:5},(_,j)=>({...(existing[j]||{})}));const curStatus=refsArr[i].status||{};refsArr[i]={...refsArr[i],status:{...curStatus,[stageKey]:!curStatus[stageKey]}};onUpdate(rep.id,{...rep,references:refsArr});};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}><div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:r.name?8:0}}>{[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} readOnly={false} onChange={e=>{const existing=rep.references||[];const refs=Array.from({length:5},(_,j)=>({...(existing[j]||{})}));refs[i]={...refs[i],[f]:e.target.value};onUpdate(rep.id,{...rep,references:refs});}} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}</div>{r.name&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:8}}><div style={{fontSize:9,fontWeight:700,color:C.textLight,marginBottom:5,textTransform:"uppercase",letterSpacing:"0.5px"}}>Outreach Status</div><div style={{display:"flex",flexDirection:"column",gap:5}}>{REF_STAGES.map(s=><label key={s.k} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}><input type="checkbox" checked={!!refStatus[s.k]} onChange={()=>setRefStatus(s.k)} style={{width:15,height:15,accentColor:C.teal,cursor:"pointer"}}/><span style={{fontSize:12,color:refStatus[s.k]?C.success:C.textMid,fontWeight:refStatus[s.k]?600:400,textDecoration:refStatus[s.k]?"line-through":"none"}}>{s.l}</span></label>)}</div></div>}</div>;})}
-    </div>}
+    {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
@@ -1216,6 +1258,54 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
 }
 
 // ── REP PROFILE (trainer/admin view) ──
+// ── ADMIN REFERENCES EDITOR — editable fields + outreach status (race-condition-proof) ──
+function AdminRefsEditor({rep,data,onUpdate}) {
+  const [localRefs,setLocalRefs]=useState(()=>Array.from({length:5},(_,j)=>({...((rep.references||[])[j]||{})})));
+  const initializedForRepId=useRef(rep.id);
+
+  useEffect(()=>{
+    if(initializedForRepId.current!==rep.id){
+      setLocalRefs(Array.from({length:5},(_,j)=>({...((rep.references||[])[j]||{})})));
+      initializedForRepId.current=rep.id;
+    }
+  },[rep.id]);
+
+  const fmtRefPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
+
+  const updateField=(i,f,val)=>{
+    setLocalRefs(prev=>{
+      const newRefs=prev.map((r,j)=>j===i?{...r,[f]:f==="phone"?fmtRefPhone(val):val}:r);
+      onUpdate(rep.id,{...rep,references:newRefs});
+      return newRefs;
+    });
+  };
+
+  const toggleStatus=(i,stageKey)=>{
+    setLocalRefs(prev=>{
+      const curStatus=prev[i].status||{};
+      const newRefs=prev.map((r,j)=>j===i?{...r,status:{...curStatus,[stageKey]:!curStatus[stageKey]}}:r);
+      onUpdate(rep.id,{...rep,references:newRefs});
+      return newRefs;
+    });
+  };
+
+  return <div>{localRefs.map((r,i)=>{const status=r.status||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
+    <div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:r.name?8:0}}>
+      {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
+    </div>
+    {r.name&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:8}}>
+      <div style={{fontSize:9,fontWeight:700,color:C.textLight,marginBottom:5,textTransform:"uppercase",letterSpacing:"0.5px"}}>Outreach Status</div>
+      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+        {REF_STAGES.map(s=><label key={s.k} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}>
+          <input type="checkbox" checked={!!status[s.k]} onChange={()=>toggleStatus(i,s.k)} style={{width:15,height:15,accentColor:C.teal,cursor:"pointer"}}/>
+          <span style={{fontSize:12,color:status[s.k]?C.success:C.textMid,fontWeight:status[s.k]?600:400,textDecoration:status[s.k]?"line-through":"none"}}>{s.l}</span>
+        </label>)}
+      </div>
+    </div>}
+  </div>;})}</div>;
+}
+
 function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
   const [tab,setTab]=useState("trainer");
   const [viewAsRep,setViewAsRep]=useState(false);
@@ -1293,7 +1383,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
     {tab==="trainer"&&<div>{Object.entries(TRAINER_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
     {tab==="rep"&&<RepView rep={liveRepData} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={false}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})}/>}
-    {tab==="refs"&&<div>{(rep.references||[]).filter(r=>r.name).length===0?<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No references entered yet</div>:(rep.references||[]).filter(r=>r.name).map((r,i)=>{const refStatus=r.status||{};const REF_STAGES=[{k:"textSent",l:"Text Sent"},{k:"callScheduled",l:"Call Scheduled"},{k:"called",l:"Called Ref"},{k:"callComplete",l:"Reference Call Complete"},{k:"trainingApptSet",l:"Training Appt Set"}];const completedCount=REF_STAGES.filter(s=>refStatus[s.k]).length;return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:6}}><div style={{display:"flex",gap:10,alignItems:"center",marginBottom:completedCount>0?8:0}}><div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal,flexShrink:0}}>{i+1}</div><div><div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}>{r.phone}{r.relationship&&` - ${r.relationship}`}</div></div></div>{completedCount>0&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:7,display:"flex",flexDirection:"column",gap:4}}>{REF_STAGES.map(s=><div key={s.k} style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:14,height:14,borderRadius:7,background:refStatus[s.k]?C.success:C.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{refStatus[s.k]&&<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}</div><span style={{fontSize:11,color:refStatus[s.k]?C.success:C.textLight,fontWeight:refStatus[s.k]?600:400}}>{s.l}</span></div>)}</div>}</div>;})}</div>}
+    {tab==="refs"&&<AdminRefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={null} readOnly={false} data={data}/>}
     {tab==="checkins"&&<div>
       {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds!==null&&ds>=7;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins yet - log one below":ds===0?"Checked in today":`Last check-in ${ds} day${ds!==1?"s":""} ago${stalled?" - consider reaching out!":""}`}</div>;})()}
