@@ -1039,14 +1039,19 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {k:"fame",l:"Wall of Fame"},
     {k:"schedule",l:"Schedule"},
   ];
+  const [celebrationPct,setCelebrationPct]=useState(100);
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
       const newDone=cl.filter(i=>newChecked[i.id]).length;
-      const justCompleted=newDone===cl.length&&cl.length>0&&done<cl.length;
-      if(justCompleted&&!rep.celebrationShown){
+      const newPct=cl.length>0?Math.round((newDone/cl.length)*100):0;
+      const milestones=[25,50,75,100];
+      const shownMilestones=rep.milestonesShown||[];
+      const hitMilestone=milestones.find(m=>newPct>=m&&pct<m&&!shownMilestones.includes(m));
+      if(hitMilestone){
+        setCelebrationPct(hitMilestone);
         setShowCelebration(true);
-        onUpdate(rep.id,{...rep,checked:newChecked,celebrationShown:true});
+        onUpdate(rep.id,{...rep,checked:newChecked,milestonesShown:[...shownMilestones,hitMilestone],...(hitMilestone===100?{celebrationShown:true}:{})});
       } else {
         onUpdate(rep.id,{...rep,checked:newChecked});
       }
@@ -1093,6 +1098,24 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
           <div style={{height:4,background:C.teal,borderRadius:2,width:pct+"%",transition:"width 0.3s"}}/>
         </div>
       </div>
+      {/* Quick contact trainer */}
+      {trainer&&<div style={{marginTop:10,display:"flex",gap:5}}>
+        {trainer.phone&&<a href={"tel:"+trainer.phone.replace(/\\D/g,"")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 6px",borderRadius:6,background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.4)",textDecoration:"none"}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.22 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.2 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
+          <span style={{fontSize:10,color:"#34d399",fontWeight:600}}>Call</span>
+        </a>}
+        {trainer.phone&&<a href={"sms:"+trainer.phone.replace(/\\D/g,"")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 6px",borderRadius:6,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.4)",textDecoration:"none"}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          <span style={{fontSize:10,color:C.teal,fontWeight:600}}>Text</span>
+        </a>}
+      </div>}
+      {/* Meet with RVP */}
+      {(data.rvpBookingLinks||[]).filter(r=>r.link).length>0&&<div style={{marginTop:6}}>
+        {(data.rvpBookingLinks||[]).filter(r=>r.link).map((rvp,i)=><a key={i} href={rvp.link} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none",marginBottom:i<(data.rvpBookingLinks||[]).filter(r=>r.link).length-1?5:0}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
+          <span style={{fontSize:10,color:"#fbbf24",fontWeight:600}}>Meet with {rvp.name}</span>
+        </a>)}
+      </div>}
     </div>
     {/* Nav items */}
     <div style={{flex:1,overflowY:"auto",padding:"8px 8px"}}>
@@ -1171,7 +1194,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
 
-    {showCelebration&&<Confetti name={rep.name} onClose={()=>setShowCelebration(false)}/>}
+    {showCelebration&&<Confetti name={rep.name} pct={celebrationPct} onClose={()=>setShowCelebration(false)}/>}
     {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
@@ -1469,6 +1492,7 @@ function ManageTeam({data,onUpdate,onClose}) {
             {a.alsoRecruits&&<span style={{fontSize:10,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
           </label>
           {a.alsoRecruits&&<div style={{marginTop:4,display:"flex",flexDirection:"column",gap:4}}>
+            <input placeholder="Phone (for rep call/text button)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
             <input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
             <input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
           </div>}
@@ -1476,7 +1500,7 @@ function ManageTeam({data,onUpdate,onClose}) {
         <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){onUpdate({...data,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
       </div>
       <div><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
-        {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:12,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);onUpdate({...data,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>onUpdate({...data,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/></div>)}
+        {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:12,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);onUpdate({...data,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>onUpdate({...data,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Phone (for rep call/text button)" value={t.phone||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,phone:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box",marginBottom:5}}/><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/></div>)}
         <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Trainer name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(nt.name&&nt.pin){onUpdate({...data,trainers:[...trainers,{...nt,id:"trainer_"+Date.now()}]});setNt({name:"",pin:"",bookingLink:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
       </div>
 
@@ -1501,6 +1525,30 @@ function ManageTeam({data,onUpdate,onClose}) {
             const nr=data._newRVP||{};
             if(nr.id&&nr.name){onUpdate({...data,customRVPs:[...(data.customRVPs||[]),{id:nr.id,name:nr.name}],_newRVP:{}});}
           }} style={{padding:"5px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+        </div>
+      </div>
+
+      {/* RVP Booking Links — for "Meet with your RVP" button */}
+      <div style={{marginTop:14}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP Booking Links</div>
+        <div style={{fontSize:10,color:C.textLight,marginBottom:8}}>These show as "Meet with your RVP" buttons for all reps. Add multiple RVPs if needed.</div>
+        <div style={{marginBottom:8}}>
+          {(data.rvpBookingLinks||[]).map((rvp,i)=>(
+            <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:8,marginBottom:6}}>
+              <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5}}>
+                <input value={rvp.name} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,name:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="RVP Name" style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text,fontWeight:600}}/>
+                <button onClick={()=>onUpdate({...data,rvpBookingLinks:(data.rvpBookingLinks||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
+              </div>
+              <input value={rvp.link} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,link:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="Booking link (Calendly, etc.)" style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:5}}>
+          <input placeholder="New RVP name" value={(data._newRVPBooking||{}).name||""} onChange={e=>onUpdate({...data,_newRVPBooking:{...(data._newRVPBooking||{}),name:e.target.value}})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <button onClick={()=>{
+            const nrb=data._newRVPBooking||{};
+            if(nrb.name){onUpdate({...data,rvpBookingLinks:[...(data.rvpBookingLinks||[]),{name:nrb.name,link:""}],_newRVPBooking:{}});}
+          }} style={{padding:"5px 10px",borderRadius:6,background:C.purple,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Add RVP</button>
         </div>
       </div>
     </div>
@@ -1787,7 +1835,7 @@ function LoginScreen({data,onLogin}) {
 
 
 // ── CONFETTI CELEBRATION ──
-function Confetti({name,onClose}) {
+function Confetti({name,onClose,pct=100,customMsg}) {
   const colors=[C.teal,C.gold,C.purple,C.success,"#f43f5e","#3b82f6"];
   const pieces=Array.from({length:60},(_,i)=>({
     id:i, color:colors[i%colors.length],
@@ -1795,6 +1843,13 @@ function Confetti({name,onClose}) {
     size:6+Math.random()*8, duration:2+Math.random()*2,
     rotate:Math.random()*360
   }));
+  const messages={
+    25:{emoji:"🌱",title:"Great Start!",msg:"You have completed 25% of your checklist! Keep up the momentum."},
+    50:{emoji:"⭐",title:"Halfway There!",msg:"You have completed 50% of your checklist! You are crushing it."},
+    75:{emoji:"🔥",title:"Almost There!",msg:"You have completed 75% of your checklist! The finish line is in sight."},
+    100:{emoji:"🏆",title:"Congratulations!",msg:"You have completed every task in your training checklist. Your trainer has been notified. Keep pushing forward!"},
+  };
+  const m=customMsg||messages[pct]||messages[100];
   return <div style={{position:"fixed",inset:0,zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)"}}>
     <style>{`
       @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
@@ -1802,11 +1857,11 @@ function Confetti({name,onClose}) {
     `}</style>
     {pieces.map(p=><div key={p.id} style={{position:"fixed",left:`${p.left}%`,top:"-10px",width:p.size,height:p.size,background:p.color,borderRadius:Math.random()>0.5?"50%":"2px",animation:`confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotate}deg)`}}/>)}
     <div style={{background:"white",borderRadius:20,padding:"32px 28px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"popIn 0.5s ease-out",position:"relative",zIndex:1}}>
-      <div style={{fontSize:52,marginBottom:8}}>🏆</div>
-      <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:6}}>Congratulations!</div>
+      <div style={{fontSize:52,marginBottom:8}}>{m.emoji}</div>
+      <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:6}}>{m.title}</div>
       <div style={{fontSize:15,color:C.textMid,marginBottom:4}}>{name}</div>
-      <div style={{fontSize:13,color:C.success,fontWeight:600,marginBottom:16}}>100% Complete — You did it!</div>
-      <div style={{fontSize:12,color:C.textLight,marginBottom:20,lineHeight:1.5}}>You have completed every task in your training checklist. Your trainer has been notified. Keep pushing forward!</div>
+      <div style={{fontSize:13,color:C.success,fontWeight:600,marginBottom:16}}>{pct}% Complete</div>
+      <div style={{fontSize:12,color:C.textLight,marginBottom:20,lineHeight:1.5}}>{m.msg}</div>
       <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},${C.tealFade.replace("rgba(14,165,160,0.12)","#0891b2")})`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Let's Keep Going!</button>
     </div>
   </div>;
