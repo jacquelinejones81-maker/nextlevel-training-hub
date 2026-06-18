@@ -1647,7 +1647,7 @@ function ManageTeam({data,onUpdate,onClose}) {
         <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:4}}>Orientation Video</div>
         <div style={{fontSize:10,color:C.textLight,marginBottom:6}}>Paste the YouTube embed URL here. New Fast Start and Regular Start reps will see this video the first time they log in. Update it each month for a new orientation.</div>
         <input
-          placeholder="https://www.youtube.com/embed/XXXXXXXXXXX"
+          placeholder="YouTube embed URL or Google Drive /preview URL"
           value={data.orientationVideoUrl||""}
           onChange={e=>onUpdate({...data,orientationVideoUrl:e.target.value.trim()})}
           style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}
@@ -6166,7 +6166,14 @@ function WelcomeModal({videoUrl,repName,onClose}) {
       </div>
       {/* Video */}
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
-        {(()=>{const m=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);const src=m?`https://www.youtube.com/embed/${m[1]}?rel=0&playsinline=1`:videoUrl;return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Orientation Video"/>;})()} 
+        {(()=>{
+          let src=videoUrl;
+          // YouTube
+          const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
+          if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
+          // Google Drive — already in /preview format, use as-is
+          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay" allowFullScreen title="Orientation Video"/>;
+        })()}
       </div>
       {/* Footer */}
       <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
