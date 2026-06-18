@@ -1641,11 +1641,22 @@ function ManageTeam({data,onUpdate,onClose}) {
           }} style={{padding:"5px 10px",borderRadius:6,background:C.purple,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Add RVP</button>
         </div>
       </div>
+
+      {/* Orientation Video URL */}
+      <div style={{marginTop:14}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:4}}>Orientation Video</div>
+        <div style={{fontSize:10,color:C.textLight,marginBottom:6}}>Paste the YouTube embed URL here. New Fast Start and Regular Start reps will see this video the first time they log in. Update it each month for a new orientation.</div>
+        <input
+          placeholder="https://www.youtube.com/embed/XXXXXXXXXXX"
+          value={data.orientationVideoUrl||""}
+          onChange={e=>onUpdate({...data,orientationVideoUrl:e.target.value.trim()})}
+          style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}
+        />
+        {data.orientationVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Video URL saved — new reps will see this on first login</div>}
+      </div>
     </div>
   </div>;
 }
-
-// ── MY REPS PAGE (separate from dashboard) ──
 function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
@@ -6143,6 +6154,37 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
 }
 
 // ── MAIN APP ──
+// ── WELCOME ORIENTATION MODAL ──
+function WelcomeModal({videoUrl,repName,onClose}) {
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{background:"white",borderRadius:18,width:"100%",maxWidth:480,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg,#0f1f35,#16304f)`,padding:"20px 20px 16px",textAlign:"center"}}>
+        <div style={{fontSize:28,marginBottom:6}}>🎉</div>
+        <div style={{fontSize:18,fontWeight:800,color:"white",marginBottom:4}}>Welcome to the Team!</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.65)"}}>Hey {repName}! Watch this short orientation video to get started.</div>
+      </div>
+      {/* Video */}
+      <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
+        <iframe
+          src={videoUrl+"?rel=0&autoplay=0"}
+          style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="Orientation Video"
+        />
+      </div>
+      {/* Footer */}
+      <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
+        <div style={{fontSize:12,color:"#6b7280",marginBottom:10}}>You can rewatch this anytime in the <strong>Resources</strong> tab under Onboarding Videos.</div>
+        <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:10,background:`linear-gradient(135deg,#0ea5a0,#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+          Got it — Let's Get Started! 🚀
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
 export default function App() {
   const [data,setData]=useState({});
   const [loading,setLoading]=useState(true);
@@ -6228,6 +6270,8 @@ export default function App() {
     }
   },[session?.id]);
 
+  const [showWelcome,setShowWelcome]=useState(false);
+
   const handleLogin=(role,id,userData,newPin)=>{
     if(role==="rep"&&newPin){
       const updated={...data,reps:(data.reps||[]).map(r=>r.id===id?{...r,repPin:newPin}:r)};
@@ -6235,6 +6279,16 @@ export default function App() {
     }
     setSession({role,id,name:userData?.name||(role==="admin"?"Admin":"User")});
     setSection("dashboard");
+    // Show orientation modal for Fast/Regular Start reps on first login only
+    if(role==="rep"){
+      const rep=(data.reps||[]).find(r=>r.id===id);
+      const isNewRep=rep&&(rep.track==="fast"||rep.track==="regular");
+      const seenKey=`orientation_seen_${id}`;
+      const alreadySeen=localStorage.getItem(seenKey);
+      if(isNewRep&&!alreadySeen&&data.orientationVideoUrl){
+        setShowWelcome(true);
+      }
+    }
     const tourKey=`tour_shown_${role}_${id}`;
     if(!localStorage.getItem(tourKey)){setShowTour(true);localStorage.setItem(tourKey,"done");}
   };
@@ -6268,6 +6322,7 @@ export default function App() {
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
+      {showWelcome&&data.orientationVideoUrl&&<WelcomeModal videoUrl={data.orientationVideoUrl} repName={rep.name} onClose={()=>{localStorage.setItem(`orientation_seen_${session.id}`,"true");setShowWelcome(false);}}/>}
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
