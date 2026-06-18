@@ -1566,7 +1566,7 @@ function ManageTeam({data,onUpdate,onClose}) {
   const trainers=data.trainers||[];
   const admins=data.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
-    <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"90vh",overflowY:"auto"}}>
+    <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"80vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       <div style={{marginBottom:14}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
         {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
@@ -6166,13 +6166,7 @@ function WelcomeModal({videoUrl,repName,onClose}) {
       </div>
       {/* Video */}
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
-        <iframe
-          src={videoUrl+"?rel=0&autoplay=0"}
-          style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title="Orientation Video"
-        />
+        {(()=>{const m=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);const src=m?`https://www.youtube.com/embed/${m[1]}?rel=0&playsinline=1`:videoUrl;return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Orientation Video"/>;})()} 
       </div>
       {/* Footer */}
       <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
