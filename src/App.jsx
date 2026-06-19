@@ -138,6 +138,7 @@ const FAST_START = [
   {id:"f4",cat:"Onboarding",task:"Complete Orientation",note:"Orientation video is in the Resources tab"},
   {id:"f5",cat:"Business Commitment",task:"Business Commitment - pay POL fee and set up business account"},
   {id:"f6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
+  {id:"f6b",cat:"Income Producing",task:"Get your auto and home quote",note:"Even if you don't save money, you'll know the process for your future clients"},
   {id:"f7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
   {id:"f8",cat:"Events",task:"Attend DGO and debrief afterward"},
   {id:"f9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)",note:"Set your class type and access ExamFX study materials in the Milestones tab"},
@@ -154,6 +155,7 @@ const REGULAR_START = [
   {id:"r4",cat:"Onboarding",task:"Complete Orientation",note:"Orientation video is in the Resources tab"},
   {id:"r5",cat:"Business Commitment",task:"Business Commitment - build your financial and business house"},
   {id:"r6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
+  {id:"r6b",cat:"Income Producing",task:"Get your auto and home quote",note:"Even if you don't save money, you'll know the process for your future clients"},
   {id:"r7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
   {id:"r8",cat:"Events",task:"Attend DGO and debrief afterward"},
   {id:"r9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)",note:"Set your class type and access ExamFX study materials in the Milestones tab"},
@@ -1083,6 +1085,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
+  const [showAutoHomePopup,setShowAutoHomePopup]=useState(false);
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -1091,6 +1094,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       const milestones=[25,50,75,100];
       const shownMilestones=rep.milestonesShown||[];
       const hitMilestone=milestones.find(m=>newPct>=m&&pct<m&&!shownMilestones.includes(m));
+      // Show auto/home insurance popup the first time this specific item is checked
+      if((id==="f6b"||id==="r6b")&&newChecked[id]&&!checked[id]){
+        setShowAutoHomePopup(true);
+      }
       if(hitMilestone){
         setCelebrationPct(hitMilestone);
         setShowCelebration(true);
@@ -1238,6 +1245,20 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
 
     {showCelebration&&<Confetti name={rep.name} pct={celebrationPct} onClose={()=>setShowCelebration(false)}/>}
+    {showAutoHomePopup&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"white",borderRadius:18,padding:"28px 24px",maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
+        <div style={{fontSize:48,marginBottom:10}}>🚗🏠</div>
+        <div style={{fontSize:18,fontWeight:800,color:C.text,marginBottom:10}}>Get Your Free Quote!</div>
+        <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:14}}>Call Answer Financial and get a free auto and home insurance quote on yourself. Even if you don't save money, you'll learn the exact process to use with your future clients!</div>
+        <div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:10,padding:"12px 14px",marginBottom:16}}>
+          <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Call</div>
+          <a href="tel:18778558111" style={{fontSize:18,fontWeight:800,color:C.teal,textDecoration:"none"}}>📞 1-877-855-8111</a>
+          <div style={{fontSize:11,color:C.textLight,marginTop:8}}>Provide your Rep ID and last name</div>
+        </div>
+        <div style={{fontSize:12,color:C.gold,fontWeight:600,marginBottom:16}}>💰 Earn commission if you switch to a full coverage plan!</div>
+        <button onClick={()=>setShowAutoHomePopup(false)} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it!</button>
+      </div>
+    </div>}
     {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
