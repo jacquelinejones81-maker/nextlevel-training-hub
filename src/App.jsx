@@ -1108,6 +1108,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     }
   };
   const [mobileOpen,setMobileOpen]=useState(false);
+  const [rewatchVideo,setRewatchVideo]=useState(null);
   const [repWinWidth,setRepWinWidth]=useState(typeof window!=="undefined"?window.innerWidth:768);
   useEffect(()=>{const h=()=>setRepWinWidth(window.innerWidth);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   const isDesktop=repWinWidth>=768;
@@ -1165,6 +1166,21 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
           <span style={{fontSize:10,color:"#fbbf24",fontWeight:600}}>Meet with RVP - {rvp.name}</span>
         </a>)}
+      </div>}
+      {/* Rewatch milestone videos — only for granted access levels */}
+      {((rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
+        {rep.nextLevelGranted&&data.licensedVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.licensedVideoUrl,title:"Licensed — Now What?"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Licensed Now What</span>
+        </button>}
+        {rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.fieldTrainerVideoUrl,title:"Welcome, Field Trainer!"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Field Trainer</span>
+        </button>}
+        {rep.rvpPathGranted&&data.rvpPathVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.rvpPathVideoUrl,title:"Welcome to the RVP Path!"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: RVP Path</span>
+        </button>}
       </div>}
     </div>
     {/* Nav items */}
@@ -1245,6 +1261,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
 
     {showCelebration&&<Confetti name={rep.name} pct={celebrationPct} onClose={()=>setShowCelebration(false)}/>}
+    {rewatchVideo&&<RewatchVideoModal videoUrl={rewatchVideo.url} title={rewatchVideo.title} onClose={()=>setRewatchVideo(null)}/>}
     {showAutoHomePopup&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",borderRadius:18,padding:"28px 24px",maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{fontSize:48,marginBottom:10}}>🚗🏠</div>
@@ -1663,17 +1680,38 @@ function ManageTeam({data,onUpdate,onClose}) {
         </div>
       </div>
 
-      {/* Orientation Video URL */}
+      {/* Checklist Welcome Videos */}
       <div style={{marginTop:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:4}}>Orientation Video</div>
-        <div style={{fontSize:10,color:C.textLight,marginBottom:6}}>Paste the YouTube embed URL here. New Fast Start and Regular Start reps will see this video the first time they log in. Update it each month for a new orientation.</div>
-        <input
-          placeholder="YouTube embed URL or Google Drive /preview URL"
-          value={data.orientationVideoUrl||""}
-          onChange={e=>onUpdate({...data,orientationVideoUrl:e.target.value.trim()})}
-          style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}
-        />
-        {data.orientationVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Video URL saved — new reps will see this on first login</div>}
+        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:8}}>Checklist Videos</div>
+        <div style={{fontSize:10,color:C.textLight,marginBottom:8}}>Each video plays once for a rep, right when they reach that milestone. Paste a YouTube embed URL or Google Drive link.</div>
+        <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 10px",marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.gold,marginBottom:3}}>📌 Using Google Drive?</div>
+          <div style={{fontSize:10,color:C.textMid,lineHeight:1.5}}>Upload the video → Share → Get link → copy it, then change the ending from <strong>/view</strong> to <strong>/preview</strong> before pasting it below. Example: .../d/FILE_ID/<strong>preview</strong></div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Welcome Video (Fast Start / Regular Start — first login)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.welcomeVideoUrl||""} onChange={e=>onUpdate({...data,welcomeVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          {data.welcomeVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Licensed Now What Video (shown once access granted, rewatchable in their sidebar)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.licensedVideoUrl||""} onChange={e=>onUpdate({...data,licensedVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          {data.licensedVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Field Trainer Video (shown once access granted, rewatchable in their sidebar)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.fieldTrainerVideoUrl||""} onChange={e=>onUpdate({...data,fieldTrainerVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          {data.fieldTrainerVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+        </div>
+
+        <div>
+          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>RVP Path Video (shown once access granted, rewatchable in their sidebar)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.rvpPathVideoUrl||""} onChange={e=>onUpdate({...data,rvpPathVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          {data.rvpPathVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+        </div>
       </div>
     </div>
   </div>;
@@ -6176,32 +6214,46 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
 
 // ── MAIN APP ──
 // ── WELCOME ORIENTATION MODAL ──
-function WelcomeModal({videoUrl,repName,onClose}) {
+function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"white",borderRadius:18,width:"100%",maxWidth:480,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
-      {/* Header */}
       <div style={{background:`linear-gradient(135deg,#0f1f35,#16304f)`,padding:"20px 20px 16px",textAlign:"center"}}>
-        <div style={{fontSize:28,marginBottom:6}}>🎉</div>
-        <div style={{fontSize:18,fontWeight:800,color:"white",marginBottom:4}}>Welcome to the Team!</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.65)"}}>Hey {repName}! Watch this short orientation video to get started.</div>
+        <div style={{fontSize:28,marginBottom:6}}>{emoji}</div>
+        <div style={{fontSize:18,fontWeight:800,color:"white",marginBottom:4}}>{title}</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.65)"}}>{subtitle.replace("{name}",repName)}</div>
       </div>
-      {/* Video */}
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
         {(()=>{
           let src=videoUrl;
-          // YouTube
           const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
           if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
-          // Google Drive — already in /preview format, use as-is
-          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay" allowFullScreen title="Orientation Video"/>;
+          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay" allowFullScreen title="Video"/>;
         })()}
       </div>
-      {/* Footer */}
       <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
-        <div style={{fontSize:12,color:"#6b7280",marginBottom:10}}>You can rewatch this anytime in the <strong>Resources</strong> tab under Onboarding Videos.</div>
         <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:10,background:`linear-gradient(135deg,#0ea5a0,#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
           Got it — Let's Get Started! 🚀
         </button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── REWATCHABLE VIDEO MODAL (no localStorage tracking, just plays) ──
+function RewatchVideoModal({videoUrl,title,onClose}) {
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{background:"white",borderRadius:18,width:"100%",maxWidth:480,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
+      <div style={{background:`linear-gradient(135deg,#0f1f35,#16304f)`,padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:15,fontWeight:700,color:"white"}}>{title}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
+      </div>
+      <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
+        {(()=>{
+          let src=videoUrl;
+          const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
+          if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
+          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay" allowFullScreen title="Video"/>;
+        })()}
       </div>
     </div>
   </div>;
@@ -6293,6 +6345,9 @@ export default function App() {
   },[session?.id]);
 
   const [showWelcome,setShowWelcome]=useState(false);
+  const [showLicensedVideo,setShowLicensedVideo]=useState(false);
+  const [showFieldTrainerVideo,setShowFieldTrainerVideo]=useState(false);
+  const [showRvpPathVideo,setShowRvpPathVideo]=useState(false);
 
   const handleLogin=(role,id,userData,newPin)=>{
     if(role==="rep"&&newPin){
@@ -6301,14 +6356,24 @@ export default function App() {
     }
     setSession({role,id,name:userData?.name||(role==="admin"?"Admin":"User")});
     setSection("dashboard");
-    // Show orientation modal for Fast/Regular Start reps on first login only
     if(role==="rep"){
       const rep=(data.reps||[]).find(r=>r.id===id);
+      // Welcome video — Fast Start / Regular Start, first login ever
       const isNewRep=rep&&(rep.track==="fast"||rep.track==="regular");
-      const seenKey=`orientation_seen_${id}`;
-      const alreadySeen=localStorage.getItem(seenKey);
-      if(isNewRep&&!alreadySeen&&data.orientationVideoUrl){
+      if(isNewRep&&!localStorage.getItem(`welcome_seen_${id}`)&&data.welcomeVideoUrl){
         setShowWelcome(true);
+      }
+      // Licensed Now What video — fires once when access is granted
+      if(rep&&rep.nextLevelGranted&&!localStorage.getItem(`licensed_video_seen_${id}`)&&data.licensedVideoUrl){
+        setShowLicensedVideo(true);
+      }
+      // Field Trainer video — fires once when access is granted
+      if(rep&&rep.fieldTrainerGranted&&!localStorage.getItem(`ft_video_seen_${id}`)&&data.fieldTrainerVideoUrl){
+        setShowFieldTrainerVideo(true);
+      }
+      // RVP Path video — fires once when access is granted
+      if(rep&&rep.rvpPathGranted&&!localStorage.getItem(`rvp_video_seen_${id}`)&&data.rvpPathVideoUrl){
+        setShowRvpPathVideo(true);
       }
     }
     const tourKey=`tour_shown_${role}_${id}`;
@@ -6344,7 +6409,10 @@ export default function App() {
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
-      {showWelcome&&data.orientationVideoUrl&&<WelcomeModal videoUrl={data.orientationVideoUrl} repName={rep.name} onClose={()=>{localStorage.setItem(`orientation_seen_${session.id}`,"true");setShowWelcome(false);}}/>}
+      {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{localStorage.setItem(`welcome_seen_${session.id}`,"true");setShowWelcome(false);}}/>}
+      {showLicensedVideo&&data.licensedVideoUrl&&<VideoPopupModal videoUrl={data.licensedVideoUrl} repName={rep.name} emoji="🎓" title="Licensed — Now What?" subtitle="Hey {name}! Watch this video to learn what's expected of you on your new checklist." onClose={()=>{localStorage.setItem(`licensed_video_seen_${session.id}`,"true");setShowLicensedVideo(false);}}/>}
+      {showFieldTrainerVideo&&data.fieldTrainerVideoUrl&&<VideoPopupModal videoUrl={data.fieldTrainerVideoUrl} repName={rep.name} emoji="🧑‍🏫" title="Welcome, Field Trainer!" subtitle="Hey {name}! Watch this video to learn what's expected of you as a Field Trainer." onClose={()=>{localStorage.setItem(`ft_video_seen_${session.id}`,"true");setShowFieldTrainerVideo(false);}}/>}
+      {showRvpPathVideo&&data.rvpPathVideoUrl&&<VideoPopupModal videoUrl={data.rvpPathVideoUrl} repName={rep.name} emoji="🚀" title="Welcome to the RVP Path!" subtitle="Hey {name}! Watch this video to learn what's expected of you on the RVP Path." onClose={()=>{localStorage.setItem(`rvp_video_seen_${session.id}`,"true");setShowRvpPathVideo(false);}}/>}
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
