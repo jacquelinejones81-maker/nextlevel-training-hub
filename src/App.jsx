@@ -465,8 +465,8 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       {!readOnly?<input type="date" value={rep.birthday||""} onChange={e=>onUpdate({...rep,birthday:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:13,fontWeight:600,color:C.purple}}>{rep.birthday?new Date(rep.birthday+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}</div>}
     </Card>
-    {/* Promotion Level — licensed reps only */}
-    {rep.track==="licensed"&&<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
+    {/* Promotion Level — licensed and field trainer reps */}
+    {(rep.track==="licensed"||rep.fieldTrainerGranted)&&<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
       <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>My Promotion Level</div>
       <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level to see accurate commission calculations.</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
@@ -1299,7 +1299,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
         <button onClick={()=>setShowAutoHomePopup(false)} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it!</button>
       </div>
     </div>}
-    {tab==="checklist"&&<div>{rep.track==="licensed"&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
