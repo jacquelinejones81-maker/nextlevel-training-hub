@@ -430,6 +430,18 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
 
 // ── REP EXTRAS ──
 function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
+  // Promotion level selector — licensed reps only
+  const PROMO_LEVELS=[
+    {key:"rep",label:"Rep",pct:25},
+    {key:"sr_rep",label:"Senior Rep",pct:35},
+    {key:"dl",label:"District Leader",pct:50},
+    {key:"divl",label:"Division Leader",pct:60},
+    {key:"rl",label:"Regional Leader",pct:70},
+    {key:"srl",label:"Senior Regional Leader",pct:80},
+    {key:"rvp",label:"RVP",pct:110},
+  ];
+  const currentPromo = PROMO_LEVELS.find(p=>p.key===(rep.promotionLevel||"rep"))||PROMO_LEVELS[0];
+
   const today=new Date();
   const motivation=MOTIVATIONS[today.getDate()%MOTIVATIONS.length];
   return <div>
@@ -453,6 +465,17 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       {!readOnly?<input type="date" value={rep.birthday||""} onChange={e=>onUpdate({...rep,birthday:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
       <div style={{fontSize:13,fontWeight:600,color:C.purple}}>{rep.birthday?new Date(rep.birthday+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}</div>}
     </Card>
+    {/* Promotion Level — licensed reps only */}
+    {rep.track==="licensed"&&<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>My Promotion Level</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level to see accurate commission calculations.</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+        {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>!readOnly&&onUpdate({...rep,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(rep.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(rep.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
+          <div style={{fontSize:11,fontWeight:700,color:(rep.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
+          <div style={{fontSize:10,color:C.textMid}}>{p.pct}%</div>
+        </button>)}
+      </div>
+    </Card>}
     {/* Pre-Licensing Class — hidden for licensed reps */}
     {rep.track!=="licensed"&&<Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -4754,8 +4777,44 @@ function InvestmentLog({data,onUpdate,userRole}) {
 function LicensedPremiumEntry({rep,onUpdate}) {
   const [form,setForm] = useState({client:"",premium:"",date:new Date().toISOString().split("T")[0]});
   const [show,setShow] = useState(false);
+  const [calcPremium,setCalcPremium] = useState("");
   const entries = rep.selfPremium||[];
   const total = entries.reduce((s,e)=>s+(Number(e.premium)||0),0);
+
+  // Promotion level — reads from rep, defaults to rep 25%
+  const PROMO_LEVELS=[
+    {key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},
+    {key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},
+    {key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},
+    {key:"rvp",label:"RVP",pct:110},
+  ];
+  const promo = PROMO_LEVELS.find(p=>p.key===(rep.promotionLevel||"rep"))||PROMO_LEVELS[0];
+  const pct = promo.pct / 100;
+
+  // Commission calculation helper
+  const calcCommission = (monthlyPremium) => {
+    const mp = Number(monthlyPremium)||0;
+    if(!mp) return null;
+    const commissionable = (mp * 12) - 65;
+    const total1yr = commissionable * pct;
+    const upfront = (total1yr / 12) * 9;
+    const asEarned = (total1yr / 12) * 3;
+    return {commissionable, total1yr, upfront, asEarned};
+  };
+
+  // Monthly earnings from all logged apps
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const thisMonthEntries = entries.filter(e=>e.date>=monthStart);
+  const thisMonthEarned = thisMonthEntries.reduce((s,e)=>{
+    const c = calcCommission(e.premium);
+    return s + (c ? c.upfront : 0);
+  }, 0);
+
+  const goal = Number(rep.monthlyIncomeGoal)||0;
+  const goalPct = goal>0 ? Math.min(100, Math.round((thisMonthEarned/goal)*100)) : 0;
+  const avgUpfront = entries.length>0 ? thisMonthEarned/Math.max(thisMonthEntries.length,1) : 0;
+  const appsNeeded = goal>0 && avgUpfront>0 ? Math.ceil((goal-thisMonthEarned)/avgUpfront) : null;
 
   const save = () => {
     if(!form.client||!form.premium) return;
@@ -4764,32 +4823,94 @@ function LicensedPremiumEntry({rep,onUpdate}) {
     setShow(false);
   };
 
+  const calcResult = calcCommission(calcPremium);
+
   return <Card style={{marginBottom:12,border:"1px solid "+C.teal+"33"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div><div style={{fontSize:12,fontWeight:700,color:C.text}}>My Premium</div><div style={{fontSize:11,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span></div></div>
+      <div>
+        <div style={{fontSize:12,fontWeight:700,color:C.text}}>My Life Apps</div>
+        <div style={{fontSize:11,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span> · <span style={{color:C.gold,fontWeight:600}}>{promo.label} ({promo.pct}%)</span></div>
+      </div>
       <button onClick={()=>setShow(!show)} style={{fontSize:11,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
     </div>
+
+    {/* Monthly Income Goal */}
+    <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
+        <div style={{fontSize:11,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Goal $</div>
+        <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...rep,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,maxWidth:100}}/>
+        {goal>0&&<div style={{fontSize:11,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
+      </div>
+      {goal>0&&<div>
+        <div style={{height:8,background:"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",marginBottom:4}}>
+          <div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${C.teal},${C.success})`,width:goalPct+"%",transition:"width 0.4s"}}/>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid}}>
+          <span>{goalPct}% of ${goal.toLocaleString()} goal</span>
+          {appsNeeded!==null&&appsNeeded>0&&<span>~{appsNeeded} more app{appsNeeded!==1?"s":""} needed</span>}
+          {goalPct>=100&&<span style={{color:C.success,fontWeight:700}}>🎉 Goal reached!</span>}
+        </div>
+      </div>}
+    </div>
+
+    {/* Log App Form */}
     {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
       <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
         <input type="number" placeholder="Monthly premium $" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
         <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
       </div>
+      {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:10}}>
+        <div style={{fontWeight:700,color:C.gold,marginBottom:2}}>Estimated Commission at {promo.label} ({promo.pct}%)</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
+          <div><div style={{color:C.textMid}}>Upfront</div><div style={{fontWeight:700,color:C.text}}>${c.upfront.toFixed(2)}</div></div>
+          <div><div style={{color:C.textMid}}>As Earned</div><div style={{fontWeight:700,color:C.text}}>${c.asEarned.toFixed(2)}</div></div>
+          <div><div style={{color:C.textMid}}>Total 1st Yr</div><div style={{fontWeight:700,color:C.text}}>${c.total1yr.toFixed(2)}</div></div>
+        </div>
+      </div>:null;})()}
       <div style={{display:"flex",gap:6}}>
         <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
         <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
       </div>
     </div>}
-    {entries.length>0&&<div style={{maxHeight:140,overflowY:"auto",marginTop:6}}>
+
+    {/* App entries with commission breakdown */}
+    {entries.length>0&&<div style={{maxHeight:200,overflowY:"auto",marginTop:6}}>
       {entries.slice().reverse().map((e,i)=>{
         const realIdx=entries.length-1-i;
-        return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:11}}>
-          <span style={{color:C.text,flex:1}}>{e.client}</span>
-          <span style={{color:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
-          <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+        const c=calcCommission(e.premium);
+        return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>
+            <span style={{color:C.text,flex:1,fontWeight:600}}>{e.client}</span>
+            <span style={{color:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
+            <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+          </div>
+          {c&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
+            <div style={{fontSize:9,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.upfront.toFixed(0)}</span></div>
+            <div style={{fontSize:9,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
+            <div style={{fontSize:9,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
+          </div>}
         </div>;
       })}
     </div>}
+
+    {/* Quick Calculator */}
+    <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>💡 Quick Commission Calculator</div>
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
+        <input type="number" placeholder="Monthly premium $" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+        {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:10,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
+      </div>
+      {calcResult&&<div style={{background:C.gold+"11",borderRadius:7,padding:"7px 9px",fontSize:10}}>
+        <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>{promo.label} ({promo.pct}%) on ${calcPremium}/mo app</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Upfront</div><div style={{fontSize:14,fontWeight:800,color:C.success}}>${calcResult.upfront.toFixed(2)}</div></div>
+          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>As Earned</div><div style={{fontSize:14,fontWeight:800,color:C.text}}>${calcResult.asEarned.toFixed(2)}</div></div>
+          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:14,fontWeight:800,color:C.gold}}>${calcResult.total1yr.toFixed(2)}</div></div>
+        </div>
+        <div style={{fontSize:9,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
+      </div>}
+    </div>
   </Card>;
 }
 
