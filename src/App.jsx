@@ -3508,6 +3508,23 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${recruitsCount}</div><div class="label">Reps Recruited</div></div>
             </div>
 
+            ${(rep.track==="licensed"||rep.fieldTrainerGranted)?(()=>{
+              const PL=[{key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},{key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},{key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},{key:"rvp",label:"RVP",pct:110}];
+              const promo=PL.find(p=>p.key===(rep.promotionLevel||"rep"))||PL[0];
+              const pct2=promo.pct/100;
+              const calcC2=(mp)=>{const comm=(mp*12)-65;const tot=comm*pct2;return{tot,up:(tot/12)*9,ae:(tot/12)*3};};
+              const now2=new Date();
+              const ms=new Date(now2.getFullYear(),now2.getMonth(),1).toISOString().split("T")[0];
+              const ents=rep.selfPremium||[];
+              const me=ents.filter(e=>e.date>=ms);
+              const mEarned=me.reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
+              const goal2=Number(rep.monthlyIncomeGoal)||0;
+              const gPct=goal2>0?Math.min(100,Math.round((mEarned/goal2)*100)):0;
+              let rows="";
+              me.forEach(e=>{const c=calcC2(Number(e.premium)||0);rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+e.client+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td><td style='text-align:right;padding:6px;color:#10b981;font-weight:600'>$"+c.up.toFixed(0)+"</td><td style='text-align:right;padding:6px'>$"+c.ae.toFixed(0)+"</td><td style='text-align:right;padding:6px;font-weight:600'>$"+c.tot.toFixed(0)+"</td></tr>";});
+              const table=me.length>0?"<h2>THIS MONTH'S APPS</h2><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Client</th><th style='text-align:right;padding:6px'>Mo. Premium</th><th style='text-align:right;padding:6px'>Upfront</th><th style='text-align:right;padding:6px'>As Earned</th><th style='text-align:right;padding:6px'>Total 1yr</th></tr>"+rows+"</table>":"<p style='color:#999;font-size:12px'>No apps logged this month</p>";
+              return "<h2>INCOME GOAL & COMMISSION</h2><p class='note'>Commission tracking for "+rep.name+". Based on promotion level and logged life apps.</p><div class='grid2'><div class='card'><div class='big'>"+promo.label+"</div><div class='label'>Promotion Level ("+promo.pct+"%)</div></div><div class='card'><div class='big'>$"+(goal2>0?goal2.toLocaleString():"Not set")+"</div><div class='label'>Monthly Income Goal</div></div><div class='card'><div class='big'>$"+mEarned.toFixed(0)+"</div><div class='label'>Earned This Month (upfront)</div></div><div class='card'><div class='big'>"+gPct+"%</div><div class='label'>Goal Progress</div></div></div>"+table;
+            })():""}
             <h2>TRAINING OBSERVATIONS</h2>
             <p class="note">Observations are a core part of the training process. Field Training Observations (FTO) show how actively ${rep.name} is working alongside their trainer in the field.</p>
             <div class="grid">
@@ -4837,7 +4854,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
     {/* Monthly Income Goal */}
     <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
-        <div style={{fontSize:11,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Goal $</div>
+        <div style={{fontSize:11,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
         <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...rep,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,maxWidth:100}}/>
         {goal>0&&<div style={{fontSize:11,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
       </div>
@@ -4857,7 +4874,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
     {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
       <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
-        <input type="number" placeholder="Monthly premium $" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
         <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
       </div>
       {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:10}}>
@@ -4894,15 +4911,15 @@ function LicensedPremiumEntry({rep,onUpdate}) {
       })}
     </div>}
 
-    {/* Quick Calculator */}
     <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>💡 Quick Commission Calculator</div>
+      <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
+      <div style={{fontSize:10,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
       <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
-        <input type="number" placeholder="Monthly premium $" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+        <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
         {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:10,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
       </div>
       {calcResult&&<div style={{background:C.gold+"11",borderRadius:7,padding:"7px 9px",fontSize:10}}>
-        <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>{promo.label} ({promo.pct}%) on ${calcPremium}/mo app</div>
+        <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>{promo.label} ({promo.pct}%) on ${calcPremium}/mo app (${(Number(calcPremium)*12).toFixed(0)}/yr annual)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Upfront</div><div style={{fontSize:14,fontWeight:800,color:C.success}}>${calcResult.upfront.toFixed(2)}</div></div>
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>As Earned</div><div style={{fontSize:14,fontWeight:800,color:C.text}}>${calcResult.asEarned.toFixed(2)}</div></div>
