@@ -4972,6 +4972,7 @@ function BirthdayAnniversaryWidget({data}) {
   const reps = data.reps||[];
   const today = new Date();
   const upcoming = [];
+  const todayBirthdays = [];
   reps.forEach(rep => {
     if(rep.birthday) {
       try {
@@ -4980,20 +4981,32 @@ function BirthdayAnniversaryWidget({data}) {
         const diff = Math.ceil((thisYear - today)/(1000*60*60*24));
         const days = diff < 0 ? diff + 365 : diff;
         const age = today.getFullYear() - d.getFullYear() + (diff < 0 ? 1 : 0);
-        if(days <= 30) upcoming.push({name:rep.name, type:"Birthday (turning "+age+")", days, date:thisYear});
+        if(days === 0) todayBirthdays.push({name:rep.name});
+        if(days <= 30) upcoming.push({name:rep.name, type:"Birthday", days, date:thisYear});
       } catch(e) {}
     }
   });
   upcoming.sort((a,b)=>a.days-b.days);
-  if(upcoming.length===0) return null;
-  return <Card style={{marginBottom:14}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Birthdays</div>
-    {upcoming.map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<upcoming.length-1?`1px solid ${C.border}`:"none"}}>
-      <div style={{width:32,height:32,borderRadius:8,background:C.purple+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.purple,flexShrink:0}}>BD</div>
-      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div><div style={{fontSize:11,color:C.textMid}}>{item.type} on {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div></div>
-      <div>{item.days===0?<Badge color={C.success} small>Today!</Badge>:item.days===1?<Badge color={C.gold} small>Tomorrow</Badge>:<Badge color={C.teal} small>{"In "+item.days+"d"}</Badge>}</div>
-    </div>)}
-  </Card>;
+  return <>
+    {todayBirthdays.length>0&&<div style={{background:"linear-gradient(135deg,#7c3aed,#db2777)",borderRadius:14,padding:"16px 18px",marginBottom:14,textAlign:"center"}}>
+      <div style={{fontSize:32,marginBottom:6}}>🎂🎉🎈</div>
+      <div style={{fontSize:16,fontWeight:800,color:"white",marginBottom:4}}>
+        Happy Birthday{todayBirthdays.length>1?"s":""}!
+      </div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.9)"}}>
+        {todayBirthdays.map(b=>b.name).join(" · ")} — Happy Birthday! 🎂
+      </div>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:6}}>Make sure to reach out and celebrate them! 🥳</div>
+    </div>}
+    {upcoming.filter(u=>u.days>0).length>0&&<Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Birthdays</div>
+      {upcoming.filter(u=>u.days>0).map((item,i)=>{const arr=upcoming.filter(u=>u.days>0);return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
+        <div style={{width:32,height:32,borderRadius:8,background:C.purple+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.purple,flexShrink:0}}>BD</div>
+        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div><div style={{fontSize:11,color:C.textMid}}>{item.type} on {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div></div>
+        <div>{item.days===1?<Badge color={C.gold} small>Tomorrow</Badge>:<Badge color={C.teal} small>{"In "+item.days+"d"}</Badge>}</div>
+      </div>;})}
+    </Card>}
+  </>;
 }
 
 
@@ -6346,6 +6359,26 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
 
 // ── MAIN APP ──
 // ── WELCOME ORIENTATION MODAL ──
+// ── BIRTHDAY MODAL ──
+function BirthdayModal({name,age,onClose}) {
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{background:"white",borderRadius:20,width:"100%",maxWidth:380,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
+      <div style={{background:"linear-gradient(135deg,#7c3aed,#db2777)",padding:"28px 24px",textAlign:"center"}}>
+        <div style={{fontSize:52,marginBottom:8}}>🎂🎉</div>
+        <div style={{fontSize:22,fontWeight:800,color:"white",marginBottom:4}}>Happy Birthday!</div>
+        <div style={{fontSize:15,color:"rgba(255,255,255,0.85)"}}>Today is your special day, {name}!</div>
+        
+      </div>
+      <div style={{padding:"20px 24px",textAlign:"center"}}>
+        <div style={{fontSize:13,color:"#6b7280",lineHeight:1.6,marginBottom:16}}>We're so grateful to have you on the team. Keep shining — today and every day. Now go celebrate! 🥳</div>
+        <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:10,background:"linear-gradient(135deg,#7c3aed,#db2777)",border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+          Thank You! 🎊
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
 function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"white",borderRadius:18,width:"100%",maxWidth:480,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
@@ -6477,6 +6510,7 @@ export default function App() {
   },[session?.id]);
 
   const [showWelcome,setShowWelcome]=useState(false);
+  const [birthdayInfo,setBirthdayInfo]=useState(null);
   const [showLicensedVideo,setShowLicensedVideo]=useState(false);
   const [showFieldTrainerVideo,setShowFieldTrainerVideo]=useState(false);
   const [showRvpPathVideo,setShowRvpPathVideo]=useState(false);
@@ -6506,6 +6540,17 @@ export default function App() {
       // RVP Path video — fires once when access is granted
       if(rep&&rep.rvpPathGranted&&!localStorage.getItem(`rvp_video_seen_${id}`)&&data.rvpPathVideoUrl){
         setShowRvpPathVideo(true);
+      }
+      // Birthday check — show greeting if today is their birthday
+      if(rep&&rep.birthday){
+        try{
+          const bd=new Date(rep.birthday+"T12:00:00");
+          const now2=new Date();
+          if(bd.getMonth()===now2.getMonth()&&bd.getDate()===now2.getDate()){
+            const age=now2.getFullYear()-bd.getFullYear();
+            setBirthdayInfo({name:rep.name});
+          }
+        }catch(e){}
       }
     }
     const tourKey=`tour_shown_${role}_${id}`;
@@ -6541,6 +6586,7 @@ export default function App() {
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
+      {birthdayInfo&&<BirthdayModal name={birthdayInfo.name} age={birthdayInfo.age} onClose={()=>setBirthdayInfo(null)}/>}
       {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{localStorage.setItem(`welcome_seen_${session.id}`,"true");setShowWelcome(false);}}/>}
       {showLicensedVideo&&data.licensedVideoUrl&&<VideoPopupModal videoUrl={data.licensedVideoUrl} repName={rep.name} emoji="🎓" title="Licensed — Now What?" subtitle="Hey {name}! Watch this video to learn what's expected of you on your new checklist." onClose={()=>{localStorage.setItem(`licensed_video_seen_${session.id}`,"true");setShowLicensedVideo(false);}}/>}
       {showFieldTrainerVideo&&data.fieldTrainerVideoUrl&&<VideoPopupModal videoUrl={data.fieldTrainerVideoUrl} repName={rep.name} emoji="🧑‍🏫" title="Welcome, Field Trainer!" subtitle="Hey {name}! Watch this video to learn what's expected of you as a Field Trainer." onClose={()=>{localStorage.setItem(`ft_video_seen_${session.id}`,"true");setShowFieldTrainerVideo(false);}}/>}
