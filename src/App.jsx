@@ -1458,23 +1458,72 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
 }
 
 // ── MY PRODUCTION ──
-function MyProd({myProd,onUpdate}) {
-  const [open,setOpen]=useState(false);
+function MyProd({myProd,onUpdate,trainer={},onUpdateTrainer}) {
+  const [open,setOpen]=useState(true);
   const [tab,setTab]=useState("lifeapps");
   const [na,setNa]=useState({clientName:"",premium:"",date:""});
   const [ni,setNi]=useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});
   const [addPrem,setAddPrem]=useState("");
+  const [calcPremium,setCalcPremium]=useState("");
   const apps=myProd.lifeApps||[];
   const invs=myProd.investments||[];
   const totPrem=apps.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const totPAC=invs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const totLump=invs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+
+  // Commission tracking
+  const PROMO_LEVELS=[
+    {key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},
+    {key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},
+    {key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},
+    {key:"rvp",label:"RVP",pct:110},
+  ];
+  const promo=PROMO_LEVELS.find(p=>p.key===(trainer.promotionLevel||"rep"))||PROMO_LEVELS[0];
+  const pct=promo.pct/100;
+  const calcC=(mp)=>{const mp2=Number(mp)||0;if(!mp2)return null;const comm=(mp2*12)-65;const tot=comm*pct;return{tot,up:(tot/12)*9,ae:(tot/12)*3,comm};};
+  const now=new Date();
+  const ms=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split("T")[0];
+  const thisMonthApps=apps.filter(a=>a.date>=ms);
+  const thisMonthEarned=thisMonthApps.reduce((s,a)=>{const c=calcC(a.premium);return s+(c?c.up:0);},0);
+  const goal=Number(trainer.monthlyIncomeGoal)||0;
+  const goalPct=goal>0?Math.min(100,Math.round((thisMonthEarned/goal)*100)):0;
+  const avgUp=thisMonthApps.length>0?thisMonthEarned/thisMonthApps.length:0;
+  const appsNeeded=goal>0&&avgUp>0?Math.ceil((goal-thisMonthEarned)/avgUp):null;
+  const calcResult=calcC(calcPremium);
+  const hasTrainerData=!!onUpdateTrainer;
+
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>My Production</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps - ${totPrem.toFixed(0)}/mo - ${(totPrem*12).toFixed(0)}/yr</div></div>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>My Production</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps · ${totPrem.toFixed(0)}/mo{hasTrainerData?` · ${promo.label} (${promo.pct}%)`:""}</div></div>
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
+      {/* Contract Level & Income Goal — trainers only */}
+      {hasTrainerData&&<div style={{marginBottom:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>My Contract Level</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:10}}>
+          {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>onUpdateTrainer({...trainer,promotionLevel:p.key})} style={{padding:"5px 7px",borderRadius:7,border:`1px solid ${(trainer.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(trainer.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:"pointer",textAlign:"left"}}>
+            <div style={{fontSize:10,fontWeight:700,color:(trainer.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
+            <div style={{fontSize:9,color:C.textMid}}>{p.pct}%</div>
+          </button>)}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
+          <input type="number" placeholder="e.g. 3000" value={trainer.monthlyIncomeGoal||""} onChange={e=>onUpdateTrainer({...trainer,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,maxWidth:110}}/>
+          {goal>0&&<div style={{fontSize:11,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
+        </div>
+        {goal>0&&<div style={{marginBottom:10}}>
+          <div style={{height:8,background:"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",marginBottom:4}}>
+            <div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${C.teal},${C.success})`,width:goalPct+"%",transition:"width 0.4s"}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid}}>
+            <span>{goalPct}% of ${goal.toLocaleString()} goal</span>
+            {appsNeeded!==null&&appsNeeded>0&&<span>~{appsNeeded} more app{appsNeeded!==1?"s":""} needed</span>}
+            {goalPct>=100&&<span style={{color:C.success,fontWeight:700}}>🎉 Goal reached!</span>}
+          </div>
+        </div>}
+      </div>}
+
       <div style={{display:"flex",gap:3,marginBottom:10}}>{[["lifeapps","Life Apps"],["investments","Investments"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}</div>
       {tab==="lifeapps"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
@@ -1486,10 +1535,18 @@ function MyProd({myProd,onUpdate}) {
           <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Life App</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
             <input placeholder="Client Name" value={na.clientName} onChange={e=>setNa({...na,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <input placeholder="Monthly Premium $" value={na.premium} onChange={e=>setNa({...na,premium:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+            <input placeholder="Monthly Premium $ (per month)" value={na.premium} onChange={e=>setNa({...na,premium:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
             <input type="date" value={na.date} onChange={e=>setNa({...na,date:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
           </div>
-          <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log Life App</button>
+          {na.premium&&hasTrainerData&&(()=>{const c=calcC(na.premium);return c?<div style={{background:C.gold+"11",borderRadius:7,padding:"6px 8px",marginTop:6,fontSize:10}}>
+            <div style={{fontWeight:700,color:C.gold,marginBottom:2}}>Est. at {promo.label} ({promo.pct}%)</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
+              <div><div style={{color:C.textMid}}>Upfront</div><div style={{fontWeight:700,color:C.text}}>${c.up.toFixed(0)}</div></div>
+              <div><div style={{color:C.textMid}}>As Earned</div><div style={{fontWeight:700,color:C.text}}>${c.ae.toFixed(0)}</div></div>
+              <div><div style={{color:C.textMid}}>Total 1yr</div><div style={{fontWeight:700,color:C.text}}>${c.tot.toFixed(0)}</div></div>
+            </div>
+          </div>:null;})()}
+          <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log Life App</button>
         </div>
         {apps.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
           <div style={{fontSize:11,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
@@ -1499,7 +1556,35 @@ function MyProd({myProd,onUpdate}) {
           </div>
           <div style={{fontSize:11,color:C.textMid}}>Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>{addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}</div>
         </div>}
-        {apps.map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}><span style={{color:C.text}}>{a.clientName}</span><div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div></div>)}
+        {apps.map((a,i)=><div key={i} style={{padding:"5px 0",borderBottom:`1px solid ${C.border}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>
+            <span style={{color:C.text,fontWeight:600}}>{a.clientName}</span>
+            <div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div>
+          </div>
+          {hasTrainerData&&(()=>{const c=calcC(a.premium);return c?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
+            <div style={{fontSize:9,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.up.toFixed(0)}</span></div>
+            <div style={{fontSize:9,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.ae.toFixed(0)}</span></div>
+            <div style={{fontSize:9,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.tot.toFixed(0)}</span></div>
+          </div>:null;})()}
+        </div>)}
+        {/* Quick Calculator */}
+        {hasTrainerData&&<div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
+          <div style={{fontSize:10,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium (what client pays per month).</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
+            <input type="number" placeholder="Monthly premium $" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+            {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:10,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
+          </div>
+          {calcResult&&<div style={{background:C.gold+"11",borderRadius:7,padding:"7px 9px",fontSize:10}}>
+            <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>{promo.label} ({promo.pct}%) on ${calcPremium}/mo app (${(Number(calcPremium)*12).toFixed(0)}/yr annual)</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+              <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Upfront</div><div style={{fontSize:14,fontWeight:800,color:C.success}}>${calcResult.up.toFixed(2)}</div></div>
+              <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>As Earned</div><div style={{fontSize:14,fontWeight:800,color:C.text}}>${calcResult.ae.toFixed(2)}</div></div>
+              <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:14,fontWeight:800,color:C.gold}}>${calcResult.tot.toFixed(2)}</div></div>
+            </div>
+            <div style={{fontSize:9,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.comm.toFixed(2)} (annual minus $65 policy fee)</div>
+          </div>}
+        </div>}
       </div>}
       {tab==="investments"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[`$${totPAC.toFixed(0)}/mo`,"PAC Total",C.gold],[`$${totLump.toFixed(0)}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}</div>
@@ -1871,13 +1956,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
     {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
 
-    {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>{
-      const newData={...data,myProduction:{...(data.myProduction||{}),[userId]:p}};
-      if(p.investments){
-        newData.trainers=(data.trainers||[]).map(t=>t.id===userId?{...t,investments:p.investments}:t);
-      }
-      onUpdate(newData);
-    }}/>}
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
       <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
@@ -6578,9 +6656,8 @@ export default function App() {
     if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(dataRef.current.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={dataRef.current} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).filter(r=>r.id!==id)});setSelRepId(null);}}/>;}
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
-    if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
+    if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} trainer={(data.trainers||[]).find(t=>t.id===session.id)||(data.admins||[]).find(a=>a.id===session.id)||{}} onUpdateTrainer={(updatedTrainer)=>{const isTrainer=(data.trainers||[]).some(t=>t.id===session.id);if(isTrainer){upd({...data,trainers:(data.trainers||[]).map(t=>t.id===session.id?updatedTrainer:t)});}else{upd({...data,admins:(data.admins||[]).map(a=>a.id===session.id?updatedTrainer:a)});}}} onUpdate={p=>{
       const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
-      // Also sync investments directly to admin record so team totals pick them up
       const isAdminRole=session.role==="admin"||session.role==="superadmin";
       if(isAdminRole&&p.investments){
         newData.admins=(data.admins||[]).map(a=>a.id===session.id?{...a,investments:p.investments}:a);
