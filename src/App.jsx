@@ -1458,9 +1458,9 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
 }
 
 // ── MY PRODUCTION ──
-function MyProd({myProd,onUpdate}) {
+function MyProd({myProd,onUpdate,investmentsOnly=false}) {
   const [open,setOpen]=useState(true);
-  const [tab,setTab]=useState("lifeapps");
+  const [tab,setTab]=useState(investmentsOnly?"investments":"lifeapps");
   const [na,setNa]=useState({clientName:"",premium:"",date:""});
   const [ni,setNi]=useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});
   const [addPrem,setAddPrem]=useState("");
@@ -1471,11 +1471,11 @@ function MyProd({myProd,onUpdate}) {
   const totLump=invs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>My Production</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps - ${totPrem.toFixed(0)}/mo - ${(totPrem*12).toFixed(0)}/yr</div></div>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps - ${totPrem.toFixed(0)}/mo - ${(totPrem*12).toFixed(0)}/yr</div></div>
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
-      <div style={{display:"flex",gap:3,marginBottom:10}}>{[["lifeapps","Life Apps"],["investments","Investments"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}</div>
+      <div style={{display:"flex",gap:3,marginBottom:10}}>{[["lifeapps","Life Apps"],["investments","Investments"]].filter(([k])=>!investmentsOnly||k==="investments").map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}</div>
       {tab==="lifeapps"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
           <div style={{background:C.teal+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.teal}}>{apps.length}</div><div style={{fontSize:10,color:C.textMid}}>Life Apps</div></div>
@@ -1872,13 +1872,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
     {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
 
-    {userRole==="trainer"&&<MyProd myProd={(data.myProduction||{})[userId]||{}} onUpdate={p=>{
-      const newData={...data,myProduction:{...(data.myProduction||{}),[userId]:p}};
-      if(p.investments){
-        newData.trainers=(data.trainers||[]).map(t=>t.id===userId?{...t,investments:p.investments}:t);
-      }
-      onUpdate(newData);
-    }}/>}
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
       <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
@@ -6579,14 +6572,60 @@ export default function App() {
     if(selRep&&(section==="reps"||section==="dashboard")) {const latestRep=(dataRef.current.reps||[]).find(r=>r.id===selRep.id)||selRep;return <RepProfile rep={latestRep} data={dataRef.current} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} onBack={()=>setSelRepId(null)} onDelete={(id)=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).filter(r=>r.id!==id)});setSelRepId(null);}}/>;}
     if(section==="dashboard") return <Dashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("dashboard");}}/>;
     if(section==="reps") return <MyRepsPage data={data} onUpdate={upd} userRole={session.role} userId={session.id} onSelectRep={(id)=>{setSelRepId(id);setSection("reps");}}/>;
-    if(section==="production") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div><ProdDash data={data} onUpdateData={upd}/><MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
-      const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
-      const isAdminRole=session.role==="admin"||session.role==="superadmin";
-      if(isAdminRole&&p.investments){
-        newData.admins=(data.admins||[]).map(a=>a.id===session.id?{...a,investments:p.investments}:a);
-      }
-      upd(newData);
-    }}/></div>;
+    if(section==="production") {
+      const staffRecord=(data.trainers||[]).find(t=>t.id===session.id)||(data.admins||[]).find(a=>a.id===session.id)||{};
+      const PROMO_LEVELS=[{key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},{key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},{key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},{key:"rvp",label:"RVP",pct:110}];
+      const saveStaff=(updated)=>{
+        const isTrainer=(data.trainers||[]).some(t=>t.id===session.id);
+        if(isTrainer) upd({...data,trainers:(data.trainers||[]).map(t=>t.id===session.id?updated:t)});
+        else upd({...data,admins:(data.admins||[]).map(a=>a.id===session.id?updated:a)});
+      };
+      // Create a pseudo-rep object so LicensedPremiumEntry can work with staff data
+      const pseudoRep={
+        ...staffRecord,
+        id:session.id,
+        selfPremium:(data.myProduction||{})[session.id]?.lifeApps||[],
+        promotionLevel:staffRecord.promotionLevel||"rep",
+        monthlyIncomeGoal:staffRecord.monthlyIncomeGoal||"",
+      };
+      const updatePseudoRep=(updated)=>{
+        // Save promotionLevel and monthlyIncomeGoal to staff record
+        const updatedStaff={...staffRecord,promotionLevel:updated.promotionLevel,monthlyIncomeGoal:updated.monthlyIncomeGoal};
+        const isTrainer=(data.trainers||[]).some(t=>t.id===session.id);
+        const newData={...data,
+          myProduction:{...(data.myProduction||{}),[session.id]:{...((data.myProduction||{})[session.id]||{}),lifeApps:updated.selfPremium||[]}},
+        };
+        if(isTrainer) newData.trainers=(data.trainers||[]).map(t=>t.id===session.id?updatedStaff:t);
+        else newData.admins=(data.admins||[]).map(a=>a.id===session.id?updatedStaff:a);
+        upd(newData);
+      };
+      return <div>
+        <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Production</div>
+        <ProdDash data={data} onUpdateData={upd}/>
+        {/* Promotion Level Selector */}
+        <Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>My Contract Level</div>
+          <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level. Updates commission calculations automatically.</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+            {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>saveStaff({...staffRecord,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(staffRecord.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(staffRecord.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:"pointer",textAlign:"left"}}>
+              <div style={{fontSize:11,fontWeight:700,color:(staffRecord.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
+              <div style={{fontSize:10,color:C.textMid}}>{p.pct}%</div>
+            </button>)}
+          </div>
+        </Card>
+        {/* Life Apps with commission tracking */}
+        <LicensedPremiumEntry rep={pseudoRep} onUpdate={updatePseudoRep}/>
+        {/* Investments */}
+        <MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
+          const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
+          const isAdminRole=session.role==="admin"||session.role==="superadmin";
+          if(isAdminRole&&p.investments){
+            newData.admins=(data.admins||[]).map(a=>a.id===session.id?{...a,investments:p.investments}:a);
+          }
+          upd(newData);
+        }} investmentsOnly={true}/>
+      </div>;
+    }
     if(section==="schedule") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Schedule</div><ScheduleView data={data} onUpdate={upd} userRole={session.role}/></div>;
     if(section==="scripts") return <ScriptsPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="resources") return <ResourceLibrary data={data} onUpdate={upd} userRole={session.role}/>;
