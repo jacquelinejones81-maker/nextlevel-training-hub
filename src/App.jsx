@@ -6601,18 +6601,22 @@ export default function App() {
       // Welcome video — Fast Start / Regular Start, first login ever
       const isNewRep=rep&&(rep.track==="fast"||rep.track==="regular");
       if(isNewRep&&!localStorage.getItem(`welcome_seen_${id}`)&&data.welcomeVideoUrl){
+        localStorage.setItem(`welcome_seen_${id}`,"true");
         setShowWelcome(true);
       }
       // Licensed Now What video — fires once when access is granted
       if(rep&&rep.nextLevelGranted&&!localStorage.getItem(`licensed_video_seen_${id}`)&&data.licensedVideoUrl){
+        localStorage.setItem(`licensed_video_seen_${id}`,"true");
         setShowLicensedVideo(true);
       }
       // Field Trainer video — fires once when access is granted
       if(rep&&rep.fieldTrainerGranted&&!localStorage.getItem(`ft_video_seen_${id}`)&&data.fieldTrainerVideoUrl){
+        localStorage.setItem(`ft_video_seen_${id}`,"true");
         setShowFieldTrainerVideo(true);
       }
       // RVP Path video — fires once when access is granted
       if(rep&&rep.rvpPathGranted&&!localStorage.getItem(`rvp_video_seen_${id}`)&&data.rvpPathVideoUrl){
+        localStorage.setItem(`rvp_video_seen_${id}`,"true");
         setShowRvpPathVideo(true);
       }
       // Birthday check — show greeting if today is their birthday
