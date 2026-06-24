@@ -6542,6 +6542,22 @@ function ChooseYourPath({rep,onChoose}) {
   </div>;
 }
 
+// ── VIDEO EMBED HELPER ──
+// Returns null for Google Drive on mobile (use direct link instead)
+const isMobileBrowser = () => /iPhone|iPad|iPod|Android/i.test(typeof navigator!=="undefined"?navigator.userAgent:"");
+function buildVideoSrc(videoUrl) {
+  const yt = videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
+  if(yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
+  if(videoUrl.includes("drive.google.com")){
+    if(isMobileBrowser()) return null; // Mobile can't reliably embed Drive — use direct link
+    let src = videoUrl.replace("/view","/preview").replace("/edit","/preview");
+    if(!src.includes("?")) src+="?embedded=true";
+    else if(!src.includes("embedded=true")) src+="&embedded=true";
+    return src;
+  }
+  return videoUrl;
+}
+
 function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"white",borderRadius:18,width:"100%",maxWidth:480,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
@@ -6552,19 +6568,17 @@ function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
       </div>
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
         {(()=>{
-          let src=videoUrl;
-          const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
-          if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
-          else if(videoUrl.includes("drive.google.com")){
-            src=videoUrl.replace("/view","/preview").replace("/edit","/preview");
-            if(!src.includes("?")) src+="?embedded=true";
-            else if(!src.includes("embedded=true")) src+="&embedded=true";
-          }
+          const src=buildVideoSrc(videoUrl);
+          if(!src) return <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,background:"#0f1f35"}}>
+            <div style={{fontSize:32}}>▶</div>
+            <div style={{fontSize:13,color:"white",fontWeight:600,textAlign:"center",padding:"0 20px"}}>Tap below to watch the video</div>
+            <a href={videoUrl} target="_blank" rel="noreferrer" style={{padding:"10px 24px",background:C.teal,color:"white",borderRadius:10,fontSize:13,fontWeight:700,textDecoration:"none"}}>Watch Video</a>
+          </div>;
           return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen" allowFullScreen title="Video"/>;
         })()}
       </div>
       <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
-        <a href={videoUrl} target="_blank" rel="noreferrer" style={{display:"block",fontSize:11,color:C.teal,textDecoration:"none",marginBottom:10}}>▶ Open video in new tab if it won't play</a>
+        <a href={videoUrl} target="_blank" rel="noreferrer" style={{display:"block",fontSize:11,color:C.teal,textDecoration:"none",marginBottom:10}}>▶ Open video in new tab</a>
         <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:10,background:`linear-gradient(135deg,#0ea5a0,#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
           Got it — Let's Get Started! 🚀
         </button>
@@ -6583,21 +6597,17 @@ function RewatchVideoModal({videoUrl,title,onClose}) {
       </div>
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
         {(()=>{
-          let src=videoUrl;
-          // YouTube
-          const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
-          if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
-          // Google Drive — ensure /preview and add embedded=true
-          else if(videoUrl.includes("drive.google.com")){
-            src=videoUrl.replace("/view","/preview").replace("/edit","/preview");
-            if(!src.includes("?")) src+="?embedded=true";
-            else if(!src.includes("embedded=true")) src+="&embedded=true";
-          }
+          const src=buildVideoSrc(videoUrl);
+          if(!src) return <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,background:"#0f1f35"}}>
+            <div style={{fontSize:32}}>▶</div>
+            <div style={{fontSize:13,color:"white",fontWeight:600,textAlign:"center",padding:"0 20px"}}>Tap below to watch the video</div>
+            <a href={videoUrl} target="_blank" rel="noreferrer" style={{padding:"10px 24px",background:C.teal,color:"white",borderRadius:10,fontSize:13,fontWeight:700,textDecoration:"none"}}>Watch Video</a>
+          </div>;
           return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen" allowFullScreen title="Video"/>;
         })()}
       </div>
       <div style={{padding:"10px 16px",textAlign:"center"}}>
-        <a href={videoUrl} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.teal,textDecoration:"none"}}>▶ Open video in new tab if it won't play</a>
+        <a href={videoUrl} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.teal,textDecoration:"none"}}>▶ Open video in new tab</a>
       </div>
     </div>
   </div>;
