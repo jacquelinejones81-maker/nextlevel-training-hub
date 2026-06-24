@@ -1451,7 +1451,9 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
         {!editContact&&<div style={{fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
           <PhoneLink phone={rep.phone}/>
           {rep.email&&<a href={"mailto:"+rep.email} style={{fontSize:11,color:C.teal,textDecoration:"none"}}>✉ {rep.email}</a>}
-          <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
+          <Badge color={track?.color||C.teal} small>{track?.label||"No track yet"}</Badge>
+          {rep.trackChosenAt&&<span style={{fontSize:10,color:C.textLight}}>Self-selected on {rep.trackChosenAt}</span>}
+          {!rep.track&&<span style={{fontSize:10,color:C.gold,fontWeight:600}}>⏳ Pending path selection</span>}
           <button onClick={()=>{setContactForm({phone:rep.phone||"",email:rep.email||""});setEditContact(true);}} style={{fontSize:10,padding:"1px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
         </div>}
         {editContact&&<div style={{marginTop:4,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
@@ -1650,13 +1652,22 @@ function ProdDash({data,onUpdateData}) {
 
 // ── ADD REP ──
 function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
-  const [f,setF]=useState({name:"",phone:"",email:"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
+  const [f,setF]=useState({name:"",phone:"",email:"",track:"",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
   const fmtP=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"email",l:"Email",t:"email"},{fld:"startDate",l:"Start Date",t:"date"},{fld:"graduationDate",l:"Target Graduation",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
-      <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>{Object.entries(TRACK_INFO).map(([k,ti])=><button key={k} onClick={()=>setF({...f,track:k})} style={{padding:"7px",borderRadius:8,border:`2px solid ${f.track===k?ti.color:C.border}`,background:f.track===k?ti.color+"11":"white",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:700,color:f.track===k?ti.color:C.textMid}}>{ti.label}</div><div style={{fontSize:9,color:C.textLight}}>{ti.days}</div></button>)}</div></div>
+      <div style={{marginBottom:9}}>
+        <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track <span style={{color:C.textLight,fontWeight:400}}>(optional — leave blank for rep to choose after welcome video)</span></label>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
+          <button onClick={()=>setF({...f,track:""})} style={{padding:"7px",borderRadius:8,border:`2px solid ${!f.track?C.teal:C.border}`,background:!f.track?C.teal+"11":"white",cursor:"pointer"}}>
+            <div style={{fontSize:10,fontWeight:700,color:!f.track?C.teal:C.textMid}}>Rep Chooses</div>
+            <div style={{fontSize:9,color:C.textLight}}>After video</div>
+          </button>
+          {Object.entries(TRACK_INFO).filter(([k])=>k!=="licensed").map(([k,ti])=><button key={k} onClick={()=>setF({...f,track:k})} style={{padding:"7px",borderRadius:8,border:`2px solid ${f.track===k?ti.color:C.border}`,background:f.track===k?ti.color+"11":"white",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:700,color:f.track===k?ti.color:C.textMid}}>{ti.label}</div><div style={{fontSize:9,color:C.textLight}}>{ti.days}</div></button>)}
+        </div>
+      </div>
       <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
       <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
       <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer",marginTop:4}}>Add Rep</button>
@@ -6453,6 +6464,84 @@ function BirthdayModal({name,age,onClose}) {
   </div>;
 }
 
+// ── CHOOSE YOUR PATH SCREEN ──
+function ChooseYourPath({rep,onChoose}) {
+  const [chosen,setChosen]=useState(null);
+  const [animating,setAnimating]=useState(false);
+
+  const choose=(track)=>{
+    setChosen(track);
+    setAnimating(true);
+    setTimeout(()=>onChoose(track),2200);
+  };
+
+  if(animating&&chosen==="fast") return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#1c3d63)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+    <div style={{fontSize:64,marginBottom:16,animation:"bounce 0.5s infinite alternate"}}>⚡</div>
+    <div style={{fontSize:28,fontWeight:900,color:C.gold,marginBottom:8,textAlign:"center"}}>You chose Fast Start!</div>
+    <div style={{fontSize:16,color:"rgba(255,255,255,0.8)",textAlign:"center",marginBottom:24}}>Let's GO! Your checklist is ready. 🚀</div>
+    <div style={{display:"flex",gap:8}}>{[...Array(8)].map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:5,background:C.gold,opacity:Math.random(),animation:`pulse ${0.3+Math.random()*0.4}s infinite alternate`}}/>)}</div>
+    <style>{`@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-20px)}}@keyframes pulse{from{opacity:0.2}to{opacity:1}}`}</style>
+  </div>;
+
+  if(animating&&chosen==="regular") return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#0d3d3a)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+    <div style={{fontSize:64,marginBottom:16}}>🏆</div>
+    <div style={{fontSize:28,fontWeight:900,color:C.teal,marginBottom:8,textAlign:"center"}}>Building Strong!</div>
+    <div style={{fontSize:16,color:"rgba(255,255,255,0.8)",textAlign:"center",marginBottom:24}}>Your 30-day journey starts now. Let's build something great. 💪</div>
+    <div style={{width:200,height:6,background:"rgba(255,255,255,0.1)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",background:C.teal,borderRadius:3,animation:"grow 2s ease-out forwards"}}/></div>
+    <style>{`@keyframes grow{from{width:0%}to{width:100%}}`}</style>
+  </div>;
+
+  return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#16304f)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
+    <div style={{maxWidth:480,width:"100%"}}>
+      <div style={{textAlign:"center",marginBottom:28}}>
+        <div style={{fontSize:32,marginBottom:8}}>🎯</div>
+        <div style={{fontSize:24,fontWeight:900,color:"white",marginBottom:6}}>Choose Your Path</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>Hey {rep.name}! Now that you've watched the welcome video, it's time to choose your training path. Both paths lead to the same goal — pick the one that fits your life right now.</div>
+      </div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {/* Fast Start */}
+        <button onClick={()=>choose("fast")} style={{background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.06))",border:"2px solid "+C.gold,borderRadius:16,padding:"20px",textAlign:"left",cursor:"pointer",transition:"transform 0.1s",width:"100%"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+            <div style={{fontSize:32}}>⚡</div>
+            <div>
+              <div style={{fontSize:18,fontWeight:800,color:C.gold}}>Fast Start</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>7–14 days to complete</div>
+            </div>
+          </div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>High intensity, full commitment. You're ready to go all in right now. This path is for people who want to get licensed and writing business as fast as possible.</div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {["Daily focused activity","Faster path to income","High accountability","Best for: full-time focus"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"rgba(255,255,255,0.65)"}}>
+              <span style={{color:C.gold}}>✓</span>{item}
+            </div>)}
+          </div>
+          <div style={{marginTop:14,padding:"10px",background:C.gold,borderRadius:10,textAlign:"center",fontSize:13,fontWeight:700,color:"#0f1f35"}}>I'm Going Fast Start! ⚡</div>
+        </button>
+
+        {/* Regular Start */}
+        <button onClick={()=>choose("regular")} style={{background:"linear-gradient(135deg,rgba(14,165,160,0.12),rgba(14,165,160,0.06))",border:"2px solid "+C.teal,borderRadius:16,padding:"20px",textAlign:"left",cursor:"pointer",width:"100%"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+            <div style={{fontSize:32}}>🏆</div>
+            <div>
+              <div style={{fontSize:18,fontWeight:800,color:C.teal}}>Regular Start</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>30 days to complete</div>
+            </div>
+          </div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>Steady, consistent pace. You're building a strong foundation. This path gives you 30 days to learn, practice, and prepare — perfect if you're balancing other commitments.</div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {["Balanced daily activity","30 days to get licensed","Strong foundation building","Best for: part-time or balanced schedule"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"rgba(255,255,255,0.65)"}}>
+              <span style={{color:C.teal}}>✓</span>{item}
+            </div>)}
+          </div>
+          <div style={{marginTop:14,padding:"10px",background:C.teal,borderRadius:10,textAlign:"center",fontSize:13,fontWeight:700,color:"white"}}>I'm Taking Regular Start 🏆</div>
+        </button>
+      </div>
+
+      <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"rgba(255,255,255,0.35)"}}>Your choice will be shared with your trainer. You can discuss it with them at any time.</div>
+    </div>
+  </div>;
+}
+
 function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"white",borderRadius:18,width:"100%",maxWidth:480,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
@@ -6584,6 +6673,7 @@ export default function App() {
   },[session?.id]);
 
   const [showWelcome,setShowWelcome]=useState(false);
+  const [showChoosePath,setShowChoosePath]=useState(false);
   const [birthdayInfo,setBirthdayInfo]=useState(null);
   const [showLicensedVideo,setShowLicensedVideo]=useState(false);
   const [showFieldTrainerVideo,setShowFieldTrainerVideo]=useState(false);
@@ -6598,6 +6688,10 @@ export default function App() {
     setSection("dashboard");
     if(role==="rep"){
       const rep=(data.reps||[]).find(r=>r.id===id);
+      // If rep has no track yet — show Choose Your Path after welcome video
+      if(rep&&!rep.track){
+        setShowChoosePath(true);
+      }
       // Welcome video — Fast Start / Regular Start, first login ever
       const isNewRep=rep&&(rep.track==="fast"||rep.track==="regular");
       if(isNewRep&&!localStorage.getItem(`welcome_seen_${id}`)&&data.welcomeVideoUrl){
@@ -6664,6 +6758,11 @@ export default function App() {
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
+      {showChoosePath&&<ChooseYourPath rep={rep} onChoose={(track)=>{
+        const chosenAt=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+        upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,track,trackChosenAt:chosenAt}:r)});
+        setShowChoosePath(false);
+      }}/>}
       {birthdayInfo&&<BirthdayModal name={birthdayInfo.name} age={birthdayInfo.age} onClose={()=>setBirthdayInfo(null)}/>}
       {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{localStorage.setItem(`welcome_seen_${session.id}`,"true");setShowWelcome(false);}}/>}
       {showLicensedVideo&&data.licensedVideoUrl&&<VideoPopupModal videoUrl={data.licensedVideoUrl} repName={rep.name} emoji="🎓" title="Licensed — Now What?" subtitle="Hey {name}! Watch this video to learn what's expected of you on your new checklist." onClose={()=>{localStorage.setItem(`licensed_video_seen_${session.id}`,"true");setShowLicensedVideo(false);}}/>}
