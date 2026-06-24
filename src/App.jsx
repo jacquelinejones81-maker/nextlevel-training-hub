@@ -135,7 +135,7 @@ const FAST_START = [
   {id:"f1",cat:"Getting Started",task:"Download Primerica app, register and log in within 24 hrs (earn $50 bonus)"},
   {id:"f2",cat:"Apps & Access",task:"Download Telegram app (team communication)"},
   {id:"f3",cat:"References",task:"Provide 5 professional character references to your trainer",note:"Character references can be found in the Refs tab"},
-  {id:"f4",cat:"Onboarding",task:"Complete Orientation",note:"Orientation video is in the Resources tab"},
+  {id:"f4",cat:"Onboarding",task:"Watch Orientation",note:"Orientation video is in the Resources tab"},
   {id:"f5",cat:"Business Commitment",task:"Business Commitment - pay POL fee and set up business account"},
   {id:"f6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
   {id:"f6b",cat:"Income Producing",task:"Get your auto and home quote",note:"Even if you don't save money, you'll know the process for your future clients"},
@@ -152,7 +152,7 @@ const REGULAR_START = [
   {id:"r1",cat:"Getting Started",task:"Download Primerica app, register and log in within 24 hrs (earn $50 bonus)"},
   {id:"r2",cat:"Apps & Access",task:"Download Telegram app (team communication)"},
   {id:"r3",cat:"References",task:"Provide 5 character references to your trainer",note:"Character references can be found in the Refs tab"},
-  {id:"r4",cat:"Onboarding",task:"Complete Orientation",note:"Orientation video is in the Resources tab"},
+  {id:"r4",cat:"Onboarding",task:"Watch Orientation",note:"Orientation video is in the Resources tab"},
   {id:"r5",cat:"Business Commitment",task:"Business Commitment - build your financial and business house"},
   {id:"r6",cat:"FNA",task:"Complete your financial needs analysis (Life Insurance and Roth IRA)"},
   {id:"r6b",cat:"Income Producing",task:"Get your auto and home quote",note:"Even if you don't save money, you'll know the process for your future clients"},
@@ -644,13 +644,54 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
 
 // ── REP COUNTERS ──
 function RepCounters({rep,onUpdate,readOnly}) {
-  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-    {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
-      <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{rep[c.key]||0}</div><div style={{flex:1}}><Bar pct={((rep[c.key]||0)/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
-      {!readOnly&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
-      <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
-    </Card>)}
+  const [showInvLog,setShowInvLog]=useState(false);
+  const [prospectName,setProspectName]=useState("");
+  const invObservations=rep.investmentObservations||[];
+
+  const addObservation=()=>{
+    if(!prospectName.trim()) return;
+    onUpdate({...rep,investmentObservations:[...invObservations,{name:prospectName.trim(),date:new Date().toLocaleDateString(),id:Date.now()}]});
+    setProspectName("");
+  };
+
+  return <div style={{marginBottom:14}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:0}}>
+      {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{c.key==="pacCount"?invObservations.length:(rep[c.key]||0)}</div><div style={{flex:1}}><Bar pct={((c.key==="pacCount"?invObservations.length:(rep[c.key]||0))/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
+        {!readOnly&&c.key!=="pacCount"&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
+        {!readOnly&&c.key==="pacCount"&&<button onClick={()=>setShowInvLog(!showInvLog)} style={{marginTop:6,width:"100%",padding:"3px",borderRadius:6,border:`1px solid ${C.gold}`,background:C.gold+"11",cursor:"pointer",fontSize:10,color:C.gold,fontWeight:600}}>
+          {showInvLog?"Hide Log":"+ Log Name"}
+        </button>}
+        <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
+      </Card>)}
+    </div>
+
+    {/* Investment Observation Log — drops down under the counter */}
+    {(showInvLog||invObservations.length>0)&&<Card style={{marginTop:8,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Investment Observation Log</div>
+      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Log the prospect name of each person you observed getting an investment account opened during your training appointments. This builds your future AUM pipeline.</div>
+      {!readOnly&&<div style={{display:"flex",gap:6,marginBottom:10}}>
+        <input
+          placeholder="Prospect Name"
+          value={prospectName}
+          onChange={e=>setProspectName(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&addObservation()}
+          style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}
+        />
+        <button onClick={addObservation} style={{padding:"6px 12px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+      </div>}
+      {invObservations.length>0&&<div style={{maxHeight:160,overflowY:"auto"}}>
+        {invObservations.slice().reverse().map((obs,i)=><div key={obs.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}>
+          <div>
+            <span style={{color:C.text,fontWeight:600}}>{obs.name}</span>
+            <span style={{color:C.textLight,marginLeft:8}}>{obs.date}</span>
+          </div>
+          {!readOnly&&<button onClick={()=>onUpdate({...rep,investmentObservations:invObservations.filter((_,j)=>j!==(invObservations.length-1-i))})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:12}}>x</button>}
+        </div>)}
+      </div>}
+      {invObservations.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No observations logged yet</div>}
+    </Card>}
   </div>;
 }
 
