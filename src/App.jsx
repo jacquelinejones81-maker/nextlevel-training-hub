@@ -6688,15 +6688,22 @@ export default function App() {
     setSection("dashboard");
     if(role==="rep"){
       const rep=(data.reps||[]).find(r=>r.id===id);
-      // If rep has no track yet — show Choose Your Path after welcome video
-      if(rep&&!rep.track){
-        setShowChoosePath(true);
-      }
       // Welcome video — Fast Start / Regular Start, first login ever
       const isNewRep=rep&&(rep.track==="fast"||rep.track==="regular");
       if(isNewRep&&!localStorage.getItem(`welcome_seen_${id}`)&&data.welcomeVideoUrl){
         localStorage.setItem(`welcome_seen_${id}`,"true");
         setShowWelcome(true);
+      }
+      // If rep has no track yet — show welcome video first (if available), then Choose Your Path
+      // Choose Your Path is triggered from the welcome video onClose, or immediately if no welcome video
+      if(rep&&!rep.track){
+        if(data.welcomeVideoUrl&&!localStorage.getItem(`welcome_seen_${id}`)){
+          localStorage.setItem(`welcome_seen_${id}`,"true");
+          setShowWelcome(true);
+          // Choose Your Path will show after welcome video closes (handled in render)
+        } else {
+          setShowChoosePath(true);
+        }
       }
       // Licensed Now What video — fires once when access is granted
       if(rep&&rep.nextLevelGranted&&!localStorage.getItem(`licensed_video_seen_${id}`)&&data.licensedVideoUrl){
@@ -6764,7 +6771,7 @@ export default function App() {
         setShowChoosePath(false);
       }}/>}
       {birthdayInfo&&<BirthdayModal name={birthdayInfo.name} age={birthdayInfo.age} onClose={()=>setBirthdayInfo(null)}/>}
-      {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{localStorage.setItem(`welcome_seen_${session.id}`,"true");setShowWelcome(false);}}/>}
+      {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{setShowWelcome(false);if(!rep.track){setShowChoosePath(true);}}}/>}
       {showLicensedVideo&&data.licensedVideoUrl&&<VideoPopupModal videoUrl={data.licensedVideoUrl} repName={rep.name} emoji="🎓" title="Licensed — Now What?" subtitle="Hey {name}! Watch this video to learn what's expected of you on your new checklist." onClose={()=>{localStorage.setItem(`licensed_video_seen_${session.id}`,"true");setShowLicensedVideo(false);}}/>}
       {showFieldTrainerVideo&&data.fieldTrainerVideoUrl&&<VideoPopupModal videoUrl={data.fieldTrainerVideoUrl} repName={rep.name} emoji="🧑‍🏫" title="Welcome, Field Trainer!" subtitle="Hey {name}! Watch this video to learn what's expected of you as a Field Trainer." onClose={()=>{localStorage.setItem(`ft_video_seen_${session.id}`,"true");setShowFieldTrainerVideo(false);}}/>}
       {showRvpPathVideo&&data.rvpPathVideoUrl&&<VideoPopupModal videoUrl={data.rvpPathVideoUrl} repName={rep.name} emoji="🚀" title="Welcome to the RVP Path!" subtitle="Hey {name}! Watch this video to learn what's expected of you on the RVP Path." onClose={()=>{localStorage.setItem(`rvp_video_seen_${session.id}`,"true");setShowRvpPathVideo(false);}}/>}
