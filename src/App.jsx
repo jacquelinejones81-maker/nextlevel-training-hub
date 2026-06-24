@@ -6555,10 +6555,16 @@ function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
           let src=videoUrl;
           const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
           if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
-          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay" allowFullScreen title="Video"/>;
+          else if(videoUrl.includes("drive.google.com")){
+            src=videoUrl.replace("/view","/preview").replace("/edit","/preview");
+            if(!src.includes("?")) src+="?embedded=true";
+            else if(!src.includes("embedded=true")) src+="&embedded=true";
+          }
+          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen" allowFullScreen title="Video"/>;
         })()}
       </div>
       <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
+        <a href={videoUrl} target="_blank" rel="noreferrer" style={{display:"block",fontSize:11,color:C.teal,textDecoration:"none",marginBottom:10}}>▶ Open video in new tab if it won't play</a>
         <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:10,background:`linear-gradient(135deg,#0ea5a0,#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
           Got it — Let's Get Started! 🚀
         </button>
@@ -6578,10 +6584,20 @@ function RewatchVideoModal({videoUrl,title,onClose}) {
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
         {(()=>{
           let src=videoUrl;
+          // YouTube
           const yt=videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
           if(yt) src=`https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1`;
-          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay" allowFullScreen title="Video"/>;
+          // Google Drive — ensure /preview and add embedded=true
+          else if(videoUrl.includes("drive.google.com")){
+            src=videoUrl.replace("/view","/preview").replace("/edit","/preview");
+            if(!src.includes("?")) src+="?embedded=true";
+            else if(!src.includes("embedded=true")) src+="&embedded=true";
+          }
+          return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen" allowFullScreen title="Video"/>;
         })()}
+      </div>
+      <div style={{padding:"10px 16px",textAlign:"center"}}>
+        <a href={videoUrl} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.teal,textDecoration:"none"}}>▶ Open video in new tab if it won't play</a>
       </div>
     </div>
   </div>;
