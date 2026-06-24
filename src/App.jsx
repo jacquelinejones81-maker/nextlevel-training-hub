@@ -1659,13 +1659,16 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"email",l:"Email",t:"email"},{fld:"startDate",l:"Start Date",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
       <div style={{marginBottom:9}}>
-        <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track <span style={{color:C.textLight,fontWeight:400}}>(optional — leave blank for rep to choose after welcome video)</span></label>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
-          <button onClick={()=>setF({...f,track:""})} style={{padding:"7px",borderRadius:8,border:`2px solid ${!f.track?C.teal:C.border}`,background:!f.track?C.teal+"11":"white",cursor:"pointer"}}>
-            <div style={{fontSize:10,fontWeight:700,color:!f.track?C.teal:C.textMid}}>Rep Chooses</div>
-            <div style={{fontSize:9,color:C.textLight}}>After video</div>
+        <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track</label>
+        <div style={{display:"flex",flexDirection:"column",gap:7}}>
+          <button onClick={()=>setF({...f,track:""})} style={{padding:"10px 12px",borderRadius:8,border:`2px solid ${!f.track?C.teal:C.border}`,background:!f.track?C.teal+"11":"white",cursor:"pointer",textAlign:"left"}}>
+            <div style={{fontSize:12,fontWeight:700,color:!f.track?C.teal:C.text,marginBottom:2}}>🎯 Rep Chooses — Unlicensed New Rep</div>
+            <div style={{fontSize:10,color:C.textMid,lineHeight:1.4}}>Rep will watch the welcome video first, then choose Fast Start (7-14 days) or Regular Start (30 days) for themselves. Best for all new unlicensed reps.</div>
           </button>
-          {Object.entries(TRACK_INFO).filter(([k])=>k!=="licensed").map(([k,ti])=><button key={k} onClick={()=>setF({...f,track:k})} style={{padding:"7px",borderRadius:8,border:`2px solid ${f.track===k?ti.color:C.border}`,background:f.track===k?ti.color+"11":"white",cursor:"pointer"}}><div style={{fontSize:10,fontWeight:700,color:f.track===k?ti.color:C.textMid}}>{ti.label}</div><div style={{fontSize:9,color:C.textLight}}>{ti.days}</div></button>)}
+          <button onClick={()=>setF({...f,track:"licensed"})} style={{padding:"10px 12px",borderRadius:8,border:`2px solid ${f.track==="licensed"?C.gold:C.border}`,background:f.track==="licensed"?C.gold+"11":"white",cursor:"pointer",textAlign:"left"}}>
+            <div style={{fontSize:12,fontWeight:700,color:f.track==="licensed"?C.gold:C.text,marginBottom:2}}>🎓 Already Licensed — Skip to Licensed Now What</div>
+            <div style={{fontSize:10,color:C.textMid,lineHeight:1.4}}>Rep already holds a life insurance license. Skips Fast/Regular Start entirely and goes straight to the Licensed Now What checklist.</div>
+          </button>
         </div>
       </div>
       <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
