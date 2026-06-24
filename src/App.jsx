@@ -3552,12 +3552,12 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const ms=new Date(now2.getFullYear(),now2.getMonth(),1).toISOString().split("T")[0];
               const ents=rep.selfPremium||[];
               const me=ents.filter(e=>e.date>=ms);
-              const mEarned=me.reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
+              const mEarned=me.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
               const goal2=Number(rep.monthlyIncomeGoal)||0;
               const gPct=goal2>0?Math.min(100,Math.round((mEarned/goal2)*100)):0;
               let rows="";
-              me.forEach(e=>{const c=calcC2(Number(e.premium)||0);rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+e.client+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td><td style='text-align:right;padding:6px;color:#10b981;font-weight:600'>$"+c.up.toFixed(0)+"</td><td style='text-align:right;padding:6px'>$"+c.ae.toFixed(0)+"</td><td style='text-align:right;padding:6px;font-weight:600'>$"+c.tot.toFixed(0)+"</td></tr>";});
-              const table=me.length>0?"<h2>THIS MONTH'S APPS</h2><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Client</th><th style='text-align:right;padding:6px'>Mo. Premium</th><th style='text-align:right;padding:6px'>Upfront</th><th style='text-align:right;padding:6px'>As Earned</th><th style='text-align:right;padding:6px'>Total 1yr</th></tr>"+rows+"</table>":"<p style='color:#999;font-size:12px'>No apps logged this month</p>";
+              me.forEach(e=>{const c=calcC2(Number(e.premium)||0);const isCOD=!!e.cod;const isPending=isCOD&&!e.codAccepted;const statusCell=isCOD?"<td style='text-align:center;padding:6px'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(isPending?"#fef3c7":"#d1fae5")+";color:"+(isPending?"#d97706":"#059669")+"'>"+(isPending?"⏳ COD Pending":"✅ COD Accepted")+"</span></td>":"<td></td>";rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+(e.client||"")+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td>"+statusCell+"<td style='text-align:right;padding:6px;color:"+(isPending?"#999":"#10b981")+";font-weight:600'>"+(isPending?"—":"$"+c.up.toFixed(0))+"</td><td style='text-align:right;padding:6px'>"+(isPending?"—":"$"+c.ae.toFixed(0))+"</td><td style='text-align:right;padding:6px;font-weight:600'>"+(isPending?"—":"$"+c.tot.toFixed(0))+"</td></tr>";});
+              const table=me.length>0?"<h2>THIS MONTH'S APPS</h2><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Client</th><th style='text-align:right;padding:6px'>Mo. Premium</th><th style='text-align:center;padding:6px'>Status</th><th style='text-align:right;padding:6px'>Upfront</th><th style='text-align:right;padding:6px'>As Earned</th><th style='text-align:right;padding:6px'>Total 1yr</th></tr>"+rows+"</table>":"<p style='color:#999;font-size:12px'>No apps logged this month</p>";
               return "<h2>INCOME GOAL & COMMISSION</h2><p class='note'>Commission tracking for "+rep.name+". Based on promotion level and logged life apps.</p><div class='grid2'><div class='card'><div class='big'>"+promo.label+"</div><div class='label'>Promotion Level ("+promo.pct+"%)</div></div><div class='card'><div class='big'>$"+(goal2>0?goal2.toLocaleString():"Not set")+"</div><div class='label'>Monthly Income Goal</div></div><div class='card'><div class='big'>$"+mEarned.toFixed(0)+"</div><div class='label'>Earned This Month (upfront)</div></div><div class='card'><div class='big'>"+gPct+"%</div><div class='label'>Goal Progress</div></div></div>"+table;
             })():""}
             <h2>TRAINING OBSERVATIONS</h2>
@@ -3565,8 +3565,19 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <div class="grid">
               <div class="card"><div class="big">${rep.ftoCount||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">FTO Observations</div></div>
               <div class="card"><div class="big">${rep.lifeAppCount||0}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Life Insurance Observations</div></div>
-              <div class="card"><div class="big">${rep.pacCount||0}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Investment Observations</div></div>
+              <div class="card"><div class="big">${(rep.investmentObservations||[]).length}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Investment Observations</div></div>
             </div>
+            ${(rep.investmentObservations||[]).length>0?`
+            <h2>INVESTMENT OBSERVATION LOG</h2>
+            <p class="note">These are the prospects ${rep.name} observed getting investment accounts opened during training appointments. This builds their future AUM pipeline.</p>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+              <tr style="background:#f0f4f8">
+                <th style="text-align:left;padding:6px">#</th>
+                <th style="text-align:left;padding:6px">Prospect Name</th>
+                <th style="text-align:right;padding:6px">Date Logged</th>
+              </tr>
+              ${(rep.investmentObservations||[]).map((obs,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#999">${i+1}</td><td style="padding:6px;font-weight:600">${obs.name}</td><td style="text-align:right;padding:6px;color:#666">${obs.date}</td></tr>`).join("")}
+            </table>`:""}
 
             <h2>CHECKLIST PROGRESS</h2>
             <p class="note">Training completion shows how invested ${rep.name} is in learning the system.</p>
@@ -4827,11 +4838,12 @@ function InvestmentLog({data,onUpdate,userRole}) {
 
 // ── LICENSED PREMIUM ENTRY ──
 function LicensedPremiumEntry({rep,onUpdate}) {
-  const [form,setForm] = useState({client:"",premium:"",date:new Date().toISOString().split("T")[0]});
+  const [form,setForm] = useState({client:"",premium:"",date:new Date().toISOString().split("T")[0],cod:false});
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
   const entries = rep.selfPremium||[];
-  const total = entries.reduce((s,e)=>s+(Number(e.premium)||0),0);
+  const total = entries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>s+(Number(e.premium)||0),0);
+  const pendingCOD = entries.filter(e=>e.cod&&!e.codAccepted);
 
   // Promotion level — reads from rep, defaults to rep 25%
   const PROMO_LEVELS=[
@@ -4858,7 +4870,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const thisMonthEntries = entries.filter(e=>e.date>=monthStart);
-  const thisMonthEarned = thisMonthEntries.reduce((s,e)=>{
+  const thisMonthEarned = thisMonthEntries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{
     const c = calcCommission(e.premium);
     return s + (c ? c.upfront : 0);
   }, 0);
@@ -4870,9 +4882,13 @@ function LicensedPremiumEntry({rep,onUpdate}) {
 
   const save = () => {
     if(!form.client||!form.premium) return;
-    onUpdate({...rep,selfPremium:[...entries,{...form,id:Date.now()}]});
-    setForm({client:"",premium:"",date:new Date().toISOString().split("T")[0]});
+    onUpdate({...rep,selfPremium:[...entries,{...form,id:Date.now(),codAccepted:false}]});
+    setForm({client:"",premium:"",date:new Date().toISOString().split("T")[0],cod:false});
     setShow(false);
+  };
+  const acceptCOD=(idx)=>{
+    const updated=entries.map((e,i)=>i===idx?{...e,codAccepted:true}:e);
+    onUpdate({...rep,selfPremium:updated});
   };
 
   const calcResult = calcCommission(calcPremium);
@@ -4912,8 +4928,12 @@ function LicensedPremiumEntry({rep,onUpdate}) {
         <input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
         <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
       </div>
-      {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:10}}>
-        <div style={{fontWeight:700,color:C.gold,marginBottom:2}}>Estimated Commission at {promo.label} ({promo.pct}%)</div>
+      <label style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,cursor:"pointer"}}>
+        <input type="checkbox" checked={form.cod} onChange={e=>setForm({...form,cod:e.target.checked})} style={{width:15,height:15,accentColor:C.gold}}/>
+        <span style={{fontSize:11,color:C.textMid}}>COD Application — <span style={{color:C.gold,fontWeight:600}}>premium pending acceptance</span></span>
+      </label>
+      {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:form.cod?C.textLight+"11":C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:10}}>
+        <div style={{fontWeight:700,color:form.cod?C.textMid:C.gold,marginBottom:2}}>{form.cod?"Estimated Commission (COD — pending acceptance)":"Estimated Commission at"} {form.cod?"":promo.label+" ("+promo.pct+"%)"}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
           <div><div style={{color:C.textMid}}>Upfront</div><div style={{fontWeight:700,color:C.text}}>${c.upfront.toFixed(2)}</div></div>
           <div><div style={{color:C.textMid}}>As Earned</div><div style={{fontWeight:700,color:C.text}}>${c.asEarned.toFixed(2)}</div></div>
@@ -4926,18 +4946,29 @@ function LicensedPremiumEntry({rep,onUpdate}) {
       </div>
     </div>}
 
+    {/* Pending COD banner */}
+    {pendingCOD.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"7px 10px",marginBottom:8,fontSize:10}}>
+      <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>⏳ {pendingCOD.length} COD App{pendingCOD.length>1?"s":""} Pending Acceptance</div>
+      <div style={{color:C.textMid}}>These are not counted in your totals or commission until accepted.</div>
+    </div>}
     {/* App entries with commission breakdown */}
-    {entries.length>0&&<div style={{maxHeight:200,overflowY:"auto",marginTop:6}}>
+    {entries.length>0&&<div style={{maxHeight:240,overflowY:"auto",marginTop:6}}>
       {entries.slice().reverse().map((e,i)=>{
         const realIdx=entries.length-1-i;
         const c=calcCommission(e.premium);
-        return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border}}>
+        const isCOD=!!e.cod;
+        const isPending=isCOD&&!e.codAccepted;
+        return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:isPending?0.75:1}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>
-            <span style={{color:C.text,flex:1,fontWeight:600}}>{e.client}</span>
-            <span style={{color:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
+            <div style={{flex:1}}>
+              <span style={{color:C.text,fontWeight:600}}>{e.client}</span>
+              {isCOD&&<span style={{marginLeft:6,fontSize:9,padding:"1px 5px",borderRadius:4,background:isPending?C.gold+"22":C.success+"22",color:isPending?C.gold:C.success,fontWeight:700}}>{isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
+            </div>
+            <span style={{color:isPending?C.textMid:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
             <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
           </div>
-          {c&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
+          {isPending&&<button onClick={()=>acceptCOD(realIdx)} style={{marginTop:4,width:"100%",padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:10,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted — Add to Totals</button>}
+          {c&&!isPending&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
             <div style={{fontSize:9,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.upfront.toFixed(0)}</span></div>
             <div style={{fontSize:9,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
             <div style={{fontSize:9,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
