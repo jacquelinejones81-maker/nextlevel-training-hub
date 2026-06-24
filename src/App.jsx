@@ -1652,12 +1652,12 @@ function ProdDash({data,onUpdateData}) {
 
 // ── ADD REP ──
 function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
-  const [f,setF]=useState({name:"",phone:"",email:"",track:"",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:""});
+  const [f,setF]=useState({name:"",phone:"",email:"",track:"",trainerId:"",startDate:new Date().toISOString().split("T")[0]});
   const fmtP=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
-      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"email",l:"Email",t:"email"},{fld:"startDate",l:"Start Date",t:"date"},{fld:"graduationDate",l:"Target Graduation",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
+      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"email",l:"Email",t:"email"},{fld:"startDate",l:"Start Date",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
       <div style={{marginBottom:9}}>
         <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track <span style={{color:C.textLight,fontWeight:400}}>(optional — leave blank for rep to choose after welcome video)</span></label>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
