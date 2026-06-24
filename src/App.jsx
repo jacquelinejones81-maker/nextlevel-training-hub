@@ -119,16 +119,15 @@ const TRAINER_CHECKLIST = [
   {id:"t2",cat:"Apps & Access",task:"Confirm recruit downloaded Primerica app and logged in within 24 hrs",note:"$50 bonus opportunity"},
   {id:"t3",cat:"Apps & Access",task:"Confirm recruit downloaded Telegram and added to group",link:"https://t.me/+WjPWktwvOpVhZDlh",linkLabel:"Telegram Group"},
   {id:"t4",cat:"Apps & Access",task:"Share app URL with new rep and confirm they have saved it"},
-  {id:"t5",cat:"Apps & Access",task:"Give recruit access to new student folder",link:"https://drive.google.com/drive/folders/1IrsYPZyMlaClTLftKSkK6pCxAzVavTPl",linkLabel:"Student Folder"},
   {id:"t6",cat:"References",task:"Get 5 character references (names and phone numbers - MACHO people)",note:"Character references can be found in the Refs tab"},
-  {id:"t7",cat:"Onboarding Videos",task:"Send welcome video link",link:"https://us06web.zoom.us/clips/share/HkOwxveSSd6QaYTXZ0gUgg",linkLabel:"Welcome Video"},
-  {id:"t8",cat:"Onboarding Videos",task:"Send orientation video to watch",note:"Find the orientation video in the Resources tab → Onboarding Videos"},
   {id:"t9",cat:"References",task:"Complete character reference calls and book 5 training appointments",link:"https://docs.google.com/document/d/1ju_kh_QbSc5whqLpm8r9190Jr7raYfcGoi2jdDxP49U/edit?usp=sharing",linkLabel:"Call Script"},
   {id:"t10",cat:"Appointments",task:"Share training appointment link with rep",link:"https://calendly.com/jacquelinejones81/trainingappointment",linkLabel:"Schedule Appointment",note:"Add yourself as guest"},
   {id:"t11",cat:"Events",task:"Choose Digital Grand Opening (DGO) date",note:"DGO date can be scheduled in the Milestones tab"},
-  {id:"t12",cat:"FNA & Personal Plan",task:"Schedule time with RVP to complete personal FNA",link:"https://calendly.com/jacquelinejones81/meet-with-coach",linkLabel:"Schedule with Coach",note:"Add yourself as guest"},
+  {id:"t12",cat:"FNA & Personal Plan",task:"Ensure rep completes their personal plan including their Financial Needs Analysis, life insurance, and investments",note:"This should be completed early in training — rep needs their own plan before presenting to others"},
   {id:"t13",cat:"Events",task:"Follow up after DGO - debrief, next steps, pipeline review"},
-  {id:"t14",cat:"Milestones",task:"First sale milestone - rep writes first policy"},
+  {id:"t15",cat:"Onboarding Videos",task:"Confirm rep has watched orientation video",note:"Rep can watch it anytime from the Watch Orientation item on their checklist"},
+  {id:"t16",cat:"Appointments",task:"Complete rep's first training appointment (FTO #1)",note:"Log this in the rep's FTO counter on their checklist"},
+  {id:"t17",cat:"Milestones",task:"Confirm rep has logged their first investment observation",note:"Rep logs prospect names in the Investment Observation section on their checklist"},
 ];
 
 const FAST_START = [
