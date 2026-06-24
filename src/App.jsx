@@ -3231,8 +3231,19 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     const lastLoginDate = loginHistory2.length>0?new Date(loginHistory2[loginHistory2.length-1].ts):null;
     const daysSinceLogin = lastLoginDate?Math.floor((Date.now()-lastLoginDate)/86400000):999;
     const daysSinceChecklist = rep.lastChecklistActivity?Math.floor((Date.now()-new Date(rep.lastChecklistActivity))/86400000):999;
-    const isAtRisk = daysSinceLogin>=30||daysSinceChecklist>=30||(!submittedToday&&!submittedYesterday&&streak===0&&(loginHistory2.length>0));
-    const status = submittedToday?"green":submittedYesterday?"yellow":"red";
+    const isNewRep = rep.track==="fast"||rep.track==="regular"||!rep.track;
+    const isLicensed = rep.track==="licensed";
+    // At risk logic differs by track:
+    // New reps (Fast/Regular): flagged by no login in 7+ days OR checklist stalled 7+ days
+    // Licensed/Field Trainers: also flagged by missing daily activity
+    const isAtRisk = isNewRep
+      ? (daysSinceLogin>=7||(daysSinceChecklist>=7&&loginHistory2.length>0))
+      : (daysSinceLogin>=30||daysSinceChecklist>=30||(!submittedToday&&!submittedYesterday&&streak===0&&loginHistory2.length>0));
+    // Status label also differs by track:
+    // New reps don't submit daily activity — judge by login recency instead
+    const status = isNewRep
+      ? (daysSinceLogin<=1?"green":daysSinceLogin<=3?"yellow":"red")
+      : (submittedToday?"green":submittedYesterday?"yellow":"red");
     const repTaskData = leadTasks[rep.id]||{};
     const openTasks = Object.values(repTaskData).reduce((c,lt)=>c+LEAD_TASKS.filter(t=>!lt[t.id]).length,0);
     const cl = rep.track==="licensed"?19:13;
@@ -3295,7 +3306,11 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   });
 
   const statusColors={green:C.success,yellow:C.gold,red:C.danger};
-  const statusLabels={green:"Active Today",yellow:"1 Day Idle",red:"3+ Days Silent"};
+  const getStatusLabel=(rep,status)=>{
+    const isNewRep=rep.track==="fast"||rep.track==="regular"||!rep.track;
+    if(isNewRep) return {green:"Active",yellow:"2-3 Days",red:"7+ Days No Login"}[status];
+    return {green:"Active Today",yellow:"1 Day Idle",red:"3+ Days Silent"}[status];
+  };
 
   const addCheckIn = (repId) => {
     if(!checkInNote.trim()) return;
@@ -3352,7 +3367,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
                 <span style={{fontSize:dv(13,16),fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
                 {rep.isTrainer&&<Badge color={C.purple} small>Trainer</Badge>}
-                <Badge color={statusColors[rep.status]} small>{statusLabels[rep.status]}</Badge>
+                <Badge color={statusColors[rep.status]} small>{getStatusLabel(rep,rep.status)}</Badge>
                 {rep.isAtRisk&&!rep.inactive&&<Badge color={"#f97316"} small>At Risk</Badge>}
               </div>
               <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
