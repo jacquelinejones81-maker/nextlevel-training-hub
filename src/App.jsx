@@ -3575,18 +3575,12 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${rep.lifeAppCount||0}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Life Insurance Observations</div></div>
               <div class="card"><div class="big">${(rep.investmentObservations||[]).length}<span style="font-size:14px;color:#999">/10</span></div><div class="label">Investment Observations</div></div>
             </div>
-            ${(rep.investmentObservations||[]).length>0?`
-            <h2>INVESTMENT OBSERVATION LOG</h2>
-            <p class="note">These are the prospects ${rep.name} observed getting investment accounts opened during training appointments. This builds their future AUM pipeline.</p>
-            <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
-              <tr style="background:#f0f4f8">
-                <th style="text-align:left;padding:6px">#</th>
-                <th style="text-align:left;padding:6px">Prospect Name</th>
-                <th style="text-align:right;padding:6px">Date Logged</th>
-              </tr>
-              ${(rep.investmentObservations||[]).map((obs,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#999">${i+1}</td><td style="padding:6px;font-weight:600">${obs.name}</td><td style="text-align:right;padding:6px;color:#666">${obs.date}</td></tr>`).join("")}
-            </table>`:""}
-
+            ${(()=>{
+              const obs=rep.investmentObservations||[];
+              if(obs.length===0) return "";
+              let rows=obs.map((o,i)=>"<tr style='border-bottom:1px solid #eee'><td style='padding:6px;color:#999'>"+(i+1)+"</td><td style='padding:6px;font-weight:600'>"+o.name+"</td><td style='text-align:right;padding:6px;color:#666'>"+o.date+"</td></tr>").join("");
+              return "<h2>INVESTMENT OBSERVATION LOG</h2><p class='note'>These are the prospects "+rep.name+" observed getting investment accounts opened during training appointments. This builds their future AUM pipeline.</p><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>#</th><th style='text-align:left;padding:6px'>Prospect Name</th><th style='text-align:right;padding:6px'>Date Logged</th></tr>"+rows+"</table>";
+            })()}
             <h2>CHECKLIST PROGRESS</h2>
             <p class="note">Training completion shows how invested ${rep.name} is in learning the system.</p>
             <p><strong>${rep.progress}% complete</strong></p>
