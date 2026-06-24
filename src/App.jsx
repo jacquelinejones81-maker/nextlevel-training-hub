@@ -1512,7 +1512,8 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
   const invs=myProd.investments||[];
   const totPrem=apps.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const totPAC=invs.reduce((s,i)=>s+(Number(i.pac)||0),0);
-  const totLump=invs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+  const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
+  const totLump=invs.reduce((s,i)=>s+parseLump(i.lumpSum),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
       <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps - ${totPrem.toFixed(0)}/mo - ${(totPrem*12).toFixed(0)}/yr</div></div>
@@ -1552,7 +1553,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
             <input placeholder="Client Name" value={ni.clientName} onChange={e=>setNi({...ni,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
             <input placeholder="PAC $/mo" value={ni.pac} onChange={e=>setNi({...ni,pac:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <input placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+            <input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
             <select value={ni.type} onChange={e=>setNi({...ni,type:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}><option>Mutual Fund</option><option>Annuity</option></select>
           </div>
           <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:new Date().toLocaleDateString()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log New Investment</button>
@@ -1573,7 +1574,7 @@ function InvestmentBreakdown({data,reps,allStaff,totPAC,totLump}) {
   reps.forEach(r=>{
     const inv = r.investments||[];
     const pac = inv.reduce((s,i)=>s+(Number(i.pac)||0),0);
-    const lump = inv.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+    const lump = inv.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
     if(pac>0||lump>0) breakdown.push({name:r.name,role:"Rep",pac,lump,entries:inv});
   });
   allStaff.forEach(t=>{
@@ -1581,7 +1582,7 @@ function InvestmentBreakdown({data,reps,allStaff,totPAC,totLump}) {
     const inv2 = t.investments||[];
     const allInv = [...inv,...inv2.filter(i=>!inv.find(j=>j.id===i.id))];
     const pac = allInv.reduce((s,i)=>s+(Number(i.pac)||0),0);
-    const lump = allInv.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+    const lump = allInv.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
     if(pac>0||lump>0) breakdown.push({name:t.name,role:t.isSuperAdmin?"Super Admin":"Admin/Trainer",pac,lump,entries:allInv});
   });
 
@@ -1636,7 +1637,7 @@ function ProdDash({data,onUpdateData}) {
     ...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[]),
   ];
   const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
-  const totLump = allInvLogs.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+  const totLump = allInvLogs.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
   return <Card style={{marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear Annual Premium, New Recruits display, Licensed Agents, and all investment entries? This resets all production counters."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,selfPremium:[],isLicensed:false,premiumSubmitted:0,investments:[]})),myProduction:{},prodOverride:{recruits:0},admins:(data.admins||[]).map(a=>({...a,investments:[]})),trainers:(data.trainers||[]).map(t=>({...t,investments:[]}))});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
@@ -3575,7 +3576,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${premiumEntries}</div><div class="label">Premium Entries Logged</div></div>
               <div class="card"><div class="big">$${totalPremium.toLocaleString()}</div><div class="label">Total Monthly Premium</div></div>
               <div class="card"><div class="big">$${(rep.investments||[]).reduce((s,i)=>s+(Number(i.pac)||0),0).toLocaleString()}</div><div class="label">Monthly PAC</div></div>
-              <div class="card"><div class="big">$${(rep.investments||[]).reduce((s,i)=>s+(Number(i.lumpSum)||0),0).toLocaleString()}</div><div class="label">Lump Sum</div></div>
+              <div class="card"><div class="big">$${(rep.investments||[]).reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0).toLocaleString()}</div><div class="label">Lump Sum</div></div>
               <div class="card"><div class="big">${recruitsCount}</div><div class="label">Reps Recruited</div></div>
             </div>
 
@@ -3797,7 +3798,7 @@ function MonthEndReport({data}) {
     const staffInv = [...trainers,...(data.admins||[])].reduce((a,p)=>[...a,...((data.myProduction||{})[p.id]?.investments||[])],[]);
     const allInv = [...repInv,...staffInv];
     const teamPAC = allInv.reduce((s,i)=>s+(Number(i.pac)||0),0);
-    const teamLump = allInv.reduce((s,i)=>s+(Number(i.lumpSum)||0),0);
+    const teamLump = allInv.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
   const totalRecruits = withRecruits.reduce((s,r)=>s+r.count,0);
   const teamTotals = {talked:0,followup:0,apptSet:0,apptRan:0,recruited:0,logsSubmitted:0};
   allPeople.forEach(p=>{const repLog=activityLogs[p.id]||{};Object.entries(repLog).forEach(([date,log])=>{if(typeof log==="object"&&log.submittedAt&&date>=monthStart){teamTotals.logsSubmitted++;teamTotals.talked+=(Number(log.talked)||0);teamTotals.followup+=(Number(log.followup)||0);teamTotals.apptSet+=(Number(log.apptSet)||0);teamTotals.apptRan+=(Number(log.apptRan)||0);teamTotals.recruited+=(Number(log.recruited)||0);}});});
