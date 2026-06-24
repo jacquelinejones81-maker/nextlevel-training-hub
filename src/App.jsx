@@ -1516,7 +1516,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
   const totLump=invs.reduce((s,i)=>s+parseLump(i.lumpSum),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{apps.length} apps - ${totPrem.toFixed(0)}/mo - ${(totPrem*12).toFixed(0)}/yr</div></div>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{investmentsOnly?`${invs.length} investment${invs.length!==1?"s":""} · $${totPAC.toLocaleString()}/mo PAC · $${totLump.toLocaleString()} lump`:`${apps.length} apps · $${totPrem.toFixed(0)}/mo · $${(totPrem*12).toFixed(0)}/yr`}</div></div>
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
