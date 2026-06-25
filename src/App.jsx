@@ -6422,6 +6422,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
+    {k:"objectiontraining",l:"Objection Training",d:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
@@ -6481,6 +6482,335 @@ function BirthdayModal({name,age,onClose}) {
         </button>
       </div>
     </div>
+  </div>;
+}
+
+// ── OBJECTION TRAINING — FLASHCARD SYSTEM ──
+const OBJECTION_CARDS = [
+  // ══ LIFE INSURANCE ══
+  {id:"li1",cat:"Life Insurance",emoji:"💰",
+    front:{title:"I can't afford it",prospect:"We're really tight on money right now. I just don't think we can afford another bill."},
+    back:{
+      best:"I hear you — and that's exactly why we need to have this conversation. Most families we sit with feel the same way until we do the numbers together. A lot of times it ends up being less than a cell phone bill. Can we just look at the numbers real quick?",
+      keyPhrase:"It's not about the money — it's about priorities.",
+      dontSay:"'It's really affordable' or 'It's only $X/month' — leading with price before establishing need makes you sound like a salesperson, not someone who cares about their family.",
+      coaching:"Shift the conversation from cost to consequence. What does it cost their family if they DON'T have coverage? Get them to feel the gap before you ever mention a premium.",
+      variations:["We're on a budget right now","I can't take on any more expenses","Money is tight after COVID"]
+    }
+  },
+  {id:"li2",cat:"Life Insurance",emoji:"⏰",
+    front:{title:"I need to think about it",prospect:"This all sounds good but I just need some time to think about it. Can I get back to you?"},
+    back:{
+      best:"I completely respect that. Can I ask — is it the cost, the coverage, or something else on your mind? Because 'I need to think about it' usually means there's a specific concern, and I'd rather help you think through it right now than leave you with unanswered questions.",
+      keyPhrase:"What specifically did you want to think about?",
+      dontSay:"'Okay, I'll follow up with you next week' — this lets them off the hook. Always find out what the real objection is before you leave.",
+      coaching:"'I need to think about it' is almost never the real objection. It's usually a polite way of saying something else — cost, distrust, needing their spouse. Your job is to find the real concern.",
+      variations:["Let me sleep on it","I want to do more research first","Can you send me some information?"]
+    }
+  },
+  {id:"li3",cat:"Life Insurance",emoji:"👫",
+    front:{title:"I need to talk to my spouse",prospect:"I can't make any financial decisions without talking to my husband/wife first."},
+    back:{
+      best:"Absolutely — and I wouldn't expect you to. That's exactly the right approach. Let's set up a time when we can all sit down together. That way both of you can ask questions and make the decision together. When works best for you both this week?",
+      keyPhrase:"Let's set up a time when we can all sit down together.",
+      dontSay:"'Can you just make the decision and tell them later?' — never try to get someone to go around their spouse. It destroys trust and the sale will cancel anyway.",
+      coaching:"Welcome this objection — it means they're serious. Always try to get in front of both decision-makers at the same time. A third appointment with both spouses closes far more often than trying to coach one person to sell the other.",
+      variations:["My wife handles all the finances","I need to run this by my partner","We make all decisions together"]
+    }
+  },
+  {id:"li4",cat:"Life Insurance",emoji:"📋",
+    front:{title:"I already have insurance through work",prospect:"I actually already have life insurance through my job so I think I'm covered."},
+    back:{
+      best:"That's great that your employer provides some coverage — most people don't even have that. Can I ask — do you know how much coverage it is? Because most group policies are 1-2x your salary, and the rule of thumb is 10-12x. Plus, here's the thing — that coverage ends the moment you leave that job. We want to make sure your family is protected no matter what happens with your employment.",
+      keyPhrase:"Group coverage ends when your job ends.",
+      dontSay:"'That's not enough coverage' — don't attack their existing coverage before you've asked about it. Ask first, educate second.",
+      coaching:"Group life insurance has three problems: it's usually not enough, it's not portable, and it ends when employment ends. Walk them through all three — but ask questions first, don't lecture.",
+      variations:["My company gives us life insurance","HR said I have coverage","I'm already covered through benefits"]
+    }
+  },
+  {id:"li5",cat:"Life Insurance",emoji:"🧑",
+    front:{title:"I'm too young to worry about that",prospect:"I'm only 26. I don't really need life insurance right now — that's something for older people."},
+    back:{
+      best:"I thought the same thing at your age. Here's the thing — you're actually in the best position right now. You're young and healthy, which means your rates will never be lower than they are today. Every year you wait, it costs more. And if anything changes with your health, you could become uninsurable. The best time to get protected is before you need it.",
+      keyPhrase:"Your rates will never be lower than they are today.",
+      dontSay:"'You never know when something could happen to you' — this sounds morbid and fear-based. Focus on the financial benefit of locking in low rates now.",
+      coaching:"Young people think life insurance is for old people. Reframe it as a smart financial move — locking in the lowest rates while they're healthy. Add the portability angle: they're starting careers, might have a family soon, will have a mortgage.",
+      variations:["I'm young and healthy, I don't need it yet","I'll think about it when I'm older","I don't have dependents yet"]
+    }
+  },
+  {id:"li6",cat:"Life Insurance",emoji:"🤔",
+    front:{title:"I don't believe in life insurance",prospect:"I just don't really believe in life insurance. If something happened to me my family would figure it out."},
+    back:{
+      best:"I respect that perspective. Can I ask — what would 'figuring it out' look like for your family? Would they have to sell the house? Would your spouse have to go back to work? Would your kids have to change schools? I'm not trying to scare you — I just want to make sure that's a plan your family is okay with.",
+      keyPhrase:"What would 'figuring it out' actually look like for your family?",
+      dontSay:"'You have to have life insurance' — telling someone they HAVE to do something puts them on defense. Ask questions that help them see the reality themselves.",
+      coaching:"People who say they don't believe in life insurance usually haven't thought through what happens without it. Your job is to paint a specific picture of what 'figuring it out' actually means for their specific family situation.",
+      variations:["I'm not a big insurance person","We'll cross that bridge when we come to it","My family is tough, they'll be fine"]
+    }
+  },
+  // ══ INVESTMENTS ══
+  {id:"inv1",cat:"Investments",emoji:"📈",
+    front:{title:"I don't trust the stock market",prospect:"After 2008, I just don't trust putting my money in the market. I keep my savings in the bank."},
+    back:{
+      best:"That experience scared a lot of people — understandably. Here's what most people don't realize though: the people who lost everything in 2008 were the ones who panicked and sold at the bottom. The people who stayed in recovered everything and then some. The question isn't whether the market goes up and down — it does. The question is whether you want your money working for you over 20-30 years or sitting in a savings account losing to inflation every year.",
+      keyPhrase:"Savings accounts don't lose money — they just lose value.",
+      dontSay:"'The market always goes up long term' — while true, this feels dismissive of their real fear. Acknowledge the pain first.",
+      coaching:"This objection is about fear, not logic. Acknowledge the fear first, then gently reframe the real risk: inflation quietly destroying purchasing power is also a form of losing money — it's just slower and less visible.",
+      variations:["I got burned in the market before","I'd rather keep my money safe","The market is too volatile for me"]
+    }
+  },
+  {id:"inv2",cat:"Investments",emoji:"💼",
+    front:{title:"I already have a 401k",prospect:"I already contribute to my 401k at work. I think that's enough for retirement."},
+    back:{
+      best:"That's a great start — a lot of people don't even have that. Quick question: do you know what your 401k is actually invested in? And do you know what the fees are? Because most people have no idea. The other thing to consider is that 401k withdrawals are taxed as ordinary income in retirement. A Roth mutual fund grows tax-free. A lot of people actually have both — it's about building multiple streams for retirement.",
+      keyPhrase:"Do you know what your 401k is actually invested in?",
+      dontSay:"'A 401k isn't enough' — this sounds critical of their choices. Ask questions that help them discover the gaps themselves.",
+      coaching:"Most people set up their 401k once and never look at it again. They don't know their allocation, their fees, or what they'll actually net after taxes. Asking simple questions about their 401k often reveals they know very little — which opens the door to education.",
+      variations:["My company has a 401k match so I max that out","I have a pension through work","I'm already saving for retirement"]
+    }
+  },
+  {id:"inv3",cat:"Investments",emoji:"💸",
+    front:{title:"I don't have extra money to invest",prospect:"I live paycheck to paycheck. There's just nothing left over at the end of the month to invest."},
+    back:{
+      best:"I hear that — and it's the most common thing we hear. Here's what I've found: it's rarely actually about not having money. It's about where the money goes. Most people are investing — in their car payment, their streaming subscriptions, eating out. What if we just redirected $50 a month that you're already spending on something less important? Over 30 years at market returns, $50/month becomes something significant.",
+      keyPhrase:"You're already investing — the question is what you're investing in.",
+      dontSay:"'Everyone has at least a little extra' — this sounds dismissive and judgmental of their financial situation.",
+      coaching:"The paycheck-to-paycheck objection needs a budget conversation, not an investment pitch. Help them see that small amounts matter and that they're likely spending on things that aren't serving their future.",
+      variations:["I have too much debt to invest","Once I pay off my car I'll start","I barely cover my bills each month"]
+    }
+  },
+  // ══ RECRUITING ══
+  {id:"rec1",cat:"Recruiting",emoji:"🔺",
+    front:{title:"Is this a pyramid scheme?",prospect:"No offense but this sounds like one of those pyramid schemes. My cousin got involved in something like this and lost money."},
+    back:{
+      best:"Honestly? I asked the exact same question when I was first introduced. Here's the difference: in a pyramid scheme, the person at the top always earns more than the people below them — period. At Primerica, I can earn MORE than the person who brought me in, based purely on my own production. We're also licensed, regulated by the state, and publicly traded on the New York Stock Exchange. Your cousin's experience was probably with a company that sells products with no real value. We help families protect their financial future. That's a real service people actually need.",
+      keyPhrase:"In a pyramid scheme, the top always wins. Here, you can out-earn the person who recruited you.",
+      dontSay:"'It's NOT a pyramid scheme!' — getting defensive immediately makes you look guilty. Stay calm and educate.",
+      coaching:"This objection needs confidence and facts, not defensiveness. Three key facts: (1) you can earn more than your recruiter, (2) NYSE listed since 2010, (3) in business since 1977. Lead with empathy for their skepticism, then educate.",
+      variations:["This sounds like an MLM","My friend said Primerica is a scam","How is this different from Amway?"]
+    }
+  },
+  {id:"rec2",cat:"Recruiting",emoji:"⌚",
+    front:{title:"I don't have time for this",prospect:"I already work 50 hours a week. I just don't have time to build a side business."},
+    back:{
+      best:"I completely understand — and I'm not here to add stress to your life. Most of the people on our team started exactly where you are, working full time. The question I'd ask is: are you working 50 hours a week because you love what you do, or because you need the income? Because if it's the second one, at some point you have to ask whether trading time for a paycheck forever is the plan. We help people build something that works for them, not the other way around.",
+      keyPhrase:"At some point you have to ask if trading time for a paycheck forever is the plan.",
+      dontSay:"'You only need a few hours a week' — this undersells the commitment and sets up unrealistic expectations. Be honest about the work involved.",
+      coaching:"Time objections usually mask a deeper concern — either they don't see the opportunity or they don't believe they can succeed. Find out which one it is. If it's time, ask what they'd do with more of it.",
+      variations:["I have kids and a full-time job","My schedule is already maxed out","I tried a side hustle before and burned out"]
+    }
+  },
+  {id:"rec3",cat:"Recruiting",emoji:"👥",
+    front:{title:"I don't know enough people",prospect:"I'm pretty introverted. I don't really have a big network so I don't see how I'd be successful."},
+    back:{
+      best:"You know what — some of our best reps are introverts. Here's why: introverts are usually great listeners, and listening is the most important skill in this business. You don't need a huge network to start — you need five good references. And those five people know five more. We're not asking you to cold call strangers. We're asking you to help people you care about. You probably already know families who need what we offer.",
+      keyPhrase:"You don't need a huge network — you need five people who trust you.",
+      dontSay:"'Everyone knows enough people' — this dismisses their concern and sounds naive.",
+      coaching:"This is often really an 'I'm afraid of rejection' objection in disguise. Reframe from 'selling to strangers' to 'helping people you already care about.' The reference system means they're never cold calling.",
+      variations:["I'm not a salesperson","I don't like talking to people I don't know","My circle is small"]
+    }
+  },
+  {id:"rec4",cat:"Recruiting",emoji:"💵",
+    front:{title:"I have to PAY to join?",prospect:"Wait — I have to pay $99 to work for a company? That doesn't make sense to me."},
+    back:{
+      best:"That's a fair question. The $99 covers your background check, your licensing materials, and your access to our systems and training — it's not going to us. Think about it this way: a real estate license costs $500-$1,500. A cosmetology license costs $10,000+. A life insurance license opens the door to an unlimited income potential and costs $99. That's probably one of the lowest barriers to entry in any licensed profession.",
+      keyPhrase:"Name another licensed profession with a $99 entry cost.",
+      dontSay:"'It's only $99, that's nothing' — what feels small to you might feel significant to them. Justify the value, don't minimize their concern.",
+      coaching:"The $99 objection is often a proxy for 'I don't trust this yet.' Address the trust issue by explaining exactly what the fee covers and comparing it to the cost of other licensed professions.",
+      variations:["Why do I have to pay to work?","Other jobs don't make you pay to start","I've heard of companies that make you buy inventory too"]
+    }
+  },
+  {id:"rec5",cat:"Recruiting",emoji:"❌",
+    front:{title:"I tried MLM before and it didn't work",prospect:"I tried one of those network marketing things a few years ago and I ended up losing money and friends. I'm not interested."},
+    back:{
+      best:"I'm really sorry that happened — and I understand why you'd be skeptical. Can I ask what you were selling? Because there's a big difference between selling products to your friends and helping families with their finances. People need life insurance whether they buy it from you or not. You're not asking friends to buy something they don't need — you're offering something that could literally save their family. That's a completely different conversation.",
+      keyPhrase:"People need life insurance whether they buy it from you or not.",
+      dontSay:"'This is totally different' — without explaining HOW it's different, this sounds like exactly what every MLM rep says.",
+      coaching:"This objection requires specific differentiation. Ask what they sold before — if it was supplements, candles, or cosmetics, the contrast with financial services is easy to draw. Focus on the difference between selling discretionary products vs. essential financial protection.",
+      variations:["I lost money with Herbalife","I tried selling leggings and it ruined friendships","Every MLM promises the same thing"]
+    }
+  },
+];
+
+function ObjectionTrainingPage({data,onUpdate,userRole}) {
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const [tab,setTab]=useState("practice"); // practice | library
+  const [cat,setCat]=useState("All");
+  const [shuffle,setShuffle]=useState(false);
+  const [cardIndex,setCardIndex]=useState(0);
+  const [flipped,setFlipped]=useState(false);
+  const [mastered,setMastered]=useState({});
+  const [filter,setFilter]=useState("all"); // all | learning | mastered
+  const [showLibraryForm,setShowLibraryForm]=useState(false);
+  const [libraryForm,setLibraryForm]=useState({cat:"Life Insurance",emoji:"💬",frontTitle:"",frontProspect:"",backBest:"",backKeyPhrase:"",backDontSay:"",backCoaching:""});
+  const [editingId,setEditingId]=useState(null);
+
+  const customCards=data.objectionLibrary||[];
+  const allCards=[...OBJECTION_CARDS,...customCards];
+  const cats=["All","Life Insurance","Investments","Recruiting",...[...new Set(customCards.map(c=>c.cat).filter(c=>!["Life Insurance","Investments","Recruiting"].includes(c)))]];
+
+  const filtered=allCards.filter(c=>{
+    if(cat!=="All"&&c.cat!==cat) return false;
+    if(filter==="mastered"&&!mastered[c.id]) return false;
+    if(filter==="learning"&&mastered[c.id]) return false;
+    return true;
+  });
+  const deck=shuffle?[...filtered].sort(()=>Math.random()-0.5):filtered;
+  const card=deck[cardIndex]||null;
+  const progress=Object.keys(mastered).filter(k=>mastered[k]).length;
+
+  const next=()=>{setCardIndex(i=>Math.min(i+1,deck.length-1));setFlipped(false);};
+  const prev=()=>{setCardIndex(i=>Math.max(i-1,0));setFlipped(false);};
+  const markMastered=()=>{setMastered(m=>({...m,[card.id]:true}));next();};
+  const markLearning=()=>{setMastered(m=>({...m,[card.id]:false}));next();};
+
+  const saveLibraryCard=()=>{
+    if(!libraryForm.frontTitle||!libraryForm.backBest) return;
+    const newCard={id:`custom_${Date.now()}`,cat:libraryForm.cat,emoji:libraryForm.emoji,
+      front:{title:libraryForm.frontTitle,prospect:libraryForm.frontProspect},
+      back:{best:libraryForm.backBest,keyPhrase:libraryForm.backKeyPhrase,dontSay:libraryForm.backDontSay,coaching:libraryForm.backCoaching,variations:[]}
+    };
+    if(editingId){
+      onUpdate({...data,objectionLibrary:customCards.map(c=>c.id===editingId?{...newCard,id:editingId}:c)});
+    } else {
+      onUpdate({...data,objectionLibrary:[...customCards,newCard]});
+    }
+    setLibraryForm({cat:"Life Insurance",emoji:"💬",frontTitle:"",frontProspect:"",backBest:"",backKeyPhrase:"",backDontSay:"",backCoaching:""});
+    setShowLibraryForm(false);
+    setEditingId(null);
+  };
+
+  const deleteCard=(id)=>{
+    if(window.confirm("Delete this card?")) onUpdate({...data,objectionLibrary:customCards.filter(c=>c.id!==id)});
+  };
+
+  const editCard=(c)=>{
+    setLibraryForm({cat:c.cat,emoji:c.emoji,frontTitle:c.front.title,frontProspect:c.front.prospect,backBest:c.back.best,backKeyPhrase:c.back.keyPhrase||"",backDontSay:c.back.dontSay||"",backCoaching:c.back.coaching||""});
+    setEditingId(c.id);
+    setShowLibraryForm(true);
+  };
+
+  return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
+    {/* Header */}
+    <div style={{marginBottom:16}}>
+      <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:4}}>🎯 Objection Training</div>
+      <div style={{fontSize:12,color:C.textMid}}>Study real objections and master your responses. {progress>0&&<span style={{color:C.success,fontWeight:600}}>{progress} card{progress!==1?"s":""} mastered!</span>}</div>
+    </div>
+
+    {/* Tabs */}
+    <div style={{display:"flex",gap:6,marginBottom:16}}>
+      {[["practice","📚 Flashcards"],["library","📖 Library"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"7px 16px",borderRadius:20,border:`1px solid ${tab===k?C.teal:C.border}`,background:tab===k?C.teal:"white",color:tab===k?"white":C.textMid,fontSize:12,fontWeight:tab===k?700:400,cursor:"pointer"}}>{l}</button>)}
+    </div>
+
+    {/* PRACTICE TAB */}
+    {tab==="practice"&&<div>
+      {/* Filters */}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {cats.map(c=><button key={c} onClick={()=>{setCat(c);setCardIndex(0);setFlipped(false);}} style={{padding:"4px 10px",borderRadius:16,border:`1px solid ${cat===c?C.teal:C.border}`,background:cat===c?C.teal:"white",color:cat===c?"white":C.textMid,fontSize:11,cursor:"pointer"}}>{c}</button>)}
+      </div>
+      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        {[["all","All Cards"],["learning","Still Learning"],["mastered","Mastered ✅"]].map(([k,l])=><button key={k} onClick={()=>{setFilter(k);setCardIndex(0);setFlipped(false);}} style={{padding:"3px 9px",borderRadius:12,border:`1px solid ${filter===k?C.gold:C.border}`,background:filter===k?C.gold+"11":"white",color:filter===k?C.gold:C.textMid,fontSize:11,cursor:"pointer"}}>{l}</button>)}
+        <button onClick={()=>{setShuffle(s=>!s);setCardIndex(0);setFlipped(false);}} style={{marginLeft:"auto",padding:"3px 9px",borderRadius:12,border:`1px solid ${shuffle?C.purple:C.border}`,background:shuffle?C.purple+"11":"white",color:shuffle?C.purple:C.textMid,fontSize:11,cursor:"pointer"}}>🔀 {shuffle?"Shuffle ON":"Shuffle"}</button>
+      </div>
+
+      {deck.length===0?<div style={{textAlign:"center",padding:"40px 20px",color:C.textLight}}>No cards in this filter. Try a different category.</div>:card&&<div>
+        {/* Progress */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,fontSize:11,color:C.textMid}}>
+          <span>Card {cardIndex+1} of {deck.length}</span>
+          <span>{card.cat} {card.emoji}</span>
+        </div>
+
+        {/* Flashcard */}
+        <div onClick={()=>setFlipped(f=>!f)} style={{cursor:"pointer",marginBottom:12,minHeight:220,borderRadius:16,border:`2px solid ${flipped?C.teal:C.border}`,background:flipped?`linear-gradient(135deg,${C.navy},#16304f)`:"white",padding:"20px",transition:"all 0.3s",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
+          {!flipped?<div>
+            <div style={{fontSize:11,fontWeight:700,color:C.textLight,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>PROSPECT SAYS...</div>
+            <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:12}}>{card.front.title}</div>
+            <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,fontStyle:"italic"}}>"{card.front.prospect}"</div>
+            {card.front.variations?.length>0&&<div style={{marginTop:12,fontSize:10,color:C.textLight}}>Also heard as: {card.front.variations.slice(0,2).join(" · ")}</div>}
+            <div style={{marginTop:16,textAlign:"center",fontSize:11,color:C.textLight}}>👆 Tap to reveal response</div>
+          </div>:<div>
+            <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>BEST RESPONSE</div>
+            <div style={{fontSize:13,color:"white",lineHeight:1.6,marginBottom:14}}>"{card.back.best}"</div>
+            {card.back.keyPhrase&&<div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
+              <div style={{fontSize:10,color:C.gold,fontWeight:700,marginBottom:2}}>⚡ KEY PHRASE</div>
+              <div style={{fontSize:12,color:C.gold,fontWeight:600}}>"{card.back.keyPhrase}"</div>
+            </div>}
+            {card.back.dontSay&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
+              <div style={{fontSize:10,color:"#ef4444",fontWeight:700,marginBottom:2}}>⚠️ DON'T SAY</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{card.back.dontSay}</div>
+            </div>}
+            {card.back.coaching&&<div style={{background:"rgba(255,255,255,0.05)",borderRadius:8,padding:"8px 10px"}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:2}}>🧠 COACHING NOTE</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>{card.back.coaching}</div>
+            </div>}
+          </div>}
+        </div>
+
+        {/* Navigation */}
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={prev} disabled={cardIndex===0} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+          {flipped&&<>
+            <button onClick={markLearning} style={{flex:1,padding:"10px",borderRadius:10,background:"white",border:`2px solid ${C.border}`,color:C.textMid,fontSize:12,fontWeight:600,cursor:"pointer"}}>🔄 Still Learning</button>
+            <button onClick={markMastered} style={{flex:1,padding:"10px",borderRadius:10,background:C.success,border:"none",color:"white",fontSize:12,fontWeight:700,cursor:"pointer"}}>✅ Got It!</button>
+          </>}
+          {!flipped&&<div style={{flex:1,textAlign:"center",fontSize:12,color:C.textLight}}>Tap card to see response</div>}
+          <button onClick={next} disabled={cardIndex===deck.length-1} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<deck.length-1?"pointer":"default",color:cardIndex<deck.length-1?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>→</button>
+        </div>
+      </div>}
+    </div>}
+
+    {/* LIBRARY TAB */}
+    {tab==="library"&&<div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={{fontSize:13,color:C.textMid}}>{allCards.length} total cards · {customCards.length} custom</div>
+        {isAdmin&&<button onClick={()=>{setShowLibraryForm(true);setEditingId(null);setLibraryForm({cat:"Life Insurance",emoji:"💬",frontTitle:"",frontProspect:"",backBest:"",backKeyPhrase:"",backDontSay:"",backCoaching:""}); }} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>+ Add Card</button>}
+      </div>
+
+      {/* Admin form */}
+      {isAdmin&&showLibraryForm&&<Card style={{marginBottom:16,border:`1px solid ${C.teal}33`}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>{editingId?"Edit Card":"New Objection Card"}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <div><label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>Category</label>
+            <select value={libraryForm.cat} onChange={e=>setLibraryForm({...libraryForm,cat:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}>
+              <option>Life Insurance</option><option>Investments</option><option>Recruiting</option><option>Other</option>
+            </select>
+          </div>
+          <div><label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>Emoji</label>
+            <input value={libraryForm.emoji} onChange={e=>setLibraryForm({...libraryForm,emoji:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:16}} maxLength={2}/>
+          </div>
+        </div>
+        {[["frontTitle","Objection Title (short)","e.g. They said the price is too high"],["frontProspect","Prospect's exact words","What the prospect actually says..."],["backBest","Best Response","The response to memorize..."],["backKeyPhrase","Key Phrase (one memorable line)",""],["backDontSay","Don't Say This (and why)",""],["backCoaching","Coaching Note","The psychology behind this objection..."]].map(([k,l,ph])=><div key={k} style={{marginBottom:8}}>
+          <label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>{l}</label>
+          <textarea value={libraryForm[k]} onChange={e=>setLibraryForm({...libraryForm,[k]:e.target.value})} placeholder={ph} rows={k==="backBest"||k==="backCoaching"?3:2} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",boxSizing:"border-box"}}/>
+        </div>)}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{setShowLibraryForm(false);setEditingId(null);}} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+          <button onClick={saveLibraryCard} disabled={!libraryForm.frontTitle||!libraryForm.backBest} style={{flex:2,padding:"8px",borderRadius:8,background:libraryForm.frontTitle&&libraryForm.backBest?C.teal:C.textLight,color:"white",border:"none",cursor:libraryForm.frontTitle&&libraryForm.backBest?"pointer":"default",fontSize:12,fontWeight:700}}>Save Card</button>
+        </div>
+      </Card>}
+
+      {/* All cards list */}
+      {allCards.map((c,i)=><div key={c.id} style={{borderRadius:10,border:`1px solid ${C.border}`,padding:"12px 14px",marginBottom:8,background:"white"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+              <span style={{fontSize:18}}>{c.emoji}</span>
+              <div style={{fontSize:13,fontWeight:700,color:C.text}}>{c.front.title}</div>
+              <Badge color={c.cat==="Life Insurance"?C.teal:c.cat==="Investments"?C.gold:C.purple} small>{c.cat}</Badge>
+              {customCards.find(cc=>cc.id===c.id)&&<Badge color={C.textLight} small>Custom</Badge>}
+            </div>
+            <div style={{fontSize:11,color:C.textMid,fontStyle:"italic",marginBottom:6}}>"{c.front.prospect?.slice(0,80)}..."</div>
+            <div style={{fontSize:11,color:C.text,marginBottom:4}}><strong>Best:</strong> {c.back.best?.slice(0,100)}...</div>
+            {c.back.keyPhrase&&<div style={{fontSize:11,color:C.gold,fontWeight:600}}>⚡ "{c.back.keyPhrase}"</div>}
+          </div>
+          {isAdmin&&customCards.find(cc=>cc.id===c.id)&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+            <button onClick={()=>editCard(c)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Edit</button>
+            <button onClick={()=>deleteCard(c.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:11,color:C.danger}}>Delete</button>
+          </div>}
+        </div>
+        <button onClick={()=>{const idx=deck.findIndex(d=>d.id===c.id);if(idx>=0){setCardIndex(idx);setFlipped(false);setTab("practice");}else{setCat("All");setFilter("all");setCardIndex(allCards.indexOf(c));setFlipped(false);setTab("practice");}}} style={{marginTop:8,width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${C.teal}33`,background:C.teal+"08",color:C.teal,fontSize:11,fontWeight:600,cursor:"pointer"}}>📚 Practice This Card</button>
+      </div>)}
+    </div>}
   </div>;
 }
 
@@ -6920,7 +7250,7 @@ export default function App() {
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
-    if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
