@@ -1145,6 +1145,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {k:"scripts",l:"Scripts"},
     {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
     {k:"fame",l:"Wall of Fame"},
+    {k:"objectiontraining",l:"Objection Training"},
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
@@ -1355,6 +1356,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
+    {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
       </div>
     </div>
   </div>;
