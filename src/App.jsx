@@ -165,6 +165,7 @@ const REGULAR_START = [
 ];
 
 const LICENSED_NOW_WHAT = [
+  {id:"l0",cat:"Getting Started",task:"Watch Licensed Now What Video",note:"Your Licensed Now What video is available in your sidebar — tap Rewatch: Licensed Now What"},
   {id:"l1",cat:"Milestones",task:"Become Life Licensed"},
   {id:"l2",cat:"Securities License",task:"Pass SIE"},
   {id:"l2b",cat:"Securities License",task:"Pass Series 6"},
@@ -1174,6 +1175,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
   const [mobileOpen,setMobileOpen]=useState(false);
   const [rewatchVideo,setRewatchVideo]=useState(null);
   const [showOrientationVideo,setShowOrientationVideo]=useState(false);
+  const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
   const [repWinWidth,setRepWinWidth]=useState(typeof window!=="undefined"?window.innerWidth:768);
   useEffect(()=>{const h=()=>setRepWinWidth(window.innerWidth);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   const isDesktop=repWinWidth>=768;
@@ -1328,6 +1330,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {showCelebration&&<Confetti name={rep.name} pct={celebrationPct} onClose={()=>setShowCelebration(false)}/>}
     {rewatchVideo&&<RewatchVideoModal videoUrl={rewatchVideo.url} title={rewatchVideo.title} onClose={()=>setRewatchVideo(null)}/>}
     {showOrientationVideo&&data?.orientationVideoUrl&&<RewatchVideoModal videoUrl={data.orientationVideoUrl} title="Orientation Video" onClose={()=>setShowOrientationVideo(false)}/>}
+    {showLicensedRewatch&&data?.licensedVideoUrl&&<RewatchVideoModal videoUrl={data.licensedVideoUrl} title="Licensed Now What Video" onClose={()=>setShowLicensedRewatch(false)}/>}
     {showAutoHomePopup&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",borderRadius:18,padding:"28px 24px",maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{fontSize:48,marginBottom:10}}>🚗🏠</div>
@@ -1342,7 +1345,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
         <button onClick={()=>setShowAutoHomePopup(false)} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it!</button>
       </div>
     </div>}
-    {tab==="checklist"&&<div>{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):undefined}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
@@ -7110,8 +7113,10 @@ export default function App() {
           setShowChoosePath(true);
         }
       }
-      // Licensed Now What video — fires once when access is granted
-      if(rep&&rep.nextLevelGranted&&!localStorage.getItem(`licensed_video_seen_${id}`)&&data.licensedVideoUrl){
+      // Licensed Now What video — fires once when on licensed track
+      // Covers both: approval flow (nextLevelGranted) AND directly added as licensed (track==="licensed")
+      const isLicensedRep=rep&&(rep.nextLevelGranted||rep.track==="licensed");
+      if(isLicensedRep&&!localStorage.getItem(`licensed_video_seen_${id}`)&&data.licensedVideoUrl){
         localStorage.setItem(`licensed_video_seen_${id}`,"true");
         setShowLicensedVideo(true);
       }
