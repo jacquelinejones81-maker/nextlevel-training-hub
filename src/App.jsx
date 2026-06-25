@@ -3222,8 +3222,11 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 
   const repStats = reps.map(rep=>{
     const repLog = activityLogs[rep.id]||{};
-    const submittedToday = !!repLog[today];
-    const submittedYesterday = !!repLog[yesterday];
+    // submittedToday is true even for zero logs — any entry with submittedAt counts
+    const submittedToday = !!(repLog[today]&&(repLog[today].submittedAt||Object.keys(repLog[today]).length>0));
+    const submittedYesterday = !!(repLog[yesterday]&&(repLog[yesterday].submittedAt||Object.keys(repLog[yesterday]).length>0));
+    // Also count as active if they logged in today (covers sync delay and zero logs)
+    const loggedInToday = daysSinceLogin===0;
     let streak=0;
     const d=new Date();
     if(submittedToday){streak=1;d.setDate(d.getDate()-1);while(repLog[d.toISOString().split("T")[0]]){streak++;d.setDate(d.getDate()-1);if(streak>365)break;}}
@@ -3239,12 +3242,12 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     // Licensed/Field Trainers: also flagged by missing daily activity
     const isAtRisk = isNewRep
       ? (daysSinceLogin>=7||(daysSinceChecklist>=7&&loginHistory2.length>0))
-      : (daysSinceLogin>=30||daysSinceChecklist>=30||(!submittedToday&&!submittedYesterday&&streak===0&&loginHistory2.length>0));
+      : (!loggedInToday&&daysSinceLogin>=30||daysSinceChecklist>=30||(!submittedToday&&!submittedYesterday&&!loggedInToday&&streak===0&&loginHistory2.length>0));
     // Status label also differs by track:
     // New reps don't submit daily activity — judge by login recency instead
     const status = isNewRep
       ? (daysSinceLogin<=1?"green":daysSinceLogin<=3?"yellow":"red")
-      : (submittedToday?"green":submittedYesterday?"yellow":"red");
+      : ((submittedToday||loggedInToday)?"green":submittedYesterday?"yellow":"red");
     const repTaskData = leadTasks[rep.id]||{};
     const openTasks = Object.values(repTaskData).reduce((c,lt)=>c+LEAD_TASKS.filter(t=>!lt[t.id]).length,0);
     const cl = rep.track==="licensed"?19:13;
