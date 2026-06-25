@@ -1321,7 +1321,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     </div>
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
-    {!readOnly&&rep.track==="licensed"&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>}
+    {!readOnly&&rep.track==="licensed"&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>
+    }{(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);const c=rep.commitments?.[pm.key];return c?<CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}}/>:null;})()}
     {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name} data={data}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
@@ -1457,6 +1458,11 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
           {rep.email&&<a href={"mailto:"+rep.email} style={{fontSize:11,color:C.teal,textDecoration:"none"}}>✉ {rep.email}</a>}
           <Badge color={track?.color||C.teal} small>{track?.label||"No track yet"}</Badge>
           {rep.trackChosenAt&&<span style={{fontSize:10,color:C.textLight}}>Self-selected on {rep.trackChosenAt}</span>}
+          {(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{
+            const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
+            const c=rep.commitments?.[pm.key];
+            return c?<span style={{fontSize:10,background:C.gold+"22",color:"#b45309",padding:"2px 7px",borderRadius:5,fontWeight:700}}>{c.tierEmoji} {c.tierLabel} · {pm.label}</span>:<span style={{fontSize:10,color:C.textLight}}>⏳ No commitment set for {pm.label}</span>;
+          })()}
           {!rep.track&&<span style={{fontSize:10,color:C.gold,fontWeight:600}}>⏳ Pending path selection</span>}
           <button onClick={()=>{setContactForm({phone:rep.phone||"",email:rep.email||""});setEditContact(true);}} style={{fontSize:10,padding:"1px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
         </div>}
@@ -1740,6 +1746,19 @@ function ManageTeam({data,onUpdate,onClose}) {
             if(nr.id&&nr.name){onUpdate({...data,customRVPs:[...(data.customRVPs||[]),{id:nr.id,name:nr.name}],_newRVP:{}});}
           }} style={{padding:"5px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
         </div>
+      </div>
+
+
+      {/* Primerica Month End Dates */}
+      <div style={{marginTop:14}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:4}}>Primerica Month End Dates</div>
+        <div style={{fontSize:10,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month. This drives commitment tracking and resets. Format: YYYY-MM-DD</div>
+        {(data.primerMonthEnds||[]).map((me,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:5,marginBottom:5}}>
+          <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <input placeholder="Cutoff date YYYY-MM-DD" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <button onClick={()=>onUpdate({...data,primerMonthEnds:(data.primerMonthEnds||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
+        </div>)}
+        <button onClick={()=>onUpdate({...data,primerMonthEnds:[...(data.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:11,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
       </div>
 
       {/* RVP Booking Links — for "Meet with your RVP" button */}
@@ -3614,6 +3633,18 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${recruitsCount}</div><div class="label">Reps Recruited</div></div>
             </div>
 
+            ${(rep.track==="licensed"||rep.fieldTrainerGranted)?(()=>{
+              const pm2=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
+              const c2=rep.commitments?.[pm2.key];
+              if(!c2) return "<h2>MONTHLY COMMITMENT</h2><p class='note'>"+rep.name+" has not set a commitment for "+pm2.label+" yet.</p>";
+              const mStart2=pm2.start;
+              const recs2=(rep.recruits||[]).filter(r=>r.date&&r.date>=mStart2).length;
+              const prem2=(rep.selfPremium||[]).filter(e=>e.date&&e.date>=mStart2&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
+              const rPct2=c2.recruits>0?Math.min(100,Math.round((recs2/c2.recruits)*100)):0;
+              const pPct2=c2.premium>0?Math.min(100,Math.round((prem2/c2.premium)*100)):0;
+              const days2=getDaysRemaining(pm2.cutoff);
+              return "<h2>MONTHLY COMMITMENT — "+pm2.label+"</h2><p class='note'>"+rep.name+" committed to "+c2.tierEmoji+" "+c2.tierLabel+" this month. "+days2+" days remaining. Closes "+new Date(pm2.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"})+".</p><div class='grid2'><div class='card'><div class='big'>"+c2.tierEmoji+" "+c2.tierLabel+"</div><div class='label'>Commitment Tier</div></div><div class='card'><div class='big'>"+recs2+"/"+c2.recruits+"</div><div class='label'>Recruits ("+rPct2+"%)</div></div><div class='card'><div class='big'>$"+Math.round(prem2/1000)+"k/$"+Math.round(c2.premium/1000)+"k</div><div class='label'>Premium ("+pPct2+"%)</div></div><div class='card'><div class='big'>"+days2+"</div><div class='label'>Days Remaining</div></div></div>";
+            })():""}
             ${(rep.track==="licensed"||rep.fieldTrainerGranted)?(()=>{
               const PL=[{key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},{key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},{key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},{key:"rvp",label:"RVP",pct:110}];
               const promo=PL.find(p=>p.key===(rep.promotionLevel||"rep"))||PL[0];
@@ -6846,6 +6877,152 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
   </div>;
 }
 
+
+// ── MONTHLY COMMITMENT SYSTEM ──
+const COMMITMENT_TIERS = [
+  {id:"role_player",emoji:"🎯",label:"Role Player",recruits:1,premium:1000,color:"#6b7280"},
+  {id:"starter",emoji:"⭐",label:"Starter",recruits:3,premium:5000,color:"#f59e0b"},
+  {id:"all_star",emoji:"🌟",label:"All-Star",recruits:7,premium:7500,color:"#8b5cf6"},
+  {id:"champ",emoji:"🏆",label:"I'm A Champ",recruits:10,premium:10000,color:"#ef4444"},
+  {id:"custom",emoji:"✏️",label:"Custom Goal",recruits:0,premium:0,color:"#0ea5a0"},
+];
+
+function getCurrentPrimerMonth(primerMonthEnds=[]) {
+  const today = new Date().toISOString().split("T")[0];
+  // Sort by cutoff date
+  const sorted = [...primerMonthEnds].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
+  // Find the current month — the one whose cutoff is in the future (or today)
+  for(let i=0;i<sorted.length;i++){
+    if(sorted[i].cutoff>=today){
+      // Previous cutoff is the start of this period
+      const start=i>0?sorted[i-1].cutoff:"2020-01-01";
+      return {label:sorted[i].label,cutoff:sorted[i].cutoff,start,key:sorted[i].label.replace(/\s+/g,"_")};
+    }
+  }
+  // Fallback to calendar month
+  const now=new Date();
+  const y=now.getFullYear();
+  const m=now.getMonth();
+  const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const lastDay=new Date(y,m+1,0).toISOString().split("T")[0];
+  return {label:`${monthNames[m]} ${y}`,cutoff:lastDay,start:new Date(y,m,1).toISOString().split("T")[0],key:`${monthNames[m]}_${y}`};
+}
+
+function getDaysRemaining(cutoff) {
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const end=new Date(cutoff+"T00:00:00");
+  return Math.max(0,Math.ceil((end-today)/86400000));
+}
+
+// ── COMMITMENT POPUP ──
+function CommitmentPopup({rep,primerMonth,onSave,onClose}) {
+  const [selected,setSelected]=useState(null);
+  const [customRecruits,setCustomRecruits]=useState("");
+  const [customPremium,setCustomPremium]=useState("");
+  const [confirmed,setConfirmed]=useState(false);
+  const tier=COMMITMENT_TIERS.find(t=>t.id===selected);
+
+  if(confirmed&&tier) return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#16304f)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+    <div style={{fontSize:52,marginBottom:12}}>{tier.emoji}</div>
+    <div style={{fontSize:26,fontWeight:900,color:"white",marginBottom:6,textAlign:"center"}}>{tier.label}!</div>
+    <div style={{fontSize:14,color:"rgba(255,255,255,0.7)",textAlign:"center",marginBottom:24,lineHeight:1.6}}>
+      {selected==="custom"?`${customRecruits} recruits · $${Number(customPremium).toLocaleString()} in premium`:`${tier.recruits} recruit${tier.recruits!==1?"s":""} · $${tier.premium.toLocaleString()} in premium`}
+    </div>
+    <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",textAlign:"center"}}>Commitment locked for {primerMonth.label} 🔒</div>
+  </div>;
+
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:5000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+    <div style={{background:"white",borderRadius:20,width:"100%",maxWidth:440,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
+      <div style={{background:"linear-gradient(135deg,#0f1f35,#16304f)",padding:"20px 22px"}}>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4,textTransform:"uppercase",letterSpacing:"1px"}}>{primerMonth.label} Commitment</div>
+        <div style={{fontSize:20,fontWeight:800,color:"white",marginBottom:6}}>Set Your Monthly Goal</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.65)",lineHeight:1.6}}>This is your commitment — not just to your goals, but to your team. Be honest with yourself. Be bold. Choose thoughtfully — this locks for the month.</div>
+      </div>
+      <div style={{padding:"16px 20px",maxHeight:"60vh",overflowY:"auto"}}>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:10,fontWeight:600}}>Choose your level for {primerMonth.label}:</div>
+        {COMMITMENT_TIERS.map(t=><button key={t.id} onClick={()=>setSelected(t.id)} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${selected===t.id?t.color:C.border}`,background:selected===t.id?t.color+"11":"white",cursor:"pointer",textAlign:"left",marginBottom:8,transition:"all 0.15s"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:22}}>{t.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:selected===t.id?t.color:C.text}}>{t.label}</div>
+              {t.id!=="custom"&&<div style={{fontSize:11,color:C.textMid}}>{t.recruits} recruit{t.recruits!==1?"s":""} · ${t.premium.toLocaleString()} in premium</div>}
+              {t.id==="custom"&&<div style={{fontSize:11,color:C.textMid}}>Set your own numbers</div>}
+            </div>
+            {selected===t.id&&<div style={{width:18,height:18,borderRadius:9,background:t.color,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></div>}
+          </div>
+          {selected==="custom"&&t.id==="custom"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:10}}>
+            <div><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Recruit Goal</div><input type="number" placeholder="e.g. 5" value={customRecruits} onChange={e=>setCustomRecruits(e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}} onClick={e=>e.stopPropagation()}/></div>
+            <div><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Premium Goal $</div><input type="number" placeholder="e.g. 8000" value={customPremium} onChange={e=>setCustomPremium(e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}} onClick={e=>e.stopPropagation()}/></div>
+          </div>}
+        </button>)}
+        <div style={{fontSize:10,color:C.textLight,lineHeight:1.5,marginTop:4,textAlign:"center"}}>⏳ {getDaysRemaining(primerMonth.cutoff)} days left in {primerMonth.label} · Closes {new Date(primerMonth.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
+      </div>
+      <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8}}>
+        <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid,fontWeight:600}}>Remind Me Later</button>
+        <button disabled={!selected||(selected==="custom"&&(!customRecruits||!customPremium))} onClick={()=>{
+          const t=COMMITMENT_TIERS.find(tt=>tt.id===selected);
+          const recruits=selected==="custom"?Number(customRecruits):t.recruits;
+          const premium=selected==="custom"?Number(customPremium):t.premium;
+          onSave({tierId:selected,tierLabel:t.label,tierEmoji:t.emoji,recruits,premium,monthKey:primerMonth.key,monthLabel:primerMonth.label,lockedAt:new Date().toISOString()});
+          setConfirmed(true);
+          setTimeout(onClose,2500);
+        }} style={{flex:2,padding:"10px",borderRadius:10,background:selected?C.teal:C.textLight,color:"white",border:"none",cursor:selected?"pointer":"default",fontSize:13,fontWeight:700}}>
+          🔒 Lock In My Commitment
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── COMMITMENT CARD (shows on rep dashboard) ──
+function CommitmentCard({rep,primerMonth,onUnlock,canUnlock}) {
+  const commitment=rep.commitments?.[primerMonth.key];
+  const daysLeft=getDaysRemaining(primerMonth.cutoff);
+  if(!commitment) return null;
+
+  // Calculate progress from logged production
+  const now=new Date();
+  const monthStart=primerMonth.start;
+  const recruits=(rep.recruits||[]).filter(r=>r.date&&r.date>=monthStart).length;
+  const premium=(rep.selfPremium||[]).filter(e=>e.date&&e.date>=monthStart&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0); // annualized
+  const recruitPct=commitment.recruits>0?Math.min(100,Math.round((recruits/commitment.recruits)*100)):0;
+  const premiumPct=commitment.premium>0?Math.min(100,Math.round((premium/commitment.premium)*100)):0;
+
+  return <Card style={{marginBottom:14,border:`2px solid ${commitment.tierId==="champ"?"#ef4444":commitment.tierId==="all_star"?"#8b5cf6":commitment.tierId==="starter"?"#f59e0b":C.border}`}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+      <div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:2}}>{primerMonth.label} Commitment</div>
+        <div style={{fontSize:15,fontWeight:800,color:C.text}}>{commitment.tierEmoji} {commitment.tierLabel}</div>
+      </div>
+      <div style={{textAlign:"right"}}>
+        <div style={{fontSize:10,color:C.textLight}}>{daysLeft} days left</div>
+        <div style={{fontSize:10,color:C.textLight}}>Closes {new Date(primerMonth.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+        {canUnlock&&<button onClick={onUnlock} style={{fontSize:9,color:C.textLight,background:"none",border:`1px solid ${C.border}`,borderRadius:4,cursor:"pointer",padding:"1px 5px",marginTop:3}}>Unlock</button>}
+      </div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid,marginBottom:3}}>
+          <span>Recruits</span><span style={{fontWeight:700,color:recruits>=commitment.recruits?C.success:C.text}}>{recruits}/{commitment.recruits}</span>
+        </div>
+        <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
+          <div style={{height:"100%",borderRadius:3,background:recruits>=commitment.recruits?C.success:C.teal,width:recruitPct+"%",transition:"width 0.4s"}}/>
+        </div>
+      </div>
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid,marginBottom:3}}>
+          <span>Premium</span><span style={{fontWeight:700,color:premium>=commitment.premium?C.success:C.text}}>${Math.round(premium/1000)}k/${Math.round(commitment.premium/1000)}k</span>
+        </div>
+        <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
+          <div style={{height:"100%",borderRadius:3,background:premium>=commitment.premium?C.success:C.gold,width:premiumPct+"%",transition:"width 0.4s"}}/>
+        </div>
+      </div>
+    </div>
+    {recruitPct>=100&&premiumPct>=100&&<div style={{marginTop:8,textAlign:"center",fontSize:12,fontWeight:700,color:C.success}}>🎉 Commitment achieved!</div>}
+  </Card>;
+}
+
 // ── CHOOSE YOUR PATH SCREEN ──
 function ChooseYourPath({rep,onChoose}) {
   const [chosen,setChosen]=useState(null);
@@ -7082,6 +7259,7 @@ export default function App() {
 
   const [showWelcome,setShowWelcome]=useState(false);
   const [showChoosePath,setShowChoosePath]=useState(false);
+  const [showCommitmentPopup,setShowCommitmentPopup]=useState(false);
   const [birthdayInfo,setBirthdayInfo]=useState(null);
   const [showLicensedVideo,setShowLicensedVideo]=useState(false);
   const [showFieldTrainerVideo,setShowFieldTrainerVideo]=useState(false);
@@ -7130,6 +7308,16 @@ export default function App() {
         localStorage.setItem(`rvp_video_seen_${id}`,"true");
         setShowRvpPathVideo(true);
       }
+      // Commitment popup — show on first login of new Primerica month for licensed/trainer reps
+      if(rep&&(rep.track==="licensed"||rep.fieldTrainerGranted)){
+        const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+        const hasCommitted=rep.commitments?.[pm.key];
+        const seenKey=`commitment_seen_${rep.id}_${pm.key}`;
+        if(!hasCommitted&&!localStorage.getItem(seenKey)){
+          // Don't show immediately — mark that we've seen this month so it shows once per login session
+          setShowCommitmentPopup(true);
+        }
+      }
       // Birthday check — show greeting if today is their birthday
       if(rep&&rep.birthday){
         try{
@@ -7175,6 +7363,7 @@ export default function App() {
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
+      {showCommitmentPopup&&(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);return <CommitmentPopup rep={rep} primerMonth={pm} onSave={(commitment)=>{const seenKey=`commitment_seen_${rep.id}_${pm.key}`;localStorage.setItem(seenKey,"true");upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,commitments:{...(r.commitments||{}),[pm.key]:commitment}}:r)});}} onClose={()=>{const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);localStorage.setItem(`commitment_seen_${rep.id}_${pm.key}`,"true");setShowCommitmentPopup(false);}}/>;})()}
       {showChoosePath&&<ChooseYourPath rep={rep} onChoose={(track)=>{
         const chosenAt=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
         upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,track,trackChosenAt:chosenAt}:r)});
