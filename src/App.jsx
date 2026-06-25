@@ -3208,7 +3208,6 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const allReps = data.reps||[];
   const trainers = data.trainers||[];
   const allTrainers = [...trainers,...(data.admins||[])];
-  // Combine reps and trainers — admins see all, trainers see only their reps
   const reps = isAdmin 
     ? [...allReps, ...trainers.map(t=>({...t,isTrainer:true,track:"licensed"}))]
     : allReps.filter(r=>r.trainerId===userId);
@@ -3221,6 +3220,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const [expandedRep,setExpandedRep] = useState(null);
   const [checkInNote,setCheckInNote] = useState("");
   const [statusNote,setStatusNote] = useState({});
+  const [showGuide,setShowGuide] = useState(false);
 
   const repStats = reps.map(rep=>{
     const repLog = activityLogs[rep.id]||{};
@@ -3339,7 +3339,34 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place. Green means active today. Yellow means 1 day idle. Red means 3+ days with no submission.</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place.</div>
+
+    {/* How to Read This Dashboard */}
+    <div style={{marginBottom:14}}>
+      <button onClick={()=>setShowGuide(g=>!g)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:showGuide?C.teal+"11":"white",cursor:"pointer",fontSize:12,color:showGuide?C.teal:C.textMid,fontWeight:600,width:"100%",textAlign:"left"}}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        How to Read This Dashboard
+        <svg style={{marginLeft:"auto",transform:showGuide?"rotate(180deg)":"none",transition:"transform 0.2s"}} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {showGuide&&<div style={{border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 8px 8px",padding:"12px 14px",background:"white"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[
+            {emoji:"🟢",label:"Active (new reps) / Active Today (licensed)",desc:"New reps: logged in within the last 24 hours. Licensed reps and field trainers: submitted their daily activity log today. This is what you want to see."},
+            {emoji:"🟡",label:"2-3 Days (new reps) / 1 Day Idle (licensed)",desc:"New reps: last login was 2-3 days ago — worth a check-in text. Licensed reps: submitted activity yesterday but not today — may just need a reminder."},
+            {emoji:"🔴",label:"7+ Days No Login (new reps) / 3+ Days Silent (licensed)",desc:"New reps: haven't logged into the app in 7 or more days — this needs your attention. Licensed reps: no daily activity log submitted in 3+ days — reach out now before momentum is lost."},
+            {emoji:"⚠️",label:"At Risk",desc:"A rep is flagged At Risk when they've gone too long without logging in or submitting activity. New reps: 7+ days no login or 7+ days no checklist progress. Licensed reps: 30+ days no login, or missing activity logs with no streak. These are the people who need a personal call, not just a text."},
+            {emoji:"🔥",label:"Streak",desc:"How many consecutive days a licensed rep or field trainer has submitted their daily activity log without a gap. A streak of 5 means they've logged 5 days in a row. Streaks build habits — celebrate them."},
+            {emoji:"📋",label:"Open Tasks",desc:"The number of incomplete items on a rep's checklist. A high open task count with low checklist progress after several days means they may be stuck or disengaged. Use this to guide your coaching conversation."},
+          ].map((item,i)=><div key={i} style={{display:"flex",gap:10,paddingBottom:i<5?10:0,borderBottom:i<5?`1px solid ${C.border}`:"none"}}>
+            <div style={{fontSize:20,flexShrink:0,marginTop:1}}>{item.emoji}</div>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>{item.label}</div>
+              <div style={{fontSize:11,color:C.textMid,lineHeight:1.5}}>{item.desc}</div>
+            </div>
+          </div>)}
+        </div>
+      </div>}
+    </div>
 
     {/* Summary stats */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
