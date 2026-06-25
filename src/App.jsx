@@ -3225,8 +3225,6 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     // submittedToday is true even for zero logs — any entry with submittedAt counts
     const submittedToday = !!(repLog[today]&&(repLog[today].submittedAt||Object.keys(repLog[today]).length>0));
     const submittedYesterday = !!(repLog[yesterday]&&(repLog[yesterday].submittedAt||Object.keys(repLog[yesterday]).length>0));
-    // Also count as active if they logged in today (covers sync delay and zero logs)
-    const loggedInToday = daysSinceLogin===0;
     let streak=0;
     const d=new Date();
     if(submittedToday){streak=1;d.setDate(d.getDate()-1);while(repLog[d.toISOString().split("T")[0]]){streak++;d.setDate(d.getDate()-1);if(streak>365)break;}}
@@ -3234,6 +3232,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     const loginHistory2 = (data.loginHistory||{})[rep.id]||[];
     const lastLoginDate = loginHistory2.length>0?new Date(loginHistory2[loginHistory2.length-1].ts):null;
     const daysSinceLogin = lastLoginDate?Math.floor((Date.now()-lastLoginDate)/86400000):999;
+    const loggedInToday = daysSinceLogin===0;
     const daysSinceChecklist = rep.lastChecklistActivity?Math.floor((Date.now()-new Date(rep.lastChecklistActivity))/86400000):999;
     const isNewRep = rep.track==="fast"||rep.track==="regular"||!rep.track;
     const isLicensed = rep.track==="licensed";
