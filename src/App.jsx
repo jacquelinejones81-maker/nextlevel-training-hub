@@ -299,7 +299,7 @@ function Card({children,style={}}) {
 }
 function SecHead({title,count,color=C.teal}) {
   const done=count&&count[0]===count[1];
-  return <div style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0 6px"}}><div style={{width:3,height:14,background:done?C.success:color,borderRadius:2}}/><span style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",flex:1}}>{title}</span>{count&&<span style={{fontSize:10,color:done?C.success:C.textLight}}>{count[0]}/{count[1]}</span>}</div>;
+  return <div style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0 6px"}}><div style={{width:3,height:14,background:done?C.success:color,borderRadius:2}}/><span style={{fontSize:13,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",flex:1}}>{title}</span>{count&&<span style={{fontSize:12,color:done?C.success:C.textLight}}>{count[0]}/{count[1]}</span>}</div>;
 }
 
 // ── MACHO ──
@@ -310,17 +310,17 @@ function MachoQ({value={},onChange}) {
   const qualified=score>=3;
   return <div style={{marginTop:8}}>
     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
-      {letters.map(l=>{const active=!!value[l];return <button key={l} onClick={()=>onChange({...value,[l]:!active})} title={labels[l]} style={{width:44,height:44,borderRadius:10,border:`2px solid ${active?C.gold:"rgba(0,0,0,0.15)"}`,background:active?C.gold+"22":"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,transition:"all 0.15s"}}><span style={{fontSize:14}}>{active?"★":"☆"}</span><span style={{fontSize:9,fontWeight:700,color:active?C.gold:C.textLight}}>{l}</span></button>;})}
+      {letters.map(l=>{const active=!!value[l];return <button key={l} onClick={()=>onChange({...value,[l]:!active})} title={labels[l]} style={{width:44,height:44,borderRadius:10,border:`2px solid ${active?C.gold:"rgba(0,0,0,0.15)"}`,background:active?C.gold+"22":"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,transition:"all 0.15s"}}><span style={{fontSize:14}}>{active?"★":"☆"}</span><span style={{fontSize:10,fontWeight:700,color:active?C.gold:C.textLight}}>{l}</span></button>;})}
     </div>
     {score>0&&<div style={{background:qualified?C.success+"11":"rgba(0,0,0,0.04)",border:`1px solid ${qualified?C.success+"44":"rgba(0,0,0,0.08)"}`,borderRadius:8,padding:"6px 10px"}}>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>{letters.filter(l=>value[l]).map(l=><span key={l} style={{background:C.gold+"22",color:C.gold,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:12}}>★ {labels[l]}</span>)}</div>
-      <div style={{fontSize:11,fontWeight:700,color:qualified?C.success:C.gold}}>{score} ★ {qualified?"— Qualified! Great candidate.":"— "+(3-score)+" more needed to qualify"}</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>{letters.filter(l=>value[l]).map(l=><span key={l} style={{background:C.gold+"22",color:C.gold,fontSize:13,fontWeight:700,padding:"2px 8px",borderRadius:12}}>★ {labels[l]}</span>)}</div>
+      <div style={{fontSize:13,fontWeight:700,color:qualified?C.success:C.gold}}>{score} ★ {qualified?"— Qualified! Great candidate.":"— "+(3-score)+" more needed to qualify"}</div>
     </div>}
   </div>;
 }
 
 function CheckItem({item,checked,onToggle,readOnly,onPopup}) {
-  return <div style={{display:"flex",gap:9,padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><button onClick={!readOnly?onToggle:undefined} style={{width:20,height:20,borderRadius:5,border:`2px solid ${checked?C.teal:C.border}`,background:checked?C.teal:"white",flexShrink:0,marginTop:1,cursor:readOnly?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{checked&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}</button><div style={{flex:1}}><div style={{fontSize:13,color:checked?C.textLight:C.text,textDecoration:checked?"line-through":"none",lineHeight:1.4}}>{item.task}</div>{item.note&&<div style={{fontSize:11,color:C.textLight,marginTop:1}}>{item.note}</div>}{item.link&&<a href={item.link} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.teal,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:2,marginTop:2}}>{item.linkLabel||"Open"} &rarr;</a>}{onPopup&&<button onClick={onPopup} style={{marginTop:4,display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:5,background:C.teal+"11",border:`1px solid ${C.teal}33`,color:C.teal,fontSize:10,fontWeight:600,cursor:"pointer"}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch Video</button>}</div></div>;
+  return <div style={{display:"flex",gap:9,padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><button onClick={!readOnly?onToggle:undefined} style={{width:20,height:20,borderRadius:5,border:`2px solid ${checked?C.teal:C.border}`,background:checked?C.teal:"white",flexShrink:0,marginTop:1,cursor:readOnly?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{checked&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}</button><div style={{flex:1}}><div style={{fontSize:14,color:checked?C.textLight:C.text,textDecoration:checked?"line-through":"none",lineHeight:1.4}}>{item.task}</div>{item.note&&<div style={{fontSize:13,color:C.textLight,marginTop:1}}>{item.note}</div>}{item.link&&<a href={item.link} target="_blank" rel="noreferrer" style={{fontSize:13,color:C.teal,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:2,marginTop:2}}>{item.linkLabel||"Open"} &rarr;</a>}{onPopup&&<button onClick={onPopup} style={{marginTop:4,display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:5,background:C.teal+"11",border:`1px solid ${C.teal}33`,color:C.teal,fontSize:12,fontWeight:600,cursor:"pointer"}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch Video</button>}</div></div>;
 }
 
 // ── APP TOUR ──
@@ -337,8 +337,8 @@ function AppTour({role,onClose}) {
       <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:10}}>{steps[step].title}</div>
       <div style={{fontSize:14,color:C.textMid,lineHeight:1.6,marginBottom:20}}>{steps[step].body}</div>
       <div style={{display:"flex",gap:8}}>
-        {step>0&&<button onClick={()=>setStep(step-1)} style={{flex:1,padding:"9px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Back</button>}
-        <button onClick={()=>isLast?onClose():setStep(step+1)} style={{flex:2,padding:"9px",borderRadius:8,border:"none",background:isLast?C.success:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>{isLast?"Get Started!":"Next"}</button>
+        {step>0&&<button onClick={()=>setStep(step-1)} style={{flex:1,padding:"9px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid}}>Back</button>}
+        <button onClick={()=>isLast?onClose():setStep(step+1)} style={{flex:2,padding:"9px",borderRadius:8,border:"none",background:isLast?C.success:C.teal,color:"white",cursor:"pointer",fontSize:14,fontWeight:600}}>{isLast?"Get Started!":"Next"}</button>
       </div>
     </div>
   </div>;
@@ -349,9 +349,9 @@ function AddToPhoneModal({onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{background:"white",borderRadius:16,padding:24,maxWidth:400,width:"100%"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add App to Your Phone</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
-      <div style={{marginBottom:14}}><div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:8}}>iPhone / Safari</div><div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Safari<br/>2. Tap the Share button (box with arrow)<br/>3. Scroll down and tap "Add to Home Screen"<br/>4. Tap "Add" in the top right</div></div>
-      <div><div style={{fontSize:13,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div><div style={{fontSize:12,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Chrome<br/>2. Tap the three dots menu (top right)<br/>3. Tap "Add to Home screen"<br/>4. Tap "Add"</div></div>
-      <button onClick={onClose} style={{marginTop:16,width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Got it!</button>
+      <div style={{marginBottom:14}}><div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:8}}>iPhone / Safari</div><div style={{fontSize:13,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Safari<br/>2. Tap the Share button (box with arrow)<br/>3. Scroll down and tap "Add to Home Screen"<br/>4. Tap "Add" in the top right</div></div>
+      <div><div style={{fontSize:14,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div><div style={{fontSize:13,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Chrome<br/>2. Tap the three dots menu (top right)<br/>3. Tap "Add to Home screen"<br/>4. Tap "Add"</div></div>
+      <button onClick={onClose} style={{marginTop:16,width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:600}}>Got it!</button>
     </div>
   </div>;
 }
@@ -364,7 +364,7 @@ function DailyEventsBanner({data,onUpdateData,userRole}) {
   const todayKey=new Date().toISOString().split("T")[0];
   if(todayEvents.length===0) return null;
   return <div style={{background:`linear-gradient(135deg,${C.navyMid} 0%,${C.navyLight} 100%)`,borderRadius:12,padding:"12px 16px",marginBottom:14,color:"white"}}>
-    <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Today's Events</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Today's Events</div>
     {todayEvents.map((evt,i)=>{
       const key=`${todayKey}_${i}`;
       const cancelled=cancelledEvents[key];
@@ -375,16 +375,16 @@ function DailyEventsBanner({data,onUpdateData,userRole}) {
       const zPass=typeof zEntry==="string"?"":zEntry.password||"";
       return <div key={i} style={{marginBottom:i<todayEvents.length-1?8:0}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div><div style={{fontSize:11,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div></div>
+          <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:cancelled?"rgba(255,255,255,0.3)":"white",textDecoration:cancelled?"line-through":"none"}}>{evt.title}</div><div style={{fontSize:13,color:cancelled?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.55)"}}>{evt.time}{evt.note&&" - "+evt.note}</div></div>
           {cancelled&&<Badge color={C.danger} small>Cancelled</Badge>}
-          {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&<button onClick={()=>{const ce={...cancelledEvents,[key]:!cancelled};onUpdateData({...data,cancelledEvents:ce});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:cancelled?"rgba(16,185,129,0.2)":"rgba(239,68,68,0.2)",border:`1px solid ${cancelled?"rgba(16,185,129,0.4)":"rgba(239,68,68,0.4)"}`,color:cancelled?"#6ee7b7":"#fca5a5",cursor:"pointer"}}>{cancelled?"Restore":"Cancel"}</button>}
+          {(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")&&<button onClick={()=>{const ce={...cancelledEvents,[key]:!cancelled};onUpdateData({...data,cancelledEvents:ce});}} style={{fontSize:12,padding:"3px 8px",borderRadius:6,background:cancelled?"rgba(16,185,129,0.2)":"rgba(239,68,68,0.2)",border:`1px solid ${cancelled?"rgba(16,185,129,0.4)":"rgba(239,68,68,0.4)"}`,color:cancelled?"#6ee7b7":"#fca5a5",cursor:"pointer"}}>{cancelled?"Restore":"Cancel"}</button>}
         </div>
         {zUrl&&!cancelled&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
           <a href={zUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(45,140,255,0.25)",border:"1px solid rgba(45,140,255,0.5)",borderRadius:6,padding:"5px 12px",textDecoration:"none"}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="#60a5fa"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
-            <span style={{fontSize:12,fontWeight:600,color:"#60a5fa"}}>Join Zoom</span>
+            <span style={{fontSize:13,fontWeight:600,color:"#60a5fa"}}>Join Zoom</span>
           </a>
-          {zPass&&<span style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>Password: <strong style={{color:"white",userSelect:"all"}}>{zPass}</strong></span>}
+          {zPass&&<span style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>Password: <strong style={{color:"white",userSelect:"all"}}>{zPass}</strong></span>}
         </div>}
       </div>;
     })}
@@ -405,24 +405,24 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
     {showPurpose&&<div style={{background:C.navyMid,borderRadius:12,padding:"16px 18px",marginBottom:14,position:"relative",border:`1px solid ${C.gold}44`}}>
       <button onClick={()=>setShowPurpose(false)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16}}>x</button>
       <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Remember Your Purpose!</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
-      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"rgba(255,255,255,0.7)"}}>Need help? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need!</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:13,color:"rgba(255,255,255,0.7)"}}>Need help? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need!</div>
     </div>}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-      {[["Logged",logged,"20",C.teal],["Completed",done,logged||"-",C.success],["Qualified",qualified,logged||"-",C.gold]].map(([l,v,t,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"8px 10px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:C.textMid}}>{l}</div><div style={{fontSize:10,color:C.textLight}}>of {t}</div></div>)}
+      {[["Logged",logged,"20",C.teal],["Completed",done,logged||"-",C.success],["Qualified",qualified,logged||"-",C.gold]].map(([l,v,t,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"8px 10px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:12,color:C.textMid}}>{l}</div><div style={{fontSize:12,color:C.textLight}}>of {t}</div></div>)}
     </div>
     <Bar pct={(logged/20)*100} h={4}/>
-    {bookingLink&&!readOnly&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",margin:"10px 0",fontSize:12}}><a href={bookingLink} target="_blank" rel="noreferrer" style={{color:C.gold,fontWeight:600}}>Schedule Training Appointment &rarr;</a><div style={{color:C.textMid,marginTop:2,fontSize:11}}>Add yourself as "guest" to receive notifications</div></div>}
+    {bookingLink&&!readOnly&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",margin:"10px 0",fontSize:13}}><a href={bookingLink} target="_blank" rel="noreferrer" style={{color:C.gold,fontWeight:600}}>Schedule Training Appointment &rarr;</a><div style={{color:C.textMid,marginTop:2,fontSize:13}}>Add yourself as "guest" to receive notifications</div></div>}
     <div style={{marginTop:10}}>
       {slots.map((a,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6,background:a.status==="Completed"?C.success+"08":"white"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase"}}>Appt #{i+1}</span>
-          {!readOnly&&<select value={a.status||""} onChange={e=>upd(i,"status",e.target.value)} style={{fontSize:11,padding:"2px 5px",borderRadius:5,border:`1px solid ${C.border}`,color:C.text}}><option value="">Set Status</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{fontSize:12,fontWeight:700,color:C.textLight,textTransform:"uppercase"}}>Appt #{i+1}</span>
+          {!readOnly&&<select value={a.status||""} onChange={e=>upd(i,"status",e.target.value)} style={{fontSize:13,padding:"2px 5px",borderRadius:5,border:`1px solid ${C.border}`,color:C.text}}><option value="">Set Status</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select>}
           {readOnly&&a.status&&<Badge color={a.status==="Completed"?C.success:C.warning} small>{a.status}</Badge>}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["email","Email"],["date","Date"]].map(([f,ph])=><input key={f} type={f==="date"?"date":"text"} placeholder={ph} value={a[f]||""} readOnly={readOnly} onChange={e=>upd(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,background:readOnly?C.surface:"white",color:C.text}}/>)}</div>
-        <textarea placeholder="Notes / Follow-up" value={a.notes||""} readOnly={readOnly} onChange={e=>upd(i,"notes",e.target.value)} style={{width:"100%",marginTop:5,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,resize:"vertical",minHeight:36,background:readOnly?C.surface:"white",color:C.text,boxSizing:"border-box"}}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{[["name","Name"],["phone","Phone"],["email","Email"],["date","Date"]].map(([f,ph])=><input key={f} type={f==="date"?"date":"text"} placeholder={ph} value={a[f]||""} readOnly={readOnly} onChange={e=>upd(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,background:readOnly?C.surface:"white",color:C.text}}/>)}</div>
+        <textarea placeholder="Notes / Follow-up" value={a.notes||""} readOnly={readOnly} onChange={e=>upd(i,"notes",e.target.value)} style={{width:"100%",marginTop:5,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,resize:"vertical",minHeight:36,background:readOnly?C.surface:"white",color:C.text,boxSizing:"border-box"}}/>
         {!readOnly&&<MachoQ value={a.macho||{}} onChange={m=>updM(i,m)}/>}
-        {readOnly&&a.macho&&(()=>{const score=Object.values(a.macho).filter(Boolean).length;const q=score>=3;return score>0?<div style={{marginTop:6,background:q?C.success+"11":"rgba(0,0,0,0.04)",borderRadius:6,padding:"4px 8px",fontSize:11,color:q?C.success:C.textLight}}>{score}/5 stars {q?"- Qualified":""}</div>:null;})()}
+        {readOnly&&a.macho&&(()=>{const score=Object.values(a.macho).filter(Boolean).length;const q=score>=3;return score>0?<div style={{marginTop:6,background:q?C.success+"11":"rgba(0,0,0,0.04)",borderRadius:6,padding:"4px 8px",fontSize:13,color:q?C.success:C.textLight}}>{score}/5 stars {q?"- Qualified":""}</div>:null;})()}
       </div>)}
     </div>
   </div>;
@@ -448,40 +448,40 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
     {/* Daily Motivation + My Why side by side */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
       <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",color:"white",border:`1px solid ${C.teal}33`}}>
-        <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Daily Motivation</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6,fontStyle:"italic"}}>"{motivation}"</div>
+        <div style={{fontSize:12,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Daily Motivation</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,fontStyle:"italic"}}>"{motivation}"</div>
       </div>
       <Card style={{margin:0}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:6}}>Your personal reason for joining</div>
-        {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit"}}/>:
-        <div style={{fontSize:12,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Your personal reason for joining</div>
+        {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit"}}/>:
+        <div style={{fontSize:13,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
       </Card>
     </div>
     {/* Birthday */}
     <Card style={{marginBottom:12}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>My Birthday</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Your birthday helps us celebrate you!</div>
-      {!readOnly?<input type="date" value={rep.birthday||""} onChange={e=>onUpdate({...rep,birthday:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
-      <div style={{fontSize:13,fontWeight:600,color:C.purple}}>{rep.birthday?new Date(rep.birthday+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}</div>}
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>My Birthday</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Your birthday helps us celebrate you!</div>
+      {!readOnly?<input type="date" value={rep.birthday||""} onChange={e=>onUpdate({...rep,birthday:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box"}}/>:
+      <div style={{fontSize:14,fontWeight:600,color:C.purple}}>{rep.birthday?new Date(rep.birthday+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}</div>}
     </Card>
     {/* Promotion Level — licensed and field trainer reps */}
     {(rep.track==="licensed"||rep.fieldTrainerGranted)&&<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>My Promotion Level</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level to see accurate commission calculations.</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>My Promotion Level</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level to see accurate commission calculations.</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
         {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>!readOnly&&onUpdate({...rep,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(rep.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(rep.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
-          <div style={{fontSize:11,fontWeight:700,color:(rep.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
-          <div style={{fontSize:10,color:C.textMid}}>{p.pct}%</div>
+          <div style={{fontSize:13,fontWeight:700,color:(rep.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
+          <div style={{fontSize:12,color:C.textMid}}>{p.pct}%</div>
         </button>)}
       </div>
     </Card>}
     {/* Pre-Licensing Class — hidden for licensed reps */}
     {rep.track!=="licensed"&&<Card style={{marginBottom:12,border:`1px solid ${rep.preLicDone?C.success+"44":C.purple+"33"}`,background:rep.preLicDone?C.success+"06":"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Pre-Licensing Class</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>Pre-Licensing Class</div>
         {!readOnly&&<button onClick={()=>onUpdate({...rep,preLicDone:!rep.preLicDone})}
-          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.preLicDone?C.success:C.purple}`,background:rep.preLicDone?C.success+"11":C.purple+"11",color:rep.preLicDone?C.success:C.purple,cursor:"pointer",fontWeight:600}}>
+          style={{fontSize:13,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.preLicDone?C.success:C.purple}`,background:rep.preLicDone?C.success+"11":C.purple+"11",color:rep.preLicDone?C.success:C.purple,cursor:"pointer",fontWeight:600}}>
           {rep.preLicDone?"Completed":"Mark Complete"}
         </button>}
         {rep.preLicDone&&readOnly&&<Badge color={C.success} small>Complete</Badge>}
@@ -492,7 +492,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
         {[["inperson","In-Person",""],["zoom","Zoom",""],["online","Online Course",""]].map(([val,label,icon])=>(
           <button key={val} onClick={()=>onUpdate({...rep,preLicType:val})}
             style={{padding:"10px 6px",borderRadius:8,border:`2px solid ${rep.preLicType===val?C.purple:C.border}`,background:rep.preLicType===val?C.purple+"11":"white",cursor:"pointer",textAlign:"center"}}>
-            <div style={{fontSize:11,fontWeight:700,color:rep.preLicType===val?C.purple:C.textMid}}>{label}</div>
+            <div style={{fontSize:13,fontWeight:700,color:rep.preLicType===val?C.purple:C.textMid}}>{label}</div>
           </button>
         ))}
       </div>}
@@ -501,15 +501,15 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       {/* Online course details - show for ALL types */}
       {rep.preLicType&&<div>
         <div style={{background:C.purple+"11",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.purple,marginBottom:4}}>Get your study materials here:</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.purple,marginBottom:4}}>Get your study materials here:</div>
           <a href="https://www-ucanpass.examfx.com" target="_blank" rel="noreferrer"
-            style={{fontSize:13,fontWeight:700,color:C.teal,textDecoration:"none",display:"block",marginBottom:3}}>www-ucanpass.examfx.com &rarr;</a>
-          <div style={{fontSize:11,color:C.textMid}}>Log in or create your account to begin your online licensing course.</div>
+            style={{fontSize:14,fontWeight:700,color:C.teal,textDecoration:"none",display:"block",marginBottom:3}}>www-ucanpass.examfx.com &rarr;</a>
+          <div style={{fontSize:13,color:C.textMid}}>Log in or create your account to begin your online licensing course.</div>
         </div>
 
         {/* RVP ID selector */}
         <div style={{marginBottom:10}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Select Your RVP ID</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:6}}>Select Your RVP ID</div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...((data&&data.customRVPs)||[])].map((rvp,i)=>{
               const selected=rep.selectedRVP===rvp.id;
@@ -519,11 +519,11 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
                   {selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}
                 </div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{rvp.id}</div>
-                  <div style={{fontSize:11,color:C.textMid}}>{rvp.name}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:selected?C.gold:C.text}}>{rvp.id}</div>
+                  <div style={{fontSize:13,color:C.textMid}}>{rvp.name}</div>
                 </div>
                 {selected&&<button onClick={e=>{e.stopPropagation();navigator.clipboard?.writeText(rvp.id);}}
-                  style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Copy</button>}
+                  style={{fontSize:12,padding:"3px 8px",borderRadius:5,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Copy</button>}
               </div>;
             })}
           </div>
@@ -533,45 +533,45 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       {/* Dates */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:rep.preLicDone?8:0}}>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Start Date</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Start Date</div>
           {!readOnly?<input type="date" value={rep.preLicStart||""} onChange={e=>onUpdate({...rep,preLicStart:e.target.value})}
-            style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>:
-          <div style={{fontSize:12,fontWeight:600,color:C.text}}>{rep.preLicStart||"Not set"}</div>}
+            style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.preLicStart||"Not set"}</div>}
         </div>
         {rep.preLicDone&&<div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Completion Date</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Completion Date</div>
           {!readOnly?<input type="date" value={rep.preLicEnd||""} onChange={e=>onUpdate({...rep,preLicEnd:e.target.value})}
-            style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>:
-          <div style={{fontSize:12,fontWeight:600,color:C.text}}>{rep.preLicEnd||"Not set"}</div>}
+            style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>:
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.preLicEnd||"Not set"}</div>}
         </div>}
       </div>
     </Card>}
     {rep.track!=="licensed"&&<Card style={{marginBottom:12}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>My Bonus Goal</div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:11,color:C.textMid}}>{g.desc}</div></div></button>;})}
+        {BONUS_GOALS.map(g=>{const selected=rep.bonusGoal===g.id;return <button key={g.id} onClick={()=>!readOnly&&onUpdate({...rep,bonusGoal:g.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:9,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{selected&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}</div><div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:selected?C.gold:C.text}}>{g.label} done</div><div style={{fontSize:13,color:C.textMid}}>{g.desc}</div></div></button>;})}
       </div>
     </Card>}
     <Card style={{marginBottom:12}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Dollar amount committed to your business</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Business Commitment</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Dollar amount committed to your business</div>
       {!readOnly?<div style={{display:"flex",gap:7,alignItems:"center"}}><span style={{color:C.textMid,fontSize:16}}>$</span><input type="number" placeholder="Enter amount" value={rep.businessCommitment||""} onChange={e=>onUpdate({...rep,businessCommitment:e.target.value})} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}/></div>:
       <div style={{fontSize:16,fontWeight:700,color:C.gold}}>{rep.businessCommitment?`$${rep.businessCommitment}`:"Not set"}</div>}
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.dgoDone?C.success+"44":C.teal+"33"}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
-        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>{rep.dgoDone?"Completed":"Mark Complete"}</button>}
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>Digital Grand Opening (DGO)</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,dgoDone:!rep.dgoDone})} style={{fontSize:13,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.dgoDone?C.success:C.teal}`,background:rep.dgoDone?C.success+"11":C.teal+"11",color:rep.dgoDone?C.success:C.teal,cursor:"pointer",fontWeight:600}}>{rep.dgoDone?"Completed":"Mark Complete"}</button>}
       </div>
-      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:10}}/>:
+      {!readOnly?<input type="date" value={rep.dgoDate||""} onChange={e=>onUpdate({...rep,dgoDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box",marginBottom:10}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:10}}>{rep.dgoDate||"Not set"}</div>}
       {/* Professional Photo */}
       <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo — DGO & Team Recognition</div>
-        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Upload a professional headshot — used for your DGO presentation and Wall of Fame recognition</div>
-{(()=>{let p=rep.dgoPhoto;if(!p){try{p=localStorage.getItem("dgoPhoto_"+rep.id);}catch(ex){}}return p?<div style={{marginBottom:8,position:"relative",display:"inline-block"}}><img src={p} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>{!readOnly&&<button onClick={()=>{try{localStorage.removeItem("dgoPhoto_"+rep.id);}catch(ex){}onUpdate({...rep,dgoPhoto:null});}} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}</div>:null;})()}
+        <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:6}}>Professional Photo — DGO & Team Recognition</div>
+        <div style={{fontSize:13,color:C.textLight,marginBottom:8}}>Upload a professional headshot — used for your DGO presentation and Wall of Fame recognition</div>
+{(()=>{let p=rep.dgoPhoto;if(!p){try{p=localStorage.getItem("dgoPhoto_"+rep.id);}catch(ex){}}return p?<div style={{marginBottom:8,position:"relative",display:"inline-block"}}><img src={p} alt="DGO Photo" style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`}}/>{!readOnly&&<button onClick={()=>{try{localStorage.removeItem("dgoPhoto_"+rep.id);}catch(ex){}onUpdate({...rep,dgoPhoto:null});}} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:10,background:C.danger,color:"white",border:"none",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>}</div>:null;})()}
         {!readOnly&&<div>
-          <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600}}>
+          <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,cursor:"pointer",fontSize:13,color:C.teal,fontWeight:600}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
             {rep.dgoPhoto?"Change Photo":"Upload Profile Photo"}
             <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
@@ -606,35 +606,35 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
             }}/>
           </label>
         </div>}
-        {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:11,color:C.textLight}}>No photo uploaded yet</div>}
+        {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:13,color:C.textLight}}>No photo uploaded yet</div>}
       </div>
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
       {rep.track!=="licensed"&&<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>Exam Date</div>
-        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>Exam Date</div>
+        {!readOnly&&<button onClick={()=>onUpdate({...rep,examPassed:!rep.examPassed})} style={{fontSize:13,padding:"4px 10px",borderRadius:6,border:`1px solid ${rep.examPassed?C.success:C.gold}`,background:rep.examPassed?C.success+"11":C.gold+"11",color:rep.examPassed?C.success:C.gold,cursor:"pointer",fontWeight:600}}>{rep.examPassed?"Passed!":"Mark Passed"}</button>}
       </div>
-      <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
-      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:12}}/>:
+      <div style={{fontSize:13,color:C.textLight,marginBottom:6}}>Schedule within 5 days of completing your class</div>
+      {!readOnly?<input type="date" value={rep.examDate||""} onChange={e=>onUpdate({...rep,examDate:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box",marginBottom:12}}/>:
       <div style={{fontSize:14,fontWeight:700,color:C.gold,marginBottom:12}}>{rep.examDate||"Not set"}</div>}
       </div>}
       {/* T-Shirt Size */}
       <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>T-Shirt Size</div>
-        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>You will receive a t-shirt after passing your life insurance exam!</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>T-Shirt Size</div>
+        <div style={{fontSize:13,color:C.textLight,marginBottom:8}}>You will receive a t-shirt after passing your life insurance exam!</div>
         {!readOnly?<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           {["XS","S","M","L","XL","2XL","3XL"].map(size=>{
             const selected=rep.tshirtSize===size;
             return <button key={size} onClick={()=>onUpdate({...rep,tshirtSize:size})}
-              style={{padding:"6px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",color:selected?"white":C.textMid,fontSize:12,fontWeight:selected?700:400,cursor:"pointer",transition:"all 0.15s"}}>
+              style={{padding:"6px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold:"white",color:selected?"white":C.textMid,fontSize:13,fontWeight:selected?700:400,cursor:"pointer",transition:"all 0.15s"}}>
               {size}
             </button>;
           })}
         </div>:
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {rep.tshirtSize?<><div style={{padding:"6px 16px",borderRadius:8,background:C.gold,color:"white",fontSize:13,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:11,color:C.textMid}}>T-Shirt Size</span></>:
-          <span style={{fontSize:12,color:C.textLight}}>No size selected yet</span>}
+          {rep.tshirtSize?<><div style={{padding:"6px 16px",borderRadius:8,background:C.gold,color:"white",fontSize:14,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:13,color:C.textMid}}>T-Shirt Size</span></>:
+          <span style={{fontSize:13,color:C.textLight}}>No size selected yet</span>}
         </div>}
       </div>
     </Card>
@@ -657,40 +657,40 @@ function RepCounters({rep,onUpdate,readOnly}) {
   return <div style={{marginBottom:14}}>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:0}}>
       {[{label:"FTO Observations",key:"ftoCount",goal:20,color:C.purple,note:"Goal: 20 FTO"},{label:"Life Insurance Observation",key:"lifeAppCount",goal:10,color:C.teal,note:"Goal: 10 during training"},{label:"Investment Observation",key:"pacCount",goal:10,color:C.gold,note:"Builds your future AUM"}].map(c=><Card key={c.key} style={{padding:"10px 12px"}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{c.label}</div>
-        <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{c.key==="pacCount"?invObservations.length:(rep[c.key]||0)}</div><div style={{flex:1}}><Bar pct={((c.key==="pacCount"?invObservations.length:(rep[c.key]||0))/c.goal)*100} color={c.color}/></div><div style={{fontSize:10,color:C.textLight}}>/{c.goal}</div></div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>{c.label}</div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{fontSize:22,fontWeight:700,color:c.color}}>{c.key==="pacCount"?invObservations.length:(rep[c.key]||0)}</div><div style={{flex:1}}><Bar pct={((c.key==="pacCount"?invObservations.length:(rep[c.key]||0))/c.goal)*100} color={c.color}/></div><div style={{fontSize:12,color:C.textLight}}>/{c.goal}</div></div>
         {!readOnly&&c.key!=="pacCount"&&<div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>onUpdate({...rep,[c.key]:Math.max(0,(rep[c.key]||0)-1)})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:15,color:C.textMid}}>-</button><button onClick={()=>onUpdate({...rep,[c.key]:(rep[c.key]||0)+1})} style={{flex:1,padding:"3px",borderRadius:6,border:"1px solid "+c.color,background:c.color+"11",cursor:"pointer",fontSize:15,color:c.color,fontWeight:700}}>+</button></div>}
-        {!readOnly&&c.key==="pacCount"&&<button onClick={()=>setShowInvLog(!showInvLog)} style={{marginTop:6,width:"100%",padding:"3px",borderRadius:6,border:`1px solid ${C.gold}`,background:C.gold+"11",cursor:"pointer",fontSize:10,color:C.gold,fontWeight:600}}>
+        {!readOnly&&c.key==="pacCount"&&<button onClick={()=>setShowInvLog(!showInvLog)} style={{marginTop:6,width:"100%",padding:"3px",borderRadius:6,border:`1px solid ${C.gold}`,background:C.gold+"11",cursor:"pointer",fontSize:12,color:C.gold,fontWeight:600}}>
           {showInvLog?"Hide Log":"+ Log Name"}
         </button>}
-        <div style={{fontSize:10,color:C.textLight,marginTop:3}}>{c.note}</div>
+        <div style={{fontSize:12,color:C.textLight,marginTop:3}}>{c.note}</div>
       </Card>)}
     </div>
 
     {/* Investment Observation Log — drops down under the counter */}
     {(showInvLog||invObservations.length>0)&&<Card style={{marginTop:8,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Investment Observation Log</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Log the prospect name of each person you observed getting an investment account opened during your training appointments. This builds your future AUM pipeline.</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Investment Observation Log</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Log the prospect name of each person you observed getting an investment account opened during your training appointments. This builds your future AUM pipeline.</div>
       {!readOnly&&<div style={{display:"flex",gap:6,marginBottom:10}}>
         <input
           placeholder="Prospect Name"
           value={prospectName}
           onChange={e=>setProspectName(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&addObservation()}
-          style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}
+          style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}
         />
-        <button onClick={addObservation} style={{padding:"6px 12px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+        <button onClick={addObservation} style={{padding:"6px 12px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
       </div>}
       {invObservations.length>0&&<div style={{maxHeight:160,overflowY:"auto"}}>
-        {invObservations.slice().reverse().map((obs,i)=><div key={obs.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}>
+        {invObservations.slice().reverse().map((obs,i)=><div key={obs.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
           <div>
             <span style={{color:C.text,fontWeight:600}}>{obs.name}</span>
             <span style={{color:C.textLight,marginLeft:8}}>{obs.date}</span>
           </div>
-          {!readOnly&&<button onClick={()=>onUpdate({...rep,investmentObservations:invObservations.filter((_,j)=>j!==(invObservations.length-1-i))})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:12}}>x</button>}
+          {!readOnly&&<button onClick={()=>onUpdate({...rep,investmentObservations:invObservations.filter((_,j)=>j!==(invObservations.length-1-i))})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:13}}>x</button>}
         </div>)}
       </div>}
-      {invObservations.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No observations logged yet</div>}
+      {invObservations.length===0&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No observations logged yet</div>}
     </Card>}
   </div>;
 }
@@ -729,51 +729,51 @@ function CareerJourneyBanner({rep,onUpdate}) {
         })}
       </div>
       <div style={{textAlign:"right",flexShrink:0}}>
-        <div style={{fontSize:9,color:"rgba(255,255,255,0.45)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Next Goal</div>
-        <div style={{fontSize:11,fontWeight:700,color:currentColor}}>{nextGoal}</div>
+        <div style={{fontSize:10,color:"rgba(255,255,255,0.45)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Next Goal</div>
+        <div style={{fontSize:13,fontWeight:700,color:currentColor}}>{nextGoal}</div>
       </div>
-      <div style={{color:"rgba(255,255,255,0.4)",fontSize:12,transform:expanded?"rotate(180deg)":"none",transition:"transform 0.2s",flexShrink:0}}>v</div>
+      <div style={{color:"rgba(255,255,255,0.4)",fontSize:13,transform:expanded?"rotate(180deg)":"none",transition:"transform 0.2s",flexShrink:0}}>v</div>
     </button>
 
     {/* Expanded detail */}
     {expanded&&<div style={{background:"white",padding:"12px 14px"}}>
       {currentStage==="new"&&<div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>Getting your life insurance license is your first major milestone. Complete your checklist, finish your pre-licensing class, and pass your exam. Once licensed a whole new path opens up!</div>
-        <div style={{fontSize:11,color:C.textLight,textAlign:"center"}}>Field Trainer and RVP paths unlock after you get licensed.</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:10}}>Getting your life insurance license is your first major milestone. Complete your checklist, finish your pre-licensing class, and pass your exam. Once licensed a whole new path opens up!</div>
+        <div style={{fontSize:13,color:C.textLight,textAlign:"center"}}>Field Trainer and RVP paths unlock after you get licensed.</div>
       </div>}
       {currentStage==="licensed"&&<div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>You are licensed! Now build your skills, production, and team. When you meet the Field Trainer requirements, request your review below.</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:10}}>You are licensed! Now build your skills, production, and team. When you meet the Field Trainer requirements, request your review below.</div>
         {!ftRequested&&!rep.fieldTrainerDenied&&<button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
-          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
           Request Field Trainer Review
         </button>}
-        {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified.</div>}
+        {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified.</div>}
         {rep.fieldTrainerDenied&&!ftRequested&&<div>
-          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:13,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
           <button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
-            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
             Request Again
           </button>
         </div>}
       </div>}
       {currentStage==="trainer"&&<div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10}}>You are a Field Trainer! Now focus on consistently producing and building your team. When you are ready, request access to the RVP Path.</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:10}}>You are a Field Trainer! Now focus on consistently producing and building your team. When you are ready, request access to the RVP Path.</div>
         {!rvpRequested&&!rep.rvpPathDenied&&<button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
-          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
           Request RVP Path Access
         </button>}
-        {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review soon.</div>}
+        {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review soon.</div>}
         {rep.rvpPathDenied&&!rvpRequested&&<div>
-          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:13,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
           <button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
-            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
             Request Again
           </button>
         </div>}
       </div>}
       {currentStage==="rvp"&&<div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:8}}>You have unlocked the RVP Path! Check the Career Path tab for your full RVP checklist.</div>
-        <div style={{fontSize:11,color:C.success,fontWeight:600,textAlign:"center"}}>You are on your way to Regional Vice President!</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:8}}>You have unlocked the RVP Path! Check the Career Path tab for your full RVP checklist.</div>
+        <div style={{fontSize:13,color:C.success,fontWeight:600,textAlign:"center"}}>You are on your way to Regional Vice President!</div>
       </div>}
     </div>}
   </div>;
@@ -805,25 +805,25 @@ function ScheduleView({data,onUpdate,userRole}) {
       return <Card key={i} style={{marginBottom:8}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.day} — {s.title}</div>
-            <div style={{fontSize:11,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" · "+s.note}</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>{s.day} — {s.title}</div>
+            <div style={{fontSize:13,color:C.textLight,marginTop:2}}>{s.time}{s.note&&" · "+s.note}</div>
             {zoom&&editingIdx!==i&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <a href={zoom} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,background:"#2D8CFF22",border:"1px solid #2D8CFF55",borderRadius:6,padding:"4px 10px",textDecoration:"none"}}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="#2D8CFF"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
-                <span style={{fontSize:11,fontWeight:600,color:"#2D8CFF"}}>Join Zoom</span>
+                <span style={{fontSize:13,fontWeight:600,color:"#2D8CFF"}}>Join Zoom</span>
               </a>
-              {zoomPass&&<span style={{fontSize:11,color:C.textMid}}>Password: <strong style={{color:C.text,userSelect:"all"}}>{zoomPass}</strong></span>}
+              {zoomPass&&<span style={{fontSize:13,color:C.textMid}}>Password: <strong style={{color:C.text,userSelect:"all"}}>{zoomPass}</strong></span>}
             </div>}
           </div>
-          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);setEditPass(zoomPass);}} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>{zoom?"Edit Zoom":"+ Zoom"}</button>}
+          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);setEditPass(zoomPass);}} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>{zoom?"Edit Zoom":"+ Zoom"}</button>}
         </div>
         {editingIdx===i&&<div style={{marginTop:8}}>
-          <input placeholder="Paste Zoom link..." value={editVal} onChange={e=>setEditVal(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text,marginBottom:5,boxSizing:"border-box"}}/>
-          <input placeholder="Meeting password (optional)" value={editPass} onChange={e=>setEditPass(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
+          <input placeholder="Paste Zoom link..." value={editVal} onChange={e=>setEditVal(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:5,boxSizing:"border-box"}}/>
+          <input placeholder="Meeting password (optional)" value={editPass} onChange={e=>setEditPass(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>saveZoom(i)} style={{flex:2,padding:"5px 10px",borderRadius:6,border:"none",background:"#2D8CFF",color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
-            <button onClick={()=>{setEditingIdx(null);setEditVal("");setEditPass("");}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-            {zoom&&<button onClick={()=>{onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[i]:{}}});setEditingIdx(null);}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",fontSize:11,color:C.danger}}>Remove</button>}
+            <button onClick={()=>saveZoom(i)} style={{flex:2,padding:"5px 10px",borderRadius:6,border:"none",background:"#2D8CFF",color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
+            <button onClick={()=>{setEditingIdx(null);setEditVal("");setEditPass("");}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+            {zoom&&<button onClick={()=>{onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[i]:{}}});setEditingIdx(null);}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",fontSize:13,color:C.danger}}>Remove</button>}
           </div>
         </div>}
       </Card>;
@@ -917,54 +917,54 @@ function EmailTemplatesPage({data,onUpdate,userRole,reps,trainers,admins}) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Email Templates</div>
       <div style={{display:"flex",gap:6}}>
-        <button onClick={()=>setShowEmailAll(!showEmailAll)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",cursor:"pointer",color:C.teal,fontWeight:600}}>Email All</button>
-        {isAdmin&&<button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>}
-        {isAdmin&&<button onClick={reset} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>}
+        <button onClick={()=>setShowEmailAll(!showEmailAll)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",cursor:"pointer",color:C.teal,fontWeight:600}}>Email All</button>
+        {isAdmin&&<button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>}
+        {isAdmin&&<button onClick={reset} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>}
       </div>
     </div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>Click Email to open in your email app with the template pre-filled. Edit [Name] and [Your Name] before sending.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:12}}>Click Email to open in your email app with the template pre-filled. Edit [Name] and [Your Name] before sending.</div>
 
     {/* Email All section */}
     {showEmailAll&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Email All</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>Email All</div>
       <div style={{display:"flex",flexDirection:"column",gap:7}}>
         {allEmails&&<a href={"mailto:"+allEmails} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.teal+"11",border:`1px solid ${C.teal}33`,textDecoration:"none"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-          <span style={{fontSize:12,color:C.teal,fontWeight:600}}>Email All Active Reps ({(reps||[]).filter(r=>r.email&&!r.inactive).length})</span>
+          <span style={{fontSize:13,color:C.teal,fontWeight:600}}>Email All Active Reps ({(reps||[]).filter(r=>r.email&&!r.inactive).length})</span>
         </a>}
         {trackEmails("fast")&&<a href={"mailto:"+trackEmails("fast")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.navy+"11",border:`1px solid ${C.navy}33`,textDecoration:"none"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.navy} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-          <span style={{fontSize:12,color:C.navy,fontWeight:600}}>Email Fast Start Reps ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="fast").length})</span>
+          <span style={{fontSize:13,color:C.navy,fontWeight:600}}>Email Fast Start Reps ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="fast").length})</span>
         </a>}
         {trackEmails("regular")&&<a href={"mailto:"+trackEmails("regular")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.gold+"11",border:`1px solid ${C.gold}33`,textDecoration:"none"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-          <span style={{fontSize:12,color:C.gold,fontWeight:600}}>Email Regular Start Reps ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="regular").length})</span>
+          <span style={{fontSize:13,color:C.gold,fontWeight:600}}>Email Regular Start Reps ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="regular").length})</span>
         </a>}
         {trackEmails("licensed")&&<a href={"mailto:"+trackEmails("licensed")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:C.success+"11",border:`1px solid ${C.success}33`,textDecoration:"none"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-          <span style={{fontSize:12,color:C.success,fontWeight:600}}>Email Licensed Now What ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="licensed").length})</span>
+          <span style={{fontSize:13,color:C.success,fontWeight:600}}>Email Licensed Now What ({(reps||[]).filter(r=>r.email&&!r.inactive&&r.track==="licensed").length})</span>
         </a>}
-        {!allEmails&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",padding:8}}>No rep emails on file. Add emails to rep profiles to use this feature.</div>}
+        {!allEmails&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:8}}>No rep emails on file. Add emails to rep profiles to use this feature.</div>}
       </div>
     </Card>}
 
     {/* Add new template */}
     {showAdd&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>New Email Template</div>
-      <select value={newTpl.cat} onChange={e=>setNewTpl({...newTpl,cat:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>New Email Template</div>
+      <select value={newTpl.cat} onChange={e=>setNewTpl({...newTpl,cat:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7}}>
         {EMAIL_CATS.map(c=><option key={c}>{c}</option>)}
       </select>
-      <input placeholder="Subject line" value={newTpl.subject} onChange={e=>setNewTpl({...newTpl,subject:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <textarea placeholder="Email body... Use [Name] for recipient name and [Your Name] for your name" value={newTpl.body} onChange={e=>setNewTpl({...newTpl,body:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:120,boxSizing:"border-box",lineHeight:1.6,marginBottom:7}}/>
+      <input placeholder="Subject line" value={newTpl.subject} onChange={e=>setNewTpl({...newTpl,subject:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <textarea placeholder="Email body... Use [Name] for recipient name and [Your Name] for your name" value={newTpl.body} onChange={e=>setNewTpl({...newTpl,body:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:120,boxSizing:"border-box",lineHeight:1.6,marginBottom:7}}/>
       <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={add} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Template</button>
+        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={add} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Template</button>
       </div>
     </Card>}
 
     {/* Category filters */}
     <div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
-      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.teal:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:filter===c?600:400,background:filter===c?C.teal:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
     </div>
 
     {/* Templates */}
@@ -973,14 +973,14 @@ function EmailTemplatesPage({data,onUpdate,userRole,reps,trainers,admins}) {
       {filtered.filter(t=>t.cat===cat).map(t=><Card key={t.id} style={{marginBottom:8}}>
         {editing===t.id?(
           <div>
-            <select value={draft.cat} onChange={e=>setDraft({...draft,cat:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,marginBottom:6}}>
+            <select value={draft.cat} onChange={e=>setDraft({...draft,cat:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:6}}>
               {EMAIL_CATS.map(c=><option key={c}>{c}</option>)}
             </select>
-            <input value={draft.subject} onChange={e=>setDraft({...draft,subject:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box",fontWeight:600}}/>
-            <textarea value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:12,color:C.text,resize:"vertical",minHeight:120,boxSizing:"border-box",lineHeight:1.6,marginBottom:6}}/>
+            <input value={draft.subject} onChange={e=>setDraft({...draft,subject:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box",fontWeight:600}}/>
+            <textarea value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,resize:"vertical",minHeight:120,boxSizing:"border-box",lineHeight:1.6,marginBottom:6}}/>
             <div style={{display:"flex",gap:6}}>
-              <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-              <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+              <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+              <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
             </div>
           </div>
         ):(
@@ -988,14 +988,14 @@ function EmailTemplatesPage({data,onUpdate,userRole,reps,trainers,admins}) {
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
               <div style={{fontSize:dv(13,15),fontWeight:700,color:C.text,flex:1,paddingRight:8}}>{t.subject}</div>
               {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button onClick={()=>{setEditing(t.id);setDraft({cat:t.cat,subject:t.subject,body:t.body});}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-                <button onClick={()=>del(t.id)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+                <button onClick={()=>{setEditing(t.id);setDraft({cat:t.cat,subject:t.subject,body:t.body});}} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+                <button onClick={()=>del(t.id)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
               </div>}
             </div>
             <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",fontSize:dv(11,13),color:C.textMid,lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:8}}>{t.body}</div>
             <div style={{display:"flex",gap:6}}>
-              <button onClick={()=>copy(t.id+"_body",t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid,fontWeight:500}}>{copied===t.id+"_body"?"✓ Copied!":"Copy Body"}</button>
-              <a href={"mailto:?subject="+encodeURIComponent(t.subject)+"&body="+encodeURIComponent(t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600,textDecoration:"none",textAlign:"center",display:"block"}}>✉ Email</a>
+              <button onClick={()=>copy(t.id+"_body",t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:500}}>{copied===t.id+"_body"?"✓ Copied!":"Copy Body"}</button>
+              <a href={"mailto:?subject="+encodeURIComponent(t.subject)+"&body="+encodeURIComponent(t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600,textDecoration:"none",textAlign:"center",display:"block"}}>✉ Email</a>
             </div>
           </div>
         )}
@@ -1036,26 +1036,26 @@ function AdvancementLibrary({data,onUpdate,userRole}) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div>
         <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Advancement & Promotions</div>
-        <div style={{fontSize:12,color:C.textMid,marginTop:2}}>Promotion guidelines, income milestones, and advancement resources</div>
+        <div style={{fontSize:13,color:C.textMid,marginTop:2}}>Promotion guidelines, income milestones, and advancement resources</div>
       </div>
-      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Promotions"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Link</button>}
+      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Promotions"});}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Link</button>}
     </div>
     {showForm&&<Card style={{marginBottom:14,border:`1px solid ${C.purple}44`}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Advancement Link</div>
-      <input placeholder="Title (e.g. RVP Promotion Requirements)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:10}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Advancement Link</div>
+      <input placeholder="Title (e.g. RVP Promotion Requirements)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:10}}>
         {ADVANCEMENT_CATEGORIES.map(c=><option key={c}>{c}</option>)}
       </select>
       <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Link</button>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Link</button>
       </div>
     </Card>}
     {resources.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>{isAdmin?"No advancement resources yet — add your first link above":"No advancement resources added yet — check back soon!"}</div>}
     {resources.length>0&&<div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
-      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.purple:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:filter===c?600:400,background:filter===c?C.purple:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
     </div>}
     {ADVANCEMENT_CATEGORIES.filter(cat=>filtered.some(r=>r.category===cat)).map(cat=><div key={cat}>
       <SecHead title={cat}/>
@@ -1066,13 +1066,13 @@ function AdvancementLibrary({data,onUpdate,userRole}) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={catColors[r.category]||C.purple} strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:2}}>{r.title}</div>
-            {r.description&&<div style={{fontSize:11,color:C.textMid,marginBottom:4}}>{r.description}</div>}
-            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.purple,textDecoration:"none",fontWeight:600}}>Open Link →</a>
+            <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:2}}>{r.title}</div>
+            {r.description&&<div style={{fontSize:13,color:C.textMid,marginBottom:4}}>{r.description}</div>}
+            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:13,color:C.purple,textDecoration:"none",fontWeight:600}}>Open Link →</a>
           </div>
           {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-            <button onClick={()=>{setForm(r);setEditing(realIdx);setShowForm(true);}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-            <button onClick={()=>del(realIdx)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+            <button onClick={()=>{setForm(r);setEditing(realIdx);setShowForm(true);}} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+            <button onClick={()=>del(realIdx)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
           </div>}
         </div>;
       })}
@@ -1109,14 +1109,14 @@ function RefsEditor({rep,data,onUpdate}) {
   };
 
   return <div>{localRefs.map((r,i)=>{const status=r.status||{};const completedCount=REF_STAGES.filter(s=>status[s.k]).length;return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
-    <div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
+    <div style={{fontSize:12,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-      {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
+      {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
     </div>
     {r.name&&completedCount>0&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:7,marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
       {REF_STAGES.map(s=><div key={s.k} style={{display:"flex",alignItems:"center",gap:6}}>
         <div style={{width:14,height:14,borderRadius:7,background:status[s.k]?C.success:C.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{status[s.k]&&<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}</div>
-        <span style={{fontSize:11,color:status[s.k]?C.success:C.textLight,fontWeight:status[s.k]?600:400}}>{s.l}</span>
+        <span style={{fontSize:13,color:status[s.k]?C.success:C.textLight,fontWeight:status[s.k]?600:400}}>{s.l}</span>
       </div>)}
     </div>}
   </div>;})}</div>;
@@ -1202,15 +1202,15 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <div style={{width:36,height:36,borderRadius:9,background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:C.teal}}>{rep.name?.charAt(0)}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rep.name}</div>
-          <div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>{track?.label}</div>
+          <div style={{fontSize:14,fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rep.name}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{track?.label}</div>
         </div>
         {onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:18,padding:0}}>×</button>}
       </div>
       <div style={{marginTop:10}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-          <span style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>Progress</span>
-          <span style={{fontSize:10,fontWeight:700,color:C.teal}}>{pct}%</span>
+          <span style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>Progress</span>
+          <span style={{fontSize:12,fontWeight:700,color:C.teal}}>{pct}%</span>
         </div>
         <div style={{height:4,background:"rgba(255,255,255,0.1)",borderRadius:2}}>
           <div style={{height:4,background:C.teal,borderRadius:2,width:pct+"%",transition:"width 0.3s"}}/>
@@ -1220,33 +1220,33 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       {trainer&&<div style={{marginTop:10,display:"flex",gap:5}}>
         {trainer.phone&&<a href={"tel:"+trainer.phone.replace(/\\D/g,"")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 6px",borderRadius:6,background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.4)",textDecoration:"none"}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.22 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.2 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
-          <span style={{fontSize:10,color:"#34d399",fontWeight:600}}>Call</span>
+          <span style={{fontSize:12,color:"#34d399",fontWeight:600}}>Call</span>
         </a>}
         {trainer.phone&&<a href={"sms:"+trainer.phone.replace(/\\D/g,"")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 6px",borderRadius:6,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.4)",textDecoration:"none"}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-          <span style={{fontSize:10,color:C.teal,fontWeight:600}}>Text</span>
+          <span style={{fontSize:12,color:C.teal,fontWeight:600}}>Text</span>
         </a>}
       </div>}
       {/* Meet with RVP */}
       {(data.rvpBookingLinks||[]).filter(r=>r.link).length>0&&<div style={{marginTop:6}}>
         {(data.rvpBookingLinks||[]).filter(r=>r.link).map((rvp,i)=><a key={i} href={rvp.link} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none",marginBottom:i<(data.rvpBookingLinks||[]).filter(r=>r.link).length-1?5:0}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
-          <span style={{fontSize:10,color:"#fbbf24",fontWeight:600}}>Meet with RVP - {rvp.name}</span>
+          <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>Meet with RVP - {rvp.name}</span>
         </a>)}
       </div>}
       {/* Rewatch milestone videos — only for granted access levels */}
       {((rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
         {rep.nextLevelGranted&&data.licensedVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.licensedVideoUrl,title:"Licensed — Now What?"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          <span style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Licensed Now What</span>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Licensed Now What</span>
         </button>}
         {rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.fieldTrainerVideoUrl,title:"Welcome, Field Trainer!"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          <span style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Field Trainer</span>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Field Trainer</span>
         </button>}
         {rep.rvpPathGranted&&data.rvpPathVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.rvpPathVideoUrl,title:"Welcome to the RVP Path!"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          <span style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: RVP Path</span>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: RVP Path</span>
         </button>}
       </div>}
     </div>
@@ -1256,11 +1256,11 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={tab===t.k?C.teal:"rgba(255,255,255,0.4)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d={tabIcons[t.k]||tabIcons.resources}/>
         </svg>
-        <span style={{fontSize:12,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400}}>{t.l}</span>
+        <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400}}>{t.l}</span>
       </button>)}
     </div>
     {/* Footer */}
-    <div style={{padding:"10px 12px",borderTop:"1px solid rgba(255,255,255,0.08)",fontSize:10,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>NextLevel Field Training Hub</div>
+    <div style={{padding:"10px 12px",borderTop:"1px solid rgba(255,255,255,0.08)",fontSize:12,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>NextLevel Field Training Hub</div>
   </div>;
 
   return <div style={{display:"flex",height:"100vh",background:C.surface,overflow:"hidden"}}>
@@ -1280,41 +1280,41 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
           <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
           <div style={{width:18,height:2,background:"white",borderRadius:1}}/>
         </button>
-        <span style={{fontSize:13,fontWeight:600,color:"white"}}>{tabs.find(t=>t.k===tab)?.l||"Checklist"}</span>
-        <div style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:C.teal}}>{pct}%</div>
+        <span style={{fontSize:14,fontWeight:600,color:"white"}}>{tabs.find(t=>t.k===tab)?.l||"Checklist"}</span>
+        <div style={{marginLeft:"auto",fontSize:13,fontWeight:700,color:C.teal}}>{pct}%</div>
       </div>}
       <div style={{padding:"14px 16px"}}>
     <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`,borderRadius:12,padding:"14px 18px",marginBottom:14,color:"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:2}}>{track?.label} - {track?.days}</div></div>
-        <div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:700,color:C.teal}}>{pct}%</div><div style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>COMPLETE</div></div>
+        <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginTop:2}}>{track?.label} - {track?.days}</div></div>
+        <div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:700,color:C.teal}}>{pct}%</div><div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>COMPLETE</div></div>
       </div>
       <Bar pct={pct} h={5}/>
-      {pct===100&&<div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"6px 10px",fontSize:12,color:C.success,textAlign:"center",fontWeight:600}}>All tasks complete!</div>}
+      {pct===100&&<div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"6px 10px",fontSize:13,color:C.success,textAlign:"center",fontWeight:600}}>All tasks complete!</div>}
       {pct===100&&(rep.track==="fast"||rep.track==="regular")&&!rep.nextLevelRequested&&!rep.nextLevelGranted&&(
         <button onClick={()=>{const lr=(data.reps||[]).find(r=>r.id===rep.id)||rep;onUpdate(rep.id,{...lr,nextLevelRequested:true,nextLevelRequestedAt:new Date().toISOString()});}}
-          style={{width:"100%",marginTop:8,padding:"10px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          style={{width:"100%",marginTop:8,padding:"10px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:14,cursor:"pointer"}}>
           Request Access to Licensed Now What
         </button>
       )}
       {rep.nextLevelRequested&&!rep.nextLevelGranted&&(
-        <div style={{marginTop:8,background:C.gold+"22",border:`1px solid ${C.gold}44`,borderRadius:8,padding:"8px 12px",fontSize:12,color:C.gold,textAlign:"center"}}>
+        <div style={{marginTop:8,background:C.gold+"22",border:`1px solid ${C.gold}44`,borderRadius:8,padding:"8px 12px",fontSize:13,color:C.gold,textAlign:"center"}}>
           Request sent! Waiting for admin approval...
         </div>
       )}
       {!rep.nextLevelRequested&&rep.nextLevelDenied&&!rep.nextLevelGranted&&(pct===100)&&(rep.track==="fast"||rep.track==="regular")&&(
         <div style={{marginTop:8}}>
-          <div style={{background:C.danger+"22",border:`1px solid ${C.danger}44`,borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:6,textAlign:"center"}}>
+          <div style={{background:C.danger+"22",border:`1px solid ${C.danger}44`,borderRadius:8,padding:"7px 12px",fontSize:13,color:C.danger,marginBottom:6,textAlign:"center"}}>
             Request was not approved — speak with your trainer for next steps
           </div>
           <button onClick={()=>onUpdate(rep.id,{...rep,nextLevelRequested:true,nextLevelDenied:false,nextLevelRequestedAt:new Date().toISOString()})}
-            style={{width:"100%",padding:"9px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+            style={{width:"100%",padding:"9px",borderRadius:8,background:`linear-gradient(135deg,${C.gold},#f97316)`,border:"none",color:"white",fontWeight:700,fontSize:13,cursor:"pointer"}}>
             Request Again
           </button>
         </div>
       )}
       {rep.nextLevelGranted&&rep.track!=="licensed"&&(
-        <div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"8px 12px",fontSize:12,color:C.success,textAlign:"center",fontWeight:600}}>
+        <div style={{marginTop:8,background:C.success+"22",border:`1px solid ${C.success}44`,borderRadius:8,padding:"8px 12px",fontSize:13,color:C.success,textAlign:"center",fontWeight:600}}>
           Access granted! Refresh to see your Licensed Now What checklist.
         </div>
       )}
@@ -1336,13 +1336,13 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       <div style={{background:"white",borderRadius:18,padding:"28px 24px",maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{fontSize:48,marginBottom:10}}>🚗🏠</div>
         <div style={{fontSize:18,fontWeight:800,color:C.text,marginBottom:10}}>Get Your Free Quote!</div>
-        <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:14}}>Call Answer Financial and get a free auto and home insurance quote on yourself. Even if you don't save money, you'll learn the exact process to use with your future clients!</div>
+        <div style={{fontSize:14,color:C.textMid,lineHeight:1.6,marginBottom:14}}>Call Answer Financial and get a free auto and home insurance quote on yourself. Even if you don't save money, you'll learn the exact process to use with your future clients!</div>
         <div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:10,padding:"12px 14px",marginBottom:16}}>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Call</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Call</div>
           <a href="tel:18778558111" style={{fontSize:18,fontWeight:800,color:C.teal,textDecoration:"none"}}>📞 1-877-855-8111</a>
-          <div style={{fontSize:11,color:C.textLight,marginTop:8}}>Provide your Rep ID and last name</div>
+          <div style={{fontSize:13,color:C.textLight,marginTop:8}}>Provide your Rep ID and last name</div>
         </div>
-        <div style={{fontSize:12,color:C.gold,fontWeight:600,marginBottom:16}}>💰 Earn commission if you switch to a full coverage plan!</div>
+        <div style={{fontSize:13,color:C.gold,fontWeight:600,marginBottom:16}}>💰 Earn commission if you switch to a full coverage plan!</div>
         <button onClick={()=>setShowAutoHomePopup(false)} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it!</button>
       </div>
     </div>}
@@ -1350,7 +1350,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
-    {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
+    {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
@@ -1399,16 +1399,16 @@ function AdminRefsEditor({rep,data,onUpdate}) {
   };
 
   return <div>{localRefs.map((r,i)=>{const status=r.status||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
-    <div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
+    <div style={{fontSize:12,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:r.name?8:0}}>
-      {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
+      {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
     </div>
     {r.name&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:8}}>
-      <div style={{fontSize:9,fontWeight:700,color:C.textLight,marginBottom:5,textTransform:"uppercase",letterSpacing:"0.5px"}}>Outreach Status</div>
+      <div style={{fontSize:10,fontWeight:700,color:C.textLight,marginBottom:5,textTransform:"uppercase",letterSpacing:"0.5px"}}>Outreach Status</div>
       <div style={{display:"flex",flexDirection:"column",gap:5}}>
         {REF_STAGES.map(s=><label key={s.k} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}>
           <input type="checkbox" checked={!!status[s.k]} onChange={()=>toggleStatus(i,s.k)} style={{width:15,height:15,accentColor:C.teal,cursor:"pointer"}}/>
-          <span style={{fontSize:12,color:status[s.k]?C.success:C.textMid,fontWeight:status[s.k]?600:400,textDecoration:status[s.k]?"line-through":"none"}}>{s.l}</span>
+          <span style={{fontSize:13,color:status[s.k]?C.success:C.textMid,fontWeight:status[s.k]?600:400,textDecoration:status[s.k]?"line-through":"none"}}>{s.l}</span>
         </label>)}
       </div>
     </div>}
@@ -1441,8 +1441,8 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
 
   if(viewAsRep) return <div>
     <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <span style={{fontSize:12,color:C.gold,fontWeight:600}}>Viewing as: {rep.name}</span>
-      <button onClick={()=>setViewAsRep(false)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Exit Preview</button>
+      <span style={{fontSize:13,color:C.gold,fontWeight:600}}>Viewing as: {rep.name}</span>
+      <button onClick={()=>setViewAsRep(false)} style={{fontSize:13,padding:"4px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Exit Preview</button>
 
     </div>
     <RepView rep={rep} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={true}/>
@@ -1450,51 +1450,51 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
 
   return <div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-      <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:12,color:C.textMid}}>&larr; Back</button>
+      <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:13,color:C.textMid}}>&larr; Back</button>
       <div style={{flex:1}}>
         <div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div>
-        {!editContact&&<div style={{fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+        {!editContact&&<div style={{fontSize:13,color:C.textMid,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
           <PhoneLink phone={rep.phone}/>
-          {rep.email&&<a href={"mailto:"+rep.email} style={{fontSize:11,color:C.teal,textDecoration:"none"}}>✉ {rep.email}</a>}
+          {rep.email&&<a href={"mailto:"+rep.email} style={{fontSize:13,color:C.teal,textDecoration:"none"}}>✉ {rep.email}</a>}
           <Badge color={track?.color||C.teal} small>{track?.label||"No track yet"}</Badge>
-          {rep.trackChosenAt&&<span style={{fontSize:10,color:C.textLight}}>Self-selected on {rep.trackChosenAt}</span>}
+          {rep.trackChosenAt&&<span style={{fontSize:12,color:C.textLight}}>Self-selected on {rep.trackChosenAt}</span>}
           {(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{
             const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
             const c=rep.commitments?.[pm.key];
-            return c?<span style={{fontSize:10,background:C.gold+"22",color:"#b45309",padding:"2px 7px",borderRadius:5,fontWeight:700}}>{c.tierEmoji} {c.tierLabel} · {pm.label}</span>:<span style={{fontSize:10,color:C.textLight}}>⏳ No commitment set for {pm.label}</span>;
+            return c?<span style={{fontSize:12,background:C.gold+"22",color:"#b45309",padding:"2px 7px",borderRadius:5,fontWeight:700}}>{c.tierEmoji} {c.tierLabel} · {pm.label}</span>:<span style={{fontSize:12,color:C.textLight}}>⏳ No commitment set for {pm.label}</span>;
           })()}
-          {!rep.track&&<span style={{fontSize:10,color:C.gold,fontWeight:600}}>⏳ Pending path selection</span>}
-          <button onClick={()=>{setContactForm({phone:rep.phone||"",email:rep.email||""});setEditContact(true);}} style={{fontSize:10,padding:"1px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+          {!rep.track&&<span style={{fontSize:12,color:C.gold,fontWeight:600}}>⏳ Pending path selection</span>}
+          <button onClick={()=>{setContactForm({phone:rep.phone||"",email:rep.email||""});setEditContact(true);}} style={{fontSize:12,padding:"1px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
         </div>}
         {editContact&&<div style={{marginTop:4,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-          <input placeholder="Phone" value={contactForm.phone} onChange={e=>setContactForm({...contactForm,phone:e.target.value})} style={{width:120,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-          <input placeholder="Email" value={contactForm.email} onChange={e=>setContactForm({...contactForm,email:e.target.value})} style={{width:160,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-          <button onClick={saveContact} style={{padding:"3px 8px",borderRadius:5,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:10,fontWeight:600}}>Save</button>
-          <button onClick={()=>setEditContact(false)} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:10,color:C.textMid}}>Cancel</button>
+          <input placeholder="Phone" value={contactForm.phone} onChange={e=>setContactForm({...contactForm,phone:e.target.value})} style={{width:120,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <input placeholder="Email" value={contactForm.email} onChange={e=>setContactForm({...contactForm,email:e.target.value})} style={{width:160,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <button onClick={saveContact} style={{padding:"3px 8px",borderRadius:5,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save</button>
+          <button onClick={()=>setEditContact(false)} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
         </div>}
       </div>
-      <button onClick={()=>setViewAsRep(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
+      <button onClick={()=>setViewAsRep(true)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
       <ReassignTrainer rep={rep} data={data} onUpdate={onUpdate} />
       <RecruitedByEditor rep={rep} data={data} onUpdate={onUpdate}/>
       <ResetPinButton person={rep} personType="rep" data={data} onUpdate={onUpdate||upd}/>
-      <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
+      <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-      <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
-      <Card style={{padding:"10px 12px"}}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Rep</div><div style={{fontSize:18,fontWeight:700,color:track?.color||C.purple}}>{Math.round((repDone/(cl.length||1))*100)}%</div><Bar pct={(repDone/(cl.length||1))*100} color={track?.color||C.purple}/><div style={{fontSize:10,color:C.textLight,marginTop:3}}>{repDone}/{cl.length}</div></Card>
+      <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
+      <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Rep</div><div style={{fontSize:18,fontWeight:700,color:track?.color||C.purple}}>{Math.round((repDone/(cl.length||1))*100)}%</div><Bar pct={(repDone/(cl.length||1))*100} color={track?.color||C.purple}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{repDone}/{cl.length}</div></Card>
     </div>
     <Card style={{marginBottom:12,padding:"10px 14px"}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Rep-Entered Data</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:8}}>Rep-Entered Data</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-        {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:11,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:9,color:C.textLight}}>{d.l}</div></div>)}
-      {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:11,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
+        {[{l:"DGO Date",v:rep.dgoDate||(rep.dgoDone?"Done":"Not set"),c:C.teal},{l:"Business Commit",v:rep.businessCommitment?`$${rep.businessCommitment}`:"Not set",c:C.gold},{l:"Exam Date",v:rep.examDate||(rep.examPassed?"Passed":"Not set"),c:C.purple},{l:"Bonus Goal",v:BONUS_GOALS.find(g=>g.id===rep.bonusGoal)?.label||"Not set",c:C.danger}].map(d=><div key={d.l} style={{textAlign:"center",padding:"7px",background:C.surface,borderRadius:8}}><div style={{fontSize:13,fontWeight:700,color:d.c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.v}</div><div style={{fontSize:10,color:C.textLight}}>{d.l}</div></div>)}
+      {rep.myWhy&&<div style={{marginTop:8,background:C.purple+"11",border:`1px solid ${C.purple}22`,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:10,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>My Why</div><div style={{fontSize:13,color:C.text,fontStyle:"italic",lineHeight:1.5}}>"{rep.myWhy}"</div></div>}
       {rep.preLicType&&<div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}><Badge color={C.purple} small>Pre-Lic: {rep.preLicType==="inperson"?"In-Person":rep.preLicType==="zoom"?"Zoom":"Online"}</Badge>{rep.preLicDone&&<Badge color={C.success} small>Complete</Badge>}{rep.selectedRVP&&<Badge color={C.gold} small>RVP: {rep.selectedRVP}</Badge>}</div>}
       {rep.dgoPhoto&&<DgoPhotoPanel photo={rep.dgoPhoto} name={rep.name}/>}
-      {rep.tshirtSize&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:8}}><div style={{padding:"4px 12px",borderRadius:6,background:C.gold,color:"white",fontSize:12,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:11,color:C.textMid}}>T-Shirt Size</span></div>}
+      {rep.tshirtSize&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:8}}><div style={{padding:"4px 12px",borderRadius:6,background:C.gold,color:"white",fontSize:13,fontWeight:700}}>{rep.tshirtSize}</div><span style={{fontSize:13,color:C.textMid}}>T-Shirt Size</span></div>}
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
-      {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
+      {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
     {tab==="trainer"&&<div>{Object.entries(TRAINER_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
     {tab==="rep"&&<RepView rep={liveRepData} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={false}/>}
@@ -1502,9 +1502,9 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
     {tab==="refs"&&<AdminRefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={null} readOnly={false} data={data}/>}
     {tab==="checkins"&&<div>
-      {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds!==null&&ds>=7;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:12,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins yet - log one below":ds===0?"Checked in today":`Last check-in ${ds} day${ds!==1?"s":""} ago${stalled?" - consider reaching out!":""}`}</div>;})()}
-      <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Log</button></div>
-      {(()=>{const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;return(liveRep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:C.text}}>{ci.note}</div><div style={{fontSize:10,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>);})()}
+      {(()=>{const cis=rep.checkIns||[];const last=cis.length>0?new Date(cis[cis.length-1].date):null;const ds=last?Math.floor((Date.now()-last)/(86400000)):null;const stalled=ds!==null&&ds>=7;return <div style={{background:stalled?C.danger+"11":C.success+"11",border:`1px solid ${stalled?C.danger+"33":C.success+"33"}`,borderRadius:8,padding:"7px 10px",marginBottom:10,fontSize:13,color:stalled?C.danger:C.success}}>{ds===null?"No check-ins yet - log one below":ds===0?"Checked in today":`Last check-in ${ds} day${ds!==1?"s":""} ago${stalled?" - consider reaching out!":""}`}</div>;})()}
+      <div style={{display:"flex",gap:7,marginBottom:12}}><input placeholder="Log a check-in note..." value={ciNote} onChange={e=>setCiNote(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><button onClick={addCI} style={{padding:"7px 12px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Log</button></div>
+      {(()=>{const liveRep=(data.reps||[]).find(r=>r.id===rep.id)||rep;return(liveRep.checkIns||[]).slice().reverse().map((ci,i)=><div key={i} style={{padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:13,color:C.text}}>{ci.note}</div><div style={{fontSize:12,color:C.textLight,marginTop:1}}>{new Date(ci.date).toLocaleDateString()}</div></div>);})()}
     </div>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={onUpdateData||((u)=>{})} userRole="rep"/>}
@@ -1527,49 +1527,49 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
   const totLump=invs.reduce((s,i)=>s+parseLump(i.lumpSum),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:11,color:C.textMid,marginTop:1}}>{investmentsOnly?`${invs.length} investment${invs.length!==1?"s":""} · $${totPAC.toLocaleString()}/mo PAC · $${totLump.toLocaleString()} lump`:`${apps.length} apps · $${totPrem.toFixed(0)}/mo · $${(totPrem*12).toFixed(0)}/yr`}</div></div>
+      <div><div style={{fontSize:14,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:13,color:C.textMid,marginTop:1}}>{investmentsOnly?`${invs.length} investment${invs.length!==1?"s":""} · $${totPAC.toLocaleString()}/mo PAC · $${totLump.toLocaleString()} lump`:`${apps.length} apps · $${totPrem.toFixed(0)}/mo · $${(totPrem*12).toFixed(0)}/yr`}</div></div>
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
-      <div style={{display:"flex",gap:3,marginBottom:10}}>{[["lifeapps","Life Apps"],["investments","Investments"]].filter(([k])=>!investmentsOnly||k==="investments").map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}</div>
+      <div style={{display:"flex",gap:3,marginBottom:10}}>{[["lifeapps","Life Apps"],["investments","Investments"]].filter(([k])=>!investmentsOnly||k==="investments").map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:13,fontWeight:tab===k?600:400,background:tab===k?C.teal:"transparent",color:tab===k?"white":C.textMid}}>{l}</button>)}</div>
       {tab==="lifeapps"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
-          <div style={{background:C.teal+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.teal}}>{apps.length}</div><div style={{fontSize:10,color:C.textMid}}>Life Apps</div></div>
-          <div style={{background:C.gold+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.gold}}>${totPrem.toFixed(0)}/mo</div><div style={{fontSize:10,color:C.textMid}}>Monthly</div></div>
-          <div style={{background:C.purple+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.purple}}>${(totPrem*12).toFixed(0)}/yr</div><div style={{fontSize:10,color:C.textMid}}>Annual</div></div>
+          <div style={{background:C.teal+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.teal}}>{apps.length}</div><div style={{fontSize:12,color:C.textMid}}>Life Apps</div></div>
+          <div style={{background:C.gold+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.gold}}>${totPrem.toFixed(0)}/mo</div><div style={{fontSize:12,color:C.textMid}}>Monthly</div></div>
+          <div style={{background:C.purple+"11",borderRadius:8,padding:"7px 10px",textAlign:"center"}}><div style={{fontSize:17,fontWeight:700,color:C.purple}}>${(totPrem*12).toFixed(0)}/yr</div><div style={{fontSize:12,color:C.textMid}}>Annual</div></div>
         </div>
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Life App</div>
+          <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Life App</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-            <input placeholder="Client Name" value={na.clientName} onChange={e=>setNa({...na,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <input placeholder="Monthly Premium $ (per month)" value={na.premium} onChange={e=>setNa({...na,premium:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <input type="date" value={na.date} onChange={e=>setNa({...na,date:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+            <input placeholder="Client Name" value={na.clientName} onChange={e=>setNa({...na,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <input placeholder="Monthly Premium $ (per month)" value={na.premium} onChange={e=>setNa({...na,premium:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <input type="date" value={na.date} onChange={e=>setNa({...na,date:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           </div>
-          <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log Life App</button>
+          <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log Life App</button>
         </div>
         {apps.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
           <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6}}>
-            <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
-            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toLocaleDateString(),id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+            <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toLocaleDateString(),id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
           </div>
-          <div style={{fontSize:11,color:C.textMid}}>Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>{addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}</div>
+          <div style={{fontSize:13,color:C.textMid}}>Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>{addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}</div>
         </div>}
-        {apps.map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}><span style={{color:C.text}}>{a.clientName}</span><div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div></div>)}
+        {apps.map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{color:C.text}}>{a.clientName}</span><div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div></div>)}
       </div>}
       {tab==="investments"&&<div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:C.textMid}}>{l}</div></div>)}</div>
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
+          <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-            <input placeholder="Client Name" value={ni.clientName} onChange={e=>setNi({...ni,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <input placeholder="PAC $/mo" value={ni.pac} onChange={e=>setNi({...ni,pac:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-            <select value={ni.type} onChange={e=>setNi({...ni,type:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}><option>Mutual Fund</option><option>Annuity</option></select>
+            <input placeholder="Client Name" value={ni.clientName} onChange={e=>setNi({...ni,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <input placeholder="PAC $/mo" value={ni.pac} onChange={e=>setNi({...ni,pac:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <select value={ni.type} onChange={e=>setNi({...ni,type:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option>Mutual Fund</option><option>Annuity</option></select>
           </div>
-          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:new Date().toLocaleDateString()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Log New Investment</button>
+          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:new Date().toLocaleDateString()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
         </div>
-        {invs.map((inv,i)=><div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:11}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>)}
+        {invs.map((inv,i)=><div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>)}
       </div>}
     </div>}
   </Card>;
@@ -1600,30 +1600,30 @@ function InvestmentBreakdown({data,reps,allStaff,totPAC,totLump}) {
   return <div style={{marginTop:4,marginBottom:10}}>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
       <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Monthly PAC</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>Total Monthly PAC</div>
         <div style={{fontSize:16,fontWeight:700,color:C.teal}}>${totPAC.toLocaleString()}</div>
       </div>
       <div style={{background:C.surface,borderRadius:8,padding:"8px 10px"}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Total Lump Sum</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>Total Lump Sum</div>
         <div style={{fontSize:16,fontWeight:700,color:C.purple}}>${totLump.toLocaleString()}</div>
       </div>
     </div>
-    {breakdown.length>0&&<button onClick={()=>setOpen(!open)} style={{fontSize:10,color:C.teal,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>
+    {breakdown.length>0&&<button onClick={()=>setOpen(!open)} style={{fontSize:12,color:C.teal,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>
       {open?"Hide":"Show"} breakdown ({breakdown.length} contributor{breakdown.length!==1?"s":""})
     </button>}
     {open&&<div style={{marginTop:6,background:C.surface,borderRadius:8,padding:"8px 10px"}}>
       {breakdown.map((b,i)=><div key={i} style={{marginBottom:8}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
           <div>
-            <span style={{fontSize:12,fontWeight:600,color:C.text}}>{b.name}</span>
-            <span style={{fontSize:10,color:C.textLight,marginLeft:6}}>{b.role}</span>
+            <span style={{fontSize:13,fontWeight:600,color:C.text}}>{b.name}</span>
+            <span style={{fontSize:12,color:C.textLight,marginLeft:6}}>{b.role}</span>
           </div>
           <div style={{display:"flex",gap:10}}>
-            {b.pac>0&&<span style={{fontSize:11,color:C.teal,fontWeight:600}}>${b.pac}/mo PAC</span>}
-            {b.lump>0&&<span style={{fontSize:11,color:C.purple,fontWeight:600}}>${b.lump.toLocaleString()} Lump</span>}
+            {b.pac>0&&<span style={{fontSize:13,color:C.teal,fontWeight:600}}>${b.pac}/mo PAC</span>}
+            {b.lump>0&&<span style={{fontSize:13,color:C.purple,fontWeight:600}}>${b.lump.toLocaleString()} Lump</span>}
           </div>
         </div>
-        {b.entries.map((e,ei)=><div key={ei} style={{fontSize:10,color:C.textMid,paddingLeft:10,borderLeft:"2px solid "+C.border,marginBottom:2}}>
+        {b.entries.map((e,ei)=><div key={ei} style={{fontSize:12,color:C.textMid,paddingLeft:10,borderLeft:"2px solid "+C.border,marginBottom:2}}>
           {e.clientName} — {e.type}{e.pac?` · $${e.pac}/mo`:""}{e.lumpSum?` · $${Number(e.lumpSum).toLocaleString()} lump`:""}
         </div>)}
       </div>)}
@@ -1650,12 +1650,12 @@ function ProdDash({data,onUpdateData}) {
   const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const totLump = allInvLogs.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
   return <Card style={{marginBottom:14}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear Annual Premium, New Recruits display, Licensed Agents, and all investment entries? This resets all production counters."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,selfPremium:[],isLicensed:false,premiumSubmitted:0,investments:[]})),myProduction:{},prodOverride:{recruits:0},admins:(data.admins||[]).map(a=>({...a,investments:[]})),trainers:(data.trainers||[]).map(t=>({...t,investments:[]}))});}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear Annual Premium, New Recruits display, Licensed Agents, and all investment entries? This resets all production counters."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,selfPremium:[],isLicensed:false,premiumSubmitted:0,investments:[]})),myProduction:{},prodOverride:{recruits:0},admins:(data.admins||[]).map(a=>({...a,investments:[]})),trainers:(data.trainers||[]).map(t=>({...t,investments:[]}))});}} style={{fontSize:12,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:13,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>{[["premium","Annual Premium $",gd.premium],["recruits","Recruits",gd.recruits],["licensed","Licensed Agents",gd.licensed]].map(([k,l,v])=><div key={k}><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>{l}</div><input type="number" value={v} onChange={e=>setGd({...gd,[k]:Number(e.target.value)})} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,boxSizing:"border-box",color:C.text}}/></div>)}</div>
-      <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>{[["premium","Annual Premium $",gd.premium],["recruits","Recruits",gd.recruits],["licensed","Licensed Agents",gd.licensed]].map(([k,l,v])=><div key={k}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>{l}</div><input type="number" value={v} onChange={e=>setGd({...gd,[k]:Number(e.target.value)})} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box",color:C.text}}/></div>)}</div>
+      <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Goals</button>
     </div>}
-    {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:C.textMid}}>{g.l}</span><span style={{fontSize:12,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:10,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
+    {[{l:"Annual Premium",v:totPremMo*12,goal:goals.premium,fmt:v=>`$${Math.round(v).toLocaleString()}`,c:C.teal,sub:`$${totPremMo.toFixed(0)}/mo`},{l:"New Recruits",v:totRecs,goal:goals.recruits,fmt:v=>v,c:C.purple},{l:"Licensed Agents",v:totLic,goal:goals.licensed,fmt:v=>v,c:C.gold}].map(g=><div key={g.l} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:13,color:C.textMid}}>{g.l}</span><span style={{fontSize:13,fontWeight:600,color:g.v>=g.goal?C.success:C.text}}>{g.fmt(g.v)} / {g.fmt(g.goal)}</span></div>{g.sub&&<div style={{fontSize:12,color:C.textLight,marginBottom:3}}>{g.sub}</div>}<Bar pct={(g.v/g.goal)*100} color={g.v>=g.goal?C.success:g.c}/></div>)}
     {(totPAC>0||totLump>0)&&<InvestmentBreakdown data={data} reps={reps} allStaff={allStaff} totPAC={totPAC} totLump={totLump}/>}
     <CollapsibleRepList reps={reps} data={data} onUpdateData={onUpdateData}/>
   </Card>;
@@ -1668,23 +1668,23 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add New Rep</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
-      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"email",l:"Email",t:"email"},{fld:"startDate",l:"Start Date",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/></div>)}
+      {[{fld:"name",l:"Full Name",t:"text"},{fld:"phone",l:"Phone",t:"text"},{fld:"email",l:"Email",t:"email"},{fld:"startDate",l:"Start Date",t:"date"},].map(({fld,l,t})=><div key={fld} style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>{l}</label><input type={t} value={f[fld]} onChange={e=>setF({...f,[fld]:fld==="phone"?fmtP(e.target.value):e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box"}}/></div>)}
       <div style={{marginBottom:9}}>
-        <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:5}}>Track</label>
+        <label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:5}}>Track</label>
         <div style={{display:"flex",flexDirection:"column",gap:7}}>
           <button onClick={()=>setF({...f,track:""})} style={{padding:"10px 12px",borderRadius:8,border:`2px solid ${!f.track?C.teal:C.border}`,background:!f.track?C.teal+"11":"white",cursor:"pointer",textAlign:"left"}}>
-            <div style={{fontSize:12,fontWeight:700,color:!f.track?C.teal:C.text,marginBottom:2}}>🎯 Rep Chooses — Unlicensed New Rep</div>
-            <div style={{fontSize:10,color:C.textMid,lineHeight:1.4}}>Rep will watch the welcome video first, then choose Fast Start (7-14 days) or Regular Start (30 days) for themselves. Best for all new unlicensed reps.</div>
+            <div style={{fontSize:13,fontWeight:700,color:!f.track?C.teal:C.text,marginBottom:2}}>🎯 Rep Chooses — Unlicensed New Rep</div>
+            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4}}>Rep will watch the welcome video first, then choose Fast Start (7-14 days) or Regular Start (30 days) for themselves. Best for all new unlicensed reps.</div>
           </button>
           <button onClick={()=>setF({...f,track:"licensed"})} style={{padding:"10px 12px",borderRadius:8,border:`2px solid ${f.track==="licensed"?C.gold:C.border}`,background:f.track==="licensed"?C.gold+"11":"white",cursor:"pointer",textAlign:"left"}}>
-            <div style={{fontSize:12,fontWeight:700,color:f.track==="licensed"?C.gold:C.text,marginBottom:2}}>🎓 Already Licensed — Skip to Licensed Now What</div>
-            <div style={{fontSize:10,color:C.textMid,lineHeight:1.4}}>Rep already holds a life insurance license. Skips Fast/Regular Start entirely and goes straight to the Licensed Now What checklist.</div>
+            <div style={{fontSize:13,fontWeight:700,color:f.track==="licensed"?C.gold:C.text,marginBottom:2}}>🎓 Already Licensed — Skip to Licensed Now What</div>
+            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4}}>Rep already holds a life insurance license. Skips Fast/Regular Start entirely and goes straight to the Licensed Now What checklist.</div>
           </button>
         </div>
       </div>
-      <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
-      <div style={{marginBottom:9}}><label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
-      <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer",marginTop:4}}>Add Rep</button>
+      <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
+      <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
+      <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",marginTop:4}}>Add Rep</button>
     </div>
   </div>;
 }
@@ -1698,130 +1698,130 @@ function ManageTeam({data,onUpdate,onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"80vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
-      <div style={{marginBottom:14}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
+      <div style={{marginBottom:14}}><div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
         {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
           <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
-            <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,fontWeight:600}} placeholder="Admin name"/>
-            {a.isSuperAdmin&&<span style={{fontSize:10,color:C.gold,whiteSpace:"nowrap"}}>Super Admin</span>}
-            <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+            <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Admin name"/>
+            {a.isSuperAdmin&&<span style={{fontSize:12,color:C.gold,whiteSpace:"nowrap"}}>Super Admin</span>}
+            <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
             {!a.isSuperAdmin&&<button onClick={()=>onUpdate({...data,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
           </div>
           <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
             <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);onUpdate({...data,admins:u});}}/>
-            <span style={{fontSize:11,color:C.textMid}}>Also actively recruits and trains</span>
-            {a.alsoRecruits&&<span style={{fontSize:10,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
+            <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
+            {a.alsoRecruits&&<span style={{fontSize:12,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
           </label>
           {a.alsoRecruits&&<div style={{marginTop:4,display:"flex",flexDirection:"column",gap:4}}>
-            <input placeholder="Phone (for rep call/text button)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
-            <input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
-            <input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
+            <input placeholder="Phone (for rep call/text button)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+            <input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+            <input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
           </div>}
         </div>)}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){onUpdate({...data,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){onUpdate({...data,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13}}>Add</button></div>
       </div>
-      <div><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
-        {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:12,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);onUpdate({...data,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>onUpdate({...data,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Phone (for rep call/text button)" value={t.phone||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,phone:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box",marginBottom:5}}/><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/></div>)}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Trainer name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/><input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(nt.name&&nt.pin){onUpdate({...data,trainers:[...trainers,{...nt,id:"trainer_"+Date.now()}]});setNt({name:"",pin:"",bookingLink:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11}}>Add</button></div>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
+        {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:13,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);onUpdate({...data,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>onUpdate({...data,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Phone (for rep call/text button)" value={t.phone||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,phone:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:5}}/><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/></div>)}
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Trainer name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(nt.name&&nt.pin){onUpdate({...data,trainers:[...trainers,{...nt,id:"trainer_"+Date.now()}]});setNt({name:"",pin:"",bookingLink:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13}}>Add</button></div>
       </div>
 
       {/* RVP IDs */}
       <div style={{marginTop:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP IDs (Online Pre-Licensing)</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP IDs (Online Pre-Licensing)</div>
         <div style={{marginBottom:8}}>
           {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...(data.customRVPs||[])].map((rvp,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:7,background:C.surface,marginBottom:5}}>
-              <div style={{flex:1}}><span style={{fontSize:12,fontWeight:700,color:C.gold}}>{rvp.id}</span><span style={{fontSize:11,color:C.textMid,marginLeft:8}}>{rvp.name}</span></div>
-              {i>=2&&<button onClick={()=>onUpdate({...data,customRVPs:(data.customRVPs||[]).filter((_,j)=>j!==i-2)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:13}}>x</button>}
+              <div style={{flex:1}}><span style={{fontSize:13,fontWeight:700,color:C.gold}}>{rvp.id}</span><span style={{fontSize:13,color:C.textMid,marginLeft:8}}>{rvp.name}</span></div>
+              {i>=2&&<button onClick={()=>onUpdate({...data,customRVPs:(data.customRVPs||[]).filter((_,j)=>j!==i-2)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>}
               {i<2&&<Badge color={C.teal} small>Default</Badge>}
             </div>
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"auto 1fr auto",gap:5}}>
           <input placeholder="RVP ID" value={(data._newRVP||{}).id||""} onChange={e=>onUpdate({...data,_newRVP:{...(data._newRVP||{}),id:e.target.value.toUpperCase()}})}
-            style={{width:80,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text,letterSpacing:"1px",fontWeight:700}}/>
+            style={{width:80,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,letterSpacing:"1px",fontWeight:700}}/>
           <input placeholder="RVP Name" value={(data._newRVP||{}).name||""} onChange={e=>onUpdate({...data,_newRVP:{...(data._newRVP||{}),name:e.target.value}})}
-            style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+            style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           <button onClick={()=>{
             const nr=data._newRVP||{};
             if(nr.id&&nr.name){onUpdate({...data,customRVPs:[...(data.customRVPs||[]),{id:nr.id,name:nr.name}],_newRVP:{}});}
-          }} style={{padding:"5px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+          }} style={{padding:"5px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
         </div>
       </div>
 
 
       {/* Primerica Month End Dates */}
       <div style={{marginTop:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:4}}>Primerica Month End Dates</div>
-        <div style={{fontSize:10,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month. This drives commitment tracking and resets. Format: YYYY-MM-DD</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Primerica Month End Dates</div>
+        <div style={{fontSize:12,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month. This drives commitment tracking and resets. Format: YYYY-MM-DD</div>
         {(data.primerMonthEnds||[]).map((me,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:5,marginBottom:5}}>
-          <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
-          <input placeholder="Cutoff date YYYY-MM-DD" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <input placeholder="Cutoff date YYYY-MM-DD" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           <button onClick={()=>onUpdate({...data,primerMonthEnds:(data.primerMonthEnds||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
         </div>)}
-        <button onClick={()=>onUpdate({...data,primerMonthEnds:[...(data.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:11,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
+        <button onClick={()=>onUpdate({...data,primerMonthEnds:[...(data.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
       </div>
 
       {/* RVP Booking Links — for "Meet with your RVP" button */}
       <div style={{marginTop:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP Booking Links</div>
-        <div style={{fontSize:10,color:C.textLight,marginBottom:8}}>These show as "Meet with your RVP" buttons for all reps. Add multiple RVPs if needed.</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP Booking Links</div>
+        <div style={{fontSize:12,color:C.textLight,marginBottom:8}}>These show as "Meet with your RVP" buttons for all reps. Add multiple RVPs if needed.</div>
         <div style={{marginBottom:8}}>
           {(data.rvpBookingLinks||[]).map((rvp,i)=>(
             <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:8,marginBottom:6}}>
               <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5}}>
-                <input value={rvp.name} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,name:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="RVP Name" style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text,fontWeight:600}}/>
+                <input value={rvp.name} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,name:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="RVP Name" style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}}/>
                 <button onClick={()=>onUpdate({...data,rvpBookingLinks:(data.rvpBookingLinks||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
               </div>
-              <input value={rvp.link} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,link:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="Booking link (Calendly, etc.)" style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:10,color:C.text,boxSizing:"border-box"}}/>
+              <input value={rvp.link} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,link:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="Booking link (Calendly, etc.)" style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
             </div>
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:5}}>
-          <input placeholder="New RVP name" value={(data._newRVPBooking||{}).name||""} onChange={e=>onUpdate({...data,_newRVPBooking:{...(data._newRVPBooking||{}),name:e.target.value}})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}/>
+          <input placeholder="New RVP name" value={(data._newRVPBooking||{}).name||""} onChange={e=>onUpdate({...data,_newRVPBooking:{...(data._newRVPBooking||{}),name:e.target.value}})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           <button onClick={()=>{
             const nrb=data._newRVPBooking||{};
             if(nrb.name){onUpdate({...data,rvpBookingLinks:[...(data.rvpBookingLinks||[]),{name:nrb.name,link:""}],_newRVPBooking:{}});}
-          }} style={{padding:"5px 10px",borderRadius:6,background:C.purple,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Add RVP</button>
+          }} style={{padding:"5px 10px",borderRadius:6,background:C.purple,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Add RVP</button>
         </div>
       </div>
 
       {/* Checklist Welcome Videos */}
       <div style={{marginTop:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:8}}>Checklist Videos</div>
-        <div style={{fontSize:10,color:C.textLight,marginBottom:8}}>Each video plays once for a rep, right when they reach that milestone. Paste a YouTube embed URL or Google Drive link.</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:8}}>Checklist Videos</div>
+        <div style={{fontSize:12,color:C.textLight,marginBottom:8}}>Each video plays once for a rep, right when they reach that milestone. Paste a YouTube embed URL or Google Drive link.</div>
         <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 10px",marginBottom:12}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.gold,marginBottom:3}}>📌 Using Google Drive?</div>
-          <div style={{fontSize:10,color:C.textMid,lineHeight:1.5}}>Upload the video → Share → Get link → copy it, then change the ending from <strong>/view</strong> to <strong>/preview</strong> before pasting it below. Example: .../d/FILE_ID/<strong>preview</strong></div>
+          <div style={{fontSize:12,fontWeight:700,color:C.gold,marginBottom:3}}>📌 Using Google Drive?</div>
+          <div style={{fontSize:12,color:C.textMid,lineHeight:1.5}}>Upload the video → Share → Get link → copy it, then change the ending from <strong>/view</strong> to <strong>/preview</strong> before pasting it below. Example: .../d/FILE_ID/<strong>preview</strong></div>
         </div>
 
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Orientation Video (pops up when rep clicks "Watch Orientation" on their checklist)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.orientationVideoUrl||""} onChange={e=>onUpdate({...data,orientationVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
-          {data.orientationVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved — also stays available in Resources tab</div>}
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Orientation Video (pops up when rep clicks "Watch Orientation" on their checklist)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.orientationVideoUrl||""} onChange={e=>onUpdate({...data,orientationVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          {data.orientationVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved — also stays available in Resources tab</div>}
         </div>
 
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Welcome Video (Fast Start / Regular Start — first login)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.welcomeVideoUrl||""} onChange={e=>onUpdate({...data,welcomeVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
-          {data.welcomeVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Welcome Video (Fast Start / Regular Start — first login)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.welcomeVideoUrl||""} onChange={e=>onUpdate({...data,welcomeVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          {data.welcomeVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
 
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Licensed Now What Video (shown once access granted, rewatchable in their sidebar)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.licensedVideoUrl||""} onChange={e=>onUpdate({...data,licensedVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
-          {data.licensedVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Licensed Now What Video (shown once access granted, rewatchable in their sidebar)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.licensedVideoUrl||""} onChange={e=>onUpdate({...data,licensedVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          {data.licensedVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
 
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Field Trainer Video (shown once access granted, rewatchable in their sidebar)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.fieldTrainerVideoUrl||""} onChange={e=>onUpdate({...data,fieldTrainerVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
-          {data.fieldTrainerVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Field Trainer Video (shown once access granted, rewatchable in their sidebar)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.fieldTrainerVideoUrl||""} onChange={e=>onUpdate({...data,fieldTrainerVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          {data.fieldTrainerVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
 
         <div>
-          <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>RVP Path Video (shown once access granted, rewatchable in their sidebar)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.rvpPathVideoUrl||""} onChange={e=>onUpdate({...data,rvpPathVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
-          {data.rvpPathVideoUrl&&<div style={{fontSize:10,color:C.success,marginTop:3}}>✓ Saved</div>}
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>RVP Path Video (shown once access granted, rewatchable in their sidebar)</div>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.rvpPathVideoUrl||""} onChange={e=>onUpdate({...data,rvpPathVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          {data.rvpPathVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
       </div>
     </div>
@@ -1851,18 +1851,18 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:12,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:13,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
-        {inactiveR.length>0&&<button onClick={()=>setShowInactive(!showInactive)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+(showInactive?C.danger:C.border),background:showInactive?C.danger+"11":"white",cursor:"pointer",color:showInactive?C.danger:C.textMid,fontWeight:600}}>{showInactive?"View Active":"Inactive ("+inactiveR.length+")"}</button>}
-        {isAdmin&&!showInactive&&<button onClick={()=>setShowManage(true)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Manage Team</button>}
-        {isAdmin&&!showInactive&&<button onClick={()=>setShowAdd(true)} style={{fontSize:11,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Rep</button>}
+        {inactiveR.length>0&&<button onClick={()=>setShowInactive(!showInactive)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+(showInactive?C.danger:C.border),background:showInactive?C.danger+"11":"white",cursor:"pointer",color:showInactive?C.danger:C.textMid,fontWeight:600}}>{showInactive?"View Active":"Inactive ("+inactiveR.length+")"}</button>}
+        {isAdmin&&!showInactive&&<button onClick={()=>setShowManage(true)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Manage Team</button>}
+        {isAdmin&&!showInactive&&<button onClick={()=>setShowAdd(true)} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Rep</button>}
       </div>
     </div>
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
-      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
-      {["all","fast","regular","licensed"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:filter===f?600:400,background:filter===f?C.navy:C.surface,color:filter===f?"white":C.textMid,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="fast"?"Fast Start":f==="regular"?"Regular Start":f==="licensed"?"Licensed Now What":f}</button>)}
+      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+      {["all","fast","regular","licensed"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:13,fontWeight:filter===f?600:400,background:filter===f?C.navy:C.surface,color:filter===f?"white":C.textMid,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="fast"?"Fast Start":f==="regular"?"Regular Start":f==="licensed"?"Licensed Now What":f}</button>)}
     </div>
-    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No reps found</div>}
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:13}}>No reps found</div>}
     {filtered.map(r=>{
       const track=TRACK_INFO[r.track];
       const cl=track?.checklist||[];
@@ -1870,24 +1870,24 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
       const pct=cl.length>0?Math.round((done/cl.length)*100):0;
       return <div key={r.id} style={{borderRadius:10,background:"white",border:`1px solid ${showInactive?C.danger+"33":C.border}`,marginBottom:7,overflow:"hidden"}}>
         <div onClick={()=>!showInactive&&onSelectRep(r.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:showInactive?"default":"pointer"}}>
-          <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
+          <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
-            <div style={{fontSize:10,color:C.textMid}}>{track?.label||r.track}</div>
+            <div style={{fontSize:12,color:C.textMid}}>{track?.label||r.track}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:1}}>
-              <span style={{fontSize:10,color:C.textMid}}>Trainer: <strong style={{color:([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?C.teal:C.textLight}}>{([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"Not assigned"}</strong></span>
-              <span style={{fontSize:10,color:C.textMid}}>Rec: <strong style={{color:findPerson(r.recruitedBy,data)?C.purple:C.textLight}}>{findPerson(r.recruitedBy,data)?.name||"Not specified"}</strong></span>
+              <span style={{fontSize:12,color:C.textMid}}>Trainer: <strong style={{color:([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?C.teal:C.textLight}}>{([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"Not assigned"}</strong></span>
+              <span style={{fontSize:12,color:C.textMid}}>Rec: <strong style={{color:findPerson(r.recruitedBy,data)?C.purple:C.textLight}}>{findPerson(r.recruitedBy,data)?.name||"Not specified"}</strong></span>
             </div>
           </div>
           <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:12,fontWeight:700,color:track?.color||C.teal}}>{pct}%</div>
-            <div style={{fontSize:10,color:C.textLight}}>{done}/{cl.length}</div>
+            <div style={{fontSize:13,fontWeight:700,color:track?.color||C.teal}}>{pct}%</div>
+            <div style={{fontSize:12,color:C.textLight}}>{done}/{cl.length}</div>
           </div>
-          {!showInactive&&<div style={{fontSize:11,color:C.textLight}}>›</div>}
+          {!showInactive&&<div style={{fontSize:13,color:C.textLight}}>›</div>}
         </div>
         {showInactive&&isAdmin&&<div style={{display:"flex",gap:6,padding:"8px 12px",borderTop:`1px solid ${C.danger}22`,background:C.danger+"05"}}>
-          <button onClick={()=>restoreRep(r.id)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.success,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Restore</button>
-          <button onClick={()=>deleteRep(r.id,r.name)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.danger,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Delete Forever</button>
+          <button onClick={()=>restoreRep(r.id)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.success,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Restore</button>
+          <button onClick={()=>deleteRep(r.id,r.name)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.danger,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Delete Forever</button>
         </div>}
       </div>;
     })}
@@ -1898,6 +1898,20 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
 
 // ── DASHBOARD ──
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
+  const [showTrainerCommitment,setShowTrainerCommitment]=React.useState(false);
+  const isTrainer=userRole==="trainer";
+  const trainerRecord=isTrainer?(data.trainers||[]).find(t=>t.id===userId):null;
+  
+  React.useEffect(()=>{
+    if(isTrainer&&trainerRecord){
+      const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+      const hasCommitted=(trainerRecord.commitments||{})[pm.key];
+      const seenKey=`commitment_seen_${userId}_${pm.key}`;
+      if(!hasCommitted&&!localStorage.getItem(seenKey)){
+        setShowTrainerCommitment(true);
+      }
+    }
+  },[userId]);
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
   const [showAdd,setShowAdd]=useState(false);
@@ -1915,27 +1929,27 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       return <div style={{background:C.gold+"15",border:`2px solid ${C.gold}55`,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <div style={{width:8,height:8,borderRadius:4,background:C.gold,animation:"pulse 1.5s infinite"}}/>
-          <div style={{fontSize:13,fontWeight:700,color:C.gold}}>Next Level Access Requests ({pending.length})</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.gold}}>Next Level Access Requests ({pending.length})</div>
         </div>
         <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
         {pending.map(rep=>{
           const track=TRACK_INFO[rep.track];
           return <div key={rep.id} style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div>
-              <div style={{fontSize:11,color:C.textMid}}>Completed {track?.label} — requesting Licensed Now What access</div>
-              {rep.nextLevelRequestedAt&&<div style={{fontSize:10,color:C.textLight}}>Requested: {new Date(rep.nextLevelRequestedAt).toLocaleDateString()}</div>}
+              <div style={{fontSize:14,fontWeight:600,color:C.text}}>{rep.name}</div>
+              <div style={{fontSize:13,color:C.textMid}}>Completed {track?.label} — requesting Licensed Now What access</div>
+              {rep.nextLevelRequestedAt&&<div style={{fontSize:12,color:C.textLight}}>Requested: {new Date(rep.nextLevelRequestedAt).toLocaleDateString()}</div>}
             </div>
             <button onClick={()=>{
               const updated={...rep,track:"licensed",nextLevelGranted:true,nextLevelGrantedAt:new Date().toISOString(),checked:{},celebrationShown:false};
               onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?updated:r)});
-            }} style={{padding:"7px 14px",borderRadius:8,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}>
+            }} style={{padding:"7px 14px",borderRadius:8,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>
               Grant Access
             </button>
             <button onClick={()=>{
               const updated={...rep,nextLevelRequested:false,nextLevelRequestedAt:null};
               onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?updated:r)});
-            }} style={{padding:"7px 10px",borderRadius:8,background:C.danger+"11",color:C.danger,border:`1px solid ${C.danger}33`,cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>
+            }} style={{padding:"7px 10px",borderRadius:8,background:C.danger+"11",color:C.danger,border:`1px solid ${C.danger}33`,cursor:"pointer",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}}>
               Deny
             </button>
           </div>;
@@ -1957,15 +1971,21 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
 
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
+    {userRole==="trainer"&&(()=>{
+      const trRec=(data.trainers||[]).find(t=>t.id===userId);
+      const pm3=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+      const c3=trRec?.commitments?.[pm3.key];
+      return c3?<CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}}/>:null;
+    })()}
     {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
 
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
-      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
-      <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
+      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+      <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
     </div>
     <div style={{display:"flex",gap:7,marginBottom:14}}>
-      <button onClick={()=>setShowAdd(true)} style={{flex:1,padding:"8px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:12}}>+ Add New Rep</button>
-      {(userRole==="admin"||userRole==="superadmin")&&<button onClick={()=>setShowManage(true)} style={{padding:"8px 12px",borderRadius:8,background:C.navyMid,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Manage Team</button>}
+      <button onClick={()=>setShowAdd(true)} style={{flex:1,padding:"8px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add New Rep</button>
+      {(userRole==="admin"||userRole==="superadmin")&&<button onClick={()=>setShowManage(true)} style={{padding:"8px 12px",borderRadius:8,background:C.navyMid,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Manage Team</button>}
     </div>
     {filtered.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textLight}}>{reps.length===0?"No reps yet - add your first rep":"No results found"}</div>}
     {filtered.map(rep=>{
@@ -1985,7 +2005,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
           <div style={{flex:1}}>
             <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-              <span style={{fontSize:13,fontWeight:700,color:C.text}}>{rep.name}</span>
+              <span style={{fontSize:14,fontWeight:700,color:C.text}}>{rep.name}</span>
               {grad&&<Badge color={C.success} small>Graduated</Badge>}
               {stalled&&!grad&&<Badge color={C.danger} small>Stalled</Badge>}
               {rep.nextLevelRequested&&!rep.nextLevelGranted&&<Badge color={C.gold} small>Upgrade Pending</Badge>}
@@ -1993,16 +2013,16 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
             <div style={{fontSize:dv(11,13),color:C.textMid,marginTop:1,display:"flex",alignItems:"center",gap:8}}><PhoneLink phone={rep.phone}/>{rep.email&&<a href={"mailto:"+rep.email} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:5,background:C.teal+"22",border:"1px solid "+C.teal+"44",textDecoration:"none"}} title="Email"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg></a>}</div>
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:2}}>
               <span style={{fontSize:dv(10,12),color:C.textMid}}>Trainer: <strong style={{color:trainer?C.teal:C.textLight}}>{trainer?.name||"Not assigned"}</strong></span>
-              <span style={{fontSize:10,color:C.textMid}}>Recruited by: <strong style={{color:(()=>{const r=findPerson(rep.recruitedBy,data);return r?C.purple:C.textLight;})()}}>{findPerson(rep.recruitedBy,data)?.name||"Not specified"}</strong></span>
+              <span style={{fontSize:12,color:C.textMid}}>Recruited by: <strong style={{color:(()=>{const r=findPerson(rep.recruitedBy,data);return r?C.purple:C.textLight;})()}}>{findPerson(rep.recruitedBy,data)?.name||"Not specified"}</strong></span>
             </div>
           </div>
           <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:5}}>
-          <div><div style={{fontSize:9,color:C.textMid,marginBottom:2}}>Trainer {trPct}%</div><Bar pct={trPct} h={3}/></div>
-          <div><div style={{fontSize:9,color:C.textMid,marginBottom:2}}>Rep {pct}%</div><Bar pct={pct} color={track?.color||C.purple} h={3}/></div>
+          <div><div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Trainer {trPct}%</div><Bar pct={trPct} h={3}/></div>
+          <div><div style={{fontSize:10,color:C.textMid,marginBottom:2}}>Rep {pct}%</div><Bar pct={pct} color={track?.color||C.purple} h={3}/></div>
         </div>
-        <div style={{fontSize:10,color:C.textLight}}>{ds===null?"No check-ins yet":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> - DGO: {rep.dgoDate}</span>}</div>
+        <div style={{fontSize:12,color:C.textLight}}>{ds===null?"No check-ins yet":ds===0?"Checked in today":`${ds}d since check-in`}{rep.dgoDate&&<span> - DGO: {rep.dgoDate}</span>}</div>
       </div>;
     })}
     {showAdd&&<AddRep onAdd={addRep} onClose={()=>setShowAdd(false)} trainers={trainers} allPeople={[(data.admins||[]).map(a=>({...a,role:"Admin"})),trainers.map(t=>({...t,role:"Trainer"})),(data.reps||[]).map(r=>({...r,role:"Rep"}))].flat()}/>}
@@ -2030,7 +2050,7 @@ function LoginScreen({data,onLogin}) {
     else{if(rPin===selRep.repPin){setErr("");onLogin("rep",selRep.id,selRep);}else{setErr("Incorrect PIN");setRPin("");}}
   };
   const filtReps=search.length>0?reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())):[];
-  const inp={width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid rgba(0,0,0,0.12)`,fontSize:13,outline:"none",background:"white",boxSizing:"border-box",color:C.text};
+  const inp={width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid rgba(0,0,0,0.12)`,fontSize:14,outline:"none",background:"white",boxSizing:"border-box",color:C.text};
   return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 60%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{width:"100%",maxWidth:420}}>
       <div style={{textAlign:"center",marginBottom:28}}>
@@ -2048,50 +2068,50 @@ function LoginScreen({data,onLogin}) {
         </div>
         {/* Welcome banner */}
         <div style={{background:"linear-gradient(90deg,rgba(245,158,11,0.15),rgba(14,165,160,0.15),rgba(245,158,11,0.15))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:30,padding:"6px 20px",display:"inline-block",marginBottom:12}}>
-          <span style={{fontSize:12,fontWeight:700,color:"#f59e0b",letterSpacing:"2px",textTransform:"uppercase"}}>✦ Welcome to the Team ✦</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#f59e0b",letterSpacing:"2px",textTransform:"uppercase"}}>✦ Welcome to the Team ✦</span>
         </div>
         <div style={{color:"white",fontSize:22,fontWeight:800,letterSpacing:"0.5px",lineHeight:1.2}}>NextLevel</div>
         <div style={{color:C.teal,fontSize:14,fontWeight:600,letterSpacing:"3px",textTransform:"uppercase",marginBottom:14}}>Field Training Hub</div>
         {/* Team badges */}
         <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.5)",fontSize:11,fontWeight:700,color:"#f59e0b",letterSpacing:"0.5px"}}>⚡ Team PrimeTime</div>
-          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:11,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>🏆 Triumphant Families</div>
+          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.5)",fontSize:13,fontWeight:700,color:"#f59e0b",letterSpacing:"0.5px"}}>⚡ Team PrimeTime</div>
+          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>🏆 Triumphant Families</div>
         </div>
       </div>
       <div style={{background:"white",borderRadius:16,padding:24,boxShadow:"0 20px 50px rgba(0,0,0,0.3)"}}>
         {mode==="select"&&<div>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>Welcome back</div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>How are you accessing the app?</div>
-          {[{k:"admin",l:"Admin / Super Admin",s:"Full system access"},{k:"trainer",l:"Field Trainer",s:"Manage your reps"},{k:"rep",l:"New Rep / Licensed Agent",s:"View your checklist and tools"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:11,color:C.textMid}}>{o.s}</div></div><span style={{color:C.textLight,fontSize:16}}>›</span></button>)}
+          <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>How are you accessing the app?</div>
+          {[{k:"admin",l:"Admin / Super Admin",s:"Full system access"},{k:"trainer",l:"Field Trainer",s:"Manage your reps"},{k:"rep",l:"New Rep / Licensed Agent",s:"View your checklist and tools"}].map(o=><button key={o.k} onClick={()=>{setMode(o.k);setPin("");setErr("");}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",marginBottom:7,textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:C.text}}>{o.l}</div><div style={{fontSize:13,color:C.textMid}}>{o.s}</div></div><span style={{color:C.textLight,fontSize:16}}>›</span></button>)}
         </div>}
         {(mode==="admin"||mode==="trainer")&&<div>
-          <button onClick={()=>{setMode("select");setErr("");setPin("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
+          <button onClick={()=>{setMode("select");setErr("");setPin("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:13,marginBottom:14,padding:0}}>&larr; Back</button>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:14}}>{mode==="admin"?"Admin Login":"Trainer Login"}</div>
           <input type="password" maxLength={6} placeholder="Enter PIN" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/,""));setErr("");}} onKeyDown={e=>e.key==="Enter"&&(mode==="admin"?doAdminLogin():doTrainerLogin())} style={{...inp,marginBottom:6,letterSpacing:"6px",textAlign:"center"}}/>
-          <button onClick={()=>alert("Contact the Super Admin to reset your PIN. They can set a temporary PIN from the Team Management section.")} style={{background:"none",border:"none",color:C.teal,fontSize:11,cursor:"pointer",marginBottom:10,padding:0,textDecoration:"underline"}}>Forgot PIN?</button>
-          {err&&<div style={{color:C.danger,fontSize:11,marginBottom:8}}>{err}</div>}
-          <button onClick={mode==="admin"?doAdminLogin:doTrainerLogin} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer"}}>Sign In</button>
+          <button onClick={()=>alert("Contact the Super Admin to reset your PIN. They can set a temporary PIN from the Team Management section.")} style={{background:"none",border:"none",color:C.teal,fontSize:13,cursor:"pointer",marginBottom:10,padding:0,textDecoration:"underline"}}>Forgot PIN?</button>
+          {err&&<div style={{color:C.danger,fontSize:13,marginBottom:8}}>{err}</div>}
+          <button onClick={mode==="admin"?doAdminLogin:doTrainerLogin} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:14,cursor:"pointer"}}>Sign In</button>
         </div>}
         {mode==="rep"&&step==="find"&&<div>
-          <button onClick={()=>{setMode("select");setErr("");setSearch("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
+          <button onClick={()=>{setMode("select");setErr("");setSearch("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:13,marginBottom:14,padding:0}}>&larr; Back</button>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:14}}>Find your name</div>
           <input placeholder="Search your name..." value={search} onChange={e=>{setSearch(e.target.value);setErr("");}} style={{...inp,marginBottom:10}} autoFocus/>
-          {!search&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"8px 0"}}>Start typing to find yourself</div>}
-          {search&&filtReps.length===0&&<div style={{color:C.textMid,fontSize:12,textAlign:"center",padding:"10px 0"}}>No results - ask your trainer to add you</div>}
-          {filtReps.map(r=><button key={r.id} onClick={()=>{setSelRep(r);setRPin("");setRPinC("");setErr("");setStep(r.repPin?"enter":"create");}} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",textAlign:"left",marginBottom:5,fontSize:13,color:C.text}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>{r.name}<span style={{float:"right",fontSize:10,color:C.textLight}}>{TRACK_INFO[r.track]?.label}</span></button>)}
+          {!search&&<div style={{color:C.textLight,fontSize:13,textAlign:"center",padding:"8px 0"}}>Start typing to find yourself</div>}
+          {search&&filtReps.length===0&&<div style={{color:C.textMid,fontSize:13,textAlign:"center",padding:"10px 0"}}>No results - ask your trainer to add you</div>}
+          {filtReps.map(r=><button key={r.id} onClick={()=>{setSelRep(r);setRPin("");setRPinC("");setErr("");setStep(r.repPin?"enter":"create");}} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",textAlign:"left",marginBottom:5,fontSize:14,color:C.text}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.teal} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>{r.name}<span style={{float:"right",fontSize:12,color:C.textLight}}>{TRACK_INFO[r.track]?.label}</span></button>)}
         </div>}
         {mode==="rep"&&(step==="create"||step==="enter")&&selRep&&<div>
-          <button onClick={()=>{setStep("find");setErr("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:12,marginBottom:14,padding:0}}>&larr; Back</button>
+          <button onClick={()=>{setStep("find");setErr("");}} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:13,marginBottom:14,padding:0}}>&larr; Back</button>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{step==="create"?"Create Your PIN":`Welcome, ${selRep.name}`}</div>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:14}}>{step==="create"?"Choose a 4-digit PIN":"Enter your 4-digit PIN"}</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>{step==="create"?"Choose a 4-digit PIN":"Enter your 4-digit PIN"}</div>
           <input type="password" maxLength={4} placeholder="4-digit PIN" value={rPin} onChange={e=>{setRPin(e.target.value.replace(/\D/,""));setErr("");}} style={{...inp,marginBottom:step==="create"?9:6,textAlign:"center",fontSize:22,letterSpacing:"10px"}} autoFocus/>
-          {step==="enter"&&<button onClick={()=>alert("Contact your trainer or admin to reset your PIN. They can set a temporary PIN from your profile.")} style={{background:"none",border:"none",color:C.teal,fontSize:11,cursor:"pointer",marginBottom:9,padding:0,textDecoration:"underline"}}>Forgot PIN?</button>}
+          {step==="enter"&&<button onClick={()=>alert("Contact your trainer or admin to reset your PIN. They can set a temporary PIN from your profile.")} style={{background:"none",border:"none",color:C.teal,fontSize:13,cursor:"pointer",marginBottom:9,padding:0,textDecoration:"underline"}}>Forgot PIN?</button>}
           {step==="create"&&<input type="password" maxLength={4} placeholder="Confirm PIN" value={rPinC} onChange={e=>{setRPinC(e.target.value.replace(/\D/,""));setErr("");}} onKeyDown={e=>e.key==="Enter"&&doRepLogin()} style={{...inp,marginBottom:9,textAlign:"center",fontSize:22,letterSpacing:"10px"}}/>}
-          {err&&<div style={{color:C.danger,fontSize:11,marginBottom:8}}>{err}</div>}
-          <button onClick={doRepLogin} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:13,cursor:"pointer"}}>{step==="create"?"Create PIN and Continue":"Sign In"}</button>
+          {err&&<div style={{color:C.danger,fontSize:13,marginBottom:8}}>{err}</div>}
+          <button onClick={doRepLogin} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:14,cursor:"pointer"}}>{step==="create"?"Create PIN and Continue":"Sign In"}</button>
         </div>}
       </div>
-      <div style={{textAlign:"center",color:"rgba(255,255,255,0.25)",fontSize:10,marginTop:14}}>NextLevel Field Training Hub 2025</div>
+      <div style={{textAlign:"center",color:"rgba(255,255,255,0.25)",fontSize:12,marginTop:14}}>NextLevel Field Training Hub 2025</div>
     </div>
   </div>;
 }
@@ -2124,8 +2144,8 @@ function Confetti({name,onClose,pct=100,customMsg}) {
       <div style={{fontSize:52,marginBottom:8}}>{m.emoji}</div>
       <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:6}}>{m.title}</div>
       <div style={{fontSize:15,color:C.textMid,marginBottom:4}}>{name}</div>
-      <div style={{fontSize:13,color:C.success,fontWeight:600,marginBottom:16}}>{pct}% Complete</div>
-      <div style={{fontSize:12,color:C.textLight,marginBottom:20,lineHeight:1.5}}>{m.msg}</div>
+      <div style={{fontSize:14,color:C.success,fontWeight:600,marginBottom:16}}>{pct}% Complete</div>
+      <div style={{fontSize:13,color:C.textLight,marginBottom:20,lineHeight:1.5}}>{m.msg}</div>
       <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},${C.tealFade.replace("rgba(14,165,160,0.12)","#0891b2")})`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Let's Keep Going!</button>
     </div>
   </div>;
@@ -2144,9 +2164,9 @@ function AnnouncementsBanner({data,onUpdate,userRole}) {
   return <div style={{marginBottom:14}}>
     {announcements.map((ann,i)=><div key={i} style={{background:colors[ann.type||"info"]+"18",border:`1px solid ${colors[ann.type||"info"]}44`,borderRadius:10,padding:"10px 14px",marginBottom:6,display:"flex",gap:10,alignItems:"flex-start"}}>
       <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:700,color:colors[ann.type||"info"],marginBottom:2}}>{ann.title}</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.5}}>{ann.message}</div>
-        {ann.expiresAt&&<div style={{fontSize:10,color:C.textLight,marginTop:3}}>Expires: {new Date(ann.expiresAt).toLocaleDateString()}</div>}
+        <div style={{fontSize:14,fontWeight:700,color:colors[ann.type||"info"],marginBottom:2}}>{ann.title}</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.5}}>{ann.message}</div>
+        {ann.expiresAt&&<div style={{fontSize:12,color:C.textLight,marginTop:3}}>Expires: {new Date(ann.expiresAt).toLocaleDateString()}</div>}
       </div>
     </div>)}
   </div>;
@@ -2183,17 +2203,17 @@ function AnnouncementsManager({data,onUpdate}) {
 
   return <Card style={{marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Announcements</div>
-      <button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",message:"",type:"info",expiresAt:"",active:true});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Announcement</button>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Team Announcements</div>
+      <button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",message:"",type:"info",expiresAt:"",active:true});}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Announcement</button>
     </div>
     {showForm&&<div style={{background:C.surface,borderRadius:10,padding:12,marginBottom:12}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:8}}>{editing!==null?"Edit":"New"} Announcement</div>
-      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <textarea placeholder="Message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",marginBottom:7,lineHeight:1.5}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:8}}>{editing!==null?"Edit":"New"} Announcement</div>
+      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <textarea placeholder="Message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",marginBottom:7,lineHeight:1.5}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Type</div>
-          <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text}}>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Type</div>
+          <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}>
             <option value="info">Info (Teal)</option>
             <option value="warning">Warning (Gold)</option>
             <option value="success">Success (Green)</option>
@@ -2201,30 +2221,30 @@ function AnnouncementsManager({data,onUpdate}) {
           </select>
         </div>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Expires (optional)</div>
-          <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Expires (optional)</div>
+          <input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>
       </div>
       <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Announcement</button>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Announcement</button>
       </div>
     </div>}
-    {announcements.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"12px 0"}}>No announcements yet</div>}
+    {announcements.length===0&&<div style={{color:C.textLight,fontSize:13,textAlign:"center",padding:"12px 0"}}>No announcements yet</div>}
     {announcements.map((ann,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${typeColors[ann.type||"info"]}33`,padding:"10px 12px",marginBottom:7,background:ann.active?"white":C.surface,opacity:ann.active?1:0.6}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div style={{flex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-            <span style={{fontSize:12,fontWeight:700,color:typeColors[ann.type||"info"]}}>{ann.title}</span>
+            <span style={{fontSize:13,fontWeight:700,color:typeColors[ann.type||"info"]}}>{ann.title}</span>
             <Badge color={ann.active?C.success:C.textLight} small>{ann.active?"Live":"Off"}</Badge>
           </div>
-          <div style={{fontSize:11,color:C.textMid,lineHeight:1.4}}>{ann.message}</div>
-          {ann.expiresAt&&<div style={{fontSize:10,color:C.textLight,marginTop:2}}>Expires: {new Date(ann.expiresAt).toLocaleDateString()}</div>}
+          <div style={{fontSize:13,color:C.textMid,lineHeight:1.4}}>{ann.message}</div>
+          {ann.expiresAt&&<div style={{fontSize:12,color:C.textLight,marginTop:2}}>Expires: {new Date(ann.expiresAt).toLocaleDateString()}</div>}
         </div>
         <div style={{display:"flex",gap:5,marginLeft:8,flexShrink:0}}>
-          <button onClick={()=>toggle(i)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{ann.active?"Pause":"Activate"}</button>
-          <button onClick={()=>{setEditing(i);setForm({...ann});setShowForm(true);}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-          <button onClick={()=>del(i)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+          <button onClick={()=>toggle(i)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{ann.active?"Pause":"Activate"}</button>
+          <button onClick={()=>{setEditing(i);setForm({...ann});setShowForm(true);}} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+          <button onClick={()=>del(i)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
         </div>
       </div>
     </div>)}
@@ -2264,25 +2284,25 @@ function ResourceLibrary({data,onUpdate,userRole}) {
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Resource Library</div>
-      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Resource</button>}
+      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Resource</button>}
     </div>
-    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>Add links to documents, training videos, and company materials for your team. <strong>Tip:</strong> Upload files to Google Drive, set sharing to "Anyone with the link", and paste the link here.</div>}
+    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:13,color:C.teal}}>Add links to documents, training videos, and company materials for your team. <strong>Tip:</strong> Upload files to Google Drive, set sharing to "Anyone with the link", and paste the link here.</div>}
     {showForm&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Resource</div>
-      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,marginBottom:10}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Resource</div>
+      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:10}}>
         {RESOURCE_CATEGORIES.map(c=><option key={c}>{c}</option>)}
       </select>
       <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Resource</button>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Resource</button>
       </div>
     </Card>}
     {resources.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>{isAdmin?"No resources yet — add your first one above":"No resources added yet — ask your admin to add some"}</div>}
     {resources.length>0&&<div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
-      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
     </div>}
     {RESOURCE_CATEGORIES.filter(cat=>filtered.some(r=>r.category===cat)).map(cat=><div key={cat}>
       <SecHead title={cat} color={catColors[cat]||C.teal}/>
@@ -2293,12 +2313,12 @@ function ResourceLibrary({data,onUpdate,userRole}) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={catColors[r.category]||C.teal} strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:13,fontWeight:600,color:C.teal,textDecoration:"none",display:"block",marginBottom:2}}>{r.title} &rarr;</a>
-            {r.description&&<div style={{fontSize:11,color:C.textMid}}>{r.description}</div>}
+            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:14,fontWeight:600,color:C.teal,textDecoration:"none",display:"block",marginBottom:2}}>{r.title} &rarr;</a>
+            {r.description&&<div style={{fontSize:13,color:C.textMid}}>{r.description}</div>}
           </div>
           {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-            <button onClick={()=>{setEditing(realIdx);setForm({...r});setShowForm(true);}} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-            <button onClick={()=>del(realIdx)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
+            <button onClick={()=>{setEditing(realIdx);setForm({...r});setShowForm(true);}} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+            <button onClick={()=>del(realIdx)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
           </div>}
         </div>;
       })}
@@ -2306,8 +2326,8 @@ function ResourceLibrary({data,onUpdate,userRole}) {
     {filtered.length>0&&filtered.every(r=>!RESOURCE_CATEGORIES.includes(r.category))&&filtered.map((r,i)=>{
       const realIdx=resources.indexOf(r);
       return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:6}}>
-        <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:13,fontWeight:600,color:C.teal,textDecoration:"none"}}>{r.title} &rarr;</a>
-        {r.description&&<div style={{fontSize:11,color:C.textMid,marginTop:2}}>{r.description}</div>}
+        <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:14,fontWeight:600,color:C.teal,textDecoration:"none"}}>{r.title} &rarr;</a>
+        {r.description&&<div style={{fontSize:13,color:C.textMid,marginTop:2}}>{r.description}</div>}
       </div>;
     })}
   </div>;
@@ -2377,35 +2397,35 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Weekly Scorecard</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>Week of {new Date(weekKey+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Week of {new Date(weekKey+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
 
     {/* Why this matters banner */}
     <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",marginBottom:16,color:"white"}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Why This Matters</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>Production tracks your <strong style={{color:"white"}}>results</strong>. The scorecard tracks your <strong style={{color:"white"}}>activity</strong> — the daily work that creates results. You can't control whether someone buys, but you can control how many calls you make. <strong style={{color:C.teal}}>Focus on the activity and the results will follow.</strong></div>
+      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Why This Matters</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>Production tracks your <strong style={{color:"white"}}>results</strong>. The scorecard tracks your <strong style={{color:"white"}}>activity</strong> — the daily work that creates results. You can't control whether someone buys, but you can control how many calls you make. <strong style={{color:C.teal}}>Focus on the activity and the results will follow.</strong></div>
     </div>
 
     {/* Weekly score */}
     <Card style={{marginBottom:16,background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,border:"none"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div><div style={{fontSize:13,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Average across all 3 goals</div></div>
+        <div><div style={{fontSize:14,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Average across all 3 goals</div></div>
         <div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:totalPct>=80?C.success:totalPct>=50?C.teal:C.gold}}>{totalPct}%</div></div>
       </div>
       <Bar pct={totalPct} color={totalPct>=80?C.success:totalPct>=50?C.teal:C.gold} h={8}/>
-      <div style={{marginTop:8,fontSize:12,color:color,fontWeight:600}}>{msg}</div>
+      <div style={{marginTop:8,fontSize:13,color:color,fontWeight:600}}>{msg}</div>
     </Card>
 
     {/* Conversion rates */}
     {(week.contacts>0||week.apptSet>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
       <Card style={{padding:"10px 12px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:C.purple}}>{contactRate}%</div>
-        <div style={{fontSize:11,color:C.textMid}}>Contact-to-Appt Rate</div>
-        <div style={{fontSize:10,color:C.textLight}}>Industry target: 20%</div>
+        <div style={{fontSize:13,color:C.textMid}}>Contact-to-Appt Rate</div>
+        <div style={{fontSize:12,color:C.textLight}}>Industry target: 20%</div>
       </Card>
       <Card style={{padding:"10px 12px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:C.success}}>{showRate}%</div>
-        <div style={{fontSize:11,color:C.textMid}}>Appointment Show Rate</div>
-        <div style={{fontSize:10,color:C.textLight}}>Target: 80%+</div>
+        <div style={{fontSize:13,color:C.textMid}}>Appointment Show Rate</div>
+        <div style={{fontSize:12,color:C.textLight}}>Target: 80%+</div>
       </Card>
     </div>}
 
@@ -2415,45 +2435,45 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
         <div style={{flex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
             <span style={{fontSize:16}}>{m.icon}</span>
-            <span style={{fontSize:13,fontWeight:700,color:C.text}}>{m.label}</span>
+            <span style={{fontSize:14,fontWeight:700,color:C.text}}>{m.label}</span>
           </div>
-          <div style={{fontSize:11,color:C.textLight}}>{m.desc}</div>
+          <div style={{fontSize:13,color:C.textLight}}>{m.desc}</div>
         </div>
         <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
           <div style={{fontSize:22,fontWeight:800,color:m.color}}>{m.val}</div>
-          <div style={{fontSize:10,color:C.textLight}}>Goal: {m.goal}</div>
+          <div style={{fontSize:12,color:C.textLight}}>Goal: {m.goal}</div>
         </div>
       </div>
       <Bar pct={(m.val/m.goal)*100} color={m.val>=m.goal?C.success:m.color} h={6}/>
       <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center"}}>
         <button onClick={()=>update(m.key,m.val-1)} style={{width:36,height:36,borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:18,color:C.textMid,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>-</button>
-        <div style={{flex:1,textAlign:"center",fontSize:11,color:C.textMid}}>{m.val>=m.goal?<span style={{color:C.success,fontWeight:700}}>Goal reached!</span>:`${m.goal-m.val} more to reach goal`}</div>
+        <div style={{flex:1,textAlign:"center",fontSize:13,color:C.textMid}}>{m.val>=m.goal?<span style={{color:C.success,fontWeight:700}}>Goal reached!</span>:`${m.goal-m.val} more to reach goal`}</div>
         <button onClick={()=>update(m.key,m.val+1)} style={{width:36,height:36,borderRadius:8,border:`none`,background:m.color,cursor:"pointer",fontSize:18,color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>+</button>
       </div>
     </Card>)}
 
     {/* History */}
     <Card style={{marginBottom:16}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>Recent History</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Recent History</div>
       {weekHistory.map((wh,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-        <div style={{width:80,fontSize:11,color:i===0?C.text:C.textMid,fontWeight:i===0?700:400}}>{wh.label}</div>
+        <div style={{width:80,fontSize:13,color:i===0?C.text:C.textMid,fontWeight:i===0?700:400}}>{wh.label}</div>
         <div style={{flex:1}}><Bar pct={wh.pct} color={wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold} h={5}/></div>
-        <div style={{fontSize:11,fontWeight:600,color:wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{wh.pct}%</div>
-        <div style={{fontSize:10,color:C.textLight,width:80,textAlign:"right"}}>{wh.data.contacts}c / {wh.data.apptSet}s / {wh.data.apptDone}d</div>
+        <div style={{fontSize:13,fontWeight:600,color:wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{wh.pct}%</div>
+        <div style={{fontSize:12,color:C.textLight,width:80,textAlign:"right"}}>{wh.data.contacts}c / {wh.data.apptSet}s / {wh.data.apptDone}d</div>
       </div>)}
     </Card>
 
     {/* Team summary - admin only */}
     {isAdmin&&teamRows.length>0&&<Card>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>Team This Week</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Team This Week</div>
       {teamRows.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
-        <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
-          <div style={{fontSize:10,color:C.textLight}}>{u.week.contacts}c / {u.week.apptSet}s / {u.week.apptDone}d</div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
+          <div style={{fontSize:12,color:C.textLight}}>{u.week.contacts}c / {u.week.apptSet}s / {u.week.apptDone}d</div>
         </div>
         <div style={{flex:1}}><Bar pct={u.pct} color={u.pct>=80?C.success:u.pct>=50?C.teal:C.gold} h={4}/></div>
-        <div style={{fontSize:12,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
+        <div style={{fontSize:13,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
       </div>)}
     </Card>}
   </div>;
@@ -2494,10 +2514,10 @@ function ProfilePhotoUpload({userId,data,onUpdate,compact=false}) {
     {showLightbox&&photo&&<div onClick={()=>setShowLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div onClick={e=>e.stopPropagation()} style={{maxWidth:300,width:"100%",textAlign:"center"}}>
         <img src={photo} alt="Profile" style={{width:"100%",borderRadius:12,marginBottom:12}}/>
-        <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600,marginRight:8}}>
+        <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600,marginRight:8}}>
           Change Photo<input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
         </label>
-        <button onClick={()=>setShowLightbox(false)} style={{padding:"8px 16px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"1px solid rgba(255,255,255,0.2)",cursor:"pointer",fontSize:12}}>Close</button>
+        <button onClick={()=>setShowLightbox(false)} style={{padding:"8px 16px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"1px solid rgba(255,255,255,0.2)",cursor:"pointer",fontSize:13}}>Close</button>
       </div>
     </div>}
   </div>;
@@ -2506,13 +2526,13 @@ function ProfilePhotoUpload({userId,data,onUpdate,compact=false}) {
     {photo?<div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10}}>
       <img src={photo} alt="Profile" onClick={()=>setShowLightbox(true)} style={{width:80,height:80,borderRadius:10,objectFit:"cover",border:"2px solid "+C.teal,cursor:"pointer"}}/>
       <div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:6,lineHeight:1.4}}>Click photo to view full size. Used for DGO and Wall of Fame recognition.</div>
-        <label style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:"1px solid "+C.teal+"33",cursor:"pointer",fontSize:11,color:C.teal,fontWeight:600}}>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:6,lineHeight:1.4}}>Click photo to view full size. Used for DGO and Wall of Fame recognition.</div>
+        <label style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:"1px solid "+C.teal+"33",cursor:"pointer",fontSize:13,color:C.teal,fontWeight:600}}>
           Change Photo<input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
         </label>
       </div>
     </div>:
-    <label style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:9,background:C.teal+"11",border:"1px dashed "+C.teal+"44",cursor:"pointer",fontSize:12,color:C.teal,fontWeight:600,marginBottom:10}}>
+    <label style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:9,background:C.teal+"11",border:"1px dashed "+C.teal+"44",cursor:"pointer",fontSize:13,color:C.teal,fontWeight:600,marginBottom:10}}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
       Upload Profile Photo
       <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
@@ -2532,17 +2552,17 @@ function DgoPhotoPanel({photo,name}) {
   };
   return <div style={{marginTop:10,background:C.surface,borderRadius:10,padding:"10px 12px",border:`1px solid ${C.border}`}}>
     {showLightbox&&<PhotoLightbox src={photo} name={name||"Rep"} onClose={()=>setShowLightbox(false)}/>}
-    <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Profile Photo</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:8}}>Profile Photo</div>
     <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
       <img src={photo} alt="DGO" onClick={()=>setShowLightbox(true)} style={{width:100,height:100,borderRadius:10,objectFit:"cover",border:`2px solid ${C.teal}`,cursor:"pointer",flexShrink:0,transition:"transform 0.15s"}} onMouseEnter={e=>e.target.style.transform="scale(1.03)"} onMouseLeave={e=>e.target.style.transform="scale(1)"}/>
       <div style={{flex:1}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Click the photo to view full size. Right-click to copy. Use the buttons below to download for your presentation.</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Click the photo to view full size. Right-click to copy. Use the buttons below to download for your presentation.</div>
         <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-          <button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             View Full Size
           </button>
-          <button onClick={download} style={{padding:"7px 14px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={download} style={{padding:"7px 14px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             Download
           </button>
@@ -2568,13 +2588,13 @@ function PhotoLightbox({src,name,onClose}) {
       </div>
       <img src={src} alt={name} style={{width:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}/>
       <div style={{display:"flex",gap:10,marginTop:14,justifyContent:"center"}}>
-        <button onClick={download} style={{padding:"10px 24px",borderRadius:10,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+        <button onClick={download} style={{padding:"10px 24px",borderRadius:10,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
           Download Photo
         </button>
-        <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:"rgba(255,255,255,0.1)",color:"white",border:"1px solid rgba(255,255,255,0.2)",cursor:"pointer",fontSize:13,fontWeight:600}}>Close</button>
+        <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:"rgba(255,255,255,0.1)",color:"white",border:"1px solid rgba(255,255,255,0.2)",cursor:"pointer",fontSize:14,fontWeight:600}}>Close</button>
       </div>
-      <div style={{textAlign:"center",marginTop:10,fontSize:11,color:"rgba(255,255,255,0.4)"}}>Right-click the photo to save or copy image</div>
+      <div style={{textAlign:"center",marginTop:10,fontSize:13,color:"rgba(255,255,255,0.4)"}}>Right-click the photo to save or copy image</div>
     </div>
   </div>;
 }
@@ -2596,17 +2616,17 @@ function RvpPathRequests({data,onUpdate,userRole}) {
   return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.success+"44",padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.success}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>RVP Path Access Requests ({pending.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>RVP Path Access Requests ({pending.length})</div>
     </div>
     {pending.map(rep=><div key={rep.id} style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
       <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div>
-        <div style={{fontSize:11,color:C.textMid}}>Requesting RVP Path access — {rep.rvpPathRequestedAt?new Date(rep.rvpPathRequestedAt).toLocaleDateString():""}</div>
+        <div style={{fontSize:14,fontWeight:600,color:C.text}}>{rep.name}</div>
+        <div style={{fontSize:13,color:C.textMid}}>Requesting RVP Path access — {rep.rvpPathRequestedAt?new Date(rep.rvpPathRequestedAt).toLocaleDateString():""}</div>
       </div>
       <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,rvpPathGranted:true,rvpPathGrantedAt:new Date().toISOString()}:r)})}
-        style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>Grant Access</button>
+        style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>Grant Access</button>
       <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,rvpPathRequested:false}:r)})}
-        style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Deny</button>
+        style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:13,fontWeight:600}}>Deny</button>
     </div>)}
   </div>;
 }
@@ -2619,12 +2639,12 @@ function FieldTrainerRequests({data,onUpdate,userRole}) {
   return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.purple+"44",padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.purple}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Field Trainer Review Requests ({pending.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Field Trainer Review Requests ({pending.length})</div>
     </div>
     {pending.map(rep=><div key={rep.id} style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
-      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{rep.name}</div><div style={{fontSize:11,color:C.textMid}}>Requesting Field Trainer review - {rep.fieldTrainerRequestedAt?new Date(rep.fieldTrainerRequestedAt).toLocaleDateString():""}</div></div>
-      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerGranted:true,fieldTrainerGrantedAt:new Date().toISOString()}:r)})} style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>Approve</button>
-      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerRequested:false,fieldTrainerDenied:true}:r)})} style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Deny</button>
+      <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:C.text}}>{rep.name}</div><div style={{fontSize:13,color:C.textMid}}>Requesting Field Trainer review - {rep.fieldTrainerRequestedAt?new Date(rep.fieldTrainerRequestedAt).toLocaleDateString():""}</div></div>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerGranted:true,fieldTrainerGrantedAt:new Date().toISOString()}:r)})} style={{padding:"6px 12px",borderRadius:7,background:C.success,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>Approve</button>
+      <button onClick={()=>onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,fieldTrainerRequested:false,fieldTrainerDenied:true}:r)})} style={{padding:"6px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:13,fontWeight:600}}>Deny</button>
     </div>)}
   </div>;
 }
@@ -2637,21 +2657,21 @@ function PendingRecruits({data,onUpdate,userRole}) {
   return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.teal+"44",padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Pending Recruit Submissions ({allPending.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Pending Recruit Submissions ({allPending.length})</div>
     </div>
     {allPending.map((p,i)=><div key={i} style={{background:C.surface,borderRadius:8,padding:"9px 12px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
-      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:C.text}}>{p.name}{p.phone&&<span style={{color:C.textMid,fontWeight:400}}> - {p.phone}</span>}</div><div style={{fontSize:10,color:C.textMid}}>Submitted by {p.recruitedBy} on {new Date(p.submittedAt).toLocaleDateString()}</div></div>
+      <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{p.name}{p.phone&&<span style={{color:C.textMid,fontWeight:400}}> - {p.phone}</span>}</div><div style={{fontSize:12,color:C.textMid}}>Submitted by {p.recruitedBy} on {new Date(p.submittedAt).toLocaleDateString()}</div></div>
       <button onClick={()=>{
         const recruiterRep=(data.reps||[]).find(r=>r.id===p.recruitedById);
         const updatedPending=(recruiterRep?.pendingRecruits||[]).filter(pr=>pr.id!==p.id);
         const newRep={name:p.name,phone:p.phone||"",track:"fast",trainerId:"",startDate:new Date().toISOString().split("T")[0],graduationDate:"",recruitedBy:p.recruitedById,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()};
         onUpdate({...data,reps:[...(data.reps||[]).map(r=>r.id===p.recruitedById?{...r,pendingRecruits:updatedPending}:r),newRep]});
-      }} style={{padding:"5px 10px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Add to System</button>
+      }} style={{padding:"5px 10px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}>Add to System</button>
       <button onClick={()=>{
         const recruiterRep=(data.reps||[]).find(r=>r.id===p.recruitedById);
         const updatedPending=(recruiterRep?.pendingRecruits||[]).filter(pr=>pr.id!==p.id);
         onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===p.recruitedById?{...r,pendingRecruits:updatedPending}:r)});
-      }} style={{padding:"5px 8px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:10}}>Dismiss</button>
+      }} style={{padding:"5px 8px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:12}}>Dismiss</button>
     </div>)}
   </div>;
 }
@@ -2703,7 +2723,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
 
     {/* Roadmap */}
     <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
       <div style={{display:"flex",alignItems:"center",gap:0}}>
         {[{key:"new",label:"New Rep",color:C.teal},{key:"licensed",label:"Licensed",color:C.gold},{key:"trainer",label:"Field Trainer",color:C.purple},{key:"rvp",label:"RVP",color:C.success}].map((s,i)=>{
           const active=s.key===currentStage||(s.key==="trainer"&&!rvpGranted);
@@ -2715,7 +2735,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
               {done&&<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}
               {active&&<div style={{width:10,height:10,borderRadius:5,background:"white"}}/>}
             </div>
-            <div style={{fontSize:9,fontWeight:active?700:400,color:active?"white":"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
+            <div style={{fontSize:10,fontWeight:active?700:400,color:active?"white":"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
           </div>;
         })}
       </div>
@@ -2724,65 +2744,65 @@ function TrainerCareerPath({data,onUpdate,session}) {
     {/* Recognition banner */}
     {!rvpGranted&&<div style={{background:"linear-gradient(135deg,"+C.purple+"22,"+C.gold+"11)",border:"1px solid "+C.purple+"33",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
       <div style={{fontSize:14,fontWeight:700,color:C.purple,marginBottom:6}}>You Are a Field Trainer!</div>
-      <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>You have earned one of the most important roles in this organization. You are not just building a business — you are changing lives and creating leaders. Your next milestone is becoming a <strong>Regional Vice President</strong>. You have what it takes!</div>
+      <div style={{fontSize:13,color:C.text,lineHeight:1.7}}>You have earned one of the most important roles in this organization. You are not just building a business — you are changing lives and creating leaders. Your next milestone is becoming a <strong>Regional Vice President</strong>. You have what it takes!</div>
     </div>}
 
     {/* RVP Countdown */}
     {rvpGranted&&<div style={{background:"linear-gradient(135deg,"+C.success+"22,"+C.teal+"11)",border:"1px solid "+C.success+"33",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.success}}>RVP Path Unlocked!</div>
-        <div style={{fontSize:11,color:C.textMid}}>Checklist {rvpPct}% complete</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.success}}>RVP Path Unlocked!</div>
+        <div style={{fontSize:13,color:C.textMid}}>Checklist {rvpPct}% complete</div>
       </div>
       <Bar pct={rvpPct} color={C.success} h={6}/>
       {myData.rvpTargetDate&&<div style={{marginTop:10,textAlign:"center"}}>
         <div style={{fontSize:28,fontWeight:800,color:countdownColor}}>{daysLeft<=0?"Time to push harder!":daysLeft+" days"}</div>
-        <div style={{fontSize:11,color:C.textMid}}>until your target promotion date — {new Date(myData.rvpTargetDate+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
-        <div style={{fontSize:12,color:countdownColor,fontWeight:600,marginTop:4}}>{countdownMsg}</div>
+        <div style={{fontSize:13,color:C.textMid}}>until your target promotion date — {new Date(myData.rvpTargetDate+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+        <div style={{fontSize:13,color:countdownColor,fontWeight:600,marginTop:4}}>{countdownMsg}</div>
       </div>}
     </div>}
 
     {/* RVP Request / Target Date */}
     {!rvpGranted&&<Card style={{marginBottom:14,border:"1px solid "+(rvpRequested?C.gold+"44":rvpDenied?C.danger+"44":C.purple+"33")}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Request RVP Path Access</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you are consistently producing and ready to build a region, request access to the full RVP checklist. Enter your target promotion date so your team knows your commitment.</div>
-      {rvpDenied&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:11,color:C.danger,marginBottom:10,textAlign:"center"}}>Request was not approved — speak with your RVP for next steps</div>}
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Request RVP Path Access</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you are consistently producing and ready to build a region, request access to the full RVP checklist. Enter your target promotion date so your team knows your commitment.</div>
+      {rvpDenied&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:13,color:C.danger,marginBottom:10,textAlign:"center"}}>Request was not approved — speak with your RVP for next steps</div>}
       {!rvpRequested&&<div>
         <div style={{marginBottom:8}}>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Target RVP Promotion Date</div>
-          <input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Target RVP Promotion Date</div>
+          <input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
         </div>
         <button onClick={()=>{
           if(!targetDate){alert("Please enter your target promotion date first");return;}
           save({rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString(),rvpTargetDate:targetDate});
           setShowCelebration(true);
-        }} style={{width:"100%",padding:"11px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+","+C.success+")",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+        }} style={{width:"100%",padding:"11px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+","+C.success+")",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>
           Request RVP Path Access
         </button>
       </div>}
-      {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>
+      {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>
         RVP Path request sent! Your target date: {myData.rvpTargetDate?new Date(myData.rvpTargetDate+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}. Your RVP has been notified!
       </div>}
     </Card>}
 
     {/* Target date for granted */}
     {rvpGranted&&!myData.rvpTargetDate&&<Card style={{marginBottom:14,border:"1px solid "+C.gold+"33"}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:6}}>Set Your Target Promotion Date</div>
-      <input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:8}}/>
-      <button onClick={()=>save({rvpTargetDate:targetDate})} style={{width:"100%",padding:"8px",borderRadius:8,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Date</button>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Set Your Target Promotion Date</div>
+      <input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box",marginBottom:8}}/>
+      <button onClick={()=>save({rvpTargetDate:targetDate})} style={{width:"100%",padding:"8px",borderRadius:8,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Date</button>
     </Card>}
 
     {/* RVP Goal Tracker */}
     {rvpGranted&&<Card style={{marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text}}>RVP Goals</div>
-        <button onClick={()=>setEditGoals(!editGoals)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editGoals?"Done":"Edit"}</button>
+        <div style={{fontSize:14,fontWeight:700,color:C.text}}>RVP Goals</div>
+        <button onClick={()=>setEditGoals(!editGoals)} style={{fontSize:13,padding:"3px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editGoals?"Done":"Edit"}</button>
       </div>
       {editGoals&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
         {[["premium","Monthly Premium Target $",goals.premium],["agents","Licensed Agents Goal",goals.agents],["teamSize","Team Size Goal",goals.teamSize]].map(([k,l,v])=><div key={k} style={{marginBottom:7}}>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>{l}</div>
-          <input type="number" value={v} onChange={e=>setGoals({...goals,[k]:Number(e.target.value)})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>{l}</div>
+          <input type="number" value={v} onChange={e=>setGoals({...goals,[k]:Number(e.target.value)})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>)}
-        <button onClick={()=>{save({rvpGoals:goals});setEditGoals(false);}} style={{width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goals</button>
+        <button onClick={()=>{save({rvpGoals:goals});setEditGoals(false);}} style={{width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Goals</button>
       </div>}
       {[
         {l:"Monthly Premium",val:"$"+totalPrem.toFixed(0),goal:"$"+(myData.rvpGoals?.premium||10000),pct:(totalPrem/(myData.rvpGoals?.premium||10000))*100,color:C.teal},
@@ -2790,8 +2810,8 @@ function TrainerCareerPath({data,onUpdate,session}) {
         {l:"Team Size",val:myReps.length,goal:myData.rvpGoals?.teamSize||30,pct:(myReps.length/(myData.rvpGoals?.teamSize||30))*100,color:C.purple},
       ].map(g=><div key={g.l} style={{marginBottom:10}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-          <span style={{fontSize:12,color:C.textMid}}>{g.l}</span>
-          <span style={{fontSize:12,fontWeight:600,color:g.pct>=100?C.success:C.text}}>{g.val} / {g.goal}</span>
+          <span style={{fontSize:13,color:C.textMid}}>{g.l}</span>
+          <span style={{fontSize:13,fontWeight:600,color:g.pct>=100?C.success:C.text}}>{g.val} / {g.goal}</span>
         </div>
         <Bar pct={g.pct} color={g.pct>=100?C.success:g.color} h={5}/>
       </div>)}
@@ -2799,17 +2819,17 @@ function TrainerCareerPath({data,onUpdate,session}) {
 
     {/* Weekly Accountability */}
     {rvpGranted&&<Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>Weekly Accountability</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>What do you commit to doing this week toward your RVP goal?</div>
-      <textarea placeholder="This week I will..." value={weeklyCommit} onChange={e=>setWeeklyCommit(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.6,fontFamily:"inherit",marginBottom:8}}/>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Weekly Accountability</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>What do you commit to doing this week toward your RVP goal?</div>
+      <textarea placeholder="This week I will..." value={weeklyCommit} onChange={e=>setWeeklyCommit(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.6,fontFamily:"inherit",marginBottom:8}}/>
       <button onClick={()=>{
         const commits=[...(myData.weeklyCommits||[]),{text:weeklyCommit,date:new Date().toISOString()}];
         save({weeklyCommits:commits});
         setWeeklyCommit("");
-      }} style={{width:"100%",padding:"8px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Commitment</button>
+      }} style={{width:"100%",padding:"8px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Commitment</button>
       {(myData.weeklyCommits||[]).slice(-3).reverse().map((c,i)=><div key={i} style={{padding:"7px 0",borderTop:"1px solid "+C.border,marginTop:6}}>
-        <div style={{fontSize:11,color:C.text}}>{c.text}</div>
-        <div style={{fontSize:10,color:C.textLight,marginTop:2}}>{new Date(c.date).toLocaleDateString()}</div>
+        <div style={{fontSize:13,color:C.text}}>{c.text}</div>
+        <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{new Date(c.date).toLocaleDateString()}</div>
       </div>)}
     </Card>}
 
@@ -2826,18 +2846,18 @@ function TrainerCareerPath({data,onUpdate,session}) {
 
     {/* Team overview */}
     {rvpGranted&&myReps.length>0&&<Card style={{marginTop:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>My Team</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>My Team</div>
       {myReps.map((r,i)=>{
         const cl=TRACK_INFO[r.track]?.checklist||[];
         const done=cl.filter(item=>(r.checked||{})[item.id]).length;
         const pct=cl.length>0?Math.round((done/cl.length)*100):0;
         return <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,padding:"7px 0",borderBottom:i<myReps.length-1?"1px solid "+C.border:"none"}}>
-          <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
+          <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
             <Bar pct={pct} color={TRACK_INFO[r.track]?.color||C.teal} h={3}/>
           </div>
-          <div style={{fontSize:11,fontWeight:600,color:pct===100?C.success:C.textMid}}>{pct}%</div>
+          <div style={{fontSize:13,fontWeight:600,color:pct===100?C.success:C.textMid}}>{pct}%</div>
         </div>;
       })}
     </Card>}
@@ -2872,11 +2892,11 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
       <div onClick={e=>e.stopPropagation()} style={{maxWidth:280,width:"100%",textAlign:"center"}}>
         <img src={photo} style={{width:"100%",borderRadius:12,marginBottom:12}}/>
         <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-          <label style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+          <label style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>
             Change<input type="file" accept="image/*" style={{display:"none"}} onChange={handle}/>
           </label>
-          <button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"22",color:C.danger,border:"none",cursor:"pointer",fontSize:12}}>Remove</button>
-          <button onClick={()=>setShowLightbox(false)} style={{padding:"7px 14px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"none",cursor:"pointer",fontSize:12}}>Close</button>
+          <button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"22",color:C.danger,border:"none",cursor:"pointer",fontSize:13}}>Remove</button>
+          <button onClick={()=>setShowLightbox(false)} style={{padding:"7px 14px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"none",cursor:"pointer",fontSize:13}}>Close</button>
         </div>
       </div>
     </div>}
@@ -2934,20 +2954,20 @@ function MyProfilePage({session,data,onUpdate}) {
       <div onClick={e=>e.stopPropagation()} style={{maxWidth:340,width:"100%",textAlign:"center"}}>
         <img src={photo} alt="Profile" style={{width:"100%",borderRadius:14,marginBottom:14,boxShadow:"0 10px 40px rgba(0,0,0,0.5)"}}/>
         <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-          <label style={{padding:"8px 16px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+          <label style={{padding:"8px 16px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>
             Change Photo<input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
           </label>
-          <button onClick={remove} style={{padding:"8px 16px",borderRadius:8,background:C.danger+"22",color:C.danger,border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>
-          <button onClick={()=>setShowLightbox(false)} style={{padding:"8px 16px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"none",cursor:"pointer",fontSize:12}}>Close</button>
+          <button onClick={remove} style={{padding:"8px 16px",borderRadius:8,background:C.danger+"22",color:C.danger,border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Remove</button>
+          <button onClick={()=>setShowLightbox(false)} style={{padding:"8px 16px",borderRadius:8,background:"rgba(255,255,255,0.1)",color:"white",border:"none",cursor:"pointer",fontSize:13}}>Close</button>
         </div>
       </div>
     </div>}
 
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Profile</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:20}}>Your profile photo is used for Wall of Fame recognition and team displays.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:20}}>Your profile photo is used for Wall of Fame recognition and team displays.</div>
 
     <Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Profile Photo</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Profile Photo</div>
       <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
         {photo
           ?<img src={photo} onClick={()=>setShowLightbox(true)} style={{width:80,height:80,borderRadius:12,objectFit:"cover",border:"2px solid "+C.teal,cursor:"pointer",flexShrink:0}}/>
@@ -2955,25 +2975,25 @@ function MyProfilePage({session,data,onUpdate}) {
             {session.name?.charAt(0)?.toUpperCase()}
           </div>}
         <div style={{flex:1}}>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.6}}>{photo?"Click your photo to view full size, or use the buttons below to update it.":"Upload a professional headshot. This photo will be used when you are recognized on the Wall of Fame."}</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.6}}>{photo?"Click your photo to view full size, or use the buttons below to update it.":"Upload a professional headshot. This photo will be used when you are recognized on the Wall of Fame."}</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+            <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
               {photo?"Change Photo":"Upload Photo"}
               <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUpload}/>
             </label>
-            {photo&&<button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>}
-            {photo&&<button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.surface,color:C.textMid,border:"1px solid "+C.border,cursor:"pointer",fontSize:12}}>View Full Size</button>}
+            {photo&&<button onClick={remove} style={{padding:"7px 14px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:13,fontWeight:600}}>Remove</button>}
+            {photo&&<button onClick={()=>setShowLightbox(true)} style={{padding:"7px 14px",borderRadius:8,background:C.surface,color:C.textMid,border:"1px solid "+C.border,cursor:"pointer",fontSize:13}}>View Full Size</button>}
           </div>
         </div>
       </div>
     </Card>
 
     <Card>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Account Info</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>Account Info</div>
       {[{l:"Name",v:session.name},{l:"Role",v:session.role?.charAt(0)?.toUpperCase()+session.role?.slice(1)},{l:"App",v:"NextLevel Field Training Hub"}].map((item,i)=><div key={i} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:i<2?"1px solid "+C.border:"none"}}>
-        <span style={{fontSize:12,color:C.textMid,width:60,flexShrink:0}}>{item.l}</span>
-        <span style={{fontSize:12,fontWeight:600,color:C.text}}>{item.v}</span>
+        <span style={{fontSize:13,color:C.textMid,width:60,flexShrink:0}}>{item.l}</span>
+        <span style={{fontSize:13,fontWeight:600,color:C.text}}>{item.v}</span>
       </div>)}
     </Card>
   </div>;
@@ -3004,7 +3024,7 @@ function WallOfFameBanner({data}) {
   };
 
   return <div style={{marginBottom:12}}>
-    <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:8,paddingLeft:2}}>Wall of Fame</div>
+    <div style={{fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:8,paddingLeft:2}}>Wall of Fame</div>
     <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
       {recognitions.map((r,i)=>{
         const photo = getPhotoB(r);
@@ -3016,9 +3036,9 @@ function WallOfFameBanner({data}) {
               :<div style={{width:48,height:48,borderRadius:24,background:catColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"white",margin:"0 auto",border:"2px solid "+catColor+"66"}}>{r.personName?.charAt(0)?.toUpperCase()}</div>}
           </div>
           <div style={{padding:"6px 8px 10px",textAlign:"center"}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.personName}</div>
-            <div style={{fontSize:9,fontWeight:700,color:catColor,background:catColor+"15",borderRadius:4,padding:"2px 6px",display:"inline-block",marginBottom:4}}>{r.category}</div>
-            <div style={{fontSize:10,color:C.textMid,lineHeight:1.4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{r.message}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.personName}</div>
+            <div style={{fontSize:10,fontWeight:700,color:catColor,background:catColor+"15",borderRadius:4,padding:"2px 6px",display:"inline-block",marginBottom:4}}>{r.category}</div>
+            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{r.message}</div>
           </div>
         </div>;
       })}
@@ -3073,17 +3093,17 @@ function MyLeadLink({name,data}) {
   return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
-      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px"}}>My Lead Link</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px"}}>My Lead Link</div>
     </div>
-    <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:8,lineHeight:1.5}}>Share this personal link with prospects to start their MoneyMap conversation.</div>
+    <div style={{fontSize:13,color:"rgba(255,255,255,0.6)",marginBottom:8,lineHeight:1.5}}>Share this personal link with prospects to start their MoneyMap conversation.</div>
     <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-      <div style={{flex:1,fontSize:12,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{link}</div>
+      <div style={{flex:1,fontSize:13,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{link}</div>
     </div>
     <div style={{display:"flex",gap:8}}>
-      <button onClick={copy} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:12,fontWeight:700,transition:"background 0.2s"}}>
+      <button onClick={copy} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:13,fontWeight:700,transition:"background 0.2s"}}>
         {copied?"Copied!":"Copy Link"}
       </button>
-      <button onClick={share} style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+      <button onClick={share} style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>
         Share
       </button>
     </div>
@@ -3128,20 +3148,20 @@ function LeadTaskPopup({rep,data,onUpdate,leads,onClose}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:"20px",maxWidth:400,width:"100%",maxHeight:"80vh",overflowY:"auto"}}>
       <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>Action Required</div>
-      <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>You have uncompleted tasks on {newLeads.length} lead{newLeads.length!==1?"s":""}. Check off tasks as you complete them.</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>You have uncompleted tasks on {newLeads.length} lead{newLeads.length!==1?"s":""}. Check off tasks as you complete them.</div>
       {newLeads.map((lead,i)=>{
         const lt = repTasks[lead.docId]||{};
         const done = LEAD_TASKS.filter(t=>lt[t.id]).length;
         return <div key={i} style={{borderRadius:10,border:"1px solid "+C.border,padding:"12px",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>{lead.name||"Unknown"}</div>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>{lead.phone} • {done}/{LEAD_TASKS.length} tasks done</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{lead.name||"Unknown"}</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>{lead.phone} • {done}/{LEAD_TASKS.length} tasks done</div>
           {LEAD_TASKS.map(task=><label key={task.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+C.border,cursor:"pointer"}}>
             <input type="checkbox" checked={!!lt[task.id]} onChange={()=>toggleTask(lead.docId,task.id)} style={{width:16,height:16,cursor:"pointer"}}/>
-            <span style={{fontSize:12,color:lt[task.id]?C.textLight:C.text,textDecoration:lt[task.id]?"line-through":"none"}}>{task.label}</span>
+            <span style={{fontSize:13,color:lt[task.id]?C.textLight:C.text,textDecoration:lt[task.id]?"line-through":"none"}}>{task.label}</span>
           </label>)}
         </div>;
       })}
-      <button onClick={onClose} style={{width:"100%",padding:"10px",borderRadius:9,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,marginTop:6}}>Done for Now</button>
+      <button onClick={onClose} style={{width:"100%",padding:"10px",borderRadius:9,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:600,marginTop:6}}>Done for Now</button>
     </div>
   </div>;
 }
@@ -3198,27 +3218,27 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
   if(submitted) return null;
 
   if(showFirst) return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:8}}>Welcome to Your Daily Activity Log</div>
-    <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.7,marginBottom:12}}>Each day you will be asked to log a quick summary of your activity. This log helps your RVP track your progress and provide the right support. It only takes 30 seconds — <strong style={{color:"white"}}>your consistency here directly reflects your commitment to your goals.</strong></div>
-    <button onClick={()=>{setShowFirst(false);const u={...activityLog,[rep.id]:{...(activityLog[rep.id]||{}),seenIntro:true}};onUpdate({...data,activityLogs:u});}} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Got It — Let me Log Today</button>
+    <div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:8}}>Welcome to Your Daily Activity Log</div>
+    <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.7,marginBottom:12}}>Each day you will be asked to log a quick summary of your activity. This log helps your RVP track your progress and provide the right support. It only takes 30 seconds — <strong style={{color:"white"}}>your consistency here directly reflects your commitment to your goals.</strong></div>
+    <button onClick={()=>{setShowFirst(false);const u={...activityLog,[rep.id]:{...(activityLog[rep.id]||{}),seenIntro:true}};onUpdate({...data,activityLogs:u});}} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Got It — Let me Log Today</button>
   </div>;
 
   return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.gold+"44",padding:"14px 16px",marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Today's Activity Log</div>
-      {streak>0&&<div style={{fontSize:11,fontWeight:700,color:C.gold}}>🔥 {streak} day streak</div>}
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Today's Activity Log</div>
+      {streak>0&&<div style={{fontSize:13,fontWeight:700,color:C.gold}}>🔥 {streak} day streak</div>}
     </div>
-    <div style={{fontSize:11,color:C.danger,fontWeight:600,marginBottom:12}}>You haven't logged today's activity yet. Your streak is at risk — log now.</div>
+    <div style={{fontSize:13,color:C.danger,fontWeight:600,marginBottom:12}}>You haven't logged today's activity yet. Your streak is at risk — log now.</div>
     {DAILY_QUESTIONS.map(q=><div key={q.id} style={{marginBottom:10}}>
-      <div style={{fontSize:11,color:C.text,marginBottom:4,lineHeight:1.4}}>{q.label}</div>
+      <div style={{fontSize:13,color:C.text,marginBottom:4,lineHeight:1.4}}>{q.label}</div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         <button onClick={()=>setForm(f=>({...f,[q.id]:Math.max(0,f[q.id]-1)}))} style={{width:30,height:30,borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:16,color:C.textMid,fontWeight:700}}>-</button>
         <div style={{fontSize:18,fontWeight:700,color:C.teal,minWidth:30,textAlign:"center"}}>{form[q.id]}</div>
         <button onClick={()=>setForm(f=>({...f,[q.id]:f[q.id]+1}))} style={{width:30,height:30,borderRadius:7,border:"none",background:C.teal,cursor:"pointer",fontSize:16,color:"white",fontWeight:700}}>+</button>
       </div>
     </div>)}
-    <button onClick={submit} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.gold+",#f97316)",border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700,marginTop:4}}>Submit Today's Log</button>
-    <div style={{fontSize:10,color:C.textMid,textAlign:"center",marginTop:6,lineHeight:1.4}}>Your RVP reviews your activity log to support your growth and celebrate your wins!</div>
+    <button onClick={submit} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.gold+",#f97316)",border:"none",color:"white",cursor:"pointer",fontSize:14,fontWeight:700,marginTop:4}}>Submit Today's Log</button>
+    <div style={{fontSize:12,color:C.textMid,textAlign:"center",marginTop:6,lineHeight:1.4}}>Your RVP reviews your activity log to support your growth and celebrate your wins!</div>
   </div>;
 }
 
@@ -3361,11 +3381,11 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place.</div>
 
     {/* How to Read This Dashboard */}
     <div style={{marginBottom:14}}>
-      <button onClick={()=>setShowGuide(g=>!g)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:showGuide?C.teal+"11":"white",cursor:"pointer",fontSize:12,color:showGuide?C.teal:C.textMid,fontWeight:600,width:"100%",textAlign:"left"}}>
+      <button onClick={()=>setShowGuide(g=>!g)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:showGuide?C.teal+"11":"white",cursor:"pointer",fontSize:13,color:showGuide?C.teal:C.textMid,fontWeight:600,width:"100%",textAlign:"left"}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         How to Read This Dashboard
         <svg style={{marginLeft:"auto",transform:showGuide?"rotate(180deg)":"none",transition:"transform 0.2s"}} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3382,8 +3402,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           ].map((item,i)=><div key={i} style={{display:"flex",gap:10,paddingBottom:i<5?10:0,borderBottom:i<5?`1px solid ${C.border}`:"none"}}>
             <div style={{fontSize:20,flexShrink:0,marginTop:1}}>{item.emoji}</div>
             <div>
-              <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>{item.label}</div>
-              <div style={{fontSize:11,color:C.textMid,lineHeight:1.5}}>{item.desc}</div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>{item.label}</div>
+              <div style={{fontSize:13,color:C.textMid,lineHeight:1.5}}>{item.desc}</div>
             </div>
           </div>)}
         </div>
@@ -3394,22 +3414,22 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
       {[{l:"Active Today",v:repStats.filter(r=>r.status==="green").length,c:C.success},{l:"Needs Attention",v:repStats.filter(r=>r.status==="yellow").length,c:C.gold},{l:"Going Silent",v:repStats.filter(r=>r.status==="red").length,c:C.danger}].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
-        <div style={{fontSize:10,color:C.textMid}}>{s.l}</div>
+        <div style={{fontSize:12,color:C.textMid}}>{s.l}</div>
       </Card>)}
     </div>
 
     {/* Search + filter */}
     <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-      <input placeholder="Search rep name..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+      <input placeholder="Search rep name..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
       <div style={{display:"flex",gap:4}}>
         {[["all","All"],["red","Silent"],["yellow","Idle"],["green","Active"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setStatusFilter(k)} style={{fontSize:10,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:statusFilter===k?700:400,background:statusFilter===k?(k==="all"?C.navy:statusColors[k]):C.surface,color:statusFilter===k?"white":C.textMid}}>{l}</button>
+          <button key={k} onClick={()=>setStatusFilter(k)} style={{fontSize:12,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:statusFilter===k?700:400,background:statusFilter===k?(k==="all"?C.navy:statusColors[k]):C.surface,color:statusFilter===k?"white":C.textMid}}>{l}</button>
         ))}
       </div>
     </div>
 
     {/* Rep cards */}
-    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:12}}>No reps match your filter</div>}
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:13}}>No reps match your filter</div>}
     {filtered.map((rep,i)=>{
       const isExpanded = expandedRep===rep.id;
       return <div key={i} style={{borderRadius:10,border:"1px solid "+C.border,marginBottom:10,overflow:"hidden",borderLeft:"4px solid "+statusColors[rep.status]}}>
@@ -3425,10 +3445,10 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 {rep.isAtRisk&&!rep.inactive&&<Badge color={"#f97316"} small>At Risk</Badge>}
               </div>
               <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:(isExpanded?"rgba(255,255,255,0.5)":C.textLight)}}>{rep.streak}d</strong></span>
-                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Progress: <strong style={{color:isExpanded?"white":C.teal}}>{rep.progress}%</strong></span>
-                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Tasks: <strong style={{color:rep.openTasks>0?C.danger:(isExpanded?"white":C.success)}}>{rep.openTasks} open</strong></span>
-                <span style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Recruited by: <strong style={{color:isExpanded?"white":C.purple}}>{rep.recruiter?.name||"Direct"}</strong></span>
+                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:(isExpanded?"rgba(255,255,255,0.5)":C.textLight)}}>{rep.streak}d</strong></span>
+                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Progress: <strong style={{color:isExpanded?"white":C.teal}}>{rep.progress}%</strong></span>
+                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Tasks: <strong style={{color:rep.openTasks>0?C.danger:(isExpanded?"white":C.success)}}>{rep.openTasks} open</strong></span>
+                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Recruited by: <strong style={{color:isExpanded?"white":C.purple}}>{rep.recruiter?.name||"Direct"}</strong></span>
               </div>
             </div>
             <span style={{color:isExpanded?"rgba(255,255,255,0.5)":C.textLight,fontSize:14,transform:isExpanded?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block",flexShrink:0}}>v</span>
@@ -3440,63 +3460,63 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 
           {/* 7-day calendar */}
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Last 7 Days</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Last 7 Days</div>
             <div style={{display:"flex",gap:4}}>
               {rep.last7.map((day,di)=><div key={di} style={{flex:1,textAlign:"center"}}>
                 <div style={{width:"100%",aspectRatio:"1",borderRadius:6,background:day.submitted?C.success:C.danger+"22",border:"2px solid "+(day.isToday?C.teal:(day.submitted?C.success:C.danger+"33")),display:"flex",alignItems:"center",justifyContent:"center",marginBottom:3}}>
                   <span style={{fontSize:14}}>{day.submitted?"✓":"·"}</span>
                 </div>
-                <div style={{fontSize:9,color:C.textLight}}>{["S","M","T","W","T","F","S"][new Date(day.key).getDay()]}</div>
+                <div style={{fontSize:10,color:C.textLight}}>{["S","M","T","W","T","F","S"][new Date(day.key).getDay()]}</div>
               </div>)}
             </div>
           </div>
 
           {/* Today's log answers */}
           {rep.todayLog&&<div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Today's Activity Log</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Today's Activity Log</div>
             {DAILY_QUESTIONS.map(q=><div key={q.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+C.border}}>
-              <span style={{fontSize:11,color:C.textMid,flex:1,paddingRight:8}}>{q.label.replace("How many ","").replace("?","")}</span>
-              <span style={{fontSize:11,fontWeight:700,color:C.teal}}>{rep.todayLog[q.id]||0}</span>
+              <span style={{fontSize:13,color:C.textMid,flex:1,paddingRight:8}}>{q.label.replace("How many ","").replace("?","")}</span>
+              <span style={{fontSize:13,fontWeight:700,color:C.teal}}>{rep.todayLog[q.id]||0}</span>
             </div>)}
           </div>}
-          {!rep.todayLog&&<div style={{background:C.danger+"11",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.danger,fontWeight:600}}>No activity log submitted today</div>}
+          {!rep.todayLog&&<div style={{background:C.danger+"11",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:13,color:C.danger,fontWeight:600}}>No activity log submitted today</div>}
 
           {/* Checklist progress */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.text}}>Checklist Progress</div>
-              <div style={{fontSize:11,fontWeight:700,color:C.teal}}>{rep.progress}%</div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text}}>Checklist Progress</div>
+              <div style={{fontSize:13,fontWeight:700,color:C.teal}}>{rep.progress}%</div>
             </div>
             <Bar pct={rep.progress} color={rep.progress>=100?C.success:C.teal} h={6}/>
           </div>
 
           {/* Status note */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Status</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Status</div>
             <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-              {["On Track","Needs Attention","At Risk","Inactive"].map(s=><button key={s} onClick={()=>setRepStatus(rep.id,rep.accountabilityStatus===s?null:s)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,cursor:"pointer",fontWeight:rep.accountabilityStatus===s?700:400,background:rep.accountabilityStatus===s?C.navy:"white",color:rep.accountabilityStatus===s?"white":C.textMid}}>{s}</button>)}
+              {["On Track","Needs Attention","At Risk","Inactive"].map(s=><button key={s} onClick={()=>setRepStatus(rep.id,rep.accountabilityStatus===s?null:s)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,cursor:"pointer",fontWeight:rep.accountabilityStatus===s?700:400,background:rep.accountabilityStatus===s?C.navy:"white",color:rep.accountabilityStatus===s?"white":C.textMid}}>{s}</button>)}
             </div>
           </div>
 
           {/* Weekly Activity Totals */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Weekly Activity Totals ({rep.weekTotals.daysLogged}/7 days logged)</div>
-            {rep.weekTotals.daysLogged===0?<div style={{fontSize:11,color:C.textLight}}>No activity logged this week</div>:
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Weekly Activity Totals ({rep.weekTotals.daysLogged}/7 days logged)</div>
+            {rep.weekTotals.daysLogged===0?<div style={{fontSize:13,color:C.textLight}}>No activity logged this week</div>:
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
               {[{l:"People Talked To",v:rep.weekTotals.talked},{l:"Follow-up Calls",v:rep.weekTotals.followup},{l:"Appointments Set",v:rep.weekTotals.apptSet},{l:"Appointments Ran",v:rep.weekTotals.apptRan},{l:"Recruits Prospected",v:rep.weekTotals.recruited}].map(item=><div key={item.l} style={{background:C.surface,borderRadius:6,padding:"6px 9px"}}>
                 <div style={{fontSize:18,fontWeight:700,color:C.teal}}>{item.v}</div>
-                <div style={{fontSize:9,color:C.textMid}}>{item.l}</div>
+                <div style={{fontSize:10,color:C.textMid}}>{item.l}</div>
               </div>)}
             </div>}
           </div>
 
           {/* Scorecard */}
           {rep.scorecard&&Object.keys(rep.scorecard).length>0&&<div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Scorecard This Week</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Scorecard This Week</div>
             {[{l:"Contacts Made",v:rep.scorecard.contacts||0,goal:100},{l:"Appointments Set",v:rep.scorecard.apptSet||0,goal:20},{l:"Appointments Done",v:rep.scorecard.apptDone||0,goal:20}].map(item=><div key={item.l} style={{marginBottom:6}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                <span style={{fontSize:11,color:C.textMid}}>{item.l}</span>
-                <span style={{fontSize:11,fontWeight:700,color:C.teal}}>{item.v}/{item.goal}</span>
+                <span style={{fontSize:13,color:C.textMid}}>{item.l}</span>
+                <span style={{fontSize:13,fontWeight:700,color:C.teal}}>{item.v}/{item.goal}</span>
               </div>
               <Bar pct={Math.min(Math.round((item.v/item.goal)*100),100)} color={C.teal} h={4}/>
             </div>)}
@@ -3504,26 +3524,26 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 
           {/* App Engagement */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>App Engagement</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>App Engagement</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
               <div style={{background:C.surface,borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
                 <div style={{fontSize:16,fontWeight:700,color:C.purple}}>{rep.loginsThisWeek}</div>
-                <div style={{fontSize:9,color:C.textMid}}>Logins This Week</div>
+                <div style={{fontSize:10,color:C.textMid}}>Logins This Week</div>
               </div>
               <div style={{background:C.surface,borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
                 <div style={{fontSize:16,fontWeight:700,color:C.purple}}>{rep.loginsThisMonth}</div>
-                <div style={{fontSize:9,color:C.textMid}}>Logins This Month</div>
+                <div style={{fontSize:10,color:C.textMid}}>Logins This Month</div>
               </div>
               <div style={{background:C.surface,borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.purple}}>{rep.lastLogin?new Date(rep.lastLogin).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Never"}</div>
-                <div style={{fontSize:9,color:C.textMid}}>Last Login</div>
+                <div style={{fontSize:13,fontWeight:700,color:C.purple}}>{rep.lastLogin?new Date(rep.lastLogin).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Never"}</div>
+                <div style={{fontSize:10,color:C.textMid}}>Last Login</div>
               </div>
             </div>
           </div>
 
           {/* Editable Recruited By */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:6}}>Recruited By</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Recruited By</div>
             <select value={rep.recruitedBy||""} onChange={e=>{
               const val=e.target.value;
               if(rep.isTrainer){
@@ -3533,7 +3553,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,recruitedBy:val}:r);
                 onUpdate({...data,reps:updated});
               }
-            }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+            }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
               <option value="">Not specified</option>
               {[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])].map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -3541,15 +3561,15 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
 
           {/* Check-in log */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:8}}>Coaching Notes</div>
-            {(rep.checkIns||[]).length===0&&<div style={{fontSize:11,color:C.textLight,marginBottom:8}}>No coaching notes yet</div>}
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Coaching Notes</div>
+            {(rep.checkIns||[]).length===0&&<div style={{fontSize:13,color:C.textLight,marginBottom:8}}>No coaching notes yet</div>}
             {(rep.checkIns||[]).slice(-3).reverse().map((ci,ci_i)=><div key={ci_i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,marginBottom:6}}>
-              <div style={{fontSize:12,color:C.text}}>{ci.text}</div>
-              <div style={{fontSize:10,color:C.textLight,marginTop:2}}>{new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+              <div style={{fontSize:13,color:C.text}}>{ci.text}</div>
+              <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
             </div>)}
             <div style={{display:"flex",gap:6,marginTop:6}}>
-              <input placeholder="Add a coaching note..." value={checkInNote} onChange={e=>setCheckInNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCheckIn(rep.id)} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
-              <button onClick={()=>addCheckIn(rep.id)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+              <input placeholder="Add a coaching note..." value={checkInNote} onChange={e=>setCheckInNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCheckIn(rep.id)} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+              <button onClick={()=>addCheckIn(rep.id)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
             </div>
           </div>
 
@@ -3557,8 +3577,11 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           <button onClick={()=>{
             const w=window.open("","_blank");
             const weekDays=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-            const totalPremium=(rep.selfPremium||[]).reduce((s,e)=>s+(Number(e.premium)||0),0);
-            const premiumEntries=(rep.selfPremium||[]).length;
+            // For field trainers, production lives in myProduction; for reps, in selfPremium
+            const trainerProd=rep.isTrainer?(data.myProduction||{})[rep.id]||{}:{};
+            const selfPremiumEntries=rep.isTrainer?(trainerProd.lifeApps||[]):(rep.selfPremium||[]);
+            const totalPremium=selfPremiumEntries.reduce((s,e)=>s+(Number(e.premium)||0),0);
+            const premiumEntries=selfPremiumEntries.length;
             const recruitsCount=(data.reps||[]).filter(r=>r.recruitedBy===rep.id).length;
             w.document.write(`<!DOCTYPE html><html><head><title>Coaching Report — ${rep.name}</title><style>
               body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#1a1a2e;}
@@ -3595,6 +3618,13 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${rep.lastLogin?new Date(rep.lastLogin).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Never"}</div><div class="label">Last Login</div></div>
             </div>
 
+            ${rep.isTrainer?(()=>{
+              const tLogs=(data.activityLogs||{})[rep.id]||{};
+              const tDates=Object.keys(tLogs).filter(k=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort().slice(-14);
+              if(tDates.length===0) return "<h2>ACTIVITY CONSISTENCY</h2><p class='note'>No daily activity logs submitted yet.</p>";
+              let tCells=tDates.map(d=>{const log=tLogs[d];const today2=new Date().toISOString().split('T')[0];return "<div class='day "+(log?.submittedAt?"submitted":"missed")+(d===today2?" today-border":"")+"'><div style='font-size:13px;font-weight:700'>"+(log?.talked||0)+"</div><div class='day-label'>"+d.slice(5)+"</div></div>";}).join("");
+              return "<h2>ACTIVITY CONSISTENCY (Last 14 Days)</h2><div class='cal'>"+tCells+"</div>";
+            })():""}
             <h2>ACTIVITY CONSISTENCY</h2>
             <p class="note">This section shows how consistently ${rep.name} is logging daily activity. Consistency is the foundation of results.</p>
             <div class="cal">
@@ -3652,7 +3682,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const calcC2=(mp)=>{const comm=(mp*12)-65;const tot=comm*pct2;return{tot,up:(tot/12)*9,ae:(tot/12)*3};};
               const now2=new Date();
               const ms=new Date(now2.getFullYear(),now2.getMonth(),1).toISOString().split("T")[0];
-              const ents=rep.selfPremium||[];
+              const ents=rep.isTrainer?((data.myProduction||{})[rep.id]?.lifeApps||[]):(rep.selfPremium||[]);
               const me=ents.filter(e=>e.date>=ms);
               const mEarned=me.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
               const goal2=Number(rep.monthlyIncomeGoal)||0;
@@ -3687,10 +3717,10 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <p style="margin-top:40px;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:10px;">Generated by NextLevel Field Training Hub • ${new Date().toLocaleString()}</p>
             </body></html>`);
             w.document.close();
-          }} style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:8}}>Generate Coaching Report</button>
+          }} style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>Generate Coaching Report</button>
 
           {/* Remove rep — admin only */}
-          {isAdmin&&<button onClick={()=>removeRep(rep.id,rep.name)} style={{width:"100%",padding:"8px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:11,fontWeight:600}}>Mark as Inactive</button>}
+          {isAdmin&&<button onClick={()=>removeRep(rep.id,rep.name)} style={{width:"100%",padding:"8px",borderRadius:8,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontSize:13,fontWeight:600}}>Mark as Inactive</button>}
         </div>}
       </div>;
     })}
@@ -3718,16 +3748,16 @@ function ReassignTrainer({rep,data,onUpdate}) {
 
   return <div style={{marginBottom:8}}>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div style={{fontSize:11,color:C.textMid}}>Trainer: <strong style={{color:C.text}}>{current?.label||"Unassigned"}</strong></div>
-      <button onClick={()=>{setSelected(rep.trainerId||"");setEditing(!editing);}} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Reassign"}</button>
+      <div style={{fontSize:13,color:C.textMid}}>Trainer: <strong style={{color:C.text}}>{current?.label||"Unassigned"}</strong></div>
+      <button onClick={()=>{setSelected(rep.trainerId||"");setEditing(!editing);}} style={{fontSize:12,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Reassign"}</button>
     </div>
     {editing&&<div style={{marginTop:6,display:"flex",gap:6}}>
-      <select value={selected} onChange={e=>setSelected(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+      <select value={selected} onChange={e=>setSelected(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
         <option value="">No trainer</option>
         {trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
         {(data.admins||[]).filter(a=>a.alsoRecruits||a.isSuperAdmin).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}
       </select>
-      <button onClick={save} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+      <button onClick={save} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
     </div>}
   </div>;
 }
@@ -3752,15 +3782,15 @@ function RecruitedByEditor({rep,data,onUpdate}) {
 
   return <div style={{marginBottom:8}}>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div style={{fontSize:11,color:C.textMid}}>Recruited by: <strong style={{color:current?C.purple:C.textLight}}>{current?.name||"Not specified"}</strong></div>
-      <button onClick={()=>{setSelected(rep.recruitedBy||"");setEditing(!editing);}} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Edit"}</button>
+      <div style={{fontSize:13,color:C.textMid}}>Recruited by: <strong style={{color:current?C.purple:C.textLight}}>{current?.name||"Not specified"}</strong></div>
+      <button onClick={()=>{setSelected(rep.recruitedBy||"");setEditing(!editing);}} style={{fontSize:12,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>{editing?"Cancel":"Edit"}</button>
     </div>
     {editing&&<div style={{marginTop:6,display:"flex",gap:6}}>
-      <select value={selected} onChange={e=>setSelected(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+      <select value={selected} onChange={e=>setSelected(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
         <option value="">Not specified</option>
         {allPeople.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
       </select>
-      <button onClick={save} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+      <button onClick={save} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
     </div>}
   </div>;
 }
@@ -3781,15 +3811,15 @@ function ResetPinButton({person,personType,data,onUpdate}) {
   };
 
   return <div style={{marginBottom:8}}>
-    {!showForm?<button onClick={()=>setShowForm(true)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.gold+"44",background:C.gold+"11",cursor:"pointer",color:C.gold,fontWeight:600}}>Reset PIN</button>:
+    {!showForm?<button onClick={()=>setShowForm(true)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.gold+"44",background:C.gold+"11",cursor:"pointer",color:C.gold,fontWeight:600}}>Reset PIN</button>:
     <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",border:"1px solid "+C.gold+"33"}}>
-      {done?<div style={{fontSize:12,color:C.success,fontWeight:600,textAlign:"center"}}>✓ PIN reset! Share the new PIN with {person.name}.</div>:<>
-        <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:6}}>Set Temporary PIN for {person.name}</div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:8,lineHeight:1.5}}>Enter a 4-digit temporary PIN. Share it with {person.name} verbally or by text. They will be prompted to set a new PIN on login.</div>
+      {done?<div style={{fontSize:13,color:C.success,fontWeight:600,textAlign:"center"}}>✓ PIN reset! Share the new PIN with {person.name}.</div>:<>
+        <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:6}}>Set Temporary PIN for {person.name}</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:8,lineHeight:1.5}}>Enter a 4-digit temporary PIN. Share it with {person.name} verbally or by text. They will be prompted to set a new PIN on login.</div>
         <input type="number" placeholder="4-digit PIN" value={newPin} onChange={e=>setNewPin(e.target.value.slice(0,4))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:16,textAlign:"center",letterSpacing:6,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>{setShowForm(false);setNewPin("");}} style={{flex:1,padding:"7px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-          <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:11,fontWeight:700}}>Set PIN</button>
+          <button onClick={()=>{setShowForm(false);setNewPin("");}} style={{flex:1,padding:"7px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+          <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Set PIN</button>
         </div>
       </>}
     </div>}
@@ -3815,17 +3845,17 @@ function ForceNewPin({session,data,onUpdate,onDone}) {
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{background:"white",borderRadius:16,padding:"24px 20px",maxWidth:360,width:"100%"}}>
       <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:4}}>Set Your New PIN</div>
-      <div style={{fontSize:12,color:C.textMid,marginBottom:16,lineHeight:1.6}}>Your PIN was recently reset. Please set a new personal 4-digit PIN to continue.</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:16,lineHeight:1.6}}>Your PIN was recently reset. Please set a new personal 4-digit PIN to continue.</div>
       <div style={{marginBottom:10}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>New PIN</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>New PIN</div>
         <input type="password" inputMode="numeric" maxLength={4} placeholder="Enter new 4-digit PIN" value={pin1} onChange={e=>setPin1(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid "+C.border,fontSize:18,textAlign:"center",letterSpacing:8,boxSizing:"border-box",color:C.text}}/>
       </div>
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Confirm PIN</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Confirm PIN</div>
         <input type="password" inputMode="numeric" maxLength={4} placeholder="Confirm your new PIN" value={pin2} onChange={e=>setPin2(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid "+C.border,fontSize:18,textAlign:"center",letterSpacing:8,boxSizing:"border-box",color:C.text}}/>
       </div>
-      {err&&<div style={{fontSize:11,color:C.danger,marginBottom:10,textAlign:"center"}}>{err}</div>}
-      <button onClick={save} style={{width:"100%",padding:"11px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>Save My PIN</button>
+      {err&&<div style={{fontSize:13,color:C.danger,marginBottom:10,textAlign:"center"}}>{err}</div>}
+      <button onClick={save} style={{width:"100%",padding:"11px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:700}}>Save My PIN</button>
     </div>
   </div>;
 }
@@ -4036,16 +4066,16 @@ function MonthEndReport({data}) {
     if(photo){
       try{
         slide.addImage({data:photo,x:x+(w/2)-0.4,y:y+0.1,w:0.8,h:0.8,rounding:true});
-        slide.addText(name,{x,y:y+0.95,w,h:0.35,fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+        slide.addText(name,{x,y:y+0.95,w,h:0.35,fontSize:12,bold:true,color:"FFFFFF",align:"center"});
         if(label) slide.addText(label,{x,y:y+1.28,w,h:0.25,fontSize:8,color:"AABBCC",align:"center"});
       }catch(e){
         slide.addText((name||"?").charAt(0).toUpperCase(),{x,y:y+0.1,w,h:0.6,fontSize:28,bold:true,color:"0EA5C9",align:"center"});
-        slide.addText(name,{x,y:y+0.72,w,h:0.35,fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+        slide.addText(name,{x,y:y+0.72,w,h:0.35,fontSize:12,bold:true,color:"FFFFFF",align:"center"});
         if(label) slide.addText(label,{x,y:y+1.05,w,h:0.25,fontSize:8,color:"AABBCC",align:"center"});
       }
     } else {
       slide.addText((name||"?").charAt(0).toUpperCase(),{x,y:y+0.1,w,h:0.6,fontSize:28,bold:true,color:"0EA5C9",align:"center"});
-      slide.addText(name,{x,y:y+0.72,w,h:0.35,fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+      slide.addText(name,{x,y:y+0.72,w,h:0.35,fontSize:12,bold:true,color:"FFFFFF",align:"center"});
       if(label) slide.addText(label,{x,y:y+1.05,w,h:0.25,fontSize:8,color:"AABBCC",align:"center"});
     }
   };
@@ -4282,27 +4312,27 @@ function MonthEndReport({data}) {
     w.document.close();
   };
 
-  if(!showForm) return <button onClick={()=>setShowForm(true)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700,width:"100%",justifyContent:"center",marginBottom:10}}>
+  if(!showForm) return <button onClick={()=>setShowForm(true)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700,width:"100%",justifyContent:"center",marginBottom:10}}>
     🏆 Generate Month End Celebration Report
   </button>;
 
   return <div style={{background:"white",borderRadius:12,border:"1px solid "+C.gold+"44",padding:"16px",marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text}}>Month End Report — {monthName}</div>
-      <button onClick={()=>setShowForm(false)} style={{fontSize:11,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Cancel</button>
+      <button onClick={()=>setShowForm(false)} style={{fontSize:13,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Cancel</button>
     </div>
 
     {/* Team Numbers */}
-    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>Team Numbers</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>Team Numbers</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
       {[["Total Life Premium $",form.totalPremium,"totalPremium"],["Total Recruits",form.totalRecruits,"totalRecruits"],["Appointments Run",form.apptRan,"apptRan"],["People Talked To",form.talked,"talked"],["Daily Logs Submitted",form.logsSubmitted,"logsSubmitted"],["Monthly PAC $",form.teamPAC,"teamPAC"],["Lump Sum $",form.teamLump,"teamLump"]].map(([label,val,key])=><div key={key}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{label}</div>
-        <input type="number" value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>{label}</div>
+        <input type="number" value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
       </div>)}
     </div>
 
     {/* Names */}
-    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>People to Recognize</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase"}}>People to Recognize</div>
     {[["Newly Licensed (comma separated)",form.newlyLicensed,"newlyLicensed"],["New Field Trainers",form.newTrainers,"newTrainers"],["Completed Checklist",form.completedChecklists,"completedChecklists"],["Top Producer",form.topProducer,"topProducer"],["Top Recruiter",form.topRecruiter,"topRecruiter"],["Most Consistent",form.mostConsistent,"mostConsistent"],["Most Appointments",form.mostAppts,"mostAppts"],["Comma Check Recipients",form.commaChecks,"commaChecks"],["Wall of Fame Recognition",form.wofNames,"wofNames"]].map(([label,val,key])=>{
       const previewPhotos = (val||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
@@ -4314,19 +4344,19 @@ function MonthEndReport({data}) {
         return {name,photo};
       });
       return <div key={key} style={{marginBottom:8}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{label}</div>
-        <input value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:previewPhotos.length>0?4:0}}/>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>{label}</div>
+        <input value={val} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:previewPhotos.length>0?4:0}}/>
         {previewPhotos.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
           {previewPhotos.map((p,pi)=><div key={pi} style={{display:"flex",alignItems:"center",gap:4,background:C.surface,borderRadius:6,padding:"2px 6px"}}>
-            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
-            <span style={{fontSize:10,color:C.text}}>{p.name}</span>
+            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
+            <span style={{fontSize:12,color:C.text}}>{p.name}</span>
           </div>)}
         </div>}
       </div>;
     })}
 
     {/* Promotions */}
-    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Promotions</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Promotions</div>
     {PROMOTION_RANKS.map(rank=>{
       const previews=(form.promotions[rank]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
@@ -4338,19 +4368,19 @@ function MonthEndReport({data}) {
         return {name,photo};
       });
       return <div key={rank} style={{marginBottom:8}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{rank}</div>
-        <input placeholder="Names (comma separated)..." value={form.promotions[rank]||""} onChange={e=>setForm(f=>({...f,promotions:{...f.promotions,[rank]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:previews.length>0?4:0}}/>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>{rank}</div>
+        <input placeholder="Names (comma separated)..." value={form.promotions[rank]||""} onChange={e=>setForm(f=>({...f,promotions:{...f.promotions,[rank]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:previews.length>0?4:0}}/>
         {previews.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
           {previews.map((p,pi)=><div key={pi} style={{display:"flex",alignItems:"center",gap:4,background:C.surface,borderRadius:6,padding:"2px 6px"}}>
-            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
-            <span style={{fontSize:10,color:C.text}}>{p.name}</span>
+            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
+            <span style={{fontSize:12,color:C.text}}>{p.name}</span>
           </div>)}
         </div>}
       </div>;
     })}
 
     {/* Income Milestones */}
-    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Income Milestones</div>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Income Milestones</div>
     {INCOME_MILESTONES.map(m=>{
       const previews=(form.milestones[m]||"").split(",").map(n=>n.trim()).filter(Boolean).map(name=>{
         const allP=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
@@ -4362,27 +4392,27 @@ function MonthEndReport({data}) {
         return {name,photo};
       });
       return <div key={m} style={{marginBottom:8}}>
-        <div style={{fontSize:10,color:C.textMid,marginBottom:2}}>{m}</div>
-        <input placeholder="Names (comma separated)..." value={form.milestones[m]||""} onChange={e=>setForm(f=>({...f,milestones:{...f.milestones,[m]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:previews.length>0?4:0}}/>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>{m}</div>
+        <input placeholder="Names (comma separated)..." value={form.milestones[m]||""} onChange={e=>setForm(f=>({...f,milestones:{...f.milestones,[m]:e.target.value}}))} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:previews.length>0?4:0}}/>
         {previews.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
           {previews.map((p,pi)=><div key={pi} style={{display:"flex",alignItems:"center",gap:4,background:"#064e3b22",borderRadius:6,padding:"2px 6px",border:"1px solid #34d39944"}}>
-            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:"#059669",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
-            <span style={{fontSize:10,color:"#059669",fontWeight:600}}>{p.name}</span>
+            {p.photo?<img src={p.photo} style={{width:20,height:20,borderRadius:10,objectFit:"cover"}}/>:<div style={{width:20,height:20,borderRadius:10,background:"#059669",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"white"}}>{p.name.charAt(0)}</div>}
+            <span style={{fontSize:12,color:"#059669",fontWeight:600}}>{p.name}</span>
           </div>)}
         </div>}
       </div>;
     })}
 
     {/* Custom Shoutout */}
-    <div style={{fontSize:11,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Special Shoutouts</div>
-    <textarea placeholder="Any additional shoutouts or notes..." value={form.customShoutout} onChange={e=>setForm(f=>({...f,customShoutout:e.target.value}))} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:12}}/>
+    <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6,textTransform:"uppercase",marginTop:4}}>Special Shoutouts</div>
+    <textarea placeholder="Any additional shoutouts or notes..." value={form.customShoutout} onChange={e=>setForm(f=>({...f,customShoutout:e.target.value}))} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:12}}/>
 
     {/* Generate buttons */}
     <div style={{display:"flex",gap:8}}>
-      <button onClick={()=>generateHTML(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📄 Generate PDF Version</button>
-      <button onClick={()=>generateSlideshow(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.gold+",#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>📊 View as Slideshow</button>
+      <button onClick={()=>generateHTML(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>📄 Generate PDF Version</button>
+      <button onClick={()=>generateSlideshow(form)} style={{flex:1,padding:"10px",borderRadius:8,background:"linear-gradient(135deg,"+C.gold+",#d97706)",color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>📊 View as Slideshow</button>
     </div>
-    <div style={{fontSize:10,color:C.textMid,textAlign:"center",marginTop:6}}>PowerPoint can be uploaded to Google Drive and opened as Google Slides</div>
+    <div style={{fontSize:12,color:C.textMid,textAlign:"center",marginTop:6}}>PowerPoint can be uploaded to Google Drive and opened as Google Slides</div>
   </div>;
 }
 
@@ -4401,22 +4431,22 @@ function NeedHelpModal({rep,data,onUpdate,onClose}) {
     <div style={{background:"white",borderRadius:16,padding:"24px 20px",maxWidth:380,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
       {!sent?<>
         <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:4}}>Need Help?</div>
-        <div style={{fontSize:12,color:C.textMid,marginBottom:14,lineHeight:1.5}}>Tell us what you need help with and your trainer and admin will be notified right away.</div>
-        <textarea placeholder="What do you need help with? Give us a quick summary..." value={msg} onChange={e=>setMsg(e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:90,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit",marginBottom:10}}/>
-        <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:8,padding:"8px 12px",fontSize:11,color:C.teal,marginBottom:14,lineHeight:1.5}}>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:14,lineHeight:1.5}}>Tell us what you need help with and your trainer and admin will be notified right away.</div>
+        <textarea placeholder="What do you need help with? Give us a quick summary..." value={msg} onChange={e=>setMsg(e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,resize:"vertical",minHeight:90,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit",marginBottom:10}}/>
+        <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:8,padding:"8px 12px",fontSize:13,color:C.teal,marginBottom:14,lineHeight:1.5}}>
           For a quicker response, reach out to your trainer directly on <strong>Telegram</strong>!
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={onClose} style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-          <button onClick={send} style={{flex:2,padding:"9px",borderRadius:8,border:"none",background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Send</button>
+          <button onClick={onClose} style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+          <button onClick={send} style={{flex:2,padding:"9px",borderRadius:8,border:"none",background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Send</button>
         </div>
       </>:<>
         <div style={{textAlign:"center",padding:"12px 0"}}>
           <div style={{fontSize:32,marginBottom:10}}>✓</div>
           <div style={{fontSize:15,fontWeight:700,color:C.success,marginBottom:6}}>Message Sent!</div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:6,lineHeight:1.5}}>Your trainer and admin have been notified. We will be in touch soon!</div>
-          <div style={{fontSize:11,color:C.teal,fontWeight:600,marginBottom:16}}>Remember — Telegram is available for a quicker response!</div>
-          <button onClick={onClose} style={{padding:"9px 24px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>Done</button>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:6,lineHeight:1.5}}>Your trainer and admin have been notified. We will be in touch soon!</div>
+          <div style={{fontSize:13,color:C.teal,fontWeight:600,marginBottom:16}}>Remember — Telegram is available for a quicker response!</div>
+          <button onClick={onClose} style={{padding:"9px 24px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>Done</button>
         </div>
       </>}
     </div>
@@ -4436,19 +4466,19 @@ function HelpRequestsBanner({data,onUpdate,userRole,userId}) {
   return <div style={{background:"white",borderRadius:12,border:"2px solid "+C.danger+"44",padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.danger,animation:"pulse 1.5s infinite"}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Help Requests ({myRequests.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Help Requests ({myRequests.length})</div>
     </div>
     {myRequests.map((r,i)=><div key={i} style={{background:C.danger+"08",borderRadius:8,padding:"10px 12px",marginBottom:6,border:"1px solid "+C.danger+"22"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
         <div style={{flex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-            <span style={{fontSize:13,fontWeight:700,color:C.text}}>{r.repName}</span>
+            <span style={{fontSize:14,fontWeight:700,color:C.text}}>{r.repName}</span>
             <Badge color={C.danger} small>Needs Help</Badge>
           </div>
-          <div style={{fontSize:12,color:C.text,lineHeight:1.5,marginBottom:3}}>"{r.message}"</div>
-          <div style={{fontSize:10,color:C.textLight}}>{new Date(r.sentAt).toLocaleDateString()} at {new Date(r.sentAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.5,marginBottom:3}}>"{r.message}"</div>
+          <div style={{fontSize:12,color:C.textLight}}>{new Date(r.sentAt).toLocaleDateString()} at {new Date(r.sentAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
         </div>
-        <button onClick={()=>dismiss(i)} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,whiteSpace:"nowrap",flexShrink:0}}>Dismiss</button>
+        <button onClick={()=>dismiss(i)} style={{fontSize:12,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,whiteSpace:"nowrap",flexShrink:0}}>Dismiss</button>
       </div>
     </div>)}
   </div>;
@@ -4515,20 +4545,20 @@ function WallOfFame({data,onUpdate,userRole}) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div>
         <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Wall of Fame</div>
-        <div style={{fontSize:11,color:C.textMid}}>Celebrating our team's achievements</div>
+        <div style={{fontSize:13,color:C.textMid}}>Celebrating our team's achievements</div>
       </div>
-      {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:11,padding:"6px 12px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700}}>+ Add Recognition</button>}
+      {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:13,padding:"6px 12px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700}}>+ Add Recognition</button>}
     </div>
 
     {isAdmin&&showForm&&<Card style={{marginBottom:14,border:"1px solid "+C.gold+"44"}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>New Recognition</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>New Recognition</div>
       <div style={{marginBottom:8,position:"relative"}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Select Person</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:3}}>Select Person</div>
         {form.personId?(
           <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,border:"1px solid "+C.teal,background:C.teal+"11"}}>
-            {(()=>{const p=getPhoto(form.personId);return p?<img src={p} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:"2px solid "+C.teal}}/>:<div style={{width:32,height:32,borderRadius:"50%",background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal}}>{allPeople.find(p=>p.id===form.personId)?.name?.charAt(0)}</div>;})()}
-            <span style={{flex:1,fontSize:12,fontWeight:600,color:C.text}}>{allPeople.find(p=>p.id===form.personId)?.name}</span>
-            <button onClick={()=>{setForm({...form,personId:""});setPersonSearch("");}} style={{fontSize:11,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>✕ Change</button>
+            {(()=>{const p=getPhoto(form.personId);return p?<img src={p} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:"2px solid "+C.teal}}/>:<div style={{width:32,height:32,borderRadius:"50%",background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.teal}}>{allPeople.find(p=>p.id===form.personId)?.name?.charAt(0)}</div>;})()}
+            <span style={{flex:1,fontSize:13,fontWeight:600,color:C.text}}>{allPeople.find(p=>p.id===form.personId)?.name}</span>
+            <button onClick={()=>{setForm({...form,personId:""});setPersonSearch("");}} style={{fontSize:13,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>✕ Change</button>
           </div>
         ):(
           <div>
@@ -4537,36 +4567,36 @@ function WallOfFame({data,onUpdate,userRole}) {
               value={personSearch}
               onChange={e=>{setPersonSearch(e.target.value);setShowPersonList(true);}}
               onFocus={()=>setShowPersonList(true)}
-              style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}
+              style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}
             />
             {showPersonList&&(personSearch.length>0||true)&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"white",border:"1px solid "+C.border,borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)",zIndex:100,maxHeight:200,overflowY:"auto"}}>
-              {filteredPeople.length===0&&<div style={{padding:"10px",fontSize:12,color:C.textLight,textAlign:"center"}}>No results</div>}
-              {filteredPeople.map(p=><button key={p.id} onClick={()=>{setForm({...form,personId:p.id});setPersonSearch("");setShowPersonList(false);}} style={{width:"100%",padding:"8px 12px",background:"white",border:"none",borderBottom:"1px solid "+C.border,cursor:"pointer",textAlign:"left",fontSize:12,color:C.text}}>
+              {filteredPeople.length===0&&<div style={{padding:"10px",fontSize:13,color:C.textLight,textAlign:"center"}}>No results</div>}
+              {filteredPeople.map(p=><button key={p.id} onClick={()=>{setForm({...form,personId:p.id});setPersonSearch("");setShowPersonList(false);}} style={{width:"100%",padding:"8px 12px",background:"white",border:"none",borderBottom:"1px solid "+C.border,cursor:"pointer",textAlign:"left",fontSize:13,color:C.text}}>
                 <span style={{fontWeight:600}}>{p.name}</span>
-                <span style={{fontSize:10,color:C.textMid,marginLeft:6}}>({p.role})</span>
+                <span style={{fontSize:12,color:C.textMid,marginLeft:6}}>({p.role})</span>
               </button>)}
             </div>}
           </div>
         )}
       </div>
       <div style={{marginBottom:8}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Category</div>
-        <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:3}}>Category</div>
+        <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
           {FAME_CATEGORIES.map(c=><option key={c}>{c}</option>)}
         </select>
       </div>
       <div style={{marginBottom:10}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:3}}>Personal Message</div>
-        <textarea placeholder="Write a personal recognition message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5}}/>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:3}}>Personal Message</div>
+        <textarea placeholder="Write a personal recognition message..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5}}/>
       </div>
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>Photo</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:6}}>Photo</div>
         {form.personId&&(()=>{const autoPhoto=getPhoto(form.personId);return autoPhoto?<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"7px 10px",background:C.success+"11",borderRadius:8,border:"1px solid "+C.success+"33"}}>
           <img src={form.customPhoto||autoPhoto} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid "+C.success}}/>
-          <div style={{fontSize:11,color:C.success,fontWeight:600}}>Photo found automatically</div>
-          {form.customPhoto&&<button onClick={()=>setForm({...form,customPhoto:null})} style={{fontSize:10,color:C.textMid,background:"none",border:"none",cursor:"pointer",marginLeft:"auto"}}>Use auto</button>}
+          <div style={{fontSize:13,color:C.success,fontWeight:600}}>Photo found automatically</div>
+          {form.customPhoto&&<button onClick={()=>setForm({...form,customPhoto:null})} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer",marginLeft:"auto"}}>Use auto</button>}
         </div>:null;})()}
-        <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:7,background:C.surface,border:"1px solid "+C.border,cursor:"pointer",fontSize:11,color:C.textMid}}>
+        <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:7,background:C.surface,border:"1px solid "+C.border,cursor:"pointer",fontSize:13,color:C.textMid}}>
           {form.customPhoto?"Change Photo":"Upload Custom Photo"}
           <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
             const file=e.target.files[0];
@@ -4574,18 +4604,18 @@ function WallOfFame({data,onUpdate,userRole}) {
             compressImage(file, compressed=>setForm({...form,customPhoto:compressed}), 400, 0.8);
           }}/>
         </label>
-        {form.customPhoto&&<span style={{fontSize:10,color:C.success,marginLeft:8}}>Custom photo ready</span>}
+        {form.customPhoto&&<span style={{fontSize:12,color:C.success,marginLeft:8}}>Custom photo ready</span>}
       </div>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Post Recognition</button>
+        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Post Recognition</button>
       </div>
     </Card>}
 
     {recognitions.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:C.textLight}}>
       <div style={{fontSize:32,marginBottom:10}}>★</div>
       <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:6}}>No recognitions yet</div>
-      <div style={{fontSize:12}}>{isAdmin?"Add your first recognition above!":"Check back soon — great things are coming!"}</div>
+      <div style={{fontSize:13}}>{isAdmin?"Add your first recognition above!":"Check back soon — great things are coming!"}</div>
     </div>}
 
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -4595,7 +4625,7 @@ function WallOfFame({data,onUpdate,userRole}) {
           ||(()=>{try{return localStorage.getItem("dgoPhoto_"+r.personId)||null;}catch(e){return null;}})();
         const catColor = FAME_COLORS[r.category]||C.gold;
         return <div key={i} style={{borderRadius:12,border:"2px solid "+catColor+"33",background:"white",overflow:"hidden",position:"relative"}}>
-          {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
+          {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
           {/* Photo/Avatar */}
           <div style={{background:"linear-gradient(135deg,"+catColor+"33,"+catColor+"11)",padding:"16px 16px 8px",textAlign:"center"}}>
             {(r.customPhoto||photo)?<img src={r.customPhoto||photo} alt={r.personName} style={{width:64,height:64,borderRadius:32,objectFit:"cover",border:"3px solid "+catColor,margin:"0 auto"}}/>:
@@ -4603,10 +4633,10 @@ function WallOfFame({data,onUpdate,userRole}) {
           </div>
           {/* Content */}
           <div style={{padding:"8px 12px 12px"}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text,textAlign:"center",marginBottom:4}}>{r.personName}</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.text,textAlign:"center",marginBottom:4}}>{r.personName}</div>
             <div style={{textAlign:"center",marginBottom:6}}><Badge color={catColor} small>{r.category}</Badge></div>
-            <div style={{fontSize:11,color:C.textMid,lineHeight:1.5,textAlign:"center",fontStyle:"italic"}}>"{r.message}"</div>
-            <div style={{fontSize:9,color:C.textLight,textAlign:"center",marginTop:6}}>{new Date(r.postedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+            <div style={{fontSize:13,color:C.textMid,lineHeight:1.5,textAlign:"center",fontStyle:"italic"}}>"{r.message}"</div>
+            <div style={{fontSize:10,color:C.textLight,textAlign:"center",marginTop:6}}>{new Date(r.postedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
           </div>
         </div>;
       })}
@@ -4650,11 +4680,11 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
   return <div style={{marginBottom:14}}>
     {/* Master header */}
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:open?10:0,cursor:"pointer",padding:"10px 14px",background:"white",borderRadius:10,border:"1px solid "+C.gold+"33",boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Goals <span style={{fontSize:11,color:C.textLight,fontWeight:400}}>({teams.length} team{teams.length!==1?"s":""}, {goals.length} goal{goals.length!==1?"s":""})</span></div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Team Goals <span style={{fontSize:13,color:C.textLight,fontWeight:400}}>({teams.length} team{teams.length!==1?"s":""}, {goals.length} goal{goals.length!==1?"s":""})</span></div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         {isAdmin&&open&&<div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
-          <button onClick={()=>setShowAddTeam(!showAddTeam)} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>+ Team</button>
-          <button onClick={()=>setShowForm(!showForm)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Goal</button>
+          <button onClick={()=>setShowAddTeam(!showAddTeam)} style={{fontSize:12,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>+ Team</button>
+          <button onClick={()=>setShowForm(!showForm)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:600}}>+ Goal</button>
         </div>}
         <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
       </div>
@@ -4663,46 +4693,46 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
     {open&&<div>
       {/* Add team form */}
       {isAdmin&&showAddTeam&&<div style={{background:"white",borderRadius:8,padding:10,marginBottom:10,border:"1px solid "+C.border,display:"flex",gap:6}}>
-        <input placeholder="New team name..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
-        <button onClick={addTeam} style={{padding:"6px 12px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
-        <button onClick={()=>setShowAddTeam(false)} style={{padding:"6px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>x</button>
+        <input placeholder="New team name..." value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+        <button onClick={addTeam} style={{padding:"6px 12px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+        <button onClick={()=>setShowAddTeam(false)} style={{padding:"6px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>x</button>
       </div>}
 
       {/* Add goal form */}
       {isAdmin&&showForm&&<div style={{background:"white",borderRadius:9,padding:12,marginBottom:10,border:"1px solid "+C.gold+"44"}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>New Goal</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>New Goal</div>
         <div style={{marginBottom:7}}>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Team</div>
-          <select value={form.team} onChange={e=>setForm({...form,team:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Team</div>
+          <select value={form.team} onChange={e=>setForm({...form,team:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
             {teams.map(t=><option key={t}>{t}</option>)}
           </select>
         </div>
-        <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
+        <input placeholder="Goal title (e.g. May Life Apps Goal)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
           <div>
-            <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Target</div>
-            <input type="number" value={form.target} onChange={e=>setForm({...form,target:Number(e.target.value)})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+            <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Target</div>
+            <input type="number" value={form.target} onChange={e=>setForm({...form,target:Number(e.target.value)})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           </div>
           <div>
-            <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Unit</div>
-            <select value={["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)?form.unit:"Custom"} onChange={e=>setForm({...form,unit:e.target.value==="Custom"?"":e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+            <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Unit</div>
+            <select value={["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)?form.unit:"Custom"} onChange={e=>setForm({...form,unit:e.target.value==="Custom"?"":e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
               {["Life Apps","Recruits","Licensed Agents","Appointments","Contacts","Custom"].map(u=><option key={u}>{u}</option>)}
             </select>
-            {!["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)&&<input placeholder="Custom unit..." value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text,marginTop:4,boxSizing:"border-box"}}/>}
+            {!["Life Apps","Recruits","Licensed Agents","Appointments","Contacts"].includes(form.unit)&&<input placeholder="Custom unit..." value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginTop:4,boxSizing:"border-box"}}/>}
           </div>
         </div>
         <div style={{marginBottom:8}}>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Deadline (optional)</div>
-          <input type="date" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Deadline (optional)</div>
+          <input type="date" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>
         <div style={{display:"flex",gap:7}}>
-          <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"7px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-          <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Goal</button>
+          <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"7px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+          <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Goal</button>
         </div>
       </div>}
 
       {/* Team cards — horizontal scrollable */}
-      {goals.length===0&&isAdmin&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"12px 0",background:"white",borderRadius:8,border:"1px solid "+C.border}}>No goals yet — click + Goal above to add your first!</div>}
+      {goals.length===0&&isAdmin&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"12px 0",background:"white",borderRadius:8,border:"1px solid "+C.border}}>No goals yet — click + Goal above to add your first!</div>}
       {goals.length>0&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
         {teams.map(team=>{
           const teamGoals = goals.filter(g=>(g.team||teams[0])===team);
@@ -4713,33 +4743,33 @@ function GoalBoard({data,onUpdate,userRole,showEdit=false}) {
             {/* Team card header */}
             <div onClick={()=>toggleTeam(team)} style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",padding:"10px 12px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontSize:12,fontWeight:700,color:"white"}}>{team}</div>
-                <div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>{teamGoals.length} goal{teamGoals.length!==1?"s":""} • {teamTotal}% avg</div>
+                <div style={{fontSize:13,fontWeight:700,color:"white"}}>{team}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{teamGoals.length} goal{teamGoals.length!==1?"s":""} • {teamTotal}% avg</div>
               </div>
-              <span style={{color:"rgba(255,255,255,0.5)",fontSize:13,transform:collapsed?"none":"rotate(180deg)",transition:"transform 0.2s",display:"inline-block"}}>v</span>
+              <span style={{color:"rgba(255,255,255,0.5)",fontSize:14,transform:collapsed?"none":"rotate(180deg)",transition:"transform 0.2s",display:"inline-block"}}>v</span>
             </div>
             {/* Team goals */}
             {!collapsed&&<div style={{padding:"10px 12px"}}>
-              {teamGoals.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No goals yet</div>}
+              {teamGoals.length===0&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No goals yet</div>}
               {teamGoals.map(g=>{
                 const pct=Math.min(Math.round((g.current/g.target)*100),100);
                 const daysLeft=g.deadline?Math.ceil((new Date(g.deadline+"T12:00:00")-new Date())/86400000):null;
                 return <div key={g.id} style={{marginBottom:10,paddingBottom:10,borderBottom:"1px solid "+C.border}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.text,flex:1,paddingRight:6}}>{g.title}</div>
+                    <div style={{fontSize:13,fontWeight:600,color:C.text,flex:1,paddingRight:6}}>{g.title}</div>
                     <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-                      {daysLeft!==null&&<span style={{fontSize:9,color:daysLeft<=7?C.danger:C.textLight}}>{daysLeft<=0?"Past":daysLeft+"d"}</span>}
-                      {isAdmin&&<button onClick={()=>removeGoal(g.id)} style={{fontSize:11,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>}
+                      {daysLeft!==null&&<span style={{fontSize:10,color:daysLeft<=7?C.danger:C.textLight}}>{daysLeft<=0?"Past":daysLeft+"d"}</span>}
+                      {isAdmin&&<button onClick={()=>removeGoal(g.id)} style={{fontSize:13,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>}
                     </div>
                   </div>
                   <Bar pct={pct} color={pct>=100?C.success:C.gold} h={5}/>
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
-                    <span style={{fontSize:10,color:C.textMid}}>{g.current}/{g.target} {g.unit}</span>
-                    <span style={{fontSize:10,fontWeight:700,color:pct>=100?C.success:C.gold}}>{pct}%</span>
+                    <span style={{fontSize:12,color:C.textMid}}>{g.current}/{g.target} {g.unit}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:pct>=100?C.success:C.gold}}>{pct}%</span>
                   </div>
                   {isAdmin&&<div style={{display:"flex",gap:4,marginTop:6,alignItems:"center"}}>
                     <button onClick={()=>updateCurrent(g.id,Math.max(0,g.current-1))} style={{width:24,height:24,borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:14,fontWeight:700,color:C.textMid}}>-</button>
-                    <span style={{fontSize:11,fontWeight:600,color:C.text,flex:1,textAlign:"center"}}>{g.current}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:C.text,flex:1,textAlign:"center"}}>{g.current}</span>
                     <button onClick={()=>updateCurrent(g.id,g.current+1)} style={{width:24,height:24,borderRadius:5,border:"none",background:C.gold,cursor:"pointer",fontSize:14,fontWeight:700,color:"white"}}>+</button>
                   </div>}
                 </div>;
@@ -4803,37 +4833,37 @@ function QuickMessages({data,onUpdate,userRole}) {
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Quick Messages</div><div style={{fontSize:11,color:C.textMid}}>Copy and paste to send via text</div></div>
+      <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Quick Messages</div><div style={{fontSize:13,color:C.textMid}}>Copy and paste to send via text</div></div>
       {isAdmin&&<div style={{display:"flex",gap:6}}>
-        <button onClick={reset} style={{fontSize:10,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>
+        <button onClick={reset} style={{fontSize:12,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Reset</button>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add</button>
       </div>}
     </div>
-    <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:C.teal}}>
+    <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:13,color:C.teal}}>
       Tap <strong>Copy</strong> on any message, then paste it into a text message on your phone. Replace [name] with the person's name before sending!
     </div>
     {isAdmin&&showAdd&&<Card style={{marginBottom:12,border:"1px solid "+C.teal+"44"}}>
-      <select value={form.cat} onChange={e=>setForm({...form,cat:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:7}}>
+      <select value={form.cat} onChange={e=>setForm({...form,cat:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:7}}>
         {["Encouragement","Accountability","Recognition","Invitation","Welcome"].map(c=><option key={c}>{c}</option>)}
       </select>
-      <textarea placeholder="Message text..." value={form.msg} onChange={e=>setForm({...form,msg:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5,marginBottom:7}}/>
+      <textarea placeholder="Message text..." value={form.msg} onChange={e=>setForm({...form,msg:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:70,boxSizing:"border-box",lineHeight:1.5,marginBottom:7}}/>
       <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={add} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={add} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
       </div>
     </Card>}
     <div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
-      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:11,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"4px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
     </div>
     {[...new Set(filtered.map(t=>t.cat))].map(cat=><div key={cat}>
       <SecHead title={cat} color={catColors[cat]||C.teal}/>
       {filtered.filter(t=>t.cat===cat).map((t,i)=>{
         const realIdx=templates.indexOf(t);
         return <div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:7,background:"white"}}>
-          <div style={{fontSize:12,color:C.text,lineHeight:1.5,marginBottom:8}}>{t.msg}</div>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.5,marginBottom:8}}>{t.msg}</div>
           <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
-            {isAdmin&&<button onClick={()=>del(realIdx)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>}
-            <button onClick={()=>copy(t.msg,realIdx)} style={{fontSize:11,padding:"4px 12px",borderRadius:6,border:"none",background:copied===realIdx?C.success:C.teal,color:"white",cursor:"pointer",fontWeight:600,transition:"background 0.2s"}}>{copied===realIdx?"Copied!":"Copy"}</button>
+            {isAdmin&&<button onClick={()=>del(realIdx)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>}
+            <button onClick={()=>copy(t.msg,realIdx)} style={{fontSize:13,padding:"4px 12px",borderRadius:6,border:"none",background:copied===realIdx?C.success:C.teal,color:"white",cursor:"pointer",fontWeight:600,transition:"background 0.2s"}}>{copied===realIdx?"Copied!":"Copy"}</button>
           </div>
         </div>;
       })}
@@ -4860,39 +4890,39 @@ function RepInvestmentEntry({rep,onUpdate}) {
   return <Card style={{marginBottom:12,border:"1px solid "+C.purple+"33"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
       <div>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>My Investments</div>
-        <div style={{fontSize:11,color:C.textMid}}>PAC: <span style={{color:C.purple,fontWeight:700}}>${totPAC.toLocaleString()}/mo</span> &nbsp;|&nbsp; Lump Sum: <span style={{color:C.gold,fontWeight:700}}>${totLump.toLocaleString()}</span></div>
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Investments</div>
+        <div style={{fontSize:13,color:C.textMid}}>PAC: <span style={{color:C.purple,fontWeight:700}}>${totPAC.toLocaleString()}/mo</span> &nbsp;|&nbsp; Lump Sum: <span style={{color:C.gold,fontWeight:700}}>${totLump.toLocaleString()}</span></div>
       </div>
-      <button onClick={()=>setShow(!show)} style={{fontSize:11,padding:"4px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
+      <button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"4px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
     </div>
     {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
-      <input placeholder="Client name" value={form.clientName} onChange={e=>setForm({...form,clientName:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
+      <input placeholder="Client name" value={form.clientName} onChange={e=>setForm({...form,clientName:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
-        <input type="number" placeholder="Monthly PAC $" value={form.pac} onChange={e=>setForm({...form,pac:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-        <input type="number" placeholder="Lump Sum $" value={form.lumpSum} onChange={e=>setForm({...form,lumpSum:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input type="number" placeholder="Monthly PAC $" value={form.pac} onChange={e=>setForm({...form,pac:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+        <input type="number" placeholder="Lump Sum $" value={form.lumpSum} onChange={e=>setForm({...form,lumpSum:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
-        <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+        <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
           {["Mutual Fund","IBA","Fixed Annuity","Indexed Annuity","Other"].map(t=><option key={t}>{t}</option>)}
         </select>
-        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
       </div>
       <div style={{display:"flex",gap:6}}>
-        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
       </div>
     </div>}
     {entries.length>0&&<div style={{maxHeight:140,overflowY:"auto",marginTop:6}}>
       {entries.slice().reverse().map((e,i)=>{
         const realIdx=entries.length-1-i;
-        return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:11}}>
+        return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+C.border,fontSize:13}}>
           <span style={{color:C.text,flex:1}}>{e.clientName}</span>
-          <span style={{color:C.textMid,fontSize:10,marginRight:6}}>{e.type}</span>
+          <span style={{color:C.textMid,fontSize:12,marginRight:6}}>{e.type}</span>
           <div style={{textAlign:"right",marginRight:8}}>
             {e.pac&&<div style={{color:C.purple,fontWeight:600}}>${e.pac}/mo</div>}
             {e.lumpSum&&<div style={{color:C.gold,fontWeight:600}}>${e.lumpSum}</div>}
           </div>
-          <button onClick={()=>onUpdate({...rep,investments:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+          <button onClick={()=>onUpdate({...rep,investments:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
         </div>;
       })}
     </div>}
@@ -4909,20 +4939,20 @@ function InvestmentLog({data,onUpdate,userRole}) {
   const total = allLogs.reduce((s,e)=>s+(Number(e.pac)||0)+(Number(e.lumpSum)||0),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Investment Log ({allLogs.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Investment Log ({allLogs.length})</div>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:11,color:C.gold,fontWeight:600}}>${total.toLocaleString()} total</span>
-        <button onClick={e=>{e.stopPropagation();if(window.confirm("Clear all investment logs? This cannot be undone."))onUpdate({...data,investmentLogs:{}});}} style={{fontSize:10,padding:"3px 8px",borderRadius:5,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer"}}>Clear All</button>
+        <span style={{fontSize:13,color:C.gold,fontWeight:600}}>${total.toLocaleString()} total</span>
+        <button onClick={e=>{e.stopPropagation();if(window.confirm("Clear all investment logs? This cannot be undone."))onUpdate({...data,investmentLogs:{}});}} style={{fontSize:12,padding:"3px 8px",borderRadius:5,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer"}}>Clear All</button>
         <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
       </div>
     </div>
     {open&&<div style={{marginTop:10}}>
       {allLogs.map((e,i)=><div key={i} style={{padding:"7px 0",borderBottom:"1px solid "+C.border,display:"flex",gap:10,alignItems:"center"}}>
         <div style={{flex:1}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.text}}>{e.clientName}</div>
-          <div style={{fontSize:10,color:C.textMid}}>{e.repName} • {e.type} • {new Date(e.date).toLocaleDateString()}</div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{e.clientName}</div>
+          <div style={{fontSize:12,color:C.textMid}}>{e.repName} • {e.type} • {new Date(e.date).toLocaleDateString()}</div>
         </div>
-        <div style={{textAlign:"right",fontSize:11,color:C.gold,fontWeight:600}}>
+        <div style={{textAlign:"right",fontSize:13,color:C.gold,fontWeight:600}}>
           {e.pac&&<div>PAC: ${e.pac}</div>}
           {e.lumpSum&&<div>Lump: ${e.lumpSum}</div>}
         </div>
@@ -4992,24 +5022,24 @@ function LicensedPremiumEntry({rep,onUpdate}) {
   return <Card style={{marginBottom:12,border:"1px solid "+C.teal+"33"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
       <div>
-        <div style={{fontSize:12,fontWeight:700,color:C.text}}>My Life Apps</div>
-        <div style={{fontSize:11,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span> · <span style={{color:C.gold,fontWeight:600}}>{promo.label} ({promo.pct}%)</span></div>
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Life Apps</div>
+        <div style={{fontSize:13,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span> · <span style={{color:C.gold,fontWeight:600}}>{promo.label} ({promo.pct}%)</span></div>
       </div>
-      <button onClick={()=>setShow(!show)} style={{fontSize:11,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
+      <button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
     </div>
 
     {/* Monthly Income Goal */}
     <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
-        <div style={{fontSize:11,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
-        <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...rep,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:12,color:C.text,maxWidth:100}}/>
-        {goal>0&&<div style={{fontSize:11,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
+        <div style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
+        <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...rep,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>
+        {goal>0&&<div style={{fontSize:13,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
       </div>
       {goal>0&&<div>
         <div style={{height:8,background:"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",marginBottom:4}}>
           <div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${C.teal},${C.success})`,width:goalPct+"%",transition:"width 0.4s"}}/>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.textMid}}>
           <span>{goalPct}% of ${goal.toLocaleString()} goal</span>
           {appsNeeded!==null&&appsNeeded>0&&<span>~{appsNeeded} more app{appsNeeded!==1?"s":""} needed</span>}
           {goalPct>=100&&<span style={{color:C.success,fontWeight:700}}>🎉 Goal reached!</span>}
@@ -5019,16 +5049,16 @@ function LicensedPremiumEntry({rep,onUpdate}) {
 
     {/* Log App Form */}
     {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
-      <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
+      <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
-        <input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
       </div>
       <label style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,cursor:"pointer"}}>
         <input type="checkbox" checked={form.cod} onChange={e=>setForm({...form,cod:e.target.checked})} style={{width:15,height:15,accentColor:C.gold}}/>
-        <span style={{fontSize:11,color:C.textMid}}>COD Application — <span style={{color:C.gold,fontWeight:600}}>premium pending acceptance</span></span>
+        <span style={{fontSize:13,color:C.textMid}}>COD Application — <span style={{color:C.gold,fontWeight:600}}>premium pending acceptance</span></span>
       </label>
-      {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:form.cod?C.textLight+"11":C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:10}}>
+      {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:form.cod?C.textLight+"11":C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:12}}>
         <div style={{fontWeight:700,color:form.cod?C.textMid:C.gold,marginBottom:2}}>{form.cod?"Estimated Commission (COD — pending acceptance)":"Estimated Commission at"} {form.cod?"":promo.label+" ("+promo.pct+"%)"}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
           <div><div style={{color:C.textMid}}>Upfront</div><div style={{fontWeight:700,color:C.text}}>${c.upfront.toFixed(2)}</div></div>
@@ -5037,13 +5067,13 @@ function LicensedPremiumEntry({rep,onUpdate}) {
         </div>
       </div>:null;})()}
       <div style={{display:"flex",gap:6}}>
-        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save</button>
+        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
       </div>
     </div>}
 
     {/* Pending COD banner */}
-    {pendingCOD.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"7px 10px",marginBottom:8,fontSize:10}}>
+    {pendingCOD.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"7px 10px",marginBottom:8,fontSize:12}}>
       <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>⏳ {pendingCOD.length} COD App{pendingCOD.length>1?"s":""} Pending Acceptance</div>
       <div style={{color:C.textMid}}>These are not counted in your totals or commission until accepted.</div>
     </div>}
@@ -5055,39 +5085,39 @@ function LicensedPremiumEntry({rep,onUpdate}) {
         const isCOD=!!e.cod;
         const isPending=isCOD&&!e.codAccepted;
         return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:isPending?0.75:1}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13}}>
             <div style={{flex:1}}>
               <span style={{color:C.text,fontWeight:600}}>{e.client}</span>
-              {isCOD&&<span style={{marginLeft:6,fontSize:9,padding:"1px 5px",borderRadius:4,background:isPending?C.gold+"22":C.success+"22",color:isPending?C.gold:C.success,fontWeight:700}}>{isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
+              {isCOD&&<span style={{marginLeft:6,fontSize:10,padding:"1px 5px",borderRadius:4,background:isPending?C.gold+"22":C.success+"22",color:isPending?C.gold:C.success,fontWeight:700}}>{isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
             </div>
             <span style={{color:isPending?C.textMid:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
-            <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:10,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+            <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
           </div>
-          {isPending&&<button onClick={()=>acceptCOD(realIdx)} style={{marginTop:4,width:"100%",padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:10,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted — Add to Totals</button>}
+          {isPending&&<button onClick={()=>acceptCOD(realIdx)} style={{marginTop:4,width:"100%",padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:12,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted — Add to Totals</button>}
           {c&&!isPending&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
-            <div style={{fontSize:9,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.upfront.toFixed(0)}</span></div>
-            <div style={{fontSize:9,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
-            <div style={{fontSize:9,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
+            <div style={{fontSize:10,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.upfront.toFixed(0)}</span></div>
+            <div style={{fontSize:10,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
+            <div style={{fontSize:10,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
           </div>}
         </div>;
       })}
     </div>}
 
     <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
-      <div style={{fontSize:10,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
       <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
-        <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
-        {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:10,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
+        <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+        {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
       </div>
-      {calcResult&&<div style={{background:C.gold+"11",borderRadius:7,padding:"7px 9px",fontSize:10}}>
+      {calcResult&&<div style={{background:C.gold+"11",borderRadius:7,padding:"7px 9px",fontSize:12}}>
         <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>{promo.label} ({promo.pct}%) on ${calcPremium}/mo app (${(Number(calcPremium)*12).toFixed(0)}/yr annual)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Upfront</div><div style={{fontSize:14,fontWeight:800,color:C.success}}>${calcResult.upfront.toFixed(2)}</div></div>
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>As Earned</div><div style={{fontSize:14,fontWeight:800,color:C.text}}>${calcResult.asEarned.toFixed(2)}</div></div>
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:14,fontWeight:800,color:C.gold}}>${calcResult.total1yr.toFixed(2)}</div></div>
         </div>
-        <div style={{fontSize:9,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
+        <div style={{fontSize:10,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
       </div>}
     </div>
   </Card>;
@@ -5107,15 +5137,15 @@ function InvestmentLogPage({data,onUpdate}) {
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Investment Observations</div>
-      {allLogs.length>0&&<button onClick={clearAll} style={{fontSize:11,padding:"5px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontWeight:600}}>Clear All</button>}
+      {allLogs.length>0&&<button onClick={clearAll} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.danger+"11",color:C.danger,border:"1px solid "+C.danger+"33",cursor:"pointer",fontWeight:600}}>Clear All</button>}
     </div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>All investment observation entries logged by reps.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>All investment observation entries logged by reps.</div>
     {allLogs.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>No investment observations logged yet</div>}
     {allLogs.map((e,i)=><Card key={i} style={{marginBottom:8,padding:"10px 12px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{e.clientName}</div>
-          <div style={{fontSize:11,color:C.textMid}}>{e.repName} — {new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+          <div style={{fontSize:14,fontWeight:600,color:C.text}}>{e.clientName}</div>
+          <div style={{fontSize:13,color:C.textMid}}>{e.repName} — {new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
         </div>
         <Badge color={C.gold} small>Investment Obs</Badge>
       </div>
@@ -5128,7 +5158,7 @@ function RepInvestmentLog({repId,data}) {
   const entries = (data.investmentLogs||{})[repId]||[];
   if(entries.length===0) return null;
   return <div style={{marginTop:4}}>
-    {entries.slice().reverse().slice(0,5).map((e,i)=><div key={i} style={{fontSize:10,color:C.textMid,padding:"2px 0",borderBottom:"1px solid "+C.border}}>{e.clientName} — {new Date(e.date).toLocaleDateString()}</div>)}
+    {entries.slice().reverse().slice(0,5).map((e,i)=><div key={i} style={{fontSize:12,color:C.textMid,padding:"2px 0",borderBottom:"1px solid "+C.border}}>{e.clientName} — {new Date(e.date).toLocaleDateString()}</div>)}
   </div>;
 }
 
@@ -5161,16 +5191,16 @@ function BirthdayAnniversaryWidget({data}) {
       <div style={{fontSize:16,fontWeight:800,color:"white",marginBottom:4}}>
         Happy Birthday{todayBirthdays.length>1?"s":""}!
       </div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.9)"}}>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.9)"}}>
         {todayBirthdays.map(b=>b.name).join(" · ")} — Happy Birthday! 🎂
       </div>
-      <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:6}}>Make sure to reach out and celebrate them! 🥳</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.65)",marginTop:6}}>Make sure to reach out and celebrate them! 🥳</div>
     </div>}
     {upcoming.filter(u=>u.days>0).length>0&&<Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Birthdays</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>Upcoming Birthdays</div>
       {upcoming.filter(u=>u.days>0).map((item,i)=>{const arr=upcoming.filter(u=>u.days>0);return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none"}}>
-        <div style={{width:32,height:32,borderRadius:8,background:C.purple+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.purple,flexShrink:0}}>BD</div>
-        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div><div style={{fontSize:11,color:C.textMid}}>{item.type} on {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div></div>
+        <div style={{width:32,height:32,borderRadius:8,background:C.purple+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.purple,flexShrink:0}}>BD</div>
+        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:C.text}}>{item.name}</div><div style={{fontSize:13,color:C.textMid}}>{item.type} on {item.date.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div></div>
         <div>{item.days===1?<Badge color={C.gold} small>Tomorrow</Badge>:<Badge color={C.teal} small>{"In "+item.days+"d"}</Badge>}</div>
       </div>;})}
     </Card>}
@@ -5207,18 +5237,18 @@ function ActivityAlerts({data,onUpdate,userRole,userId}) {
   return <div style={{background:"white",borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 16px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.danger}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,flex:1}}>Activity Alerts ({visible_alerts.length})</div>
-      <button onClick={clearAll} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Clear All</button>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,flex:1}}>Activity Alerts ({visible_alerts.length})</div>
+      <button onClick={clearAll} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Clear All</button>
     </div>
     {visible.map((a,i)=>(
       <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none"}}>
         <div style={{width:6,height:6,borderRadius:3,background:a.color,flexShrink:0}}/>
-        <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
-        <span style={{fontSize:11,color:a.color,fontWeight:500,flex:1}}>{a.msg}</span>
-        <button onClick={()=>dismiss(a.key)} style={{fontSize:10,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
+        <span style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{a.name}</span>
+        <span style={{fontSize:13,color:a.color,fontWeight:500,flex:1}}>{a.msg}</span>
+        <button onClick={()=>dismiss(a.key)} style={{fontSize:12,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
       </div>
     ))}
-    {visible_alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>{showAll?"Show Less":"Show All "+visible_alerts.length+" Alerts"}</button>}
+    {visible_alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>{showAll?"Show Less":"Show All "+visible_alerts.length+" Alerts"}</button>}
   </div>;
 }
 
@@ -5246,23 +5276,23 @@ function MonthlyHistory({data,onUpdate}) {
 
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Production History</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Production History</div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <span style={{fontSize:11,color:C.textLight}}>{history.length} months archived</span>
+        <span style={{fontSize:13,color:C.textLight}}>{history.length} months archived</span>
         <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
       </div>
     </div>
     {open&&<div style={{marginTop:12}}>
-      <button onClick={archiveMonth} style={{width:"100%",padding:"8px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,marginBottom:12}}>
+      <button onClick={archiveMonth} style={{width:"100%",padding:"8px",borderRadius:8,background:C.navy,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,marginBottom:12}}>
         Archive {currentMonth} and Reset
       </button>
-      {history.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"8px 0"}}>No months archived yet</div>}
+      {history.length===0&&<div style={{color:C.textLight,fontSize:13,textAlign:"center",padding:"8px 0"}}>No months archived yet</div>}
       {history.slice().reverse().map((h,i)=><div key={i} style={{padding:"8px 10px",borderRadius:8,background:C.surface,marginBottom:6}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <span style={{fontSize:12,fontWeight:700,color:C.text}}>{h.month}</span>
+          <span style={{fontSize:13,fontWeight:700,color:C.text}}>{h.month}</span>
           <Badge color={C.teal} small>${Math.round(h.annualPremium).toLocaleString()}/yr</Badge>
         </div>
-        <div style={{display:"flex",gap:12,fontSize:11,color:C.textMid}}>
+        <div style={{display:"flex",gap:12,fontSize:13,color:C.textMid}}>
           <span>${h.premium.toFixed(0)}/mo premium</span>
           <span>{h.recruits} recruits</span>
           <span>{h.licensed} licensed</span>
@@ -5302,15 +5332,15 @@ function Leaderboard({data,userId}) {
   const [open,setOpen] = useState(false);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:open?12:0}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Leaderboard</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Team Leaderboard</div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:11,color:C.textLight}}>{ranked.length} members</span>
+        <span style={{fontSize:13,color:C.textLight}}>{ranked.length} members</span>
         <span style={{fontSize:14,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
       </div>
     </div>
     {open&&<div style={{display:"flex",gap:4,marginBottom:12,flexWrap:"wrap"}}>
       {[["scorecard","Scorecard"],["lifeapps","Life Apps"],["appts","Appts"],["recruits","Recruits"]].map(([k,l])=>(
-        <button key={k} onClick={e=>{e.stopPropagation();setMode(k);}} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:mode===k?700:400,background:mode===k?C.navy:C.surface,color:mode===k?"white":C.textMid}}>{l}</button>
+        <button key={k} onClick={e=>{e.stopPropagation();setMode(k);}} style={{fontSize:12,padding:"3px 8px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:mode===k?700:400,background:mode===k?C.navy:C.surface,color:mode===k?"white":C.textMid}}>{l}</button>
       ))}
     </div>}
     {!open&&null}
@@ -5321,17 +5351,17 @@ function Leaderboard({data,userId}) {
       const pct=mode==="scorecard"?u.scorePct:(Number(val)/maxVal)*100;
       return <div key={u.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,padding:"7px 9px",borderRadius:8,background:isMe?C.teal+"11":i<3?"rgba(0,0,0,0.02)":"transparent",border:isMe?`1px solid ${C.teal}33`:"1px solid transparent"}}>
         <div style={{width:28,height:20,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:i<3?9:11,fontWeight:700,color:i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.textLight,background:i<3?(i===0?C.gold+"22":i===1?"rgba(148,163,184,0.15)":"rgba(180,83,9,0.1)"):"transparent",borderRadius:4}}>{i<3?medals[i]:i+1}</div>
-        <div style={{width:28,height:28,borderRadius:8,background:roleColors[u.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:roleColors[u.role],flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{width:28,height:28,borderRadius:8,background:roleColors[u.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:roleColors[u.role],flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-            <span style={{fontSize:12,fontWeight:isMe?700:500,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}{isMe&&<span style={{fontSize:10,color:C.teal,marginLeft:4}}>(you)</span>}</span>
-            <span style={{fontSize:12,fontWeight:700,color:i===0?C.gold:C.text,marginLeft:8,flexShrink:0}}>{val}</span>
+            <span style={{fontSize:13,fontWeight:isMe?700:500,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}{isMe&&<span style={{fontSize:12,color:C.teal,marginLeft:4}}>(you)</span>}</span>
+            <span style={{fontSize:13,fontWeight:700,color:i===0?C.gold:C.text,marginLeft:8,flexShrink:0}}>{val}</span>
           </div>
           <Bar pct={pct} color={i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.teal} h={3}/>
         </div>
       </div>;
     })}
-    {open&&ranked.length===0&&<div style={{color:C.textLight,fontSize:12,textAlign:"center",padding:"12px 0"}}>No activity logged yet this week</div>}
+    {open&&ranked.length===0&&<div style={{color:C.textLight,fontSize:13,textAlign:"center",padding:"12px 0"}}>No activity logged yet this week</div>}
   </Card>;
 }
 
@@ -5353,17 +5383,17 @@ function TopRecruiters({data}) {
   const medals=["1st","2nd","3rd"];
 
   return <Card style={{marginBottom:14}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Top Recruiters</div>
+    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Top Recruiters</div>
     {recruitCounts.slice(0,5).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,marginBottom:8,padding:"7px 9px",borderRadius:8,background:i===0?C.gold+"11":"transparent",border:i===0?`1px solid ${C.gold}33`:"none"}}>
       <div style={{fontSize:i<3?9:11,fontWeight:700,width:28,height:20,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:4,background:i===0?C.gold+"22":i===1?"rgba(148,163,184,0.15)":i===2?"rgba(180,83,9,0.1)":"transparent",color:i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.textLight}}>{i<3?medals[i]:i+1}</div>
-      <div style={{width:28,height:28,borderRadius:8,background:roleColors[p.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:roleColors[p.role],flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
+      <div style={{width:28,height:28,borderRadius:8,background:roleColors[p.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:roleColors[p.role],flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name} <span style={{fontSize:10,color:C.textLight}}>({p.role})</span></div>
-        <div style={{fontSize:10,color:C.textMid,marginTop:1}}>{p.recruits.map(r=>r.name).join(", ")}</div>
+        <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name} <span style={{fontSize:12,color:C.textLight}}>({p.role})</span></div>
+        <div style={{fontSize:12,color:C.textMid,marginTop:1}}>{p.recruits.map(r=>r.name).join(", ")}</div>
       </div>
       <div style={{textAlign:"center",flexShrink:0}}>
         <div style={{fontSize:18,fontWeight:800,color:i===0?C.gold:C.text}}>{p.recruits.length}</div>
-        <div style={{fontSize:9,color:C.textLight}}>recruit{p.recruits.length!==1?"s":""}</div>
+        <div style={{fontSize:10,color:C.textLight}}>recruit{p.recruits.length!==1?"s":""}</div>
       </div>
     </div>)}
   </Card>;
@@ -5376,16 +5406,16 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
   const filtered = search ? activeReps(reps).filter(r=>r.name.toLowerCase().includes(search.toLowerCase())) : reps;
   return <div style={{marginTop:10,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
     <button onClick={()=>setOpen(!open)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer",padding:0}}>
-      <div style={{fontSize:10,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>Update Licensed Status ({reps.length} reps)</div>
-      <div style={{fontSize:12,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</div>
+      <div style={{fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>Update Licensed Status ({reps.length} reps)</div>
+      <div style={{fontSize:13,color:C.textLight,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</div>
     </button>
     {open&&<div style={{marginTop:8}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)}
-        style={{width:"100%",padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:11,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-      {filtered.length===0&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No reps found</div>}
+        style={{width:"100%",padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      {filtered.length===0&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"8px 0"}}>No reps found</div>}
       {filtered.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,padding:"5px 0",borderBottom:`1px solid ${C.border}`}}>
-        <span style={{fontSize:12,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
-        <label style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.textMid,cursor:"pointer",whiteSpace:"nowrap"}}>
+        <span style={{fontSize:13,color:C.text,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span>
+        <label style={{display:"flex",alignItems:"center",gap:4,fontSize:13,color:C.textMid,cursor:"pointer",whiteSpace:"nowrap"}}>
           <input type="checkbox" checked={!!r.isLicensed} onChange={e=>onUpdateData({...data,reps:data.reps.map(rep=>rep.id===r.id?{...rep,isLicensed:e.target.checked}:rep)})}/> Licensed
         </label>
       </div>)}
@@ -5419,15 +5449,15 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
   return <div>
     {/* Motivational banner */}
     <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,color:"white",border:"1px solid "+C.teal+"33"}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Build Your Team</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Every person you bring in builds your team, your income, and your legacy. <strong style={{color:"white"}}>Your income grows as your team grows.</strong> Stay connected to your recruits — their success is your success!</div>
-      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:11,color:"rgba(255,255,255,0.7)"}}>Recruiting is a core requirement to become a Field Trainer and RVP. Every conversation is a step toward your goals!</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Build Your Team</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Every person you bring in builds your team, your income, and your legacy. <strong style={{color:"white"}}>Your income grows as your team grows.</strong> Stay connected to your recruits — their success is your success!</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:13,color:"rgba(255,255,255,0.7)"}}>Recruiting is a core requirement to become a Field Trainer and RVP. Every conversation is a step toward your goals!</div>
     </div>
 
     {/* Stats */}
     <Card style={{padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
       <div style={{fontSize:28,fontWeight:800,color:C.teal}}>{totalRecruits}</div>
-      <div style={{fontSize:12,color:C.textMid}}>Total People You Have Brought In</div>
+      <div style={{fontSize:13,color:C.textMid}}>Total People You Have Brought In</div>
     </Card>
 
     {/* Official recruits - in the system */}
@@ -5440,12 +5470,12 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
         const pct=cl.length>0?Math.round((done/cl.length)*100):0;
         return <div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:7,background:"white"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div><div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:11,color:C.textMid}}><PhoneLink phone={r.phone}/></div></div>
+            <div><div style={{fontSize:14,fontWeight:700,color:C.text}}>{r.name}</div><div style={{fontSize:13,color:C.textMid}}><PhoneLink phone={r.phone}/></div></div>
             <Badge color={track?.color||C.teal} small>{track?.label}</Badge>
           </div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Their progress {pct}%</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Their progress {pct}%</div>
           <Bar pct={pct} color={track?.color||C.teal} h={4}/>
-          {pct===100&&<div style={{marginTop:5,fontSize:10,color:C.success,fontWeight:600}}>Graduated! Great job investing in them!</div>}
+          {pct===100&&<div style={{marginTop:5,fontSize:12,color:C.success,fontWeight:600}}>Graduated! Great job investing in them!</div>}
         </div>;
       })}
     </div>}
@@ -5455,8 +5485,8 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
       <SecHead title={"My Recruit Log ("+myLoggedRecruits.length+")"} color={C.purple}/>
       {myLoggedRecruits.map((r,i)=><div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:6,background:"white",display:"flex",alignItems:"center",gap:10}}>
         <div style={{flex:1}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div>
-          <div style={{fontSize:11,color:C.textMid}}>{r.phone&&r.phone+" - "}{r.date&&new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+          <div style={{fontSize:14,fontWeight:600,color:C.text}}>{r.name}</div>
+          <div style={{fontSize:13,color:C.textMid}}>{r.phone&&r.phone+" - "}{r.date&&new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
         </div>
         <button onClick={()=>removeRecruit(r.id)} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:16,padding:"0 4px"}}>x</button>
       </div>)}
@@ -5465,20 +5495,20 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
     {/* Empty state */}
     {totalRecruits===0&&<div style={{textAlign:"center",padding:"20px 0",marginBottom:14}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Your team starts with one conversation</div>
-      <div style={{fontSize:12,color:C.textMid,lineHeight:1.6,maxWidth:320,margin:"0 auto"}}>Think about who in your life could use more income, financial protection, or a career change. That person is your first recruit. Log them below and reach out today!</div>
+      <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,maxWidth:320,margin:"0 auto"}}>Think about who in your life could use more income, financial protection, or a career change. That person is your first recruit. Log them below and reach out today!</div>
     </div>}
 
     {/* Add recruit button/form */}
-    {!showForm?<button onClick={()=>setShowForm(true)} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Log a New Recruit</button>:
+    {!showForm?<button onClick={()=>setShowForm(true)} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>+ Log a New Recruit</button>:
     <Card style={{border:"1px solid "+C.teal+"44"}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>Log a New Recruit</div>
-      <div style={{fontSize:11,color:C.textMid,marginBottom:10}}>Track everyone you bring into the opportunity. This is your personal record.</div>
-      <input placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-      <input placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-      <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Log a New Recruit</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:10}}>Track everyone you bring into the opportunity. This is your personal record.</div>
+      <input placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <input placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-        <button onClick={addRecruit} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Recruit</button>
+        <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={addRecruit} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Save Recruit</button>
       </div>
     </Card>}
   </div>;
@@ -5576,9 +5606,9 @@ function ProspectsTab({rep,onUpdate}) {
   return <div>
     {/* Header */}
     <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,color:"white"}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Who Do You Know?</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Answer each question honestly and write down every name that comes to mind. <strong style={{color:"white"}}>Don't overthink it.</strong> These are people who already know and trust you — they deserve to know about this opportunity.</div>
-      <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"rgba(255,255,255,0.7)"}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:6}}>Who Do You Know?</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.6,marginBottom:8}}>Answer each question honestly and write down every name that comes to mind. <strong style={{color:"white"}}>Don't overthink it.</strong> These are people who already know and trust you — they deserve to know about this opportunity.</div>
+      <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",fontSize:13,color:"rgba(255,255,255,0.7)"}}>
         {totalProspects===0?"Start with the first section below — it is the most important one.":"You have identified "+totalProspects+" prospect"+(totalProspects!==1?"s":"")+". Keep going!"}
       </div>
     </div>
@@ -5588,26 +5618,26 @@ function ProspectsTab({rep,onUpdate}) {
       <button onClick={()=>toggleCat(cat.cat)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderRadius:10,background:"white",border:"2px solid "+cat.color+"33",cursor:"pointer",marginBottom:openCats[cat.cat]?0:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:10,height:10,borderRadius:5,background:cat.color,flexShrink:0}}/>
-          <span style={{fontSize:13,fontWeight:700,color:C.text}}>{cat.cat}</span>
-          {(()=>{const count=cat.questions.reduce((s,q)=>s+(prospects[q.id]||[]).length,0);return count>0?<span style={{fontSize:10,background:cat.color+"22",color:cat.color,padding:"2px 7px",borderRadius:10,fontWeight:600}}>{count} name{count!==1?"s":""}</span>:null;})()}
+          <span style={{fontSize:14,fontWeight:700,color:C.text}}>{cat.cat}</span>
+          {(()=>{const count=cat.questions.reduce((s,q)=>s+(prospects[q.id]||[]).length,0);return count>0?<span style={{fontSize:12,background:cat.color+"22",color:cat.color,padding:"2px 7px",borderRadius:10,fontWeight:600}}>{count} name{count!==1?"s":""}</span>:null;})()}
         </div>
         <span style={{fontSize:14,color:C.textLight,transform:openCats[cat.cat]?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
       </button>
 
       {openCats[cat.cat]&&<div style={{background:"white",borderRadius:"0 0 10px 10px",border:"2px solid "+cat.color+"33",borderTop:"none",padding:"10px 14px"}}>
         {cat.questions.map((q,qi)=><div key={q.id} style={{marginBottom:qi<cat.questions.length-1?14:0,paddingBottom:qi<cat.questions.length-1?14:0,borderBottom:qi<cat.questions.length-1?"1px solid "+C.border:"none"}}>
-          <div style={{fontSize:12,color:C.text,lineHeight:1.5,marginBottom:8,fontWeight:500}}>{q.q}</div>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.5,marginBottom:8,fontWeight:500}}>{q.q}</div>
           {/* Existing names */}
           {(prospects[q.id]||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
             {(prospects[q.id]||[]).map((name,ni)=><div key={ni} style={{display:"flex",alignItems:"center",gap:4,background:cat.color+"15",border:"1px solid "+cat.color+"33",borderRadius:20,padding:"3px 10px"}}>
-              <span style={{fontSize:12,color:C.text,fontWeight:500}}>{name}</span>
-              <button onClick={()=>removeName(q.id,name)} style={{background:"none",border:"none",cursor:"pointer",color:C.textLight,fontSize:13,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
+              <span style={{fontSize:13,color:C.text,fontWeight:500}}>{name}</span>
+              <button onClick={()=>removeName(q.id,name)} style={{background:"none",border:"none",cursor:"pointer",color:C.textLight,fontSize:14,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
             </div>)}
           </div>}
           {/* Add name input */}
           <div style={{display:"flex",gap:6}}>
-            <input placeholder="Type a name and press Add..." value={inputs[q.id]||""} onChange={e=>setInputs(prev=>({...prev,[q.id]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addName(q.id)} style={{flex:1,padding:"6px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
-            <button onClick={()=>addName(q.id)} style={{padding:"6px 12px",borderRadius:8,border:"none",background:cat.color,color:"white",cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>Add</button>
+            <input placeholder="Type a name and press Add..." value={inputs[q.id]||""} onChange={e=>setInputs(prev=>({...prev,[q.id]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addName(q.id)} style={{flex:1,padding:"6px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+            <button onClick={()=>addName(q.id)} style={{padding:"6px 12px",borderRadius:8,border:"none",background:cat.color,color:"white",cursor:"pointer",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}}>Add</button>
           </div>
         </div>)}
       </div>}
@@ -5615,12 +5645,12 @@ function ProspectsTab({rep,onUpdate}) {
 
     {/* Master prospect list */}
     {masterList.length>0&&<div style={{marginTop:16}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>My Prospect List ({masterList.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>My Prospect List ({masterList.length})</div>
       {masterList.map((item,i)=><div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"8px 12px",borderRadius:8,background:"white",border:"1px solid "+C.border,marginBottom:6}}>
         <div style={{width:8,height:8,borderRadius:4,background:item.color,flexShrink:0,marginTop:4}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.name}</div>
-          <div style={{fontSize:10,color:C.textLight,lineHeight:1.4,marginTop:2}}>{item.question}</div>
+          <div style={{fontSize:14,fontWeight:600,color:C.text}}>{item.name}</div>
+          <div style={{fontSize:12,color:C.textLight,lineHeight:1.4,marginTop:2}}>{item.question}</div>
         </div>
         <button onClick={()=>removeName(item.qId,item.name)} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:16,flexShrink:0,padding:"0 2px"}}>×</button>
       </div>)}
@@ -5640,7 +5670,7 @@ function ProspectsPage({session,data,onUpdate}) {
   };
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Prospects</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Your personal prospect list — separate from your reps' lists.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal prospect list — separate from your reps' lists.</div>
     <ProspectsTab rep={rep} onUpdate={updateProspects}/>
   </div>;
 }
@@ -5650,10 +5680,10 @@ function ProspectsPage({session,data,onUpdate}) {
 function LeadLinkPage({session,data}) {
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
     <MyLeadLink name={session.name} data={data}/>
     <Card>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>How to use your link</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>How to use your link</div>
       {[
         {step:"1",text:"Copy your personal link above"},
         {step:"2",text:"Share it via text, email, social media, or in person"},
@@ -5661,9 +5691,9 @@ function LeadLinkPage({session,data}) {
         {step:"4",text:"Follow up with them to review their results and set an appointment"},
       ].map((item,i)=><div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<3?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
         <div style={{width:22,height:22,borderRadius:11,background:C.teal+"22",border:"1px solid "+C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <span style={{fontSize:10,fontWeight:700,color:C.teal}}>{item.step}</span>
+          <span style={{fontSize:12,fontWeight:700,color:C.teal}}>{item.step}</span>
         </div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.5,paddingTop:2}}>{item.text}</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.5,paddingTop:2}}>{item.text}</div>
       </div>)}
     </Card>
   </div>;
@@ -5743,10 +5773,10 @@ function TeamLeads({userRole}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Team Leads</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>All leads submitted through MoneyMap links.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>All leads submitted through MoneyMap links.</div>
 
     {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.textMid}}>Loading leads...</div>}
-    {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"12px",color:C.danger,fontSize:12,marginBottom:14}}>{error}</div>}
+    {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"12px",color:C.danger,fontSize:13,marginBottom:14}}>{error}</div>}
 
     {!loading&&!error&&<div>
       {/* Stats */}
@@ -5758,24 +5788,24 @@ function TeamLeads({userRole}) {
           {l:"New",v:stats.newLeads,c:C.success},
         ].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
           <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
-          <div style={{fontSize:10,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div>
+          <div style={{fontSize:12,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{s.l}</div>
         </Card>)}
       </div>
 
       {/* Archived toggle */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontSize:11,color:C.textMid}}>{showArchived?"Showing archived leads":"Showing active leads"} ({filtered.length})</div>
+        <div style={{fontSize:13,color:C.textMid}}>{showArchived?"Showing archived leads":"Showing active leads"} ({filtered.length})</div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          {archivedLeads.length>0&&<button onClick={()=>{setShowArchived(!showArchived);setFilter("all");}} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer"}}>{showArchived?"View Active":"View Archived ("+archivedLeads.length+")"}</button>}
-          <button onClick={fetchLeads} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Refresh</button>
+          {archivedLeads.length>0&&<button onClick={()=>{setShowArchived(!showArchived);setFilter("all");}} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer"}}>{showArchived?"View Active":"View Archived ("+archivedLeads.length+")"}</button>}
+          <button onClick={fetchLeads} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Refresh</button>
         </div>
       </div>
       {/* Search + Filter */}
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-        <input placeholder="Search by name, phone, or email..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text}}/>
+        <input placeholder="Search by name, phone, or email..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
         <div style={{display:"flex",gap:4}}>
           {[["all","All"],["new","New"],["wantsReview","Wants Review"],["reviewCalled","Called"],["bookSent","Book Sent"]].map(([k,l])=>(
-            <button key={k} onClick={()=>setFilter(k)} style={{fontSize:10,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:filter===k?600:400,background:filter===k?C.navy:C.surface,color:filter===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>
+            <button key={k} onClick={()=>setFilter(k)} style={{fontSize:12,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:filter===k?600:400,background:filter===k?C.navy:C.surface,color:filter===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>
           ))}
         </div>
       </div>
@@ -5786,24 +5816,24 @@ function TeamLeads({userRole}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:3}}>{lead.name||"Unknown"}</div>
-            <div style={{fontSize:12,color:C.textMid,marginBottom:2}}>
+            <div style={{fontSize:13,color:C.textMid,marginBottom:2}}>
               {lead.phone&&<span style={{marginRight:12}}>{lead.phone}</span>}
               {lead.email&&<span style={{color:C.teal}}>{lead.email}</span>}
             </div>
-            {lead.referredBy&&<div style={{fontSize:11,color:C.purple,fontWeight:600,marginBottom:2}}>Rep: {lead.referredBy}</div>}
-            <div style={{fontSize:10,color:C.textLight}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
+            {lead.referredBy&&<div style={{fontSize:13,color:C.purple,fontWeight:600,marginBottom:2}}>Rep: {lead.referredBy}</div>}
+            <div style={{fontSize:12,color:C.textLight}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",flexShrink:0}}>
             {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
             {lead.reviewCalled&&<Badge color={C.purple} small>Review Called</Badge>}
             {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
             {!lead.reviewCalled&&!lead.bookSent&&!lead.archived&&<Badge color={C.teal} small>New</Badge>}
-            {isAdmin&&<button onClick={()=>lead.archived?unarchiveLead(lead.docId):archiveLead(lead.docId)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+(lead.archived?C.success+"33":C.danger+"33"),background:lead.archived?C.success+"11":C.danger+"11",color:lead.archived?C.success:C.danger,cursor:"pointer",marginTop:2}}>{lead.archived?"Restore":"Archive"}</button>}
+            {isAdmin&&<button onClick={()=>lead.archived?unarchiveLead(lead.docId):archiveLead(lead.docId)} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+(lead.archived?C.success+"33":C.danger+"33"),background:lead.archived?C.success+"11":C.danger+"11",color:lead.archived?C.success:C.danger,cursor:"pointer",marginTop:2}}>{lead.archived?"Restore":"Archive"}</button>}
           </div>
         </div>
       </div>)}
 
-      <div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:8}}>
+      <div style={{fontSize:13,color:C.textLight,textAlign:"center",marginTop:8}}>
         Showing {filtered.length} of {leads.length} leads • Refreshes on page load
       </div>
     </div>}
@@ -5840,12 +5870,12 @@ function MyLeads({repName}) {
   return <div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"33",padding:"12px 14px",marginBottom:14}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Leads ({leads.length})</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>My Leads ({leads.length})</div>
     </div>
     {leads.slice(0,5).map((lead,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:i<Math.min(leads.length,5)-1?"1px solid "+C.border:"none"}}>
       <div>
-        <div style={{fontSize:12,fontWeight:600,color:C.text}}>{lead.name||"Unknown"}</div>
-        <div style={{fontSize:11,color:C.textMid}}>{lead.phone} • {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"No date"}</div>
+        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{lead.name||"Unknown"}</div>
+        <div style={{fontSize:13,color:C.textMid}}>{lead.phone} • {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"No date"}</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
         {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
@@ -5854,7 +5884,7 @@ function MyLeads({repName}) {
         {!lead.reviewCalled&&!lead.bookSent&&<Badge color={C.teal} small>New</Badge>}
       </div>
     </div>)}
-    {leads.length>5&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:6}}>+{leads.length-5} more leads</div>}
+    {leads.length>5&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",marginTop:6}}>+{leads.length-5} more leads</div>}
   </div>;
 }
 
@@ -5932,32 +5962,32 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     return Math.floor((Date.now()-new Date(stageUpdatedAt))/(86400000));
   };
 
-  if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:12}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
+  if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:13}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
 
   return <div>
     {/* Wants Review notification banner */}
     {leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length>0&&<div style={{background:"linear-gradient(135deg,#f97316,#ea580c)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
       <span style={{fontSize:16}}>🔔</span>
       <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:700,color:"white"}}>{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length} lead{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length!==1?"s":""} requesting a review!</div>
-        <div style={{fontSize:11,color:"rgba(255,255,255,0.8)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
+        <div style={{fontSize:14,fontWeight:700,color:"white"}}>{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length} lead{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length!==1?"s":""} requesting a review!</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
       </div>
     </div>}
     {/* Stage selector */}
     <div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:6,marginBottom:12,WebkitOverflowScrolling:"touch"}}>
-      <button onClick={()=>setActiveStage("all")} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage==="all"?700:400,background:activeStage==="all"?C.navy:C.surface,color:activeStage==="all"?"white":C.textMid,fontSize:11}}>
+      <button onClick={()=>setActiveStage("all")} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage==="all"?700:400,background:activeStage==="all"?C.navy:C.surface,color:activeStage==="all"?"white":C.textMid,fontSize:13}}>
         All ({leads.length})
       </button>
-      {PIPELINE_STAGES.map(s=><button key={s.key} onClick={()=>setActiveStage(s.key)} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage===s.key?700:400,background:activeStage===s.key?s.color:C.surface,color:activeStage===s.key?"white":C.textMid,fontSize:11,whiteSpace:"nowrap"}}>
+      {PIPELINE_STAGES.map(s=><button key={s.key} onClick={()=>setActiveStage(s.key)} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage===s.key?700:400,background:activeStage===s.key?s.color:C.surface,color:activeStage===s.key?"white":C.textMid,fontSize:13,whiteSpace:"nowrap"}}>
         {s.label} {stageCounts[s.key]>0&&<span style={{background:"rgba(255,255,255,0.3)",borderRadius:10,padding:"1px 5px"}}>{stageCounts[s.key]}</span>}
       </button>)}
     </div>
 
     {/* Search */}
-    {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
+    {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
 
     {/* Lead cards */}
-    {filtered.length===0&&<div style={{textAlign:"center",padding:"16px 0",color:C.textLight,fontSize:12}}>No leads in this stage</div>}
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"16px 0",color:C.textLight,fontSize:13}}>No leads in this stage</div>}
     {filtered.map((lead,i)=>{
       const stage = PIPELINE_STAGES.find(s=>s.key===lead.stage)||PIPELINE_STAGES[0];
       const daysInStage = getDaysInStage(lead.stageUpdatedAt);
@@ -5965,21 +5995,21 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
       return <div key={i} style={{borderRadius:10,border:"2px solid "+stage.color+"33",padding:"10px 12px",marginBottom:8,background:"white"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{lead.name||"Unknown"}</div>
-            {lead.phone&&<div style={{fontSize:11,color:C.textMid}}><PhoneLink phone={lead.phone}/></div>}
-            {lead.email&&<div style={{fontSize:11,color:C.teal}}><a href={"mailto:"+lead.email} style={{color:C.teal,textDecoration:"none"}}>✉ {lead.email}</a></div>}
-            <div style={{fontSize:10,color:C.textLight,marginTop:2}}>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>{lead.name||"Unknown"}</div>
+            {lead.phone&&<div style={{fontSize:13,color:C.textMid}}><PhoneLink phone={lead.phone}/></div>}
+            {lead.email&&<div style={{fontSize:13,color:C.teal}}><a href={"mailto:"+lead.email} style={{color:C.teal,textDecoration:"none"}}>✉ {lead.email}</a></div>}
+            <div style={{fontSize:12,color:C.textLight,marginTop:2}}>
               Received: {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"Unknown"}
             </div>
           </div>
           <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:10,fontWeight:700,color:stage.color,background:stage.color+"15",borderRadius:6,padding:"2px 8px",marginBottom:4}}>{stage.label}</div>
-            <div style={{fontSize:10,color:isStale?C.danger:C.textLight,fontWeight:isStale?600:400}}>{daysInStage}d in stage{isStale?" ⚠":""}
+            <div style={{fontSize:12,fontWeight:700,color:stage.color,background:stage.color+"15",borderRadius:6,padding:"2px 8px",marginBottom:4}}>{stage.label}</div>
+            <div style={{fontSize:12,color:isStale?C.danger:C.textLight,fontWeight:isStale?600:400}}>{daysInStage}d in stage{isStale?" ⚠":""}
             </div>
           </div>
         </div>
         {/* Stage update */}
-        {!isAdmin&&<select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:11,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
+        {!isAdmin&&<select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
           {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
         </select>}
       </div>;
@@ -6023,8 +6053,8 @@ function AdminPipeline({data,onUpdate}) {
     return {...rep,repLeads,staleCount};
   }).filter(r=>r.repLeads.length>0);
 
-  if(loading) return <div style={{textAlign:"center",padding:"20px",color:C.textMid,fontSize:12}}>Loading pipeline data...</div>;
-  if(repsWithLeads.length===0) return <div style={{textAlign:"center",padding:"20px",color:C.textLight,fontSize:12}}>No pipeline data yet</div>;
+  if(loading) return <div style={{textAlign:"center",padding:"20px",color:C.textMid,fontSize:13}}>Loading pipeline data...</div>;
+  if(repsWithLeads.length===0) return <div style={{textAlign:"center",padding:"20px",color:C.textLight,fontSize:13}}>No pipeline data yet</div>;
 
   return <div>
     {repsWithLeads.map((rep,i)=>{
@@ -6033,11 +6063,11 @@ function AdminPipeline({data,onUpdate}) {
       return <div key={rep.id} style={{borderRadius:10,border:"1px solid "+C.border,marginBottom:8,overflow:"hidden"}}>
         <div onClick={()=>setExpandedRep(isExpanded?null:rep.id)} style={{padding:"10px 14px",background:isExpanded?C.navy:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name} {rep.userRole!=="rep"&&<span style={{fontSize:10,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid,fontWeight:400}}>({rep.userRole})</span>}</div>
-            <div style={{fontSize:11,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>{rep.repLeads.length} lead{rep.repLeads.length!==1?"s":""}{rep.staleCount>0&&<span style={{color:C.danger,fontWeight:600}}> • {rep.staleCount} stale</span>}</div>
+            <div style={{fontSize:14,fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name} {rep.userRole!=="rep"&&<span style={{fontSize:12,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid,fontWeight:400}}>({rep.userRole})</span>}</div>
+            <div style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>{rep.repLeads.length} lead{rep.repLeads.length!==1?"s":""}{rep.staleCount>0&&<span style={{color:C.danger,fontWeight:600}}> • {rep.staleCount} stale</span>}</div>
           </div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:200}}>
-            {PIPELINE_STAGES.filter(s=>stageSummary[s.key]>0).map(s=><span key={s.key} style={{fontSize:9,background:s.color+"22",color:s.color,borderRadius:4,padding:"1px 5px",fontWeight:600}}>{stageSummary[s.key]} {s.label.split(" ")[0]}</span>)}
+            {PIPELINE_STAGES.filter(s=>stageSummary[s.key]>0).map(s=><span key={s.key} style={{fontSize:10,background:s.color+"22",color:s.color,borderRadius:4,padding:"1px 5px",fontWeight:600}}>{stageSummary[s.key]} {s.label.split(" ")[0]}</span>)}
           </div>
         </div>
         {isExpanded&&<div style={{padding:"10px 14px"}}>
@@ -6057,7 +6087,7 @@ function MyPipelinePage({session,data,onUpdate}) {
   const pseudoRep = {id:session.id, name:linkName||session.name, linkName:linkName||null, track:"licensed"};
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Pipeline</div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Leads from your personal MoneyMap link and their current stage.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Leads from your personal MoneyMap link and their current stage.</div>
     <LeadPipeline rep={pseudoRep} data={data} onUpdate={onUpdate}/>
   </div>;
 }
@@ -6159,52 +6189,52 @@ function MyTasksPage({session,data,onUpdate}) {
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks & Goals</div>
-      <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:11,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Task</button>
+      <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Task</button>
     </div>
-    <div style={{fontSize:12,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
 
     {/* Task Form */}
     {showForm&&<div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"44",padding:"16px",marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>{editId?"Edit Task":"New Task"}</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>{editId?"Edit Task":"New Task"}</div>
 
-      <input placeholder="Task title..." value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <input placeholder="Task title..." value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
 
-      <textarea placeholder="Description or notes (optional)..." value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:12,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:8}}/>
+      <textarea placeholder="Description or notes (optional)..." value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:8}}/>
 
       {/* Sub-tasks */}
       <div style={{marginBottom:8}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:4}}>Sub-tasks (optional)</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Sub-tasks (optional)</div>
         {form.subtasks.map((s,i)=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-          <span style={{fontSize:12,color:C.text,flex:1,background:C.surface,padding:"4px 8px",borderRadius:6}}>• {s.text}</span>
+          <span style={{fontSize:13,color:C.text,flex:1,background:C.surface,padding:"4px 8px",borderRadius:6}}>• {s.text}</span>
           <button onClick={()=>setForm(f=>({...f,subtasks:f.subtasks.filter((_,j)=>j!==i)}))} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
         </div>)}
         <div style={{display:"flex",gap:6}}>
-          <input placeholder="Add sub-task..." value={form.newSubtask} onChange={e=>setForm(f=>({...f,newSubtask:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addSubtask()} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:11,color:C.text}}/>
-          <button onClick={addSubtask} style={{padding:"6px 10px",borderRadius:7,border:"none",background:C.teal+"22",color:C.teal,cursor:"pointer",fontSize:11,fontWeight:600}}>Add</button>
+          <input placeholder="Add sub-task..." value={form.newSubtask} onChange={e=>setForm(f=>({...f,newSubtask:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addSubtask()} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+          <button onClick={addSubtask} style={{padding:"6px 10px",borderRadius:7,border:"none",background:C.teal+"22",color:C.teal,cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
         </div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Start Date</div>
-          <input type="date" value={form.startDate} onChange={e=>setForm(f=>({...f,startDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Start Date</div>
+          <input type="date" value={form.startDate} onChange={e=>setForm(f=>({...f,startDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>End Date (optional)</div>
-          <input type="date" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>End Date (optional)</div>
+          <input type="date" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Priority</div>
-          <select value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Priority</div>
+          <select value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
             {TASK_PRIORITIES.map(p=><option key={p}>{p}</option>)}
           </select>
         </div>
         <div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Category</div>
-          <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:12,color:C.text}}>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Category</div>
+          <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
             {TASK_CATEGORIES.map(c=><option key={c}>{c}</option>)}
           </select>
         </div>
@@ -6214,32 +6244,32 @@ function MyTasksPage({session,data,onUpdate}) {
       <div style={{marginBottom:10}}>
         <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
           <input type="checkbox" checked={form.recurring} onChange={e=>setForm(f=>({...f,recurring:e.target.checked}))} style={{width:16,height:16}}/>
-          <span style={{fontSize:12,color:C.text,fontWeight:600}}>Recurring task</span>
+          <span style={{fontSize:13,color:C.text,fontWeight:600}}>Recurring task</span>
         </label>
         {form.recurring&&<div>
-          <div style={{fontSize:10,color:C.textMid,marginBottom:4}}>Repeat on these days:</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:4}}>Repeat on these days:</div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            {TASK_DAYS.map((d,i)=><button key={i} onClick={()=>setForm(f=>({...f,days:f.days.includes(i)?f.days.filter(x=>x!==i):[...f.days,i]}))} style={{padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:form.days.includes(i)?700:400,background:form.days.includes(i)?C.teal:C.surface,color:form.days.includes(i)?"white":C.textMid,fontSize:11}}>{d}</button>)}
+            {TASK_DAYS.map((d,i)=><button key={i} onClick={()=>setForm(f=>({...f,days:f.days.includes(i)?f.days.filter(x=>x!==i):[...f.days,i]}))} style={{padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:form.days.includes(i)?700:400,background:form.days.includes(i)?C.teal:C.surface,color:form.days.includes(i)?"white":C.textMid,fontSize:13}}>{d}</button>)}
           </div>
           <div style={{display:"flex",gap:6,marginTop:6}}>
-            <button onClick={()=>setForm(f=>({...f,days:[1,2,3,4,5]}))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekdays</button>
-            <button onClick={()=>setForm(f=>({...f,days:[0,1,2,3,4,5,6]}))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Every Day</button>
-            <button onClick={()=>setForm(f=>({...f,days:[0,6]}))} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekends</button>
+            <button onClick={()=>setForm(f=>({...f,days:[1,2,3,4,5]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekdays</button>
+            <button onClick={()=>setForm(f=>({...f,days:[0,1,2,3,4,5,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Every Day</button>
+            <button onClick={()=>setForm(f=>({...f,days:[0,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekends</button>
           </div>
         </div>}
       </div>
 
       <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>{setShowForm(false);setEditId(null);resetForm();}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-        <button onClick={saveTask} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Task</button>
+        <button onClick={()=>{setShowForm(false);setEditId(null);resetForm();}} style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={saveTask} style={{flex:2,padding:"8px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Save Task</button>
       </div>
     </div>}
 
     {/* Task List */}
     {myTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
       <div style={{fontSize:28,marginBottom:8}}>✓</div>
-      <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>No tasks yet</div>
-      <div style={{fontSize:11}}>Add your first task or recurring goal above</div>
+      <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>No tasks yet</div>
+      <div style={{fontSize:13}}>Add your first task or recurring goal above</div>
     </div>}
 
     {[...myTasks].sort((a,b)=>{
@@ -6260,43 +6290,43 @@ function MyTasksPage({session,data,onUpdate}) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
-                <span style={{fontSize:13,fontWeight:700,color:C.text}}>{task.title}</span>
+                <span style={{fontSize:14,fontWeight:700,color:C.text}}>{task.title}</span>
                 <Badge color={PRIORITY_COLORS[task.priority]||C.gold} small>{task.priority}</Badge>
                 <Badge color={C.teal} small>{task.category}</Badge>
                 {task.recurring&&<Badge color={C.purple} small>Recurring</Badge>}
               </div>
-              {task.description&&<div style={{fontSize:11,color:C.textMid,lineHeight:1.5,marginBottom:4}}>{task.description}</div>}
+              {task.description&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:4}}>{task.description}</div>}
               {task.recurring&&task.days&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-                {TASK_DAYS.map((d,di)=><span key={di} style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:task.days.includes(di)?C.teal+"22":C.surface,color:task.days.includes(di)?C.teal:C.textLight,fontWeight:task.days.includes(di)?600:400}}>{d}</span>)}
+                {TASK_DAYS.map((d,di)=><span key={di} style={{fontSize:10,padding:"1px 5px",borderRadius:4,background:task.days.includes(di)?C.teal+"22":C.surface,color:task.days.includes(di)?C.teal:C.textLight,fontWeight:task.days.includes(di)?600:400}}>{d}</span>)}
               </div>}
             </div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
-              <button onClick={()=>editTask(task)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-              <button onClick={()=>deleteTask(task.id)} style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
+              <button onClick={()=>editTask(task)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+              <button onClick={()=>deleteTask(task.id)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
             </div>
           </div>
           <div style={{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}}>
-            {daysLeft!==null&&<span style={{fontSize:10,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</span>}
-            {streak>0&&<span style={{fontSize:10,color:C.gold,fontWeight:600}}>🔥 {streak} day streak</span>}
-            {pct!==null&&<span style={{fontSize:10,color:C.teal}}>{daysCompleted}/{totalDays} days done ({pct}%)</span>}
+            {daysLeft!==null&&<span style={{fontSize:12,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</span>}
+            {streak>0&&<span style={{fontSize:12,color:C.gold,fontWeight:600}}>🔥 {streak} day streak</span>}
+            {pct!==null&&<span style={{fontSize:12,color:C.teal}}>{daysCompleted}/{totalDays} days done ({pct}%)</span>}
           </div>
           {pct!==null&&<Bar pct={pct} color={pct>=100?C.success:C.teal} h={4} style={{marginTop:4}}/>}
         </div>
 
         {/* Sub-tasks */}
         {task.subtasks&&task.subtasks.length>0&&<div style={{padding:"8px 14px",borderBottom:"1px solid "+C.border}}>
-          {task.subtasks.map((s,si)=><div key={s.id} style={{fontSize:12,color:C.textMid,padding:"3px 0"}}>• {s.text}</div>)}
+          {task.subtasks.map((s,si)=><div key={s.id} style={{fontSize:13,color:C.textMid,padding:"3px 0"}}>• {s.text}</div>)}
         </div>}
 
         {/* Today's completion */}
         {todayActive&&<div style={{padding:"10px 14px",background:completedToday?C.success+"08":C.surface}}>
           <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
             <input type="checkbox" checked={completedToday} onChange={()=>toggleDayComplete(task.id,today)} style={{width:18,height:18,cursor:"pointer"}}/>
-            <span style={{fontSize:12,fontWeight:600,color:completedToday?C.success:C.text}}>{completedToday?"Completed today!":"Mark today as done"}</span>
+            <span style={{fontSize:13,fontWeight:600,color:completedToday?C.success:C.text}}>{completedToday?"Completed today!":"Mark today as done"}</span>
           </label>
         </div>}
         {!todayActive&&<div style={{padding:"8px 14px",background:C.surface}}>
-          <span style={{fontSize:11,color:C.textLight}}>Not scheduled for today</span>
+          <span style={{fontSize:13,color:C.textLight}}>Not scheduled for today</span>
         </div>}
       </div>;
     })}
@@ -6317,7 +6347,7 @@ function CareerPath({rep,data,onUpdate}) {
   return <div>
     {/* Roadmap */}
     <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
       <div style={{display:"flex",gap:0}}>
         {stages.map((s,i)=>{
           const active=s.key===currentStage;
@@ -6330,7 +6360,7 @@ function CareerPath({rep,data,onUpdate}) {
               {done&&<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}
               {active&&<div style={{width:10,height:10,borderRadius:5,background:"white"}}/>}
             </div>
-            <div style={{fontSize:9,fontWeight:active?700:400,color:active?"white":"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
+            <div style={{fontSize:10,fontWeight:active?700:400,color:active?"white":"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
           </div>;
         })}
       </div>
@@ -6339,10 +6369,10 @@ function CareerPath({rep,data,onUpdate}) {
     {/* ── NEW REP: Goal is to get Life Licensed ── */}
     {currentStage==="new"&&<div>
       <div style={{background:C.teal+"11",border:"1px solid "+C.teal+"33",borderRadius:10,padding:"14px 16px",marginBottom:14}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.teal,marginBottom:6}}>Your Next Goal: Become Life Licensed</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>Getting your life insurance license is your first major milestone. Focus on completing your checklist, finishing your pre-licensing class, and passing your exam. Once you are licensed a whole new path opens up!</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:6}}>Your Next Goal: Become Life Licensed</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.7}}>Getting your life insurance license is your first major milestone. Focus on completing your checklist, finishing your pre-licensing class, and passing your exam. Once you are licensed a whole new path opens up!</div>
       </div>
-      <div style={{background:C.navy+"11",border:"1px solid "+C.border,borderRadius:8,padding:"10px 12px",fontSize:11,color:C.textMid,textAlign:"center",lineHeight:1.5}}>
+      <div style={{background:C.navy+"11",border:"1px solid "+C.border,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.textMid,textAlign:"center",lineHeight:1.5}}>
         Field Trainer and RVP paths unlock after you get licensed. Stay focused — every step brings you closer!
       </div>
     </div>}
@@ -6350,20 +6380,20 @@ function CareerPath({rep,data,onUpdate}) {
     {/* ── LICENSED AGENT: Goal is Field Trainer ── */}
     {currentStage==="licensed"&&<div>
       <div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:10,padding:"14px 16px",marginBottom:14}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:6}}>Your Next Goal: Become a Field Trainer</div>
-        <div style={{fontSize:12,color:C.text,lineHeight:1.7}}>You are licensed — that is a huge achievement! Now the focus shifts to building your skills, your production, and your team. When you feel ready and meet all the Field Trainer requirements, request your review below.</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.gold,marginBottom:6}}>Your Next Goal: Become a Field Trainer</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.7}}>You are licensed — that is a huge achievement! Now the focus shifts to building your skills, your production, and your team. When you feel ready and meet all the Field Trainer requirements, request your review below.</div>
       </div>
       <Card style={{border:"1px solid "+(ftRequested?C.gold+"44":C.purple+"33")}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for Field Trainer Review?</div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you feel confident you meet all the requirements, request a review. Your RVP will be notified and will schedule time to go through everything with you.</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Ready for Field Trainer Review?</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you feel confident you meet all the requirements, request a review. Your RVP will be notified and will schedule time to go through everything with you.</div>
         {!ftRequested&&!rep.fieldTrainerDenied&&<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})}
-          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>
           Request Field Trainer Review
         </button>}
-        {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified. Keep pushing forward!</div>}
+        {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified. Keep pushing forward!</div>}
         {rep.fieldTrainerDenied&&!ftRequested&&<div>
-          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:12,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
-          <button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>Request Again</button>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:13,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Request Again</button>
         </div>}
       </Card>
     </div>}
@@ -6372,19 +6402,19 @@ function CareerPath({rep,data,onUpdate}) {
     {currentStage==="trainer"&&<div>
       <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
         <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>Field Trainer Approved!</div>
-        <div style={{fontSize:12,color:C.textMid}}>Congratulations! You are now a Field Trainer. Your next and final goal is Regional Vice President.</div>
+        <div style={{fontSize:13,color:C.textMid}}>Congratulations! You are now a Field Trainer. Your next and final goal is Regional Vice President.</div>
       </div>
       <Card style={{marginBottom:14,border:"1px solid "+(rvpRequested?C.gold+"44":C.success+"33")}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Ready for the RVP Path?</div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the full RVP checklist.</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Ready for the RVP Path?</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the full RVP checklist.</div>
         {!rvpRequested&&!rep.rvpPathDenied&&<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})}
-          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>
           Request RVP Path Access
         </button>}
-        {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:12,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review and grant access when ready.</div>}
+        {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review and grant access when ready.</div>}
         {rep.rvpPathDenied&&!rvpRequested&&<div>
-          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:12,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
-          <button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>Request Again</button>
+          <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:13,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
+          <button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Request Again</button>
         </div>}
       </Card>
     </div>}
@@ -6393,7 +6423,7 @@ function CareerPath({rep,data,onUpdate}) {
     {currentStage==="rvp"&&<div>
       <div style={{background:C.success+"11",border:"1px solid "+C.success+"33",borderRadius:10,padding:"12px 14px",marginBottom:14,textAlign:"center"}}>
         <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>RVP Path Unlocked!</div>
-        <div style={{fontSize:12,color:C.textMid}}>You are on your way to Regional Vice President! Complete every item below.</div>
+        <div style={{fontSize:13,color:C.textMid}}>You are on your way to Regional Vice President! Complete every item below.</div>
       </div>
       {Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={false}/>)}</div>)}
     </div>}
@@ -6431,30 +6461,30 @@ function ScriptsPage({data,onUpdate,userRole}) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Scripts</div>
       {isAdmin&&<div style={{display:"flex",gap:7}}>
-        <button onClick={resetToDefault} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset Defaults</button>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Script</button>
+        <button onClick={resetToDefault} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset Defaults</button>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Script</button>
       </div>}
     </div>
-    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:11,color:C.teal}}>
+    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:13,color:C.teal}}>
       You can edit any script below. Changes save instantly and update for everyone on the team.
     </div>}
     {showAdd&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>New Script</div>
-      <input placeholder="Script title" value={newScript.title} onChange={e=>setNewScript({...newScript,title:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-      <textarea placeholder="Script content..." value={newScript.content} onChange={e=>setNewScript({...newScript,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>New Script</div>
+      <input placeholder="Script title" value={newScript.title} onChange={e=>setNewScript({...newScript,title:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <textarea placeholder="Script content..." value={newScript.content} onChange={e=>setNewScript({...newScript,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
       <div style={{display:"flex",gap:7,marginTop:8}}>
-        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-        <button onClick={addScript} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Script</button>
+        <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+        <button onClick={addScript} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Script</button>
       </div>
     </Card>}
     {scripts.map((s,i)=><Card key={i} style={{marginBottom:10}}>
       {editing===i?(
         <div>
-          <input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box",fontWeight:600}}/>
-          <textarea value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:12,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
+          <input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box",fontWeight:600}}/>
+          <textarea value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
           <div style={{display:"flex",gap:7,marginTop:8}}>
-            <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Cancel</button>
-            <button onClick={()=>saveEdit(i)} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:11,fontWeight:600}}>Save Changes</button>
+            <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+            <button onClick={()=>saveEdit(i)} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Changes</button>
           </div>
         </div>
       ):(
@@ -6462,8 +6492,8 @@ function ScriptsPage({data,onUpdate,userRole}) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
             <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
             {isAdmin&&<div style={{display:"flex",gap:5,marginLeft:8}}>
-              <button onClick={()=>{setEditing(i);setDraft({title:s.title,content:s.content});}} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-              <button onClick={()=>deleteScript(i)} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
+              <button onClick={()=>{setEditing(i);setDraft({title:s.title,content:s.content});}} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+              <button onClick={()=>deleteScript(i)} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
             </div>}
           </div>
           <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:dv(12,15),color:C.textMid,lineHeight:1.7}}>"{s.content}"</div>
@@ -6503,25 +6533,25 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
       <div style={{width:34,height:34,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.35)",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L1 4.5V11.5L8 15L15 11.5V4.5L8 1Z" stroke={C.teal} strokeWidth="1.5" fill="none"/><path d="M4.5 8L6.5 10L11.5 5" stroke={C.teal} strokeWidth="1.5" strokeLinecap="round"/></svg>
       </div>
-      <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:700,color:"white",lineHeight:1.2}}>NextLevel</div><div style={{fontSize:9,color:C.textLight,lineHeight:1.2}}>Field Training Hub</div></div>
+      <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:"white",lineHeight:1.2}}>NextLevel</div><div style={{fontSize:10,color:C.textLight,lineHeight:1.2}}>Field Training Hub</div></div>
       {onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:18,padding:0,lineHeight:1}}>x</button>}
     </div>
     <nav style={{flex:1,padding:"10px 7px",overflowY:"auto"}}>
       {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
-        <span style={{fontSize:12,fontWeight:section===item.k?600:400}}>{item.l}</span>
+        <span style={{fontSize:13,fontWeight:section===item.k?600:400}}>{item.l}</span>
         {section===item.k&&<div style={{marginLeft:"auto",width:3,height:3,borderRadius:2,background:C.teal}}/>}
       </button>)}
       <div style={{borderTop:`1px solid ${C.borderLight}`,marginTop:8,paddingTop:8}}>
-        {[{l:"App Tour",fn:onShowTour},{l:"Add to Phone",fn:onShowPhone}].map(btn=><button key={btn.l} onClick={()=>{btn.fn();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"7px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:"rgba(255,255,255,0.45)",fontSize:11}}>{btn.l}</button>)}
+        {[{l:"App Tour",fn:onShowTour},{l:"Add to Phone",fn:onShowPhone}].map(btn=><button key={btn.l} onClick={()=>{btn.fn();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"7px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:"rgba(255,255,255,0.45)",fontSize:13}}>{btn.l}</button>)}
       </div>
     </nav>
     <div style={{padding:"10px 14px",borderTop:`1px solid ${C.borderLight}`}}>
       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
-        <div style={{width:28,height:28,borderRadius:7,background:"rgba(14,165,160,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal,flexShrink:0}}>{name?.charAt(0)?.toUpperCase()||"U"}</div>
-        <div style={{minWidth:0}}><div style={{fontSize:11,fontWeight:600,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name||"User"}</div><div style={{fontSize:9,color:C.textLight,textTransform:"capitalize"}}>{role}</div></div>
+        <div style={{width:28,height:28,borderRadius:7,background:"rgba(14,165,160,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{name?.charAt(0)?.toUpperCase()||"U"}</div>
+        <div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name||"User"}</div><div style={{fontSize:10,color:C.textLight,textTransform:"capitalize"}}>{role}</div></div>
       </div>
-      <button onClick={onSignOut} style={{width:"100%",padding:"6px",borderRadius:7,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.borderLight}`,color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:11}}>Sign Out</button>
+      <button onClick={onSignOut} style={{width:"100%",padding:"6px",borderRadius:7,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.borderLight}`,color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:13}}>Sign Out</button>
     </div>
   </div>;
 }
@@ -6539,7 +6569,7 @@ function BirthdayModal({name,age,onClose}) {
         
       </div>
       <div style={{padding:"20px 24px",textAlign:"center"}}>
-        <div style={{fontSize:13,color:"#6b7280",lineHeight:1.6,marginBottom:16}}>We're so grateful to have you on the team. Keep shining — today and every day. Now go celebrate! 🥳</div>
+        <div style={{fontSize:14,color:"#6b7280",lineHeight:1.6,marginBottom:16}}>We're so grateful to have you on the team. Keep shining — today and every day. Now go celebrate! 🥳</div>
         <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:10,background:"linear-gradient(135deg,#7c3aed,#db2777)",border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
           Thank You! 🎊
         </button>
@@ -6757,28 +6787,28 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
     {/* Header */}
     <div style={{marginBottom:16}}>
       <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:4}}>🎯 Objection Training</div>
-      <div style={{fontSize:12,color:C.textMid}}>Study real objections and master your responses. {progress>0&&<span style={{color:C.success,fontWeight:600}}>{progress} card{progress!==1?"s":""} mastered!</span>}</div>
+      <div style={{fontSize:13,color:C.textMid}}>Study real objections and master your responses. {progress>0&&<span style={{color:C.success,fontWeight:600}}>{progress} card{progress!==1?"s":""} mastered!</span>}</div>
     </div>
 
     {/* Tabs */}
     <div style={{display:"flex",gap:6,marginBottom:16}}>
-      {[["practice","📚 Flashcards"],["library","📖 Library"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"7px 16px",borderRadius:20,border:`1px solid ${tab===k?C.teal:C.border}`,background:tab===k?C.teal:"white",color:tab===k?"white":C.textMid,fontSize:12,fontWeight:tab===k?700:400,cursor:"pointer"}}>{l}</button>)}
+      {[["practice","📚 Flashcards"],["library","📖 Library"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"7px 16px",borderRadius:20,border:`1px solid ${tab===k?C.teal:C.border}`,background:tab===k?C.teal:"white",color:tab===k?"white":C.textMid,fontSize:13,fontWeight:tab===k?700:400,cursor:"pointer"}}>{l}</button>)}
     </div>
 
     {/* PRACTICE TAB */}
     {tab==="practice"&&<div>
       {/* Filters */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {cats.map(c=><button key={c} onClick={()=>{setCat(c);setCardIndex(0);setFlipped(false);}} style={{padding:"4px 10px",borderRadius:16,border:`1px solid ${cat===c?C.teal:C.border}`,background:cat===c?C.teal:"white",color:cat===c?"white":C.textMid,fontSize:11,cursor:"pointer"}}>{c}</button>)}
+        {cats.map(c=><button key={c} onClick={()=>{setCat(c);setCardIndex(0);setFlipped(false);}} style={{padding:"4px 10px",borderRadius:16,border:`1px solid ${cat===c?C.teal:C.border}`,background:cat===c?C.teal:"white",color:cat===c?"white":C.textMid,fontSize:13,cursor:"pointer"}}>{c}</button>)}
       </div>
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        {[["all","All Cards"],["learning","Still Learning"],["mastered","Mastered ✅"]].map(([k,l])=><button key={k} onClick={()=>{setFilter(k);setCardIndex(0);setFlipped(false);}} style={{padding:"3px 9px",borderRadius:12,border:`1px solid ${filter===k?C.gold:C.border}`,background:filter===k?C.gold+"11":"white",color:filter===k?C.gold:C.textMid,fontSize:11,cursor:"pointer"}}>{l}</button>)}
-        <button onClick={()=>{setShuffle(s=>!s);setCardIndex(0);setFlipped(false);}} style={{marginLeft:"auto",padding:"3px 9px",borderRadius:12,border:`1px solid ${shuffle?C.purple:C.border}`,background:shuffle?C.purple+"11":"white",color:shuffle?C.purple:C.textMid,fontSize:11,cursor:"pointer"}}>🔀 {shuffle?"Shuffle ON":"Shuffle"}</button>
+        {[["all","All Cards"],["learning","Still Learning"],["mastered","Mastered ✅"]].map(([k,l])=><button key={k} onClick={()=>{setFilter(k);setCardIndex(0);setFlipped(false);}} style={{padding:"3px 9px",borderRadius:12,border:`1px solid ${filter===k?C.gold:C.border}`,background:filter===k?C.gold+"11":"white",color:filter===k?C.gold:C.textMid,fontSize:13,cursor:"pointer"}}>{l}</button>)}
+        <button onClick={()=>{setShuffle(s=>!s);setCardIndex(0);setFlipped(false);}} style={{marginLeft:"auto",padding:"3px 9px",borderRadius:12,border:`1px solid ${shuffle?C.purple:C.border}`,background:shuffle?C.purple+"11":"white",color:shuffle?C.purple:C.textMid,fontSize:13,cursor:"pointer"}}>🔀 {shuffle?"Shuffle ON":"Shuffle"}</button>
       </div>
 
       {deck.length===0?<div style={{textAlign:"center",padding:"40px 20px",color:C.textLight}}>No cards in this filter. Try a different category.</div>:card&&<div>
         {/* Progress */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,fontSize:11,color:C.textMid}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,fontSize:13,color:C.textMid}}>
           <span>Card {cardIndex+1} of {deck.length}</span>
           <span>{card.cat} {card.emoji}</span>
         </div>
@@ -6786,25 +6816,25 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
         {/* Flashcard */}
         <div onClick={()=>setFlipped(f=>!f)} style={{cursor:"pointer",marginBottom:12,minHeight:220,borderRadius:16,border:`2px solid ${flipped?C.teal:C.border}`,background:flipped?`linear-gradient(135deg,${C.navy},#16304f)`:"white",padding:"20px",transition:"all 0.3s",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
           {!flipped?<div>
-            <div style={{fontSize:11,fontWeight:700,color:C.textLight,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>PROSPECT SAYS...</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.textLight,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>PROSPECT SAYS...</div>
             <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:12}}>{card.front.title}</div>
-            <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,fontStyle:"italic"}}>"{card.front.prospect}"</div>
-            {card.front.variations?.length>0&&<div style={{marginTop:12,fontSize:10,color:C.textLight}}>Also heard as: {card.front.variations.slice(0,2).join(" · ")}</div>}
-            <div style={{marginTop:16,textAlign:"center",fontSize:11,color:C.textLight}}>👆 Tap to reveal response</div>
+            <div style={{fontSize:14,color:C.textMid,lineHeight:1.6,fontStyle:"italic"}}>"{card.front.prospect}"</div>
+            {card.front.variations?.length>0&&<div style={{marginTop:12,fontSize:12,color:C.textLight}}>Also heard as: {card.front.variations.slice(0,2).join(" · ")}</div>}
+            <div style={{marginTop:16,textAlign:"center",fontSize:13,color:C.textLight}}>👆 Tap to reveal response</div>
           </div>:<div>
-            <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>BEST RESPONSE</div>
-            <div style={{fontSize:13,color:"white",lineHeight:1.6,marginBottom:14}}>"{card.back.best}"</div>
+            <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>BEST RESPONSE</div>
+            <div style={{fontSize:14,color:"white",lineHeight:1.6,marginBottom:14}}>"{card.back.best}"</div>
             {card.back.keyPhrase&&<div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
-              <div style={{fontSize:10,color:C.gold,fontWeight:700,marginBottom:2}}>⚡ KEY PHRASE</div>
-              <div style={{fontSize:12,color:C.gold,fontWeight:600}}>"{card.back.keyPhrase}"</div>
+              <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:2}}>⚡ KEY PHRASE</div>
+              <div style={{fontSize:13,color:C.gold,fontWeight:600}}>"{card.back.keyPhrase}"</div>
             </div>}
             {card.back.dontSay&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
-              <div style={{fontSize:10,color:"#ef4444",fontWeight:700,marginBottom:2}}>⚠️ DON'T SAY</div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{card.back.dontSay}</div>
+              <div style={{fontSize:12,color:"#ef4444",fontWeight:700,marginBottom:2}}>⚠️ DON'T SAY</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>{card.back.dontSay}</div>
             </div>}
             {card.back.coaching&&<div style={{background:"rgba(255,255,255,0.05)",borderRadius:8,padding:"8px 10px"}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:2}}>🧠 COACHING NOTE</div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>{card.back.coaching}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:2}}>🧠 COACHING NOTE</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>{card.back.coaching}</div>
             </div>}
           </div>}
         </div>
@@ -6813,10 +6843,10 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button onClick={prev} disabled={cardIndex===0} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
           {flipped&&<>
-            <button onClick={markLearning} style={{flex:1,padding:"10px",borderRadius:10,background:"white",border:`2px solid ${C.border}`,color:C.textMid,fontSize:12,fontWeight:600,cursor:"pointer"}}>🔄 Still Learning</button>
-            <button onClick={markMastered} style={{flex:1,padding:"10px",borderRadius:10,background:C.success,border:"none",color:"white",fontSize:12,fontWeight:700,cursor:"pointer"}}>✅ Got It!</button>
+            <button onClick={markLearning} style={{flex:1,padding:"10px",borderRadius:10,background:"white",border:`2px solid ${C.border}`,color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer"}}>🔄 Still Learning</button>
+            <button onClick={markMastered} style={{flex:1,padding:"10px",borderRadius:10,background:C.success,border:"none",color:"white",fontSize:13,fontWeight:700,cursor:"pointer"}}>✅ Got It!</button>
           </>}
-          {!flipped&&<div style={{flex:1,textAlign:"center",fontSize:12,color:C.textLight}}>Tap card to see response</div>}
+          {!flipped&&<div style={{flex:1,textAlign:"center",fontSize:13,color:C.textLight}}>Tap card to see response</div>}
           <button onClick={next} disabled={cardIndex===deck.length-1} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<deck.length-1?"pointer":"default",color:cardIndex<deck.length-1?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>→</button>
         </div>
       </div>}
@@ -6825,30 +6855,30 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
     {/* LIBRARY TAB */}
     {tab==="library"&&<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{fontSize:13,color:C.textMid}}>{allCards.length} total cards · {customCards.length} custom</div>
-        {isAdmin&&<button onClick={()=>{setShowLibraryForm(true);setEditingId(null);setLibraryForm({cat:"Life Insurance",emoji:"💬",frontTitle:"",frontProspect:"",backBest:"",backKeyPhrase:"",backDontSay:"",backCoaching:""}); }} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>+ Add Card</button>}
+        <div style={{fontSize:14,color:C.textMid}}>{allCards.length} total cards · {customCards.length} custom</div>
+        {isAdmin&&<button onClick={()=>{setShowLibraryForm(true);setEditingId(null);setLibraryForm({cat:"Life Insurance",emoji:"💬",frontTitle:"",frontProspect:"",backBest:"",backKeyPhrase:"",backDontSay:"",backCoaching:""}); }} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Add Card</button>}
       </div>
 
       {/* Admin form */}
       {isAdmin&&showLibraryForm&&<Card style={{marginBottom:16,border:`1px solid ${C.teal}33`}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>{editingId?"Edit Card":"New Objection Card"}</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>{editingId?"Edit Card":"New Objection Card"}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-          <div><label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>Category</label>
-            <select value={libraryForm.cat} onChange={e=>setLibraryForm({...libraryForm,cat:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}>
+          <div><label style={{fontSize:12,color:C.textMid,display:"block",marginBottom:3}}>Category</label>
+            <select value={libraryForm.cat} onChange={e=>setLibraryForm({...libraryForm,cat:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}>
               <option>Life Insurance</option><option>Investments</option><option>Recruiting</option><option>Other</option>
             </select>
           </div>
-          <div><label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>Emoji</label>
+          <div><label style={{fontSize:12,color:C.textMid,display:"block",marginBottom:3}}>Emoji</label>
             <input value={libraryForm.emoji} onChange={e=>setLibraryForm({...libraryForm,emoji:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:16}} maxLength={2}/>
           </div>
         </div>
         {[["frontTitle","Objection Title (short)","e.g. They said the price is too high"],["frontProspect","Prospect's exact words","What the prospect actually says..."],["backBest","Best Response","The response to memorize..."],["backKeyPhrase","Key Phrase (one memorable line)",""],["backDontSay","Don't Say This (and why)",""],["backCoaching","Coaching Note","The psychology behind this objection..."]].map(([k,l,ph])=><div key={k} style={{marginBottom:8}}>
-          <label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>{l}</label>
-          <textarea value={libraryForm[k]} onChange={e=>setLibraryForm({...libraryForm,[k]:e.target.value})} placeholder={ph} rows={k==="backBest"||k==="backCoaching"?3:2} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",boxSizing:"border-box"}}/>
+          <label style={{fontSize:12,color:C.textMid,display:"block",marginBottom:3}}>{l}</label>
+          <textarea value={libraryForm[k]} onChange={e=>setLibraryForm({...libraryForm,[k]:e.target.value})} placeholder={ph} rows={k==="backBest"||k==="backCoaching"?3:2} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",boxSizing:"border-box"}}/>
         </div>)}
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setShowLibraryForm(false);setEditingId(null);}} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
-          <button onClick={saveLibraryCard} disabled={!libraryForm.frontTitle||!libraryForm.backBest} style={{flex:2,padding:"8px",borderRadius:8,background:libraryForm.frontTitle&&libraryForm.backBest?C.teal:C.textLight,color:"white",border:"none",cursor:libraryForm.frontTitle&&libraryForm.backBest?"pointer":"default",fontSize:12,fontWeight:700}}>Save Card</button>
+          <button onClick={()=>{setShowLibraryForm(false);setEditingId(null);}} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+          <button onClick={saveLibraryCard} disabled={!libraryForm.frontTitle||!libraryForm.backBest} style={{flex:2,padding:"8px",borderRadius:8,background:libraryForm.frontTitle&&libraryForm.backBest?C.teal:C.textLight,color:"white",border:"none",cursor:libraryForm.frontTitle&&libraryForm.backBest?"pointer":"default",fontSize:13,fontWeight:700}}>Save Card</button>
         </div>
       </Card>}
 
@@ -6858,20 +6888,20 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
           <div style={{flex:1}}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
               <span style={{fontSize:18}}>{c.emoji}</span>
-              <div style={{fontSize:13,fontWeight:700,color:C.text}}>{c.front.title}</div>
+              <div style={{fontSize:14,fontWeight:700,color:C.text}}>{c.front.title}</div>
               <Badge color={c.cat==="Life Insurance"?C.teal:c.cat==="Investments"?C.gold:C.purple} small>{c.cat}</Badge>
               {customCards.find(cc=>cc.id===c.id)&&<Badge color={C.textLight} small>Custom</Badge>}
             </div>
-            <div style={{fontSize:11,color:C.textMid,fontStyle:"italic",marginBottom:6}}>"{c.front.prospect?.slice(0,80)}..."</div>
-            <div style={{fontSize:11,color:C.text,marginBottom:4}}><strong>Best:</strong> {c.back.best?.slice(0,100)}...</div>
-            {c.back.keyPhrase&&<div style={{fontSize:11,color:C.gold,fontWeight:600}}>⚡ "{c.back.keyPhrase}"</div>}
+            <div style={{fontSize:13,color:C.textMid,fontStyle:"italic",marginBottom:6}}>"{c.front.prospect?.slice(0,80)}..."</div>
+            <div style={{fontSize:13,color:C.text,marginBottom:4}}><strong>Best:</strong> {c.back.best?.slice(0,100)}...</div>
+            {c.back.keyPhrase&&<div style={{fontSize:13,color:C.gold,fontWeight:600}}>⚡ "{c.back.keyPhrase}"</div>}
           </div>
           {isAdmin&&customCards.find(cc=>cc.id===c.id)&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-            <button onClick={()=>editCard(c)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Edit</button>
-            <button onClick={()=>deleteCard(c.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:11,color:C.danger}}>Delete</button>
+            <button onClick={()=>editCard(c)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Edit</button>
+            <button onClick={()=>deleteCard(c.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:13,color:C.danger}}>Delete</button>
           </div>}
         </div>
-        <button onClick={()=>{const idx=deck.findIndex(d=>d.id===c.id);if(idx>=0){setCardIndex(idx);setFlipped(false);setTab("practice");}else{setCat("All");setFilter("all");setCardIndex(allCards.indexOf(c));setFlipped(false);setTab("practice");}}} style={{marginTop:8,width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${C.teal}33`,background:C.teal+"08",color:C.teal,fontSize:11,fontWeight:600,cursor:"pointer"}}>📚 Practice This Card</button>
+        <button onClick={()=>{const idx=deck.findIndex(d=>d.id===c.id);if(idx>=0){setCardIndex(idx);setFlipped(false);setTab("practice");}else{setCat("All");setFilter("all");setCardIndex(allCards.indexOf(c));setFlipped(false);setTab("practice");}}} style={{marginTop:8,width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${C.teal}33`,background:C.teal+"08",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer"}}>📚 Practice This Card</button>
       </div>)}
     </div>}
   </div>;
@@ -6929,37 +6959,37 @@ function CommitmentPopup({rep,primerMonth,onSave,onClose}) {
     <div style={{fontSize:14,color:"rgba(255,255,255,0.7)",textAlign:"center",marginBottom:24,lineHeight:1.6}}>
       {selected==="custom"?`${customRecruits} recruits · $${Number(customPremium).toLocaleString()} in premium`:`${tier.recruits} recruit${tier.recruits!==1?"s":""} · $${tier.premium.toLocaleString()} in premium`}
     </div>
-    <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",textAlign:"center"}}>Commitment locked for {primerMonth.label} 🔒</div>
+    <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",textAlign:"center"}}>Commitment locked for {primerMonth.label} 🔒</div>
   </div>;
 
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:5000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
     <div style={{background:"white",borderRadius:20,width:"100%",maxWidth:440,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
       <div style={{background:"linear-gradient(135deg,#0f1f35,#16304f)",padding:"20px 22px"}}>
-        <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:4,textTransform:"uppercase",letterSpacing:"1px"}}>{primerMonth.label} Commitment</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:4,textTransform:"uppercase",letterSpacing:"1px"}}>{primerMonth.label} Commitment</div>
         <div style={{fontSize:20,fontWeight:800,color:"white",marginBottom:6}}>Set Your Monthly Goal</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.65)",lineHeight:1.6}}>This is your commitment — not just to your goals, but to your team. Be honest with yourself. Be bold. Choose thoughtfully — this locks for the month.</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.65)",lineHeight:1.6}}>This is your commitment — not just to your goals, but to your team. Be honest with yourself. Be bold. Choose thoughtfully — this locks for the month.</div>
       </div>
       <div style={{padding:"16px 20px",maxHeight:"60vh",overflowY:"auto"}}>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:10,fontWeight:600}}>Choose your level for {primerMonth.label}:</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:10,fontWeight:600}}>Choose your level for {primerMonth.label}:</div>
         {COMMITMENT_TIERS.map(t=><button key={t.id} onClick={()=>setSelected(t.id)} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${selected===t.id?t.color:C.border}`,background:selected===t.id?t.color+"11":"white",cursor:"pointer",textAlign:"left",marginBottom:8,transition:"all 0.15s"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:22}}>{t.emoji}</span>
             <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:700,color:selected===t.id?t.color:C.text}}>{t.label}</div>
-              {t.id!=="custom"&&<div style={{fontSize:11,color:C.textMid}}>{t.recruits} recruit{t.recruits!==1?"s":""} · ${t.premium.toLocaleString()} in premium</div>}
-              {t.id==="custom"&&<div style={{fontSize:11,color:C.textMid}}>Set your own numbers</div>}
+              <div style={{fontSize:14,fontWeight:700,color:selected===t.id?t.color:C.text}}>{t.label}</div>
+              {t.id!=="custom"&&<div style={{fontSize:13,color:C.textMid}}>{t.recruits} recruit{t.recruits!==1?"s":""} · ${t.premium.toLocaleString()} in premium</div>}
+              {t.id==="custom"&&<div style={{fontSize:13,color:C.textMid}}>Set your own numbers</div>}
             </div>
             {selected===t.id&&<div style={{width:18,height:18,borderRadius:9,background:t.color,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></div>}
           </div>
           {selected==="custom"&&t.id==="custom"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:10}}>
-            <div><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Recruit Goal</div><input type="number" placeholder="e.g. 5" value={customRecruits} onChange={e=>setCustomRecruits(e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}} onClick={e=>e.stopPropagation()}/></div>
-            <div><div style={{fontSize:10,color:C.textMid,marginBottom:3}}>Premium Goal $</div><input type="number" placeholder="e.g. 8000" value={customPremium} onChange={e=>setCustomPremium(e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}} onClick={e=>e.stopPropagation()}/></div>
+            <div><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Recruit Goal</div><input type="number" placeholder="e.g. 5" value={customRecruits} onChange={e=>setCustomRecruits(e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}} onClick={e=>e.stopPropagation()}/></div>
+            <div><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Premium Goal $</div><input type="number" placeholder="e.g. 8000" value={customPremium} onChange={e=>setCustomPremium(e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}} onClick={e=>e.stopPropagation()}/></div>
           </div>}
         </button>)}
-        <div style={{fontSize:10,color:C.textLight,lineHeight:1.5,marginTop:4,textAlign:"center"}}>⏳ {getDaysRemaining(primerMonth.cutoff)} days left in {primerMonth.label} · Closes {new Date(primerMonth.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
+        <div style={{fontSize:12,color:C.textLight,lineHeight:1.5,marginTop:4,textAlign:"center"}}>⏳ {getDaysRemaining(primerMonth.cutoff)} days left in {primerMonth.label} · Closes {new Date(primerMonth.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
       </div>
       <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8}}>
-        <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid,fontWeight:600}}>Remind Me Later</button>
+        <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:600}}>Remind Me Later</button>
         <button disabled={!selected||(selected==="custom"&&(!customRecruits||!customPremium))} onClick={()=>{
           const t=COMMITMENT_TIERS.find(tt=>tt.id===selected);
           const recruits=selected==="custom"?Number(customRecruits):t.recruits;
@@ -6967,7 +6997,7 @@ function CommitmentPopup({rep,primerMonth,onSave,onClose}) {
           onSave({tierId:selected,tierLabel:t.label,tierEmoji:t.emoji,recruits,premium,monthKey:primerMonth.key,monthLabel:primerMonth.label,lockedAt:new Date().toISOString()});
           setConfirmed(true);
           setTimeout(onClose,2500);
-        }} style={{flex:2,padding:"10px",borderRadius:10,background:selected?C.teal:C.textLight,color:"white",border:"none",cursor:selected?"pointer":"default",fontSize:13,fontWeight:700}}>
+        }} style={{flex:2,padding:"10px",borderRadius:10,background:selected?C.teal:C.textLight,color:"white",border:"none",cursor:selected?"pointer":"default",fontSize:14,fontWeight:700}}>
           🔒 Lock In My Commitment
         </button>
       </div>
@@ -6992,18 +7022,18 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock}) {
   return <Card style={{marginBottom:14,border:`2px solid ${commitment.tierId==="champ"?"#ef4444":commitment.tierId==="all_star"?"#8b5cf6":commitment.tierId==="starter"?"#f59e0b":C.border}`}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
       <div>
-        <div style={{fontSize:11,color:C.textMid,marginBottom:2}}>{primerMonth.label} Commitment</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:2}}>{primerMonth.label} Commitment</div>
         <div style={{fontSize:15,fontWeight:800,color:C.text}}>{commitment.tierEmoji} {commitment.tierLabel}</div>
       </div>
       <div style={{textAlign:"right"}}>
-        <div style={{fontSize:10,color:C.textLight}}>{daysLeft} days left</div>
-        <div style={{fontSize:10,color:C.textLight}}>Closes {new Date(primerMonth.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
-        {canUnlock&&<button onClick={onUnlock} style={{fontSize:9,color:C.textLight,background:"none",border:`1px solid ${C.border}`,borderRadius:4,cursor:"pointer",padding:"1px 5px",marginTop:3}}>Unlock</button>}
+        <div style={{fontSize:12,color:C.textLight}}>{daysLeft} days left</div>
+        <div style={{fontSize:12,color:C.textLight}}>Closes {new Date(primerMonth.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+        {canUnlock&&<button onClick={onUnlock} style={{fontSize:10,color:C.textLight,background:"none",border:`1px solid ${C.border}`,borderRadius:4,cursor:"pointer",padding:"1px 5px",marginTop:3}}>Unlock</button>}
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
       <div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid,marginBottom:3}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.textMid,marginBottom:3}}>
           <span>Recruits</span><span style={{fontWeight:700,color:recruits>=commitment.recruits?C.success:C.text}}>{recruits}/{commitment.recruits}</span>
         </div>
         <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
@@ -7011,7 +7041,7 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock}) {
         </div>
       </div>
       <div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.textMid,marginBottom:3}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.textMid,marginBottom:3}}>
           <span>Premium</span><span style={{fontWeight:700,color:premium>=commitment.premium?C.success:C.text}}>${Math.round(premium/1000)}k/${Math.round(commitment.premium/1000)}k</span>
         </div>
         <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
@@ -7019,7 +7049,7 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock}) {
         </div>
       </div>
     </div>
-    {recruitPct>=100&&premiumPct>=100&&<div style={{marginTop:8,textAlign:"center",fontSize:12,fontWeight:700,color:C.success}}>🎉 Commitment achieved!</div>}
+    {recruitPct>=100&&premiumPct>=100&&<div style={{marginTop:8,textAlign:"center",fontSize:13,fontWeight:700,color:C.success}}>🎉 Commitment achieved!</div>}
   </Card>;
 }
 
@@ -7065,16 +7095,16 @@ function ChooseYourPath({rep,onChoose}) {
             <div style={{fontSize:32}}>⚡</div>
             <div>
               <div style={{fontSize:18,fontWeight:800,color:C.gold}}>Fast Start</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>7–14 days to complete</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>7–14 days to complete</div>
             </div>
           </div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>High intensity, full commitment. You're ready to go all in right now. This path is for people who want to get licensed and writing business as fast as possible.</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>High intensity, full commitment. You're ready to go all in right now. This path is for people who want to get licensed and writing business as fast as possible.</div>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {["Daily focused activity","Faster path to income","High accountability","Best for: full-time focus"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"rgba(255,255,255,0.65)"}}>
+            {["Daily focused activity","Faster path to income","High accountability","Best for: full-time focus"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"rgba(255,255,255,0.65)"}}>
               <span style={{color:C.gold}}>✓</span>{item}
             </div>)}
           </div>
-          <div style={{marginTop:14,padding:"10px",background:C.gold,borderRadius:10,textAlign:"center",fontSize:13,fontWeight:700,color:"#0f1f35"}}>I'm Going Fast Start! ⚡</div>
+          <div style={{marginTop:14,padding:"10px",background:C.gold,borderRadius:10,textAlign:"center",fontSize:14,fontWeight:700,color:"#0f1f35"}}>I'm Going Fast Start! ⚡</div>
         </button>
 
         {/* Regular Start */}
@@ -7083,20 +7113,20 @@ function ChooseYourPath({rep,onChoose}) {
             <div style={{fontSize:32}}>🏆</div>
             <div>
               <div style={{fontSize:18,fontWeight:800,color:C.teal}}>Regular Start</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>30 days to complete</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>30 days to complete</div>
             </div>
           </div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>Steady, consistent pace. You're building a strong foundation. This path gives you 30 days to learn, practice, and prepare — perfect if you're balancing other commitments.</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>Steady, consistent pace. You're building a strong foundation. This path gives you 30 days to learn, practice, and prepare — perfect if you're balancing other commitments.</div>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {["Balanced daily activity","30 days to get licensed","Strong foundation building","Best for: part-time or balanced schedule"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"rgba(255,255,255,0.65)"}}>
+            {["Balanced daily activity","30 days to get licensed","Strong foundation building","Best for: part-time or balanced schedule"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"rgba(255,255,255,0.65)"}}>
               <span style={{color:C.teal}}>✓</span>{item}
             </div>)}
           </div>
-          <div style={{marginTop:14,padding:"10px",background:C.teal,borderRadius:10,textAlign:"center",fontSize:13,fontWeight:700,color:"white"}}>I'm Taking Regular Start 🏆</div>
+          <div style={{marginTop:14,padding:"10px",background:C.teal,borderRadius:10,textAlign:"center",fontSize:14,fontWeight:700,color:"white"}}>I'm Taking Regular Start 🏆</div>
         </button>
       </div>
 
-      <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"rgba(255,255,255,0.35)"}}>Your choice will be shared with your trainer. You can discuss it with them at any time.</div>
+      <div style={{textAlign:"center",marginTop:16,fontSize:13,color:"rgba(255,255,255,0.35)"}}>Your choice will be shared with your trainer. You can discuss it with them at any time.</div>
     </div>
   </div>;
 }
@@ -7123,21 +7153,21 @@ function VideoPopupModal({videoUrl,repName,emoji,title,subtitle,onClose}) {
       <div style={{background:`linear-gradient(135deg,#0f1f35,#16304f)`,padding:"20px 20px 16px",textAlign:"center"}}>
         <div style={{fontSize:28,marginBottom:6}}>{emoji}</div>
         <div style={{fontSize:18,fontWeight:800,color:"white",marginBottom:4}}>{title}</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.65)"}}>{subtitle.replace("{name}",repName)}</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.65)"}}>{subtitle.replace("{name}",repName)}</div>
       </div>
       <div style={{position:"relative",paddingBottom:"56.25%",background:"#000"}}>
         {(()=>{
           const src=buildVideoSrc(videoUrl);
           if(!src) return <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,background:"#0f1f35"}}>
             <div style={{fontSize:32}}>▶</div>
-            <div style={{fontSize:13,color:"white",fontWeight:600,textAlign:"center",padding:"0 20px"}}>Tap below to watch the video</div>
-            <a href={videoUrl} target="_blank" rel="noreferrer" style={{padding:"10px 24px",background:C.teal,color:"white",borderRadius:10,fontSize:13,fontWeight:700,textDecoration:"none"}}>Watch Video</a>
+            <div style={{fontSize:14,color:"white",fontWeight:600,textAlign:"center",padding:"0 20px"}}>Tap below to watch the video</div>
+            <a href={videoUrl} target="_blank" rel="noreferrer" style={{padding:"10px 24px",background:C.teal,color:"white",borderRadius:10,fontSize:14,fontWeight:700,textDecoration:"none"}}>Watch Video</a>
           </div>;
           return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen" allowFullScreen title="Video"/>;
         })()}
       </div>
       <div style={{padding:"14px 20px",textAlign:"center",background:"white"}}>
-        <a href={videoUrl} target="_blank" rel="noreferrer" style={{display:"block",fontSize:11,color:C.teal,textDecoration:"none",marginBottom:10}}>▶ Open video in new tab</a>
+        <a href={videoUrl} target="_blank" rel="noreferrer" style={{display:"block",fontSize:13,color:C.teal,textDecoration:"none",marginBottom:10}}>▶ Open video in new tab</a>
         <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:10,background:`linear-gradient(135deg,#0ea5a0,#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>
           Got it — Let's Get Started! 🚀
         </button>
@@ -7159,14 +7189,14 @@ function RewatchVideoModal({videoUrl,title,onClose}) {
           const src=buildVideoSrc(videoUrl);
           if(!src) return <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,background:"#0f1f35"}}>
             <div style={{fontSize:32}}>▶</div>
-            <div style={{fontSize:13,color:"white",fontWeight:600,textAlign:"center",padding:"0 20px"}}>Tap below to watch the video</div>
-            <a href={videoUrl} target="_blank" rel="noreferrer" style={{padding:"10px 24px",background:C.teal,color:"white",borderRadius:10,fontSize:13,fontWeight:700,textDecoration:"none"}}>Watch Video</a>
+            <div style={{fontSize:14,color:"white",fontWeight:600,textAlign:"center",padding:"0 20px"}}>Tap below to watch the video</div>
+            <a href={videoUrl} target="_blank" rel="noreferrer" style={{padding:"10px 24px",background:C.teal,color:"white",borderRadius:10,fontSize:14,fontWeight:700,textDecoration:"none"}}>Watch Video</a>
           </div>;
           return <iframe src={src} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen" allowFullScreen title="Video"/>;
         })()}
       </div>
       <div style={{padding:"10px 16px",textAlign:"center"}}>
-        <a href={videoUrl} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.teal,textDecoration:"none"}}>▶ Open video in new tab</a>
+        <a href={videoUrl} target="_blank" rel="noreferrer" style={{fontSize:13,color:C.teal,textDecoration:"none"}}>▶ Open video in new tab</a>
       </div>
     </div>
   </div>;
@@ -7347,7 +7377,7 @@ export default function App() {
 
   if(loading) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"white",flexDirection:"column",gap:12}}>
     <div style={{width:40,height:40,border:`3px solid ${C.teal}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-    <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Loading...</div>
+    <div style={{fontSize:14,color:"rgba(255,255,255,0.5)"}}>Loading...</div>
     <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
   </div>;
 
@@ -7378,12 +7408,12 @@ export default function App() {
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
       <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div style={{color:"white",fontWeight:700,fontSize:13}}>NextLevel Field Training Hub</div>
+        <div style={{color:"white",fontWeight:700,fontSize:14}}>NextLevel Field Training Hub</div>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Tour</button>
-          <button onClick={()=>setShowNeedHelp(true)} style={{background:"rgba(255,100,100,0.25)",border:"1px solid rgba(255,100,100,0.4)",color:"white",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>Need Help</button>
-          <button onClick={()=>setShowPhone(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Add to Phone</button>
-          <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:11}}>Sign Out</button>
+          <button onClick={()=>setShowTour(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:13}}>Tour</button>
+          <button onClick={()=>setShowNeedHelp(true)} style={{background:"rgba(255,100,100,0.25)",border:"1px solid rgba(255,100,100,0.4)",color:"white",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600}}>Need Help</button>
+          <button onClick={()=>setShowPhone(true)} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:13}}>Add to Phone</button>
+          <button onClick={signOut} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.6)",padding:"4px 9px",borderRadius:6,cursor:"pointer",fontSize:13}}>Sign Out</button>
         </div>
       </div>
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
@@ -7433,12 +7463,12 @@ export default function App() {
         <ProdDash data={data} onUpdateData={upd}/>
         {/* Promotion Level Selector */}
         <Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>My Contract Level</div>
-          <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level. Updates commission calculations automatically.</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>My Contract Level</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level. Updates commission calculations automatically.</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
             {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>saveStaff({...staffRecord,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(staffRecord.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(staffRecord.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:"pointer",textAlign:"left"}}>
-              <div style={{fontSize:11,fontWeight:700,color:(staffRecord.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
-              <div style={{fontSize:10,color:C.textMid}}>{p.pct}%</div>
+              <div style={{fontSize:13,fontWeight:700,color:(staffRecord.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
+              <div style={{fontSize:12,color:C.textMid}}>{p.pct}%</div>
             </button>)}
           </div>
         </Card>
@@ -7475,7 +7505,7 @@ export default function App() {
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
-    if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:12,color:C.text}}>{t.name}</div><div style={{fontSize:10,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
+    if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:13,color:C.text}}>{t.name}</div><div style={{fontSize:12,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
   };
 
@@ -7496,8 +7526,8 @@ export default function App() {
         <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:3,display:"flex",flexDirection:"column",gap:3}}>
           <div style={{width:17,height:2,background:C.text,borderRadius:1}}/><div style={{width:13,height:2,background:C.text,borderRadius:1}}/><div style={{width:17,height:2,background:C.text,borderRadius:1}}/>
         </button>
-        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:C.text,textTransform:"capitalize"}}>{selRep?selRep.name:section.replace(/([A-Z])/," $1")}</div><div style={{fontSize:10,color:C.textMid}}>NextLevel Field Training Hub</div></div>
-        <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.teal}}>{session.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:C.text,textTransform:"capitalize"}}>{selRep?selRep.name:section.replace(/([A-Z])/," $1")}</div><div style={{fontSize:12,color:C.textMid}}>NextLevel Field Training Hub</div></div>
+        <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal}}>{session.name?.charAt(0)?.toUpperCase()}</div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:14}}>
         <div style={{maxWidth:1400,margin:"0 auto",padding:"0 4px"}}>
