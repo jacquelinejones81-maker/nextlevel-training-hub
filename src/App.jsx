@@ -5107,12 +5107,15 @@ function RepInvestmentEntry({rep,onUpdate}) {
   };
 
   return <Card style={{marginBottom:12,border:"1px solid "+C.purple+"33"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
       <div>
         <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Investments</div>
         <div style={{fontSize:13,color:C.textMid}}>PAC: <span style={{color:C.purple,fontWeight:700}}>${totPAC.toLocaleString()}/mo</span> &nbsp;|&nbsp; Lump Sum: <span style={{color:C.gold,fontWeight:700}}>${totLump.toLocaleString()}</span></div>
       </div>
       <button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"4px 10px",borderRadius:7,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
+    </div>
+    <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:7,padding:"6px 10px",marginBottom:8,fontSize:11,color:"#b45309",lineHeight:1.5}}>
+      ⚠️ Only enter investment information if you are securities licensed. If you are not yet licensed, use the <strong>Investment Observation Log</strong> below to track prospects you observed during training appointments.
     </div>
     {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
       <input placeholder="Client name" value={form.clientName} onChange={e=>setForm({...form,clientName:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
