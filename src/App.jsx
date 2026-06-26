@@ -1870,8 +1870,6 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
     setCiNote("");
   };
 
-  const tc=trainer.trainerChecked||{};
-  const trDone=TRAINER_CHECKLIST.filter(i=>tc[i.id]).length;
 
   return <div>
     {/* Header */}
@@ -1890,13 +1888,13 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
 
     {/* Tabs */}
     <div style={{display:"flex",gap:4,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
-      {[["overview","Overview"],["production","Production"],["checklist","Checklist"],["checkins","Check-ins"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"5px 11px",borderRadius:7,border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===k?700:400,background:tab===k?C.navy:"transparent",color:tab===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>)}
+      {[["overview","Overview"],["production","Production"],["checkins","Check-ins"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"5px 11px",borderRadius:7,border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===k?700:400,background:tab===k?C.navy:"transparent",color:tab===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>)}
     </div>
 
     {/* OVERVIEW TAB */}
     {tab==="overview"&&<div>
       {/* Commitment Card */}
-      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} onUnlock={()=>{
+      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={(data.reps||[]).filter(r=>r.trainerId===trainer.id&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm.start).length} onUnlock={()=>{
         const updated={...trainer,commitments:{...(trainer.commitments||{}),[pm.key]:undefined}};
         onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===trainer.id?updated:t)});
       }}/>:<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
@@ -1933,6 +1931,34 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
         </div>
       </Card>
 
+      {/* Recruits This Month */}
+      {(()=>{
+        const pm4=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+        const allAssigned=(data.reps||[]).filter(r=>r.trainerId===trainer.id);
+        const thisMonthRecruits=allAssigned.filter(r=>r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm4.start);
+        return <Card style={{marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.text}}>Recruits This Month ({pm4.label})</div>
+            <Badge color={C.success} small>{thisMonthRecruits.length} recruit{thisMonthRecruits.length!==1?"s":""}</Badge>
+          </div>
+          {thisMonthRecruits.length===0
+            ?<div style={{fontSize:11,color:C.textLight}}>No recruits added this Primerica month yet</div>
+            :thisMonthRecruits.map((r,i)=>{
+              const tr=TRACK_INFO[r.track];
+              return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:12}}>
+                <div style={{width:24,height:24,borderRadius:6,background:(tr?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tr?.color||C.teal}}>{r.name?.charAt(0)}</div>
+                <div style={{flex:1}}>
+                  <div style={{color:C.text,fontWeight:600}}>{r.name}</div>
+                  <div style={{fontSize:10,color:C.textMid}}>{r.startDate?new Date(r.startDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}):"No date"}</div>
+                </div>
+                <Badge color={tr?.color||C.teal} small>{tr?.label||"No track"}</Badge>
+              </div>;
+            })
+          }
+          {allAssigned.length>thisMonthRecruits.length&&<div style={{fontSize:10,color:C.textLight,marginTop:6}}>{allAssigned.length-thisMonthRecruits.length} more rep{allAssigned.length-thisMonthRecruits.length!==1?"s":""} from previous months</div>}
+        </Card>;
+      })()}
+
       {/* Reps they're training */}
       <Card>
         <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Reps Assigned to {trainer.name}</div>
@@ -1968,20 +1994,7 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
       </Card>
     </div>}
 
-    {/* CHECKLIST TAB */}
-    {tab==="checklist"&&<Card>
-      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Field Trainer Checklist — {trDone}/{TRAINER_CHECKLIST.length} complete</div>
-      <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden",marginBottom:10}}>
-        <div style={{height:"100%",background:C.teal,borderRadius:3,width:(TRAINER_CHECKLIST.length>0?Math.round((trDone/TRAINER_CHECKLIST.length)*100):0)+"%"}}/>
-      </div>
-      {Object.entries(TRAINER_CHECKLIST.reduce((acc,item)=>{if(!acc[item.cat])acc[item.cat]=[];acc[item.cat].push(item);return acc;},{})).map(([cat,items])=><div key={cat} style={{marginBottom:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.5px"}}>{cat}</div>
-        {items.map(item=><div key={item.id} style={{display:"flex",gap:8,padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:12}}>
-          <div style={{width:16,height:16,borderRadius:4,border:`2px solid ${tc[item.id]?C.teal:C.border}`,background:tc[item.id]?C.teal:"white",flexShrink:0,marginTop:1}}/>
-          <div style={{color:tc[item.id]?C.textLight:C.text,textDecoration:tc[item.id]?"line-through":"none"}}>{item.task}</div>
-        </div>)}
-      </div>)}
-    </Card>}
+
 
     {/* CHECK-INS TAB */}
     {tab==="checkins"&&<div>
@@ -2173,7 +2186,10 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const trRec=(data.trainers||[]).find(t=>t.id===userId);
       const pm3=getCurrentPrimerMonth(data.primerMonthEnds||[]);
       const c3=trRec?.commitments?.[pm3.key];
-      if(c3) return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}}/>;
+      if(c3){
+        const trRecruits=(data.reps||[]).filter(r=>r.trainerId===userId&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm3.start).length;
+        return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}} recruitsOverride={trRecruits}/>;
+      }
       // No commitment set — show reminder card
       return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06",cursor:"pointer"}} onClick={()=>setShowTrainerCommitment(true)}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -3387,7 +3403,7 @@ const DAILY_QUESTIONS = [
 ];
 
 function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDate();
   const activityLog = data.activityLogs||{};
   const repLog = activityLog[rep.id]||{};
   const todayLog = repLog[today];
@@ -3417,7 +3433,7 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
       [rep.id]:{
         ...repLog,
         seenIntro:true,
-        [today]:{...form,submittedAt:new Date().toISOString()}
+        [today]:{...form,submittedAt:new Date().toISOString(),date:today}
       }
     };
     onUpdate({...data,activityLogs:updated});
@@ -3474,8 +3490,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     : allReps.filter(r=>r.trainerId===userId);
   const activityLogs = data.activityLogs||{};
   const leadTasks = data.leadTasks||{};
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now()-86400000).toISOString().split("T")[0];
+  const today = localDate();
+  const yesterday = localDate(new Date(Date.now()-86400000));
   const [search,setSearch] = useState("");
   const [statusFilter,setStatusFilter] = useState("all");
   const [expandedRep,setExpandedRep] = useState(null);
@@ -7228,7 +7244,7 @@ function CommitmentPopup({rep,primerMonth,onSave,onClose}) {
 }
 
 // ── COMMITMENT CARD (shows on rep dashboard) ──
-function CommitmentCard({rep,primerMonth,onUnlock,canUnlock}) {
+function CommitmentCard({rep,primerMonth,onUnlock,canUnlock,recruitsOverride}) {
   const commitment=rep.commitments?.[primerMonth.key];
   const daysLeft=getDaysRemaining(primerMonth.cutoff);
   if(!commitment) return null;
@@ -7236,7 +7252,7 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock}) {
   // Calculate progress from logged production
   const now=new Date();
   const monthStart=primerMonth.start;
-  const recruits=(rep.recruits||[]).filter(r=>r.date&&r.date>=monthStart).length;
+  const recruits=recruitsOverride!==undefined?recruitsOverride:(rep.recruits||[]).filter(r=>r.date&&r.date>=monthStart).length;
   const premium=(rep.selfPremium||[]).filter(e=>e.date&&e.date>=monthStart&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0); // annualized
   const recruitPct=commitment.recruits>0?Math.min(100,Math.round((recruits/commitment.recruits)*100)):0;
   const premiumPct=commitment.premium>0?Math.min(100,Math.round((premium/commitment.premium)*100)):0;
