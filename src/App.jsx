@@ -1898,11 +1898,10 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
 
 // ── DASHBOARD ──
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
-  const [showTrainerCommitment,setShowTrainerCommitment]=React.useState(false);
+  const [showTrainerCommitment,setShowTrainerCommitment]=useState(false);
   const isTrainer=userRole==="trainer";
   const trainerRecord=isTrainer?(data.trainers||[]).find(t=>t.id===userId):null;
-  
-  React.useEffect(()=>{
+  useEffect(()=>{
     if(isTrainer&&trainerRecord){
       const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
       const hasCommitted=(trainerRecord.commitments||{})[pm.key];
@@ -1921,7 +1920,13 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
   const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
+  const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
   return <div>
+    {showTrainerCommitment&&isTrainer&&trainerRecord&&<CommitmentPopup rep={trainerRecord} primerMonth={pm} onSave={(commitment)=>{
+      localStorage.setItem(`commitment_seen_${userId}_${pm.key}`,"true");
+      onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===userId?{...t,commitments:{...(t.commitments||{}),[pm.key]:commitment}}:t)});
+      setShowTrainerCommitment(false);
+    }} onClose={()=>{localStorage.setItem(`commitment_seen_${userId}_${pm.key}`,"true");setShowTrainerCommitment(false);}}/>}
     {/* Next Level Access Requests */}
     {(()=>{
       const pending=(data.reps||[]).filter(r=>r.nextLevelRequested&&!r.nextLevelGranted&&(r.track==="fast"||r.track==="regular"));
