@@ -1326,16 +1326,19 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
       const c=rep.commitments?.[pm.key];
       if(c) return <CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}}/>;
-      return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06",cursor:onOpenCommitment?"pointer":"default"}} onClick={onOpenCommitment||undefined}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:22}}>📋</div>
-          <div style={{flex:1}}>
+      if(!onOpenCommitment) return null;
+      return <div style={{marginBottom:12,borderRadius:12,border:`2px solid ${C.gold}`,background:C.gold+"11",padding:"12px 14px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          <span style={{fontSize:22}}>📋</span>
+          <div>
             <div style={{fontSize:13,fontWeight:700,color:C.gold}}>Set Your {pm.label} Commitment</div>
-            <div style={{fontSize:11,color:C.textMid,marginTop:2}}>{getDaysRemaining(pm.cutoff)} days remaining in this Primerica month.</div>
+            <div style={{fontSize:11,color:C.textMid}}>{getDaysRemaining(pm.cutoff)} days remaining in this Primerica month.</div>
           </div>
-          {onOpenCommitment&&<div style={{fontSize:13,color:C.gold,fontWeight:700}}>Tap to set →</div>}
         </div>
-      </Card>;
+        <button onClick={()=>onOpenCommitment()} style={{width:"100%",padding:"10px",borderRadius:9,background:C.gold,border:"none",color:"white",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+          🔒 Set My Monthly Commitment
+        </button>
+      </div>;
     })()}
     {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name} data={data}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
