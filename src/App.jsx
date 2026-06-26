@@ -3990,7 +3990,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             ${(rep.track==="fast"||rep.track==="regular")?(()=>{
               const trackDays=rep.track==="fast"?14:30;
               const trackLabel=rep.track==="fast"?"Fast Start (7-14 days)":"Regular Start (30 days)";
-              const startDate=rep.startDate?new Date(rep.startDate+"T12:00:00"):null;
+              // Use createdAt as start date since startDate was removed from Add Rep form
+              const startDate=rep.createdAt?new Date(rep.createdAt):null;
               const daysSinceStart=startDate?Math.floor((Date.now()-startDate)/86400000):null;
               const daysRemaining=daysSinceStart!==null?Math.max(0,trackDays-daysSinceStart):null;
               const expectedPct=daysSinceStart!==null?Math.min(100,Math.round((daysSinceStart/trackDays)*100)):null;
@@ -4001,12 +4002,14 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               // References
               const refs=rep.references||[];
               const refsSubmitted=refs.filter(r=>r.name).length;
-              const REF_STAGES=["textSent","callScheduled","called","callComplete","trainingApptSet"];
-              const REF_LABELS={"textSent":"Text Sent","callScheduled":"Call Scheduled","called":"Called Ref","callComplete":"Call Complete","trainingApptSet":"Appt Set"};
-              let refRows=refs.filter(r=>r.name).map((r,i)=>{
-                const completed=REF_STAGES.filter(s=>r[s]);
-                const latest=completed.length>0?REF_LABELS[completed[completed.length-1]]:"No outreach yet";
-                return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+(r.name||"")+"</td><td style='padding:6px;color:#666'>"+(r.phone||"")+"</td><td style='padding:6px;text-align:center'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(completed.length>=5?"#d1fae5":completed.length>0?"#fef3c7":"#f1f5f9")+";color:"+(completed.length>=5?"#059669":completed.length>0?"#d97706":"#94a3b8")+"'>"+latest+"</span></td></tr>";
+              const REF_STAGES_R=["textSent","callScheduled","called","callComplete","trainingApptSet"];
+              const REF_LABELS_R={"textSent":"Text Sent","callScheduled":"Call Scheduled","called":"Called Ref","callComplete":"Call Complete","trainingApptSet":"Appt Set"};
+              let refRows=refs.filter(r=>r.name).map((r)=>{
+                const completed=REF_STAGES_R.filter(s=>r[s]);
+                const latest=completed.length>0?REF_LABELS_R[completed[completed.length-1]]:"No outreach yet";
+                const bg=completed.length>=5?"#d1fae5":completed.length>0?"#fef3c7":"#f1f5f9";
+                const col=completed.length>=5?"#059669":completed.length>0?"#d97706":"#94a3b8";
+                return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+(r.name||"")+"</td><td style='padding:6px;color:#666'>"+(r.phone||"")+"</td><td style='padding:6px;text-align:center'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+bg+";color:"+col+"'>"+latest+"</span></td></tr>";
               }).join("");
 
               // Login activity
@@ -4019,27 +4022,27 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               // Pre-licensing
               const preLic=rep.preLicType||null;
               const preLicDone=rep.preLicDone||false;
-              const examScheduled=rep.examDate||null;
 
-              return "<h2>NEW REP TRAINING STATUS</h2>"+
-              "<p class='note'>Detailed training snapshot for "+rep.name+" on the "+trackLabel+" path.</p>"+
-              "<div class='grid2'>"+
-              "<div class='card'><div class='big'>"+trackLabel+"</div><div class='label'>Training Path"+(chosenAt?" · Chose "+chosenAt:"")+"</div></div>"+
-              "<div class='card'><div class='big'>"+(daysSinceStart!==null?daysSinceStart+" days":"Unknown")+"</div><div class='label'>Days Since Start"+(rep.startDate?" — Started "+new Date(rep.startDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}):"")+"</div></div>"+
-              "<div class='card'><div class='big' style='color:"+(daysRemaining===0?"#ef4444":"inherit")+"'>"+(daysRemaining!==null?daysRemaining+" days":"—")+"</div><div class='label'>Days Remaining to Target</div></div>"+
-              "<div class='card'><div class='big' style='color:"+(onPace?"#10b981":"#ef4444")+";font-size:18px'>"+(onPace!==null?(onPace?"✅ On Pace":"⚠️ Behind"):"—")+"</div><div class='label'>Pace Check (Expected "+expectedPct+"% vs Actual "+actualPct+"%)</div></div>"+
-              "<div class='card'><div class='big'>"+loginsLast7+"/7</div><div class='label'>App Logins Last 7 Days</div></div>"+
-              "<div class='card'><div class='big'>"+loginsTotal+"</div><div class='label'>Total App Logins</div></div>"+
-              "</div>"+
-              "<h2>REFERENCES PIPELINE ("+refsSubmitted+"/5)</h2>"+
-              (refsSubmitted===0?"<p style='color:#999;font-size:12px'>No references submitted yet — this should be one of the first things completed.</p>":
-              "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Name</th><th style='padding:6px'>Phone</th><th style='text-align:center;padding:6px'>Outreach Status</th></tr>"+refRows+"</table>")+
-              "<h2>PRE-LICENSING STATUS</h2>"+
-              "<div class='grid'>"+
-              "<div class='card'><div class='big'>"+(preLic||"Not selected")+"</div><div class='label'>Class Type</div></div>"+
-              "<div class='card'><div class='big' style='color:"+(preLicDone?"#10b981":"#f59e0b")+";font-size:18px'>"+(preLicDone?"✅ Complete":"⏳ In Progress")+"</div><div class='label'>Pre-Licensing Class</div></div>"+
-              "<div class='card'><div class='big'>"+(examScheduled?new Date(examScheduled+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Not scheduled")+"</div><div class='label'>Exam Date</div></div>"+
-              "</div>";
+              let html="<h2>NEW REP TRAINING STATUS</h2>";
+              html+="<p class='note'>Detailed training snapshot for "+rep.name+" on the "+trackLabel+" path.</p>";
+              html+="<div class='grid2'>";
+              html+="<div class='card'><div class='big'>"+trackLabel+"</div><div class='label'>Training Path"+(chosenAt?" — Chose "+chosenAt:"")+"</div></div>";
+              html+="<div class='card'><div class='big'>"+(daysSinceStart!==null?daysSinceStart+" days":"Unknown")+"</div><div class='label'>Days Since Start"+(startDate?" — "+startDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"")+"</div></div>";
+              html+="<div class='card'><div class='big' style='color:"+(daysRemaining===0?"#ef4444":"inherit")+"'>"+(daysRemaining!==null?daysRemaining+" days left":"—")+"</div><div class='label'>Days Remaining to Target</div></div>";
+              html+="<div class='card'><div class='big' style='color:"+(onPace===null?"#94a3b8":onPace?"#10b981":"#ef4444")+"'>"+(onPace===null?"—":onPace?"✅ On Pace":"⚠️ Behind")+"</div><div class='label'>Pace Check — Expected "+expectedPct+"% vs Actual "+actualPct+"%</div></div>";
+              html+="<div class='card'><div class='big'>"+loginsLast7+"/7</div><div class='label'>App Logins Last 7 Days</div></div>";
+              html+="<div class='card'><div class='big'>"+loginsTotal+"</div><div class='label'>Total App Logins</div></div>";
+              html+="</div>";
+              html+="<h2>REFERENCES PIPELINE ("+refsSubmitted+"/5)</h2>";
+              html+=refsSubmitted===0?"<p style='color:#999;font-size:12px'>No references submitted yet — this should be one of the first things completed in training.</p>":"<table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Name</th><th style='padding:6px'>Phone</th><th style='text-align:center;padding:6px'>Outreach Status</th></tr>"+refRows+"</table>";
+              html+="<h2>PRE-LICENSING STATUS</h2>";
+              html+="<div class='grid'>";
+              html+="<div class='card'><div class='big'>"+(preLic||"Not selected yet")+"</div><div class='label'>Class Type Selected</div></div>";
+              html+="<div class='card'><div class='big' style='color:"+(preLicDone?"#10b981":"#f59e0b")+"'>"+(preLicDone?"✅ Completed":"⏳ In Progress")+"</div><div class='label'>Pre-Licensing Class</div></div>";
+              html+="<div class='card'><div class='big'>"+(rep.examDate?new Date(rep.examDate+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not scheduled yet")+"</div><div class='label'>Exam Date</div></div>";
+              html+="</div>";
+              if(!preLic) html+="<p style='color:#ef4444;font-size:12px;margin-top:6px'>⚠️ Rep has not selected a pre-licensing class type yet — check the Milestones tab.</p>";
+              return html;
             })():""}
 
             <h2>COACHING NOTES</h2>
