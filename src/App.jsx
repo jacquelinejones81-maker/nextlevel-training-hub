@@ -1779,10 +1779,10 @@ function ManageTeam({data,onUpdate,onClose}) {
       {/* Primerica Month End Dates */}
       <div style={{marginTop:14}}>
         <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Primerica Month End Dates</div>
-        <div style={{fontSize:12,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month. This drives commitment tracking and resets. Format: YYYY-MM-DD</div>
+        <div style={{fontSize:12,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month. This drives commitment tracking and resets.</div>
         {(data.primerMonthEnds||[]).map((me,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:5,marginBottom:5}}>
           <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-          <input placeholder="Cutoff date YYYY-MM-DD" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <input type="date" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           <button onClick={()=>onUpdate({...data,primerMonthEnds:(data.primerMonthEnds||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
         </div>)}
         <button onClick={()=>onUpdate({...data,primerMonthEnds:[...(data.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
