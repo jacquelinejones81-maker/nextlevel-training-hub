@@ -1720,35 +1720,55 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
 function ManageTeam({data,onUpdate,onClose}) {
   const [nt,setNt]=useState({name:"",pin:"",bookingLink:""});
   const [na,setNa]=useState({name:"",pin:""});
-  const trainers=data.trainers||[];
-  const admins=data.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
+  const [localData,setLocalData]=useState(data);
+  const [hasChanges,setHasChanges]=useState(false);
+  const trainers=localData.trainers||[];
+  const admins=localData.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
+  const updateLocal=(updated)=>{setLocalData(updated);setHasChanges(true);};
+  const saveChanges=()=>{
+    if(window.confirm("Are you sure you want to save these changes to Manage Team?\n\nThis will update settings for your entire team.")){
+      onUpdate(localData);
+      setHasChanges(false);
+    }
+  };
+  const handleClose=()=>{
+    if(hasChanges){
+      if(window.confirm("You have unsaved changes. Are you sure you want to close without saving?")) onClose();
+    } else {
+      onClose();
+    }
+  };
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"80vh",overflowY:"auto"}}>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={handleClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
+      {hasChanges&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+        <div style={{fontSize:12,color:"#b45309",fontWeight:600}}>⚠️ You have unsaved changes</div>
+        <button onClick={saveChanges} style={{padding:"5px 14px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Changes</button>
+      </div>}
       <div style={{marginBottom:14}}><div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
         {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
           <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
-            <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Admin name"/>
+            <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Admin name"/>
             {a.isSuperAdmin&&<span style={{fontSize:12,color:C.gold,whiteSpace:"nowrap"}}>Super Admin</span>}
-            <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);onUpdate({...data,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
-            {!a.isSuperAdmin&&<button onClick={()=>onUpdate({...data,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
+            <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);updateLocal({...localData,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+            {!a.isSuperAdmin&&<button onClick={()=>updateLocal({...localData,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
           </div>
           <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
-            <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);onUpdate({...data,admins:u});}}/>
+            <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
             <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
             {a.alsoRecruits&&<span style={{fontSize:12,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
           </label>
           {a.alsoRecruits&&<div style={{marginTop:4,display:"flex",flexDirection:"column",gap:4}}>
-            <input placeholder="Phone (for rep call/text button)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-            <input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-            <input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);onUpdate({...data,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+            <input placeholder="Phone (for rep call/text button)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+            <input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+            <input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
           </div>}
         </div>)}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){onUpdate({...data,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13}}>Add</button></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Admin name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(na.name&&na.pin){updateLocal({...localData,admins:[...admins,{...na,id:"admin_"+Date.now()}]});setNa({name:"",pin:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13}}>Add</button></div>
       </div>
       <div><div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
-        {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:13,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);onUpdate({...data,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>onUpdate({...data,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Phone (for rep call/text button)" value={t.phone||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,phone:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:5}}/><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);onUpdate({...data,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/></div>)}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Trainer name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(nt.name&&nt.pin){onUpdate({...data,trainers:[...trainers,{...nt,id:"trainer_"+Date.now()}]});setNt({name:"",pin:"",bookingLink:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13}}>Add</button></div>
+        {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:9,marginBottom:7}}><div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}><span style={{fontSize:13,flex:1,fontWeight:600,color:C.text}}>{t.name}</span><input placeholder="PIN" maxLength={6} value={t.pin} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);updateLocal({...localData,trainers:u});}} style={{width:65,padding:"3px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>updateLocal({...localData,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><input placeholder="Phone (for rep call/text button)" value={t.phone||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,phone:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:5}}/><input placeholder="Booking link" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/></div>)}
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:5,marginTop:6}}><input placeholder="Trainer name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/><input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:60,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/><button onClick={()=>{if(nt.name&&nt.pin){updateLocal({...localData,trainers:[...trainers,{...nt,id:"trainer_"+Date.now()}]});setNt({name:"",pin:"",bookingLink:""});}}} style={{padding:"5px 10px",borderRadius:6,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13}}>Add</button></div>
       </div>
 
       {/* RVP IDs */}
@@ -1758,19 +1778,19 @@ function ManageTeam({data,onUpdate,onClose}) {
           {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...(data.customRVPs||[])].map((rvp,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:7,background:C.surface,marginBottom:5}}>
               <div style={{flex:1}}><span style={{fontSize:13,fontWeight:700,color:C.gold}}>{rvp.id}</span><span style={{fontSize:13,color:C.textMid,marginLeft:8}}>{rvp.name}</span></div>
-              {i>=2&&<button onClick={()=>onUpdate({...data,customRVPs:(data.customRVPs||[]).filter((_,j)=>j!==i-2)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>}
+              {i>=2&&<button onClick={()=>updateLocal({...localData,customRVPs:(data.customRVPs||[]).filter((_,j)=>j!==i-2)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>}
               {i<2&&<Badge color={C.teal} small>Default</Badge>}
             </div>
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"auto 1fr auto",gap:5}}>
-          <input placeholder="RVP ID" value={(data._newRVP||{}).id||""} onChange={e=>onUpdate({...data,_newRVP:{...(data._newRVP||{}),id:e.target.value.toUpperCase()}})}
+          <input placeholder="RVP ID" value={(data._newRVP||{}).id||""} onChange={e=>updateLocal({...localData,_newRVP:{...(data._newRVP||{}),id:e.target.value.toUpperCase()}})}
             style={{width:80,padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,letterSpacing:"1px",fontWeight:700}}/>
-          <input placeholder="RVP Name" value={(data._newRVP||{}).name||""} onChange={e=>onUpdate({...data,_newRVP:{...(data._newRVP||{}),name:e.target.value}})}
+          <input placeholder="RVP Name" value={(data._newRVP||{}).name||""} onChange={e=>updateLocal({...localData,_newRVP:{...(data._newRVP||{}),name:e.target.value}})}
             style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           <button onClick={()=>{
             const nr=data._newRVP||{};
-            if(nr.id&&nr.name){onUpdate({...data,customRVPs:[...(data.customRVPs||[]),{id:nr.id,name:nr.name}],_newRVP:{}});}
+            if(nr.id&&nr.name){updateLocal({...localData,customRVPs:[...(data.customRVPs||[]),{id:nr.id,name:nr.name}],_newRVP:{}});}
           }} style={{padding:"5px 10px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
         </div>
       </div>
@@ -1781,11 +1801,11 @@ function ManageTeam({data,onUpdate,onClose}) {
         <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Primerica Month End Dates</div>
         <div style={{fontSize:12,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month. This drives commitment tracking and resets.</div>
         {(data.primerMonthEnds||[]).map((me,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:5,marginBottom:5}}>
-          <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-          <input type="date" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);onUpdate({...data,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-          <button onClick={()=>onUpdate({...data,primerMonthEnds:(data.primerMonthEnds||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
+          <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);updateLocal({...localData,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <input type="date" value={me.cutoff} onChange={e=>{const u=(data.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);updateLocal({...localData,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <button onClick={()=>updateLocal({...localData,primerMonthEnds:(data.primerMonthEnds||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
         </div>)}
-        <button onClick={()=>onUpdate({...data,primerMonthEnds:[...(data.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
+        <button onClick={()=>updateLocal({...localData,primerMonthEnds:[...(data.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
       </div>
 
       {/* RVP Booking Links — for "Meet with your RVP" button */}
@@ -1796,18 +1816,18 @@ function ManageTeam({data,onUpdate,onClose}) {
           {(data.rvpBookingLinks||[]).map((rvp,i)=>(
             <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:8,marginBottom:6}}>
               <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5}}>
-                <input value={rvp.name} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,name:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="RVP Name" style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}}/>
-                <button onClick={()=>onUpdate({...data,rvpBookingLinks:(data.rvpBookingLinks||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
+                <input value={rvp.name} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,name:e.target.value}:r);updateLocal({...localData,rvpBookingLinks:u});}} placeholder="RVP Name" style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}}/>
+                <button onClick={()=>updateLocal({...localData,rvpBookingLinks:(data.rvpBookingLinks||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
               </div>
-              <input value={rvp.link} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,link:e.target.value}:r);onUpdate({...data,rvpBookingLinks:u});}} placeholder="Booking link (Calendly, etc.)" style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+              <input value={rvp.link} onChange={e=>{const u=(data.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,link:e.target.value}:r);updateLocal({...localData,rvpBookingLinks:u});}} placeholder="Booking link (Calendly, etc.)" style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
             </div>
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:5}}>
-          <input placeholder="New RVP name" value={(data._newRVPBooking||{}).name||""} onChange={e=>onUpdate({...data,_newRVPBooking:{...(data._newRVPBooking||{}),name:e.target.value}})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <input placeholder="New RVP name" value={(data._newRVPBooking||{}).name||""} onChange={e=>updateLocal({...localData,_newRVPBooking:{...(data._newRVPBooking||{}),name:e.target.value}})} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           <button onClick={()=>{
             const nrb=data._newRVPBooking||{};
-            if(nrb.name){onUpdate({...data,rvpBookingLinks:[...(data.rvpBookingLinks||[]),{name:nrb.name,link:""}],_newRVPBooking:{}});}
+            if(nrb.name){updateLocal({...localData,rvpBookingLinks:[...(data.rvpBookingLinks||[]),{name:nrb.name,link:""}],_newRVPBooking:{}});}
           }} style={{padding:"5px 10px",borderRadius:6,background:C.purple,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Add RVP</button>
         </div>
       </div>
@@ -1823,34 +1843,35 @@ function ManageTeam({data,onUpdate,onClose}) {
 
         <div style={{marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Orientation Video (pops up when rep clicks "Watch Orientation" on their checklist)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.orientationVideoUrl||""} onChange={e=>onUpdate({...data,orientationVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.orientationVideoUrl||""} onChange={e=>updateLocal({...localData,orientationVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           {data.orientationVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved — also stays available in Resources tab</div>}
         </div>
 
         <div style={{marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Welcome Video (Fast Start / Regular Start — first login)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.welcomeVideoUrl||""} onChange={e=>onUpdate({...data,welcomeVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.welcomeVideoUrl||""} onChange={e=>updateLocal({...localData,welcomeVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           {data.welcomeVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
 
         <div style={{marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Licensed Now What Video (shown once access granted, rewatchable in their sidebar)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.licensedVideoUrl||""} onChange={e=>onUpdate({...data,licensedVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.licensedVideoUrl||""} onChange={e=>updateLocal({...localData,licensedVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           {data.licensedVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
 
         <div style={{marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Field Trainer Video (shown once access granted, rewatchable in their sidebar)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.fieldTrainerVideoUrl||""} onChange={e=>onUpdate({...data,fieldTrainerVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.fieldTrainerVideoUrl||""} onChange={e=>updateLocal({...localData,fieldTrainerVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           {data.fieldTrainerVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
 
         <div>
           <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>RVP Path Video (shown once access granted, rewatchable in their sidebar)</div>
-          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.rvpPathVideoUrl||""} onChange={e=>onUpdate({...data,rvpPathVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+          <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.rvpPathVideoUrl||""} onChange={e=>updateLocal({...localData,rvpPathVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           {data.rvpPathVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
       </div>
+      {hasChanges&&<div style={{position:"sticky",bottom:0,background:"white",paddingTop:12,borderTop:`1px solid ${C.border}`,marginTop:12}}><button onClick={saveChanges} style={{width:"100%",padding:"11px",borderRadius:10,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:700}}>💾 Save All Changes</button></div>}
     </div>
   </div>;
 }
