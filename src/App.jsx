@@ -1155,6 +1155,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
     {k:"fame",l:"Wall of Fame"},
     {k:"objectiontraining",l:"Objection Training"},
+    {k:"prospecting",l:"Prospecting"},
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
@@ -1386,6 +1387,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
     {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
+    {tab==="prospecting"&&<ProspectingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
       </div>
     </div>
   </div>;
@@ -6775,6 +6777,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
     {k:"objectiontraining",l:"Objection Training",d:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"},
+    {k:"prospecting",l:"Prospecting",d:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
@@ -6834,6 +6837,220 @@ function BirthdayModal({name,age,onClose}) {
         </button>
       </div>
     </div>
+  </div>;
+}
+
+// ── PROSPECTING PAGE ──
+const PROSPECTING_CARDS = [
+  {id:"p1",emoji:"🛒",situation:"Random Encounter",context:"At the grocery store, gas station, waiting in line — you meet someone friendly and there's a natural moment.",
+    opening:"\"Do you by chance keep your options open for extra income?\"",
+    ifYes:"Great — find out what they do, show genuine interest, then say: \"I actually help people in situations like yours protect their income and build wealth on the side. It's not for everyone but it might be worth a 20-minute conversation. Can I get your number?\"",
+    ifNo:"\"No worries at all — I respect that. Have a great day!\" Smile and move on. Never push. The goal is sorting, not convincing.",
+    purpose:"This is a filter question, not a pitch. You're not selling anything — you're identifying who's open. Most people won't be, and that's fine. The ones who say yes are self-selecting as interested.",
+    tip:"Say it casually, like you're asking about the weather. The energy matters more than the words."
+  },
+  {id:"p2",emoji:"🥂",situation:"Social Event / Party",context:"You're at a gathering, someone asks what you do, or you're in a natural conversation.",
+    opening:"\"I work in financial services — I help families protect their income and build wealth. What do you do?\" (Turn it back to them immediately.)",
+    ifYes:"When they show interest: \"It's actually pretty interesting what we do — I'd love to share more over coffee sometime. Are you open to that?\"",
+    ifNo:"If they're not interested: pivot to genuine conversation. Don't make it awkward. Your goal at social events is to make a connection, not close a deal.",
+    purpose:"Lead with curiosity about them, not excitement about you. People are drawn to those who listen. If you talk about yourself too much at a party, you become the person everyone avoids.",
+    tip:"Never pitch at the party. Get the number and follow up later. The party is for planting seeds."
+  },
+  {id:"p3",emoji:"⛪",situation:"Church / Community Group",context:"Someone you see regularly in a faith or community setting — relationship already exists.",
+    opening:"\"Hey, I've been meaning to ask — do you have someone helping you with life insurance and building wealth for your family? I work in that space and I love helping people in our community.\"",
+    ifYes:"\"That's great — just know I'm always here if you ever want a second opinion or a review. No pressure at all.\"",
+    ifNo:"\"I'd love to sit down with you sometime — it's really just a conversation, no commitment. I think you'd find it valuable.\"",
+    purpose:"Trust is already established. You're not a stranger — you're a community member offering to help. Lead with service, not sales. The relationship matters more than any one prospect.",
+    tip:"Never make it feel like you're working your congregation. Be genuinely helpful and let your reputation do the prospecting for you over time."
+  },
+  {id:"p4",emoji:"📱",situation:"Social Media / DM Outreach",context:"Reaching out to someone online — friend, follower, or someone who engaged with your content.",
+    opening:"\"Hey [Name]! Hope you're doing well. I've been working with families in [city] helping them protect their income and build wealth — I thought of you. Would you be open to a quick conversation?\"",
+    ifYes:"\"Awesome — let's find a time. Are you free for a 20-minute call this week?\"",
+    ifNo:"\"Totally understand! If anything ever changes, you know where to find me. Take care!\"",
+    purpose:"Keep DMs short. Long messages feel like copy-paste spam. Personalize it — reference something real about them. The goal is to get a YES to a conversation, not to explain everything in the message.",
+    tip:"Never send a wall of text. If they don't respond in a week, one follow-up is fine. After that, let it go and move on."
+  },
+  {id:"p5",emoji:"🤝",situation:"Warm Referral",context:"Someone gave you a name — \"you should talk to my friend Sarah.\"",
+    opening:"\"Hey [Name], my name is [Your Name] — [Mutual Contact] actually suggested I reach out to you. I help families protect their income and build wealth, and they thought we'd be a good fit to connect. Would you be open to a quick call?\"",
+    ifYes:"\"Perfect — I appreciate you being open. Let's find a time this week that works for you.\"",
+    ifNo:"\"No worries at all — I'll let [Mutual Contact] know I reached out. Hope to connect sometime in the future!\"",
+    purpose:"The warm referral is your highest-conversion prospect. Use the mutual contact's name immediately — it establishes trust before you've said anything else.",
+    tip:"Always follow up with the person who referred you after the conversation — good or bad. It shows professionalism and encourages more referrals."
+  },
+  {id:"p6",emoji:"💼",situation:"Networking Event",context:"A business networking event, chamber of commerce, professional mixer.",
+    opening:"\"I'm [Name] — I work in financial services helping families and business owners protect their income and build wealth. Who do you work with?\"",
+    ifYes:"\"I love connecting with people like you — would you be open to a coffee chat this week?\"",
+    ifNo:"Exchange cards anyway. The relationship may develop over time.",
+    purpose:"Networking events are about building relationships, not collecting business cards or pitching. The sale happens weeks later, not at the event.",
+    tip:"\"Who do you work with?\" is more powerful than \"what do you do?\" It gets them thinking about their network, which naturally leads to referrals."
+  },
+  {id:"p7",emoji:"🛡️",situation:"\"I already have insurance\"",context:"Someone mentions they already have coverage when you bring up what you do.",
+    opening:"\"That's great — most people don't. Can I ask — do you know if it's term or whole life? And do you know exactly how much coverage you have?\"",
+    ifYes:"\"That's really good that you know that. Most people don't — and a lot of people have group coverage through work that ends when their job ends. Would you be open to a quick review just to confirm you're in good shape?\"",
+    ifNo:"\"Totally understand — I'm not here to replace what you have. If you ever want a second opinion, I'm here.\"",
+    purpose:"\"I already have insurance\" is not a no — it's an invitation to educate. Most people have inadequate coverage and don't know it.",
+    tip:"Never say their insurance is probably not good enough. Ask questions that lead them to the realization themselves."
+  },
+  {id:"p8",emoji:"🚫",situation:"\"I'm not interested in sales\"",context:"Someone reacts to your opportunity by saying they're not a salesperson.",
+    opening:"\"I completely understand — honestly, I'm not really a salesperson either. I'm more of an educator. I sit down with families, look at their situation, and help them understand their options.\"",
+    ifYes:"\"And the income part is really just a byproduct of helping people. Would you be open to just learning more about it?\"",
+    ifNo:"\"That's fair — it's definitely not for everyone. I appreciate your honesty.\"",
+    purpose:"Reframe the opportunity away from sales and toward service and education. Most people who say they're not salespeople actually hate pushy selling — which is not what we do.",
+    tip:"The best reps don't think of themselves as salespeople. They think of themselves as advisors."
+  },
+];
+
+function ProspectingPage({data,onUpdate,userRole}) {
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const [tab,setTab]=useState("situations");
+  const [cardIndex,setCardIndex]=useState(0);
+  const [flipped,setFlipped]=useState(false);
+  const [showForm,setShowForm]=useState(false);
+  const [editingId,setEditingId]=useState(null);
+  const [form,setForm]=useState({emoji:"💬",situation:"",context:"",opening:"",ifYes:"",ifNo:"",purpose:"",tip:""});
+  const customLines=data.prospectingLibrary||[];
+  const allCards=[...PROSPECTING_CARDS,...customLines];
+  const card=allCards[cardIndex]||null;
+
+  const next=()=>{setCardIndex(i=>Math.min(i+1,allCards.length-1));setFlipped(false);};
+  const prev=()=>{setCardIndex(i=>Math.max(i-1,0));setFlipped(false);};
+
+  const saveCard=()=>{
+    if(!form.situation||!form.opening) return;
+    const newCard={...form,id:`custom_p_${Date.now()}`};
+    if(editingId){
+      onUpdate({...data,prospectingLibrary:customLines.map(c=>c.id===editingId?{...newCard,id:editingId}:c)});
+    } else {
+      onUpdate({...data,prospectingLibrary:[...customLines,newCard]});
+    }
+    setForm({emoji:"💬",situation:"",context:"",opening:"",ifYes:"",ifNo:"",purpose:"",tip:""});
+    setShowForm(false);
+    setEditingId(null);
+  };
+
+  const deleteCard=(id)=>{
+    if(window.confirm("Delete this card?")) onUpdate({...data,prospectingLibrary:customLines.filter(c=>c.id!==id)});
+  };
+
+  const editCard=(c)=>{
+    setForm({emoji:c.emoji||"💬",situation:c.situation,context:c.context||"",opening:c.opening,ifYes:c.ifYes||"",ifNo:c.ifNo||"",purpose:c.purpose||"",tip:c.tip||""});
+    setEditingId(c.id);
+    setShowForm(true);
+    setTab("library");
+  };
+
+  return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
+    <div style={{marginBottom:16}}>
+      <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:4}}>🎯 Prospecting Training</div>
+      <div style={{fontSize:13,color:C.textMid}}>Real-world scenarios and proven approaches for starting conversations naturally.</div>
+    </div>
+    <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+      {[["situations","📚 Situation Cards"],["quickref","⚡ Quick Reference"],["library","📖 Team's Best Lines"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"7px 14px",borderRadius:20,border:`1px solid ${tab===k?C.teal:C.border}`,background:tab===k?C.teal:"white",color:tab===k?"white":C.textMid,fontSize:12,fontWeight:tab===k?700:400,cursor:"pointer"}}>{l}</button>)}
+    </div>
+
+    {tab==="situations"&&<div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,fontSize:11,color:C.textMid}}>
+        <span>Card {cardIndex+1} of {allCards.length}</span>
+        <span>{card?.emoji} {card?.situation}</span>
+      </div>
+      <div onClick={()=>setFlipped(f=>!f)} style={{cursor:"pointer",marginBottom:12,minHeight:260,borderRadius:16,border:`2px solid ${flipped?C.teal:C.border}`,background:flipped?`linear-gradient(135deg,${C.navy},#16304f)`:"white",padding:"20px",transition:"all 0.3s",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
+        {!flipped?<div>
+          <div style={{fontSize:11,fontWeight:700,color:C.textLight,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>THE SITUATION</div>
+          <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>{card?.emoji} {card?.situation}</div>
+          {card?.context&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:12,fontStyle:"italic"}}>{card.context}</div>}
+          <div style={{marginTop:12,padding:"10px 14px",background:C.teal+"11",borderRadius:10,border:`1px solid ${C.teal}33`}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.teal,marginBottom:4}}>YOUR OPENING LINE</div>
+            <div style={{fontSize:13,color:C.text,fontWeight:600,lineHeight:1.6}}>{card?.opening}</div>
+          </div>
+          <div style={{marginTop:16,textAlign:"center",fontSize:11,color:C.textLight}}>👆 Tap to see how to handle their response</div>
+        </div>:<div>
+          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.5px"}}>HOW TO HANDLE IT</div>
+          {card?.ifYes&&<div style={{background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#10b981",marginBottom:4}}>✅ IF THEY SAY YES</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>{card.ifYes}</div>
+          </div>}
+          {card?.ifNo&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#ef4444",marginBottom:4}}>🙅 IF THEY SAY NO</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>{card.ifNo}</div>
+          </div>}
+          {card?.purpose&&<div style={{background:"rgba(255,255,255,0.05)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>🧠 THE PURPOSE</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",lineHeight:1.6}}>{card.purpose}</div>
+          </div>}
+          {card?.tip&&<div style={{background:C.gold+"22",borderRadius:8,padding:"8px 12px"}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.gold,marginBottom:3}}>💡 PRO TIP</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>{card.tip}</div>
+          </div>}
+        </div>}
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={prev} disabled={cardIndex===0} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+        <div style={{flex:1,textAlign:"center",fontSize:11,color:C.textLight}}>Tap card to {flipped?"hide":"see"} response</div>
+        <button onClick={next} disabled={cardIndex===allCards.length-1} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<allCards.length-1?"pointer":"default",color:cardIndex<allCards.length-1?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>→</button>
+      </div>
+      <div style={{marginTop:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Jump to a situation:</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {allCards.map((c,i)=><button key={c.id} onClick={()=>{setCardIndex(i);setFlipped(false);}} style={{padding:"4px 10px",borderRadius:14,border:`1px solid ${cardIndex===i?C.teal:C.border}`,background:cardIndex===i?C.teal+"11":"white",color:cardIndex===i?C.teal:C.textMid,fontSize:11,cursor:"pointer"}}>{c.emoji} {c.situation}</button>)}
+        </div>
+      </div>
+    </div>}
+
+    {tab==="quickref"&&<div>
+      <div style={{background:`linear-gradient(135deg,${C.navy},#16304f)`,borderRadius:14,padding:"18px 20px",marginBottom:12}}>
+        <div style={{fontSize:14,fontWeight:800,color:"white",marginBottom:2}}>⚡ Quick Reference</div>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Your go-to lines — screenshot this and keep it on your phone</div>
+      </div>
+      {[
+        {label:"The Filter Opener",line:"\"Do you by chance keep your options open for extra income?\"",when:"Anywhere, anytime — sorts the interested from the not interested"},
+        {label:"The Professional Intro",line:"\"I'm [Name] — I help families protect their income and build wealth. Who's helping you with that?\"",when:"Networking events, professional settings"},
+        {label:"The Referral Opener",line:"\"[Mutual Contact] suggested I reach out — I help families with financial protection and wealth building. Would you be open to a quick call?\"",when:"Warm referral situations"},
+        {label:"The Social Media DM",line:"\"Hey [Name]! I thought of you — I help people in [city] build extra income in financial services. Would you be open to a quick conversation?\"",when:"Social media outreach to warm contacts"},
+        {label:"The Community Approach",line:"\"Do you have someone helping you with life insurance and protecting your family? I work in that space and love helping people in our community.\"",when:"Church, community groups, people you already know"},
+        {label:"The Insurance Reframe",line:"\"That's great you have coverage — do you know if it's term or whole life? And do you know exactly how much you have?\"",when:"When someone says they already have insurance"},
+      ].map((item,i)=><Card key={i} style={{marginBottom:10}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.teal,marginBottom:4}}>{item.label}</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:6,fontStyle:"italic"}}>{item.line}</div>
+        <div style={{fontSize:11,color:C.textMid}}>📍 {item.when}</div>
+      </Card>)}
+    </div>}
+
+    {tab==="library"&&<div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={{fontSize:13,color:C.textMid}}>{customLines.length} custom line{customLines.length!==1?"s":""} from your team</div>
+        {isAdmin&&<button onClick={()=>{setShowForm(true);setEditingId(null);setForm({emoji:"💬",situation:"",context:"",opening:"",ifYes:"",ifNo:"",purpose:"",tip:""});}} style={{padding:"7px 14px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>+ Add Line</button>}
+      </div>
+      {isAdmin&&showForm&&<Card style={{marginBottom:16,border:`1px solid ${C.teal}33`}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>{editingId?"Edit":"New Prospecting Line"}</div>
+        {[["situation","Situation Title","e.g. At the gym"],["context","Context / Setup","When and where this comes up..."],["opening","Opening Line","What you say first..."],["ifYes","If They Say Yes","What to say next..."],["ifNo","If They Say No","How to handle gracefully..."],["purpose","The Purpose","Why this approach works..."],["tip","Pro Tip",""],].map(([k,l,ph])=><div key={k} style={{marginBottom:8}}>
+          <label style={{fontSize:10,color:C.textMid,display:"block",marginBottom:3}}>{l}</label>
+          <textarea value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} placeholder={ph} rows={2} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",boxSizing:"border-box"}}/>
+        </div>)}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{setShowForm(false);setEditingId(null);}} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+          <button onClick={saveCard} disabled={!form.situation||!form.opening} style={{flex:2,padding:"8px",borderRadius:8,background:form.situation&&form.opening?C.teal:C.textLight,color:"white",border:"none",cursor:form.situation&&form.opening?"pointer":"default",fontSize:12,fontWeight:700}}>Save</button>
+        </div>
+      </Card>}
+      {customLines.length===0&&!showForm&&<div style={{textAlign:"center",padding:"30px 20px",color:C.textLight}}>
+        <div style={{fontSize:24,marginBottom:8}}>💬</div>
+        <div style={{fontSize:13,marginBottom:4}}>No custom lines yet</div>
+        {isAdmin?<div style={{fontSize:11}}>Add prospecting lines that have worked for your team so everyone can learn from them.</div>:<div style={{fontSize:11}}>Your admin will add team prospecting lines here as they're discovered in the field.</div>}
+      </div>}
+      {customLines.map((c,i)=><div key={c.id} style={{borderRadius:10,border:`1px solid ${C.border}`,padding:"12px 14px",marginBottom:8,background:"white"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text}}>{c.emoji||"💬"} {c.situation}</div>
+          {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+            <button onClick={()=>editCard(c)} style={{padding:"3px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Edit</button>
+            <button onClick={()=>deleteCard(c.id)} style={{padding:"3px 8px",borderRadius:6,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:11,color:C.danger}}>Delete</button>
+          </div>}
+        </div>
+        <div style={{fontSize:12,color:C.teal,fontWeight:600,marginBottom:6,fontStyle:"italic"}}>"{c.opening}"</div>
+        {c.ifYes&&<div style={{fontSize:11,color:C.textMid,marginBottom:3}}>✅ Yes: {c.ifYes}</div>}
+        {c.ifNo&&<div style={{fontSize:11,color:C.textMid,marginBottom:3}}>🙅 No: {c.ifNo}</div>}
+        {c.tip&&<div style={{fontSize:11,color:C.gold,marginTop:4}}>💡 {c.tip}</div>}
+        <button onClick={()=>{const idx=allCards.findIndex(ac=>ac.id===c.id);if(idx>=0){setCardIndex(idx);setFlipped(false);setTab("situations");}}} style={{marginTop:8,width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${C.teal}33`,background:C.teal+"08",color:C.teal,fontSize:11,fontWeight:600,cursor:"pointer"}}>📚 View as Flashcard</button>
+      </div>)}
+    </div>}
   </div>;
 }
 
@@ -7761,7 +7978,8 @@ export default function App() {
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
-    if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:13,color:C.text}}>{t.name}</div><div style={{fontSize:12,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
     return null;
