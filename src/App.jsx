@@ -3987,6 +3987,61 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <p class="note">Training completion shows how invested ${rep.name} is in learning the system.</p>
             <p><strong>${rep.progress}% complete</strong></p>
 
+            ${(rep.track==="fast"||rep.track==="regular")?(()=>{
+              const trackDays=rep.track==="fast"?14:30;
+              const trackLabel=rep.track==="fast"?"Fast Start (7-14 days)":"Regular Start (30 days)";
+              const startDate=rep.startDate?new Date(rep.startDate+"T12:00:00"):null;
+              const daysSinceStart=startDate?Math.floor((Date.now()-startDate)/86400000):null;
+              const daysRemaining=daysSinceStart!==null?Math.max(0,trackDays-daysSinceStart):null;
+              const expectedPct=daysSinceStart!==null?Math.min(100,Math.round((daysSinceStart/trackDays)*100)):null;
+              const actualPct=rep.progress||0;
+              const onPace=expectedPct!==null?actualPct>=expectedPct:null;
+              const chosenAt=rep.trackChosenAt||null;
+
+              // References
+              const refs=rep.references||[];
+              const refsSubmitted=refs.filter(r=>r.name).length;
+              const REF_STAGES=["textSent","callScheduled","called","callComplete","trainingApptSet"];
+              const REF_LABELS={"textSent":"Text Sent","callScheduled":"Call Scheduled","called":"Called Ref","callComplete":"Call Complete","trainingApptSet":"Appt Set"};
+              let refRows=refs.filter(r=>r.name).map((r,i)=>{
+                const completed=REF_STAGES.filter(s=>r[s]);
+                const latest=completed.length>0?REF_LABELS[completed[completed.length-1]]:"No outreach yet";
+                return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+(r.name||"")+"</td><td style='padding:6px;color:#666'>"+(r.phone||"")+"</td><td style='padding:6px;text-align:center'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(completed.length>=5?"#d1fae5":completed.length>0?"#fef3c7":"#f1f5f9")+";color:"+(completed.length>=5?"#059669":completed.length>0?"#d97706":"#94a3b8")+"'>"+latest+"</span></td></tr>";
+              }).join("");
+
+              // Login activity
+              const loginHistory=(data.loginHistory||{})[rep.id]||[];
+              const last7=[];
+              for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split("T")[0]);}
+              const loginsLast7=loginHistory.filter(l=>last7.includes(l.date)).length;
+              const loginsTotal=loginHistory.length;
+
+              // Pre-licensing
+              const preLic=rep.preLicType||null;
+              const preLicDone=rep.preLicDone||false;
+              const examScheduled=rep.examDate||null;
+
+              return "<h2>NEW REP TRAINING STATUS</h2>"+
+              "<p class='note'>Detailed training snapshot for "+rep.name+" on the "+trackLabel+" path.</p>"+
+              "<div class='grid2'>"+
+              "<div class='card'><div class='big'>"+trackLabel+"</div><div class='label'>Training Path"+(chosenAt?" · Chose "+chosenAt:"")+"</div></div>"+
+              "<div class='card'><div class='big'>"+(daysSinceStart!==null?daysSinceStart+" days":"Unknown")+"</div><div class='label'>Days Since Start"+(rep.startDate?" — Started "+new Date(rep.startDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}):"")+"</div></div>"+
+              "<div class='card'><div class='big' style='color:"+(daysRemaining===0?"#ef4444":"inherit")+"'>"+(daysRemaining!==null?daysRemaining+" days":"—")+"</div><div class='label'>Days Remaining to Target</div></div>"+
+              "<div class='card'><div class='big' style='color:"+(onPace?"#10b981":"#ef4444")+";font-size:18px'>"+(onPace!==null?(onPace?"✅ On Pace":"⚠️ Behind"):"—")+"</div><div class='label'>Pace Check (Expected "+expectedPct+"% vs Actual "+actualPct+"%)</div></div>"+
+              "<div class='card'><div class='big'>"+loginsLast7+"/7</div><div class='label'>App Logins Last 7 Days</div></div>"+
+              "<div class='card'><div class='big'>"+loginsTotal+"</div><div class='label'>Total App Logins</div></div>"+
+              "</div>"+
+              "<h2>REFERENCES PIPELINE ("+refsSubmitted+"/5)</h2>"+
+              (refsSubmitted===0?"<p style='color:#999;font-size:12px'>No references submitted yet — this should be one of the first things completed.</p>":
+              "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Name</th><th style='padding:6px'>Phone</th><th style='text-align:center;padding:6px'>Outreach Status</th></tr>"+refRows+"</table>")+
+              "<h2>PRE-LICENSING STATUS</h2>"+
+              "<div class='grid'>"+
+              "<div class='card'><div class='big'>"+(preLic||"Not selected")+"</div><div class='label'>Class Type</div></div>"+
+              "<div class='card'><div class='big' style='color:"+(preLicDone?"#10b981":"#f59e0b")+";font-size:18px'>"+(preLicDone?"✅ Complete":"⏳ In Progress")+"</div><div class='label'>Pre-Licensing Class</div></div>"+
+              "<div class='card'><div class='big'>"+(examScheduled?new Date(examScheduled+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Not scheduled")+"</div><div class='label'>Exam Date</div></div>"+
+              "</div>";
+            })():""}
+
             <h2>COACHING NOTES</h2>
             <p class="note">Notes from previous coaching sessions.</p>
             ${(rep.checkIns||[]).length===0?"<p style='color:#999;font-size:12px'>No coaching notes yet</p>":
