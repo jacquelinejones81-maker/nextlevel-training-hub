@@ -1122,7 +1122,7 @@ function RefsEditor({rep,data,onUpdate}) {
   </div>;})}</div>;
 }
 
-function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
+function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpenCommitment}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
   const track=TRACK_INFO[rep.track];
@@ -1326,13 +1326,14 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
       const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
       const c=rep.commitments?.[pm.key];
       if(c) return <CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}}/>;
-      return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06"}}>
+      return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06",cursor:onOpenCommitment?"pointer":"default"}} onClick={onOpenCommitment||undefined}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{fontSize:22}}>📋</div>
           <div style={{flex:1}}>
             <div style={{fontSize:13,fontWeight:700,color:C.gold}}>Set Your {pm.label} Commitment</div>
-            <div style={{fontSize:11,color:C.textMid,marginTop:2}}>Tap below to lock in your goal for this month. {getDaysRemaining(pm.cutoff)} days remaining.</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:2}}>{getDaysRemaining(pm.cutoff)} days remaining in this Primerica month.</div>
           </div>
+          {onOpenCommitment&&<div style={{fontSize:13,color:C.gold,fontWeight:700}}>Tap to set →</div>}
         </div>
       </Card>;
     })()}
@@ -7624,7 +7625,7 @@ export default function App() {
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         <div style={{width:"100%"}}><AnnouncementsBanner data={data} onUpdate={upd} userRole="rep"/></div>
         <div style={{width:"100%"}}><DailyEventsBanner data={data} onUpdateData={upd} userRole="rep"/></div>
-        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id}/></div>
+        <div style={{flex:1,overflow:"hidden",display:"flex"}}><RepView rep={rep} data={data} onUpdate={(id,u)=>upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===id?u:r)})} onUpdateData={upd} readOnly={false} isOwnView={true} key={rep.id} onOpenCommitment={()=>setShowCommitmentPopup(true)}/></div>
       </div>
     </div>;
   }
