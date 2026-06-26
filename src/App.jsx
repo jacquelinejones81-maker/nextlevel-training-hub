@@ -1902,7 +1902,7 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
     {/* OVERVIEW TAB */}
     {tab==="overview"&&<div>
       {/* Commitment Card */}
-      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={(data.reps||[]).filter(r=>r.trainerId===trainer.id&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm.start).length} onUnlock={()=>{
+      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={(data.reps||[]).filter(r=>r.trainerId===trainer.id&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm.start).length} premiumOverride={(data.myProduction||{})[trainer.id]?.lifeApps?.filter(a=>a.date&&a.date>=pm.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0} onUnlock={()=>{
         const updated={...trainer,commitments:{...(trainer.commitments||{}),[pm.key]:undefined}};
         onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===trainer.id?updated:t)});
       }}/>:<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
@@ -2196,7 +2196,8 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const c3=trRec?.commitments?.[pm3.key];
       if(c3){
         const trRecruits=(data.reps||[]).filter(r=>r.trainerId===userId&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm3.start).length;
-        return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}} recruitsOverride={trRecruits}/>;
+        const trPremium=(data.myProduction||{})[userId]?.lifeApps?.filter(a=>a.date&&a.date>=pm3.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0;
+        return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}} recruitsOverride={trRecruits} premiumOverride={trPremium}/>;
       }
       // No commitment set — show reminder card
       return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06",cursor:"pointer"}} onClick={()=>setShowTrainerCommitment(true)}>
@@ -7252,16 +7253,15 @@ function CommitmentPopup({rep,primerMonth,onSave,onClose}) {
 }
 
 // ── COMMITMENT CARD (shows on rep dashboard) ──
-function CommitmentCard({rep,primerMonth,onUnlock,canUnlock,recruitsOverride}) {
+function CommitmentCard({rep,primerMonth,onUnlock,canUnlock,recruitsOverride,premiumOverride}) {
   const commitment=rep.commitments?.[primerMonth.key];
   const daysLeft=getDaysRemaining(primerMonth.cutoff);
   if(!commitment) return null;
 
-  // Calculate progress from logged production
   const now=new Date();
   const monthStart=primerMonth.start;
   const recruits=recruitsOverride!==undefined?recruitsOverride:(rep.recruits||[]).filter(r=>r.date&&r.date>=monthStart).length;
-  const premium=(rep.selfPremium||[]).filter(e=>e.date&&e.date>=monthStart&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0); // annualized
+  const premium=premiumOverride!==undefined?premiumOverride:(rep.selfPremium||[]).filter(e=>e.date&&e.date>=monthStart&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
   const recruitPct=commitment.recruits>0?Math.min(100,Math.round((recruits/commitment.recruits)*100)):0;
   const premiumPct=commitment.premium>0?Math.min(100,Math.round((premium/commitment.premium)*100)):0;
 
