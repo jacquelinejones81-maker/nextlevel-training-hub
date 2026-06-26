@@ -3424,7 +3424,17 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
     setSubmitted(true);
   };
 
-  if(submitted) return null;
+  if(submitted) return <Card style={{marginBottom:12,border:`1px solid ${C.success}44`,background:C.success+"08"}}>
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:36,height:36,borderRadius:18,background:C.success+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div style={{fontSize:13,fontWeight:700,color:C.success}}>Today's activity submitted! ✅</div>
+        <div style={{fontSize:11,color:C.textMid,marginTop:1}}>You're showing up and that matters. Come back tomorrow to keep your streak going 🔥</div>
+      </div>
+    </div>
+  </Card>;
 
   if(showFirst) return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
     <div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:8}}>Welcome to Your Daily Activity Log</div>
