@@ -1322,7 +1322,20 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false}) {
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
     {!readOnly&&rep.track==="licensed"&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>
-    }{(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);const c=rep.commitments?.[pm.key];return c?<CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}}/>:null;})()}
+    }{(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{
+      const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
+      const c=rep.commitments?.[pm.key];
+      if(c) return <CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}}/>;
+      return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{fontSize:22}}>📋</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.gold}}>Set Your {pm.label} Commitment</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:2}}>Tap below to lock in your goal for this month. {getDaysRemaining(pm.cutoff)} days remaining.</div>
+          </div>
+        </div>
+      </Card>;
+    })()}
     {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name} data={data}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
@@ -1827,12 +1840,168 @@ function ManageTeam({data,onUpdate,onClose}) {
     </div>
   </div>;
 }
+
+// ── TRAINER PROFILE PAGE (viewed from My Reps) ──
+function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
+  const [ciNote,setCiNote]=useState("");
+  const [tab,setTab]=useState("overview");
+  const isAdmin=true;
+  const prod=(data.myProduction||{})[trainer.id]||{};
+  const lifeApps=prod.lifeApps||[];
+  const investments=prod.investments||[];
+  const totPremium=lifeApps.reduce((s,a)=>s+(Number(a.premium)||0),0);
+  const totPAC=investments.reduce((s,i)=>s+(Number(i.pac)||0),0);
+  const totLump=investments.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
+  const activityLogs=(data.activityLogs||{})[trainer.id]||{};
+  const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const commitment=(trainer.commitments||{})[pm.key];
+  const daysLeft=getDaysRemaining(pm.cutoff);
+  const PROMO_LEVELS=[{key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},{key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},{key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},{key:"rvp",label:"RVP",pct:110}];
+  const promo=PROMO_LEVELS.find(p=>p.key===(trainer.promotionLevel||"rep"))||PROMO_LEVELS[0];
+
+  const addCI=()=>{
+    if(!ciNote.trim()) return;
+    const updated={...trainer,checkIns:[...(trainer.checkIns||[]),{date:new Date().toISOString(),note:ciNote}]};
+    onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===trainer.id?updated:t)});
+    setCiNote("");
+  };
+
+  const tc=trainer.trainerChecked||{};
+  const trDone=TRAINER_CHECKLIST.filter(i=>tc[i.id]).length;
+
+  return <div>
+    {/* Header */}
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+      <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:13,color:C.textMid}}>← Back</button>
+      <div style={{flex:1}}>
+        <div style={{fontSize:15,fontWeight:700,color:C.text}}>{trainer.name}</div>
+        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginTop:2}}>
+          {trainer.phone&&<PhoneLink phone={trainer.phone}/>}
+          <Badge color={C.purple} small>Field Trainer</Badge>
+          <Badge color={C.gold} small>{promo.label} ({promo.pct}%)</Badge>
+          {commitment?<span style={{fontSize:12,background:C.gold+"22",color:"#b45309",padding:"2px 7px",borderRadius:5,fontWeight:700}}>{commitment.tierEmoji} {commitment.tierLabel} · {pm.label}</span>:<span style={{fontSize:12,color:C.gold,fontWeight:600}}>⏳ No commitment set for {pm.label}</span>}
+        </div>
+      </div>
+    </div>
+
+    {/* Tabs */}
+    <div style={{display:"flex",gap:4,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
+      {[["overview","Overview"],["production","Production"],["checklist","Checklist"],["checkins","Check-ins"]].map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{padding:"5px 11px",borderRadius:7,border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===k?700:400,background:tab===k?C.navy:"transparent",color:tab===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>)}
+    </div>
+
+    {/* OVERVIEW TAB */}
+    {tab==="overview"&&<div>
+      {/* Commitment Card */}
+      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} onUnlock={()=>{
+        const updated={...trainer,commitments:{...(trainer.commitments||{}),[pm.key]:undefined}};
+        onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===trainer.id?updated:t)});
+      }}/>:<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.gold,marginBottom:4}}>⏳ No Commitment Set — {pm.label}</div>
+        <div style={{fontSize:11,color:C.textMid}}>{trainer.name} hasn't set their monthly commitment yet. {daysLeft} days remaining in this Primerica month.</div>
+      </Card>}
+
+      {/* Production Summary */}
+      <Card style={{marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Production Summary</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+          {[[lifeApps.length,"Life Apps",C.teal],[`$${totPremium.toFixed(0)}/mo`,"Premium",C.gold],[investments.length,"Investments",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:6}}>
+          <div style={{background:C.teal+"08",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:13,fontWeight:700,color:C.teal}}>${totPAC.toLocaleString()}/mo</div><div style={{fontSize:9,color:C.textMid}}>PAC Total</div></div>
+          <div style={{background:C.purple+"08",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:13,fontWeight:700,color:C.purple}}>${totLump.toLocaleString()}</div><div style={{fontSize:9,color:C.textMid}}>Lump Sum</div></div>
+        </div>
+      </Card>
+
+      {/* Activity Last 7 Days */}
+      <Card style={{marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Activity Last 7 Days</div>
+        <div style={{display:"flex",gap:4}}>
+          {[...Array(7)].map((_,i)=>{
+            const d=new Date(); d.setDate(d.getDate()-(6-i));
+            const key=d.toISOString().split("T")[0];
+            const log=activityLogs[key];
+            const isToday=i===6;
+            return <div key={i} style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:6,background:log?.submittedAt?C.success+"22":"rgba(0,0,0,0.04)",border:isToday?`2px solid ${C.teal}`:"1px solid transparent"}}>
+              <div style={{fontSize:11,fontWeight:700,color:log?.submittedAt?C.success:C.textLight}}>{log?.talked||0}</div>
+              <div style={{fontSize:9,color:C.textLight}}>{d.toLocaleDateString("en-US",{weekday:"short"})}</div>
+            </div>;
+          })}
+        </div>
+      </Card>
+
+      {/* Reps they're training */}
+      <Card>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Reps Assigned to {trainer.name}</div>
+        {(data.reps||[]).filter(r=>r.trainerId===trainer.id).length===0?<div style={{fontSize:11,color:C.textLight}}>No reps assigned yet</div>:
+        (data.reps||[]).filter(r=>r.trainerId===trainer.id).map((r,i)=>{
+          const tr=TRACK_INFO[r.track];
+          return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:12}}>
+            <div style={{width:24,height:24,borderRadius:6,background:(tr?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tr?.color||C.teal}}>{r.name?.charAt(0)}</div>
+            <div style={{flex:1,color:C.text,fontWeight:600}}>{r.name}</div>
+            <Badge color={tr?.color||C.teal} small>{tr?.label||"No track"}</Badge>
+          </div>;
+        })}
+      </Card>
+    </div>}
+
+    {/* PRODUCTION TAB */}
+    {tab==="production"&&<div>
+      <Card style={{marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Life Apps</div>
+        {lifeApps.length===0?<div style={{fontSize:11,color:C.textLight}}>No life apps logged yet</div>:
+        lifeApps.slice().reverse().map((a,i)=><div key={i} style={{padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:12,display:"flex",justifyContent:"space-between"}}>
+          <span style={{color:C.text,fontWeight:600}}>{a.clientName}</span>
+          <span style={{color:C.teal}}>${a.premium}/mo</span>
+        </div>)}
+      </Card>
+      <Card>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Investments</div>
+        {investments.length===0?<div style={{fontSize:11,color:C.textLight}}>No investments logged yet</div>:
+        investments.map((inv,i)=><div key={i} style={{padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:12}}>
+          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><Badge color={C.teal} small>{inv.type}</Badge></div>
+          <div style={{color:C.textMid,fontSize:11}}>{inv.pac&&`PAC: $${inv.pac}/mo`}{inv.pac&&inv.lumpSum&&" · "}{inv.lumpSum&&`Lump: $${inv.lumpSum}`}</div>
+        </div>)}
+      </Card>
+    </div>}
+
+    {/* CHECKLIST TAB */}
+    {tab==="checklist"&&<Card>
+      <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Field Trainer Checklist — {trDone}/{TRAINER_CHECKLIST.length} complete</div>
+      <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden",marginBottom:10}}>
+        <div style={{height:"100%",background:C.teal,borderRadius:3,width:(TRAINER_CHECKLIST.length>0?Math.round((trDone/TRAINER_CHECKLIST.length)*100):0)+"%"}}/>
+      </div>
+      {Object.entries(TRAINER_CHECKLIST.reduce((acc,item)=>{if(!acc[item.cat])acc[item.cat]=[];acc[item.cat].push(item);return acc;},{})).map(([cat,items])=><div key={cat} style={{marginBottom:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.5px"}}>{cat}</div>
+        {items.map(item=><div key={item.id} style={{display:"flex",gap:8,padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:12}}>
+          <div style={{width:16,height:16,borderRadius:4,border:`2px solid ${tc[item.id]?C.teal:C.border}`,background:tc[item.id]?C.teal:"white",flexShrink:0,marginTop:1}}/>
+          <div style={{color:tc[item.id]?C.textLight:C.text,textDecoration:tc[item.id]?"line-through":"none"}}>{item.task}</div>
+        </div>)}
+      </div>)}
+    </Card>}
+
+    {/* CHECK-INS TAB */}
+    {tab==="checkins"&&<div>
+      <Card style={{marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Add Coaching Note</div>
+        <textarea value={ciNote} onChange={e=>setCiNote(e.target.value)} placeholder="Note for this coaching session..." rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",boxSizing:"border-box",marginBottom:8}}/>
+        <button onClick={addCI} disabled={!ciNote.trim()} style={{width:"100%",padding:"8px",borderRadius:8,background:ciNote.trim()?C.teal:C.textLight,color:"white",border:"none",cursor:ciNote.trim()?"pointer":"default",fontSize:12,fontWeight:700}}>Save Note</button>
+      </Card>
+      {(trainer.checkIns||[]).length===0?<div style={{textAlign:"center",padding:20,color:C.textLight,fontSize:12}}>No check-in notes yet</div>:
+      [...(trainer.checkIns||[])].reverse().map((ci,i)=><Card key={i} style={{marginBottom:8}}>
+        <div style={{fontSize:10,color:C.textLight,marginBottom:4}}>{new Date(ci.date).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.5}}>{ci.note}</div>
+      </Card>)}
+    </div>}
+  </div>;
+}
+
 function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
   const [showAdd,setShowAdd]=useState(false);
   const [showManage,setShowManage]=useState(false);
   const [showInactive,setShowInactive]=useState(false);
+  const [selectedTrainer,setSelectedTrainer]=useState(null);
   const isAdmin=userRole==="admin"||userRole==="superadmin";
   const allReps=data.reps||[];
   const activeR=allReps.filter(r=>!r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
@@ -1841,6 +2010,11 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const filtered=displayR.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
   const addRep=f=>onUpdate({...data,reps:[...allReps,{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
+  // Include trainers in search if admin and search is active
+  const filteredTrainers=isAdmin&&!showInactive&&search?trainers.filter(t=>t.name.toLowerCase().includes(search.toLowerCase())):[];
+  
+  // Trainer profile view
+  if(selectedTrainer) return <TrainerProfilePage trainer={selectedTrainer} data={data} onUpdate={onUpdate} onBack={()=>setSelectedTrainer(null)}/>;
 
   const restoreRep=(id)=>onUpdate({...data,reps:allReps.map(r=>r.id===id?{...r,inactive:false}:r)});
   const deleteRep=(id,name)=>{
@@ -1862,7 +2036,22 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
       {["all","fast","regular","licensed"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontSize:13,fontWeight:filter===f?600:400,background:filter===f?C.navy:C.surface,color:filter===f?"white":C.textMid,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="fast"?"Fast Start":f==="regular"?"Regular Start":f==="licensed"?"Licensed Now What":f}</button>)}
     </div>
-    {filtered.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:13}}>No reps found</div>}
+    {filteredTrainers.length>0&&<div style={{marginBottom:8}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Field Trainers</div>
+      {filteredTrainers.map(t=><div key={t.id} onClick={()=>setSelectedTrainer(t)} style={{borderRadius:10,background:"white",border:`1px solid ${C.purple}44`,marginBottom:6,overflow:"hidden",cursor:"pointer"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px"}}>
+          <div style={{width:32,height:32,borderRadius:8,background:C.purple+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.purple,flexShrink:0}}>{t.name?.charAt(0)?.toUpperCase()}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text}}>{t.name}</div>
+            <div style={{fontSize:11,color:C.textMid}}>Field Trainer · {t.phone||"No phone"}</div>
+          </div>
+          <Badge color={C.purple} small>Trainer</Badge>
+          <div style={{fontSize:13,color:C.textLight}}>›</div>
+        </div>
+      </div>)}
+      {filtered.length>0&&<div style={{fontSize:11,fontWeight:700,color:C.textMid,marginTop:8,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.5px"}}>Reps</div>}
+    </div>}
+    {filtered.length===0&&filteredTrainers.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:13}}>No reps found</div>}
     {filtered.map(r=>{
       const track=TRACK_INFO[r.track];
       const cl=track?.checklist||[];
@@ -1980,7 +2169,18 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const trRec=(data.trainers||[]).find(t=>t.id===userId);
       const pm3=getCurrentPrimerMonth(data.primerMonthEnds||[]);
       const c3=trRec?.commitments?.[pm3.key];
-      return c3?<CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}}/>:null;
+      if(c3) return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}}/>;
+      // No commitment set — show reminder card
+      return <Card style={{marginBottom:12,border:`2px solid ${C.gold}55`,background:C.gold+"06",cursor:"pointer"}} onClick={()=>setShowTrainerCommitment(true)}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{fontSize:24}}>📋</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.gold}}>Set Your {pm3.label} Commitment</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:2}}>You haven't set your monthly goal yet. {getDaysRemaining(pm3.cutoff)} days left in this Primerica month.</div>
+          </div>
+          <div style={{fontSize:13,color:C.gold,fontWeight:700}}>Tap →</div>
+        </div>
+      </Card>;
     })()}
     {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
 
