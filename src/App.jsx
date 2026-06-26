@@ -3416,7 +3416,13 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
   const activityLog = data.activityLogs||{};
   const repLog = activityLog[rep.id]||{};
   const todayLog = repLog[today];
-  const [form,setForm] = useState({talked:0,followup:0,apptSet:0,apptRan:0,recruited:0});
+  const [form,setForm] = useState({
+    talked:todayLog?.talked||0,
+    followup:todayLog?.followup||0,
+    apptSet:todayLog?.apptSet||0,
+    apptRan:todayLog?.apptRan||0,
+    recruited:todayLog?.recruited||0
+  });
   const [submitted,setSubmitted] = useState(!!todayLog);
   const [showFirst,setShowFirst] = useState(isFirstTime&&!repLog.seenIntro);
 
@@ -3454,10 +3460,16 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
       <div style={{width:36,height:36,borderRadius:18,background:C.success+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <div>
+      <div style={{flex:1}}>
         <div style={{fontSize:13,fontWeight:700,color:C.success}}>Today's activity submitted! ✅</div>
         <div style={{fontSize:11,color:C.textMid,marginTop:1}}>You're showing up and that matters. Come back tomorrow to keep your streak going 🔥</div>
       </div>
+      <button onClick={()=>{
+        setForm({talked:todayLog?.talked||0,followup:todayLog?.followup||0,apptSet:todayLog?.apptSet||0,apptRan:todayLog?.apptRan||0,recruited:todayLog?.recruited||0});
+        setSubmitted(false);
+      }} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid,fontWeight:600,whiteSpace:"nowrap"}}>
+        Edit
+      </button>
     </div>
   </Card>;
 
