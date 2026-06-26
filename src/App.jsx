@@ -1725,25 +1725,24 @@ function ManageTeam({data,onUpdate,onClose}) {
   const trainers=localData.trainers||[];
   const admins=localData.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   const updateLocal=(updated)=>{setLocalData(updated);setHasChanges(true);};
-  const saveChanges=()=>{
-    if(window.confirm("Are you sure you want to save these changes to Manage Team?\n\nThis will update settings for your entire team.")){
-      onUpdate(localData);
-      setHasChanges(false);
-    }
-  };
-  const handleClose=()=>{
-    if(hasChanges){
-      if(window.confirm("You have unsaved changes. Are you sure you want to close without saving?")) onClose();
-    } else {
-      onClose();
-    }
-  };
+  const [confirm,setConfirm]=useState(null);
+  const saveChanges=()=>setConfirm({msg:"Save these changes to Manage Team?\nThis will update settings for your entire team.",onYes:()=>{onUpdate(localData);setHasChanges(false);setConfirm(null);}});
+  const handleClose=()=>hasChanges?setConfirm({msg:"You have unsaved changes. Close without saving?",onYes:()=>{setConfirm(null);onClose();}}):onClose();
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
+    {confirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"white",borderRadius:16,padding:24,width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
+        <div style={{fontSize:14,color:C.text,lineHeight:1.6,marginBottom:20,whiteSpace:"pre-line"}}>{confirm.msg}</div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>setConfirm(null)} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:600}}>Cancel</button>
+          <button onClick={confirm.onYes} style={{flex:1,padding:"11px",borderRadius:10,background:C.teal,border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Yes, Continue</button>
+        </div>
+      </div>
+    </div>}
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:460,maxHeight:"80vh",overflowY:"auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Manage Team</div><button onClick={handleClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       {hasChanges&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-        <div style={{fontSize:12,color:"#b45309",fontWeight:600}}>⚠️ You have unsaved changes</div>
-        <button onClick={saveChanges} style={{padding:"5px 14px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Changes</button>
+        <div style={{fontSize:12,color:"#b45309",fontWeight:600}}>⚠️ Unsaved changes</div>
+        <button onClick={saveChanges} style={{padding:"8px 16px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>💾 Save</button>
       </div>}
       <div style={{marginBottom:14}}><div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
         {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
