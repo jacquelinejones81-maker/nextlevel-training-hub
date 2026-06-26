@@ -56,6 +56,14 @@ const saveToFirebase = async (data) => {
 };
 
 // ── DESIGN TOKENS ──
+// Local date string helper (avoids UTC timezone issues for Central time users)
+const localDate = (d=new Date()) => {
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+};
+
 const C = {
   navy:"#0d1b2e", navyMid:"#1a2d47", navyLight:"#243a55",
   teal:"#0ea5a0", tealFade:"rgba(14,165,160,0.12)",
