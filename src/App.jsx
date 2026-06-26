@@ -3917,7 +3917,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const rPct2=c2.recruits>0?Math.min(100,Math.round((recs2/c2.recruits)*100)):0;
               const pPct2=c2.premium>0?Math.min(100,Math.round((prem2/c2.premium)*100)):0;
               const days2=getDaysRemaining(pm2.cutoff);
-              return "<h2>MONTHLY COMMITMENT — "+pm2.label+"</h2><p class='note'>"+rep.name+" committed to "+c2.tierEmoji+" "+c2.tierLabel+" this month. "+days2+" days remaining. Closes "+new Date(pm2.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"})+".</p><div class='grid2'><div class='card'><div class='big'>"+c2.tierEmoji+" "+c2.tierLabel+"</div><div class='label'>Commitment Tier</div></div><div class='card'><div class='big'>"+recs2+"/"+c2.recruits+"</div><div class='label'>Recruits ("+rPct2+"%)</div></div><div class='card'><div class='big'>$"+Math.round(prem2/1000)+"k/$"+Math.round(c2.premium/1000)+"k</div><div class='label'>Premium ("+pPct2+"%)</div></div><div class='card'><div class='big'>"+days2+"</div><div class='label'>Days Remaining</div></div></div>";
+              return "<h2>MONTHLY COMMITMENT — "+pm2.label+"</h2><p class='note'>"+rep.name+" committed to "+c2.tierEmoji+" "+c2.tierLabel+" this month. "+days2+" days remaining. Closes "+new Date(pm2.cutoff+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric"})+".</p><div class='grid2'><div class='card'><div class='big'>"+c2.tierEmoji+" "+c2.tierLabel+"</div><div class='label'>Commitment Tier</div></div><div class='card'><div class='big'>"+recs2+"/"+c2.recruits+"</div><div class='label'>Recruits ("+rPct2+"%)</div></div><div class='card'><div class='big'>$"+Math.round(prem2).toLocaleString()+"/$"+c2.premium.toLocaleString()+"</div><div class='label'>Annual Premium ("+pPct2+"%)</div></div><div class='card'><div class='big'>"+days2+"</div><div class='label'>Days Remaining</div></div></div>";
             })():""}
             ${(rep.track==="licensed"||rep.fieldTrainerGranted)?(()=>{
               const PL=[{key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},{key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},{key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},{key:"rvp",label:"RVP",pct:110}];
@@ -7288,7 +7288,7 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock,recruitsOverride,pre
       </div>
       <div>
         <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.textMid,marginBottom:3}}>
-          <span>Premium</span><span style={{fontWeight:700,color:premium>=commitment.premium?C.success:C.text}}>${Math.round(premium/1000)}k/${Math.round(commitment.premium/1000)}k</span>
+          <span>Premium</span><span style={{fontWeight:700,color:premium>=commitment.premium?C.success:C.text}}>${Math.round(premium).toLocaleString()}/${commitment.premium.toLocaleString()}</span>
         </div>
         <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
           <div style={{height:"100%",borderRadius:3,background:premium>=commitment.premium?C.success:C.gold,width:premiumPct+"%",transition:"width 0.4s"}}/>
