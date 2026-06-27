@@ -7884,15 +7884,13 @@ export default function App() {
       const rep=(data.reps||[]).find(r=>r.id===id);
       // Welcome video — Fast Start / Regular Start, first login ever
       const isNewRep=rep&&(rep.track==="fast"||rep.track==="regular");
-      if(isNewRep&&!localStorage.getItem(`welcome_seen_${id}`)&&data.welcomeVideoUrl){
-        localStorage.setItem(`welcome_seen_${id}`,"true");
+      if(isNewRep&&!(rep?.seenVideos?.welcome)&&data.welcomeVideoUrl){
         setShowWelcome(true);
       }
       // If rep has no track yet — show welcome video first (if available), then Choose Your Path
       // Choose Your Path is triggered from the welcome video onClose, or immediately if no welcome video
       if(rep&&!rep.track){
-        if(data.welcomeVideoUrl&&!localStorage.getItem(`welcome_seen_${id}`)){
-          localStorage.setItem(`welcome_seen_${id}`,"true");
+        if(data.welcomeVideoUrl&&!(rep?.seenVideos?.welcome)){
           setShowWelcome(true);
           // Choose Your Path will show after welcome video closes (handled in render)
         } else {
@@ -7902,27 +7900,22 @@ export default function App() {
       // Licensed Now What video — fires once when on licensed track
       // Covers both: approval flow (nextLevelGranted) AND directly added as licensed (track==="licensed")
       const isLicensedRep=rep&&(rep.nextLevelGranted||rep.track==="licensed");
-      if(isLicensedRep&&!localStorage.getItem(`licensed_video_seen_${id}`)&&data.licensedVideoUrl){
-        localStorage.setItem(`licensed_video_seen_${id}`,"true");
+      if(isLicensedRep&&!(rep?.seenVideos?.licensed)&&data.licensedVideoUrl){
         setShowLicensedVideo(true);
       }
       // Field Trainer video — fires once when access is granted
-      if(rep&&rep.fieldTrainerGranted&&!localStorage.getItem(`ft_video_seen_${id}`)&&data.fieldTrainerVideoUrl){
-        localStorage.setItem(`ft_video_seen_${id}`,"true");
+      if(rep&&rep.fieldTrainerGranted&&!(rep?.seenVideos?.fieldTrainer)&&data.fieldTrainerVideoUrl){
         setShowFieldTrainerVideo(true);
       }
       // RVP Path video — fires once when access is granted
-      if(rep&&rep.rvpPathGranted&&!localStorage.getItem(`rvp_video_seen_${id}`)&&data.rvpPathVideoUrl){
-        localStorage.setItem(`rvp_video_seen_${id}`,"true");
+      if(rep&&rep.rvpPathGranted&&!(rep?.seenVideos?.rvpPath)&&data.rvpPathVideoUrl){
         setShowRvpPathVideo(true);
       }
       // Commitment popup — show on first login of new Primerica month for licensed/trainer reps
       if(rep&&(rep.track==="licensed"||rep.fieldTrainerGranted)){
         const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
         const hasCommitted=rep.commitments?.[pm.key];
-        const seenKey=`commitment_seen_${rep.id}_${pm.key}`;
-        if(!hasCommitted&&!localStorage.getItem(seenKey)){
-          // Don't show immediately — mark that we've seen this month so it shows once per login session
+        if(!hasCommitted){
           setShowCommitmentPopup(true);
         }
       }
@@ -7971,17 +7964,17 @@ export default function App() {
     const rep=(data.reps||[]).find(r=>r.id===session.id);
     if(!rep) return <div style={{padding:24,color:C.textMid}}>Not found - ask your trainer to add you.</div>;
     return <div style={{minHeight:"100vh",background:C.surface,display:"flex",flexDirection:"column"}}>
-      {showCommitmentPopup&&(()=>{const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);return <CommitmentPopup rep={rep} primerMonth={pm} onSave={(commitment)=>{const seenKey=`commitment_seen_${rep.id}_${pm.key}`;localStorage.setItem(seenKey,"true");upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,commitments:{...(r.commitments||{}),[pm.key]:commitment}}:r)});setShowCommitmentPopup(false);}} onClose={()=>{const pm2=getCurrentPrimerMonth(data.primerMonthEnds||[]);localStorage.setItem(`commitment_seen_${rep.id}_${pm2.key}`,"true");setShowCommitmentPopup(false);}}/>;})()}
+      {showCommitmentPopup&&(()=>{const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);return <CommitmentPopup rep={rep} primerMonth={pm} onSave={(commitment)=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,commitments:{...(r.commitments||{}),[pm.key]:commitment}}:r)});setShowCommitmentPopup(false);}} onClose={()=>{setShowCommitmentPopup(false);}}/>;})()}
       {showChoosePath&&<ChooseYourPath rep={rep} onChoose={(track)=>{
         const chosenAt=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
         upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,track,trackChosenAt:chosenAt}:r)});
         setShowChoosePath(false);
       }}/>}
       {birthdayInfo&&<BirthdayModal name={birthdayInfo.name} age={birthdayInfo.age} onClose={()=>setBirthdayInfo(null)}/>}
-      {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{setShowWelcome(false);if(!rep.track){setShowChoosePath(true);}}}/>}
-      {showLicensedVideo&&data.licensedVideoUrl&&<VideoPopupModal videoUrl={data.licensedVideoUrl} repName={rep.name} emoji="🎓" title="Licensed — Now What?" subtitle="Hey {name}! Watch this video to learn what's expected of you on your new checklist." onClose={()=>{localStorage.setItem(`licensed_video_seen_${session.id}`,"true");setShowLicensedVideo(false);}}/>}
-      {showFieldTrainerVideo&&data.fieldTrainerVideoUrl&&<VideoPopupModal videoUrl={data.fieldTrainerVideoUrl} repName={rep.name} emoji="🧑‍🏫" title="Welcome, Field Trainer!" subtitle="Hey {name}! Watch this video to learn what's expected of you as a Field Trainer." onClose={()=>{localStorage.setItem(`ft_video_seen_${session.id}`,"true");setShowFieldTrainerVideo(false);}}/>}
-      {showRvpPathVideo&&data.rvpPathVideoUrl&&<VideoPopupModal videoUrl={data.rvpPathVideoUrl} repName={rep.name} emoji="🚀" title="Welcome to the RVP Path!" subtitle="Hey {name}! Watch this video to learn what's expected of you on the RVP Path." onClose={()=>{localStorage.setItem(`rvp_video_seen_${session.id}`,"true");setShowRvpPathVideo(false);}}/>}
+      {showWelcome&&data.welcomeVideoUrl&&<VideoPopupModal videoUrl={data.welcomeVideoUrl} repName={rep.name} emoji="🎉" title="Welcome to the Team!" subtitle="Hey {name}! Watch this short welcome video to get started." onClose={()=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===session.id?{...r,seenVideos:{...(r.seenVideos||{}),welcome:true}}:r)});setShowWelcome(false);if(!rep.track){setShowChoosePath(true);}}}/>}
+      {showLicensedVideo&&data.licensedVideoUrl&&<VideoPopupModal videoUrl={data.licensedVideoUrl} repName={rep.name} emoji="🎓" title="Licensed — Now What?" subtitle="Hey {name}! Watch this video to learn what's expected of you on your new checklist." onClose={()=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===session.id?{...r,seenVideos:{...(r.seenVideos||{}),licensed:true}}:r)});setShowLicensedVideo(false);}}/>}
+      {showFieldTrainerVideo&&data.fieldTrainerVideoUrl&&<VideoPopupModal videoUrl={data.fieldTrainerVideoUrl} repName={rep.name} emoji="🧑‍🏫" title="Welcome, Field Trainer!" subtitle="Hey {name}! Watch this video to learn what's expected of you as a Field Trainer." onClose={()=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===session.id?{...r,seenVideos:{...(r.seenVideos||{}),fieldTrainer:true}}:r)});setShowFieldTrainerVideo(false);}}/>}
+      {showRvpPathVideo&&data.rvpPathVideoUrl&&<VideoPopupModal videoUrl={data.rvpPathVideoUrl} repName={rep.name} emoji="🚀" title="Welcome to the RVP Path!" subtitle="Hey {name}! Watch this video to learn what's expected of you on the RVP Path." onClose={()=>{upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===session.id?{...r,seenVideos:{...(r.seenVideos||{}),rvpPath:true}}:r)});setShowRvpPathVideo(false);}}/>}
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
