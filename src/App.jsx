@@ -3524,7 +3524,7 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
       <div style={{fontSize:14,fontWeight:700,color:C.text}}>Today's Activity Log</div>
       {streak>0&&<div style={{fontSize:13,fontWeight:700,color:C.gold}}>🔥 {streak} day streak</div>}
     </div>
-    <div style={{fontSize:13,color:C.danger,fontWeight:600,marginBottom:12}}>You haven't logged today's activity yet. Your streak is at risk — log now.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:12}}>Log your activity for today. Submit even if all your numbers are zero — showing up and logging counts!</div>
     {DAILY_QUESTIONS.map(q=><div key={q.id} style={{marginBottom:10}}>
       <div style={{fontSize:13,color:C.text,marginBottom:4,lineHeight:1.4}}>{q.label}</div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -3533,8 +3533,11 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
         <button onClick={()=>setForm(f=>({...f,[q.id]:f[q.id]+1}))} style={{width:30,height:30,borderRadius:7,border:"none",background:C.teal,cursor:"pointer",fontSize:16,color:"white",fontWeight:700}}>+</button>
       </div>
     </div>)}
+    <div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:C.text,lineHeight:1.5}}>
+      💡 <strong>Had a slow day? That's okay — still submit!</strong> Zero is a valid entry. Submitting every day keeps your streak alive and shows your trainer you're engaged even on tough days.
+    </div>
     <button onClick={submit} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.gold+",#f97316)",border:"none",color:"white",cursor:"pointer",fontSize:14,fontWeight:700,marginTop:4}}>Submit Today's Log</button>
-    <div style={{fontSize:12,color:C.textMid,textAlign:"center",marginTop:6,lineHeight:1.4}}>Your RVP reviews your activity log to support your growth and celebrate your wins!</div>
+    <div style={{fontSize:12,color:C.textMid,textAlign:"center",marginTop:6,lineHeight:1.4}}>Your trainer reviews your activity log to support your growth and celebrate your wins!</div>
   </div>;
 }
 
