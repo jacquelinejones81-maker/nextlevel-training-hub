@@ -1770,7 +1770,8 @@ function ManageTeamPage({data,onUpdate}) {
 
     {/* Admins */}
     <Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Admins</div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Add your booking link below — it shows in the Appts tab for any reps assigned directly to you.</div>
       {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
         <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
           <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Admin name"/>
@@ -1778,6 +1779,7 @@ function ManageTeamPage({data,onUpdate}) {
           <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);updateLocal({...localData,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
           {!a.isSuperAdmin&&<button onClick={()=>updateLocal({...localData,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
         </div>
+        <input placeholder="Booking link (shows in Appts tab for your assigned reps)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
           <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
           <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
@@ -1792,7 +1794,8 @@ function ManageTeamPage({data,onUpdate}) {
 
     {/* Field Trainers */}
     <Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Field Trainers</div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Each trainer's booking link shows in their assigned rep's Appts tab so reps can schedule directly with their trainer.</div>
       {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
         <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
           <input value={t.name} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,name:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Trainer name"/>
@@ -1817,15 +1820,6 @@ function ManageTeamPage({data,onUpdate}) {
         <button onClick={()=>updateLocal({...localData,customRVPs:(localData.customRVPs||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>
       </div>)}
       <button onClick={()=>updateLocal({...localData,customRVPs:[...(localData.customRVPs||[]),{name:"",rvpId:""}]})} style={{fontSize:13,color:C.teal,background:"none",border:`1px solid ${C.teal}`,borderRadius:6,padding:"4px 10px",cursor:"pointer",marginTop:4}}>+ Add RVP</button>
-    </Card>
-
-    {/* RVP Booking Links */}
-    <Card style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP Booking Links</div>
-      {["rvpBooking1","rvpBooking2","rvpBooking3"].map((k,i)=><div key={k} style={{marginBottom:8}}>
-        <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Link {i+1}</div>
-        <input placeholder="https://calendly.com/..." value={localData[k]||""} onChange={e=>updateLocal({...localData,[k]:e.target.value.trim()})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
-      </div>)}
     </Card>
 
     {/* Primerica Month End Dates */}
