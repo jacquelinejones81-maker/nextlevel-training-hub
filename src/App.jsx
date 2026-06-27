@@ -1719,6 +1719,152 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
 }
 
 // ── MANAGE TEAM ──
+// ── MANAGE TEAM PAGE (inline sidebar version) ──
+function ManageTeamPage({data,onUpdate}) {
+  // Reuse all ManageTeam logic but render inline instead of as a modal
+  const [nt,setNt]=useState({name:"",pin:"",bookingLink:""});
+  const [na,setNa]=useState({name:"",pin:""});
+  const [localData,setLocalData]=useState(data);
+  const [hasChanges,setHasChanges]=useState(false);
+  const [confirm,setConfirm]=useState(null);
+  const trainers=localData.trainers||[];
+  const admins=localData.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
+  const updateLocal=(updated)=>{setLocalData(updated);setHasChanges(true);};
+  const saveChanges=()=>setConfirm({msg:"Save these changes to Team Management?\nThis will update settings for your entire team.",onYes:()=>{
+    onUpdate({...data,
+      trainers:localData.trainers,
+      admins:localData.admins,
+      welcomeVideoUrl:localData.welcomeVideoUrl,
+      licensedVideoUrl:localData.licensedVideoUrl,
+      fieldTrainerVideoUrl:localData.fieldTrainerVideoUrl,
+      rvpPathVideoUrl:localData.rvpPathVideoUrl,
+      orientationVideoUrl:localData.orientationVideoUrl,
+      customRVPs:localData.customRVPs,
+      primerMonthEnds:localData.primerMonthEnds,
+      rvpBookingLinks:localData.rvpBookingLinks,
+      announcements:localData.announcements,
+    });
+    setHasChanges(false);setConfirm(null);}});
+
+  // Sync localData when data prop changes (e.g. another device saves)
+  useEffect(()=>{if(!hasChanges) setLocalData(data);},[data]);
+
+  return <div style={{maxWidth:560}}>
+    {confirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"white",borderRadius:16,padding:24,width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
+        <div style={{fontSize:14,color:C.text,lineHeight:1.6,marginBottom:20,whiteSpace:"pre-line"}}>{confirm.msg}</div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>setConfirm(null)} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:600}}>Cancel</button>
+          <button onClick={confirm.onYes} style={{flex:1,padding:"11px",borderRadius:10,background:C.teal,border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Yes, Save</button>
+        </div>
+      </div>
+    </div>}
+
+    {/* Announcements */}
+    <AnnouncementsManager data={data} onUpdate={onUpdate}/>
+
+    {hasChanges&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+      <div style={{fontSize:13,color:"#b45309",fontWeight:600}}>⚠️ Unsaved changes</div>
+      <button onClick={saveChanges} style={{padding:"8px 16px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>💾 Save Changes</button>
+    </div>}
+
+    {/* Admins */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Admins</div>
+      {admins.map((a,i)=><div key={a.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
+        <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
+          <input value={a.name} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,name:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Admin name"/>
+          {a.isSuperAdmin&&<span style={{fontSize:12,color:C.gold,whiteSpace:"nowrap"}}>Super Admin</span>}
+          <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);updateLocal({...localData,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+          {!a.isSuperAdmin&&<button onClick={()=>updateLocal({...localData,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
+        </div>
+        <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
+          <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
+          <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
+        </label>
+      </div>)}
+      <div style={{display:"flex",gap:6,marginTop:6}}>
+        <input placeholder="Name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{flex:1,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <input placeholder="PIN" maxLength={6} value={na.pin} onChange={e=>setNa({...na,pin:e.target.value.replace(/\D/,"")})} style={{width:70,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+        <button onClick={()=>{if(!na.name||!na.pin)return;updateLocal({...localData,admins:[...admins,{id:"admin_"+Date.now(),name:na.name,pin:na.pin,alsoRecruits:false}]});setNa({name:"",pin:""}); }} style={{padding:"5px 10px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+      </div>
+    </Card>
+
+    {/* Field Trainers */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>Field Trainers</div>
+      {trainers.map((t,i)=><div key={t.id} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:6}}>
+        <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:4}}>
+          <input value={t.name} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,name:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}} placeholder="Trainer name"/>
+          <input placeholder="PIN" maxLength={6} value={t.pin||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);updateLocal({...localData,trainers:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+          <button onClick={()=>updateLocal({...localData,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>
+        </div>
+        <input placeholder="Booking link (optional)" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>)}
+      <div style={{display:"flex",gap:6,marginTop:6}}>
+        <input placeholder="Name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{flex:1,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <input placeholder="PIN" maxLength={6} value={nt.pin} onChange={e=>setNt({...nt,pin:e.target.value.replace(/\D/,"")})} style={{width:70,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
+        <button onClick={()=>{if(!nt.name||!nt.pin)return;updateLocal({...localData,trainers:[...trainers,{id:"trainer_"+Date.now(),name:nt.name,pin:nt.pin,bookingLink:nt.bookingLink}]});setNt({name:"",pin:"",bookingLink:""});}} style={{padding:"5px 10px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+      </div>
+    </Card>
+
+    {/* RVP IDs */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP IDs</div>
+      {(localData.customRVPs||[]).map((r,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:5}}>
+        <input placeholder="Name" value={r.name} onChange={e=>{const u=(localData.customRVPs||[]).map((rv,j)=>j===i?{...rv,name:e.target.value}:rv);updateLocal({...localData,customRVPs:u});}} style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <input placeholder="RVP ID" value={r.rvpId} onChange={e=>{const u=(localData.customRVPs||[]).map((rv,j)=>j===i?{...rv,rvpId:e.target.value}:rv);updateLocal({...localData,customRVPs:u});}} style={{width:90,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <button onClick={()=>updateLocal({...localData,customRVPs:(localData.customRVPs||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>
+      </div>)}
+      <button onClick={()=>updateLocal({...localData,customRVPs:[...(localData.customRVPs||[]),{name:"",rvpId:""}]})} style={{fontSize:13,color:C.teal,background:"none",border:`1px solid ${C.teal}`,borderRadius:6,padding:"4px 10px",cursor:"pointer",marginTop:4}}>+ Add RVP</button>
+    </Card>
+
+    {/* RVP Booking Links */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:7}}>RVP Booking Links</div>
+      {["rvpBooking1","rvpBooking2","rvpBooking3"].map((k,i)=><div key={k} style={{marginBottom:8}}>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Link {i+1}</div>
+        <input placeholder="https://calendly.com/..." value={localData[k]||""} onChange={e=>updateLocal({...localData,[k]:e.target.value.trim()})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>)}
+    </Card>
+
+    {/* Primerica Month End Dates */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Primerica Month End Dates</div>
+      <div style={{fontSize:12,color:C.textLight,marginBottom:8,lineHeight:1.5}}>Enter the date apps must be received by for each Primerica month.</div>
+      {(localData.primerMonthEnds||[]).map((me,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:5,marginBottom:5}}>
+        <input placeholder="Month (e.g. June 2026)" value={me.label} onChange={e=>{const u=(localData.primerMonthEnds||[]).map((m,j)=>j===i?{...m,label:e.target.value}:m);updateLocal({...localData,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <input type="date" value={me.cutoff} onChange={e=>{const u=(localData.primerMonthEnds||[]).map((m,j)=>j===i?{...m,cutoff:e.target.value}:m);updateLocal({...localData,primerMonthEnds:u});}} style={{padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <button onClick={()=>updateLocal({...localData,primerMonthEnds:(localData.primerMonthEnds||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
+      </div>)}
+      <button onClick={()=>updateLocal({...localData,primerMonthEnds:[...(localData.primerMonthEnds||[]),{label:"",cutoff:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add Month End Date</button>
+    </Card>
+
+    {/* Checklist Videos */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Checklist Videos</div>
+      <div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"8px 10px",marginBottom:10,fontSize:12,color:"#b45309"}}>
+        📹 For Google Drive: change <strong>/view</strong> to <strong>/preview</strong> in the URL before pasting.
+      </div>
+      {[
+        ["orientationVideoUrl","Orientation Video (pops up when rep clicks 'Watch Orientation')"],
+        ["welcomeVideoUrl","Welcome Video (Fast Start / Regular Start — first login)"],
+        ["licensedVideoUrl","Licensed Now What Video (fires on first login as licensed)"],
+        ["fieldTrainerVideoUrl","Field Trainer Video (fires on first login as field trainer)"],
+        ["rvpPathVideoUrl","RVP Path Video (fires on first login to RVP path)"],
+      ].map(([k,l])=><div key={k} style={{marginBottom:10}}>
+        <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>{l}</div>
+        <input placeholder="YouTube embed URL or Google Drive /preview URL" value={localData[k]||""} onChange={e=>updateLocal({...localData,[k]:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        {localData[k]&&<div style={{fontSize:11,color:C.success,marginTop:2}}>✓ URL saved</div>}
+      </div>)}
+    </Card>
+
+    <button onClick={saveChanges} disabled={!hasChanges} style={{width:"100%",padding:"12px",borderRadius:10,background:hasChanges?C.teal:C.textLight,color:"white",border:"none",cursor:hasChanges?"pointer":"default",fontSize:14,fontWeight:700,marginBottom:20}}>
+      💾 {hasChanges?"Save All Changes":"No Changes to Save"}
+    </button>
+  </div>;
+}
+
 function ManageTeam({data,onUpdate,onClose}) {
   const [nt,setNt]=useState({name:"",pin:"",bookingLink:""});
   const [na,setNa]=useState({name:"",pin:""});
@@ -2064,7 +2210,6 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
   const [showAdd,setShowAdd]=useState(false);
-  const [showManage,setShowManage]=useState(false);
   const [showInactive,setShowInactive]=useState(false);
   const [selectedTrainer,setSelectedTrainer]=useState(null);
   const isAdmin=userRole==="admin"||userRole==="superadmin";
@@ -2093,7 +2238,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:13,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
         {inactiveR.length>0&&<button onClick={()=>setShowInactive(!showInactive)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+(showInactive?C.danger:C.border),background:showInactive?C.danger+"11":"white",cursor:"pointer",color:showInactive?C.danger:C.textMid,fontWeight:600}}>{showInactive?"View Active":"Inactive ("+inactiveR.length+")"}</button>}
-        {isAdmin&&!showInactive&&<button onClick={()=>setShowManage(true)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Manage Team</button>}
+        
         {isAdmin&&!showInactive&&<button onClick={()=>setShowAdd(true)} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Rep</button>}
       </div>
     </div>
@@ -2146,7 +2291,6 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
       </div>;
     })}
     {showAdd&&<AddRep onAdd={f=>{addRep(f);setShowAdd(false);}} onClose={()=>setShowAdd(false)} trainers={trainers} allPeople={[(data.admins||[]).map(a=>({...a,role:"Admin"})),trainers.map(t=>({...t,role:"Trainer"})),(data.reps||[]).map(r=>({...r,role:"Rep"}))].flat()}/>}
-    {showManage&&<ManageTeam data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
   </div>;
 }
 
@@ -2168,7 +2312,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
   const [showAdd,setShowAdd]=useState(false);
-  const [showManage,setShowManage]=useState(false);
   const reps=(data.reps||[]).filter(r=>userRole==="trainer"?r.trainerId===userId:true);
   const filtered=reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
   const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
@@ -2259,7 +2402,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     </div>
     <div style={{display:"flex",gap:7,marginBottom:14}}>
       <button onClick={()=>setShowAdd(true)} style={{flex:1,padding:"8px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add New Rep</button>
-      {(userRole==="admin"||userRole==="superadmin")&&<button onClick={()=>setShowManage(true)} style={{padding:"8px 12px",borderRadius:8,background:C.navyMid,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Manage Team</button>}
+      
     </div>
     {filtered.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textLight}}>{reps.length===0?"No reps yet - add your first rep":"No results found"}</div>}
     {filtered.map(rep=>{
@@ -2300,7 +2443,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       </div>;
     })}
     {showAdd&&<AddRep onAdd={addRep} onClose={()=>setShowAdd(false)} trainers={trainers} allPeople={[(data.admins||[]).map(a=>({...a,role:"Admin"})),trainers.map(t=>({...t,role:"Trainer"})),(data.reps||[]).map(r=>({...r,role:"Rep"}))].flat()}/>}
-    {showManage&&<ManageTeam data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
   </div>;
 }
 
@@ -8122,7 +8264,7 @@ export default function App() {
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
-    if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><AnnouncementsManager data={data} onUpdate={upd}/><Card><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:10}}>Field Trainers</div>{(data.trainers||[]).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><div><div style={{fontSize:13,color:C.text}}>{t.name}</div><div style={{fontSize:12,color:C.textLight}}>{(data.reps||[]).filter(r=>r.trainerId===t.id).length} reps</div></div><Badge color={C.teal} small>Trainer</Badge></div>)}</Card></div>;
+    if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><ManageTeamPage data={data} onUpdate={upd}/></div>;
     return null;
   };
 
