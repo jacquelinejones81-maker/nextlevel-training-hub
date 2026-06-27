@@ -438,6 +438,8 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
 
 // ── REP EXTRAS ──
 function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
+  const repRef2=useRef(rep);
+  useEffect(()=>{repRef2.current=rep;},[rep]);
   // Promotion level selector — licensed reps only
   const PROMO_LEVELS=[
     {key:"rep",label:"Rep",pct:25},
@@ -478,7 +480,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>My Promotion Level</div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level to see accurate commission calculations.</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-        {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>!readOnly&&onUpdate({...rep,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(rep.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(rep.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
+        {PROMO_LEVELS.map(p=><button key={p.key} onClick={()=>!readOnly&&onUpdate({...repRef2.current,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(rep.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(rep.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
           <div style={{fontSize:13,fontWeight:700,color:(rep.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
           <div style={{fontSize:12,color:C.textMid}}>{p.pct}%</div>
         </button>)}
@@ -5319,6 +5321,10 @@ function InvestmentLog({data,onUpdate,userRole}) {
 
 // ── LICENSED PREMIUM ENTRY ──
 function LicensedPremiumEntry({rep,onUpdate}) {
+  const repRef=useRef(rep);
+  useEffect(()=>{repRef.current=rep;},[rep]);
+  const [goalInput,setGoalInput]=useState(rep.monthlyIncomeGoal||"");
+  useEffect(()=>{setGoalInput(rep.monthlyIncomeGoal||"");},[rep.monthlyIncomeGoal]);
   const [form,setForm] = useState({client:"",premium:"",date:new Date().toISOString().split("T")[0],cod:false});
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
@@ -5356,20 +5362,20 @@ function LicensedPremiumEntry({rep,onUpdate}) {
     return s + (c ? c.upfront : 0);
   }, 0);
 
-  const goal = Number(rep.monthlyIncomeGoal)||0;
+  const goal = Number(goalInput)||0;
   const goalPct = goal>0 ? Math.min(100, Math.round((thisMonthEarned/goal)*100)) : 0;
   const avgUpfront = entries.length>0 ? thisMonthEarned/Math.max(thisMonthEntries.length,1) : 0;
   const appsNeeded = goal>0 && avgUpfront>0 ? Math.ceil((goal-thisMonthEarned)/avgUpfront) : null;
 
   const save = () => {
     if(!form.client||!form.premium) return;
-    onUpdate({...rep,selfPremium:[...entries,{...form,id:Date.now(),codAccepted:false}]});
+    onUpdate({...repRef.current,selfPremium:[...entries,{...form,id:Date.now(),codAccepted:false}]});
     setForm({client:"",premium:"",date:new Date().toISOString().split("T")[0],cod:false});
     setShow(false);
   };
   const acceptCOD=(idx)=>{
     const updated=entries.map((e,i)=>i===idx?{...e,codAccepted:true}:e);
-    onUpdate({...rep,selfPremium:updated});
+    onUpdate({...repRef.current,selfPremium:updated});
   };
 
   const calcResult = calcCommission(calcPremium);
@@ -5387,7 +5393,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
     <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
         <div style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
-        <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...rep,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>
+        <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>
         {goal>0&&<div style={{fontSize:13,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
       </div>
       {goal>0&&<div>
@@ -5446,7 +5452,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
               {isCOD&&<span style={{marginLeft:6,fontSize:10,padding:"1px 5px",borderRadius:4,background:isPending?C.gold+"22":C.success+"22",color:isPending?C.gold:C.success,fontWeight:700}}>{isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
             </div>
             <span style={{color:isPending?C.textMid:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
-            <button onClick={()=>onUpdate({...rep,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+            <button onClick={()=>onUpdate({...repRef.current,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
           </div>
           {isPending&&<button onClick={()=>acceptCOD(realIdx)} style={{marginTop:4,width:"100%",padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:12,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted — Add to Totals</button>}
           {c&&!isPending&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
