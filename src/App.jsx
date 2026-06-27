@@ -2143,7 +2143,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
         </div>}
       </div>;
     })}
-    {showAdd&&<AddRepModal data={data} onAdd={f=>{addRep(f);setShowAdd(false);}} onClose={()=>setShowAdd(false)} trainers={trainers}/>}
+    {showAdd&&<AddRep onAdd={f=>{addRep(f);setShowAdd(false);}} onClose={()=>setShowAdd(false)} trainers={trainers} allPeople={[(data.admins||[]).map(a=>({...a,role:"Admin"})),trainers.map(t=>({...t,role:"Trainer"})),(data.reps||[]).map(r=>({...r,role:"Rep"}))].flat()}/>}
     {showManage&&<ManageTeam data={data} onUpdate={onUpdate} onClose={()=>setShowManage(false)}/>}
   </div>;
 }
