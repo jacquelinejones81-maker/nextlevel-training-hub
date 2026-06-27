@@ -6135,6 +6135,22 @@ function TeamLeads({userRole}) {
     newLeads: activeLeads.filter(l=>!l.reviewCalled&&!l.bookSent).length,
   };
 
+  const INTEREST_MAP = [
+    {keys:["interest_identity_1","interest_identity_2"],label:"🔒 Identity Theft Protection",color:"#7c3aed"},
+    {keys:["interest_life_ins_1","interest_life_ins_2"],label:"🛡️ Life Insurance",color:"#0ea5a0"},
+    {keys:["interest_fna_1","interest_fna_2"],label:"💼 Financial Needs Analysis",color:"#0891b2"},
+    {keys:["interest_savings_1","interest_savings_2"],label:"🐷 Savings",color:"#10b981"},
+    {keys:["interest_debt_1","interest_debt_2"],label:"📉 Debt Help",color:"#ef4444"},
+    {keys:["interest_auto_home_1","interest_auto_home_2"],label:"🏠 Auto & Home Insurance",color:"#f59e0b"},
+    {keys:["interest_legal_1","interest_legal_2"],label:"⚖️ Legal Protection",color:"#8b5cf6"},
+    {keys:["interest_home_security_1","interest_home_security_2"],label:"🏡 Home Security",color:"#059669"},
+    {keys:["interest_budget_1","interest_budget_2"],label:"💡 Budgeting",color:"#d97706"},
+    {keys:["interest_subscriptions_1","interest_subscriptions_2"],label:"💸 Subscriptions",color:"#6366f1"},
+    {keys:["interest_mortgage_1","interest_mortgage_2"],label:"🏠 Mortgage",color:"#b45309"},
+  ];
+
+  const getInterests = (lead) => INTEREST_MAP.filter(item=>item.keys.some(k=>lead[k]===true));
+
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Team Leads</div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>All leads submitted through MoneyMap links.</div>
@@ -6185,7 +6201,13 @@ function TeamLeads({userRole}) {
               {lead.email&&<span style={{color:C.teal}}>{lead.email}</span>}
             </div>
             {lead.referredBy&&<div style={{fontSize:13,color:C.purple,fontWeight:600,marginBottom:2}}>Rep: {lead.referredBy}</div>}
-            <div style={{fontSize:12,color:C.textLight}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
+            <div style={{fontSize:12,color:C.textLight,marginBottom:6}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
+            {(()=>{
+              const interests=getInterests(lead);
+              return interests.length>0?<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
+                {interests.map(item=><span key={item.label} style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:item.color+"18",color:item.color,fontWeight:600,border:`1px solid ${item.color}33`}}>{item.label}</span>)}
+              </div>:lead.lastInterestTopic?<span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:C.teal+"18",color:C.teal,fontWeight:600,border:`1px solid ${C.teal}33`}}>{lead.lastInterestTopic}</span>:null;
+            })()}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",flexShrink:0}}>
             {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
@@ -6228,6 +6250,20 @@ function MyLeads({repName}) {
     fetchMyLeads();
   },[safeName]);
 
+  const INTEREST_MAP_R = [
+    {keys:["interest_identity_1","interest_identity_2"],label:"🔒 Identity",color:"#7c3aed"},
+    {keys:["interest_life_ins_1","interest_life_ins_2"],label:"🛡️ Life Ins",color:"#0ea5a0"},
+    {keys:["interest_fna_1","interest_fna_2"],label:"💼 FNA",color:"#0891b2"},
+    {keys:["interest_savings_1","interest_savings_2"],label:"🐷 Savings",color:"#10b981"},
+    {keys:["interest_debt_1","interest_debt_2"],label:"📉 Debt",color:"#ef4444"},
+    {keys:["interest_auto_home_1","interest_auto_home_2"],label:"🏠 Auto/Home",color:"#f59e0b"},
+    {keys:["interest_legal_1","interest_legal_2"],label:"⚖️ Legal",color:"#8b5cf6"},
+    {keys:["interest_home_security_1","interest_home_security_2"],label:"🏡 Security",color:"#059669"},
+    {keys:["interest_budget_1","interest_budget_2"],label:"💡 Budget",color:"#d97706"},
+    {keys:["interest_subscriptions_1","interest_subscriptions_2"],label:"💸 Subs",color:"#6366f1"},
+    {keys:["interest_mortgage_1","interest_mortgage_2"],label:"🏠 Mortgage",color:"#b45309"},
+  ];
+
   if(loading) return null;
   if(leads.length===0) return null;
 
@@ -6236,18 +6272,27 @@ function MyLeads({repName}) {
       <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
       <div style={{fontSize:14,fontWeight:700,color:C.text}}>My Leads ({leads.length})</div>
     </div>
-    {leads.slice(0,5).map((lead,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:i<Math.min(leads.length,5)-1?"1px solid "+C.border:"none"}}>
-      <div>
-        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{lead.name||"Unknown"}</div>
-        <div style={{fontSize:13,color:C.textMid}}>{lead.phone} • {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"No date"}</div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
-        {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
-        {lead.reviewCalled&&<Badge color={C.purple} small>Called</Badge>}
-        {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
-        {!lead.reviewCalled&&!lead.bookSent&&<Badge color={C.teal} small>New</Badge>}
-      </div>
-    </div>)}
+    {leads.slice(0,5).map((lead,i)=>{
+      const interests=INTEREST_MAP_R.filter(item=>item.keys.some(k=>lead[k]===true));
+      return <div key={i} style={{padding:"7px 0",borderBottom:i<Math.min(leads.length,5)-1?"1px solid "+C.border:"none"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:C.text}}>{lead.name||"Unknown"}</div>
+            <div style={{fontSize:13,color:C.textMid}}>{lead.phone} • {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"No date"}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+            {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
+            {lead.reviewCalled&&<Badge color={C.purple} small>Called</Badge>}
+            {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
+            {!lead.reviewCalled&&!lead.bookSent&&<Badge color={C.teal} small>New</Badge>}
+          </div>
+        </div>
+        {interests.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>
+          {interests.map(item=><span key={item.label} style={{fontSize:10,padding:"1px 6px",borderRadius:8,background:item.color+"18",color:item.color,fontWeight:600,border:`1px solid ${item.color}33`}}>{item.label}</span>)}
+        </div>}
+        {interests.length===0&&lead.lastInterestTopic&&<div style={{marginTop:3}}><span style={{fontSize:10,padding:"1px 6px",borderRadius:8,background:C.teal+"18",color:C.teal,fontWeight:600}}>{lead.lastInterestTopic}</span></div>}
+      </div>;
+    })}
     {leads.length>5&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",marginTop:6}}>+{leads.length-5} more leads</div>}
   </div>;
 }
