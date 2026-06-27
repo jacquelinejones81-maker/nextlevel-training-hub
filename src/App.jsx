@@ -1726,7 +1726,23 @@ function ManageTeam({data,onUpdate,onClose}) {
   const admins=localData.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   const updateLocal=(updated)=>{setLocalData(updated);setHasChanges(true);};
   const [confirm,setConfirm]=useState(null);
-  const saveChanges=()=>setConfirm({msg:"Save these changes to Manage Team?\nThis will update settings for your entire team.",onYes:()=>{onUpdate(localData);setHasChanges(false);setConfirm(null);}});
+  const saveChanges=()=>setConfirm({msg:"Save these changes to Manage Team?\nThis will update settings for your entire team.",onYes:()=>{
+    // CRITICAL: Only save Manage Team fields — never overwrite reps array
+    // Merge localData settings into the CURRENT live data to preserve any reps added while Manage Team was open
+    onUpdate({...data,
+      trainers:localData.trainers,
+      admins:localData.admins,
+      welcomeVideoUrl:localData.welcomeVideoUrl,
+      licensedVideoUrl:localData.licensedVideoUrl,
+      fieldTrainerVideoUrl:localData.fieldTrainerVideoUrl,
+      rvpPathVideoUrl:localData.rvpPathVideoUrl,
+      orientationVideoUrl:localData.orientationVideoUrl,
+      customRVPs:localData.customRVPs,
+      primerMonthEnds:localData.primerMonthEnds,
+      rvpBookingLinks:localData.rvpBookingLinks,
+      announcements:localData.announcements,
+    });
+    setHasChanges(false);setConfirm(null);}});
   const handleClose=()=>hasChanges?setConfirm({msg:"You have unsaved changes. Close without saving?",onYes:()=>{setConfirm(null);onClose();}}):onClose();
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     {confirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
