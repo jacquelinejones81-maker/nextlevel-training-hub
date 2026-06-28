@@ -1227,23 +1227,12 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           <div style={{height:4,background:C.teal,borderRadius:2,width:pct+"%",transition:"width 0.3s"}}/>
         </div>
       </div>
-      {/* Quick contact trainer */}
-      {trainer&&<div style={{marginTop:10,display:"flex",gap:5}}>
-        {trainer.phone&&<a href={"tel:"+trainer.phone.replace(/\\D/g,"")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 6px",borderRadius:6,background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.4)",textDecoration:"none"}}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.22 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.2 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
-          <span style={{fontSize:12,color:"#34d399",fontWeight:600}}>Call</span>
-        </a>}
-        {trainer.phone&&<a href={"sms:"+trainer.phone.replace(/\\D/g,"")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 6px",borderRadius:6,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.4)",textDecoration:"none"}}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-          <span style={{fontSize:12,color:C.teal,fontWeight:600}}>Text</span>
-        </a>}
-      </div>}
-      {/* Meet with RVP */}
-      {(data.rvpBookingLinks||[]).filter(r=>r.link).length>0&&<div style={{marginTop:6}}>
-        {(data.rvpBookingLinks||[]).filter(r=>r.link).map((rvp,i)=><a key={i} href={rvp.link} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none",marginBottom:i<(data.rvpBookingLinks||[]).filter(r=>r.link).length-1?5:0}}>
+      {/* Meet with Trainer/RVP */}
+      {trainer?.bookingLink&&<div style={{marginTop:10}}>
+        <a href={trainer.bookingLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none"}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
-          <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>Meet with RVP - {rvp.name}</span>
-        </a>)}
+          <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>Schedule with {trainer.name}</span>
+        </a>
       </div>}
       {/* Rewatch milestone videos — only for granted access levels */}
       {((rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
