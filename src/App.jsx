@@ -1712,6 +1712,7 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
         </div>
       </div>
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
+      <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign RVP / Admin <span style={{fontSize:11,color:C.textLight,fontWeight:400}}>— determines whose My Reps filter they appear under</span></label><select value={f.adminId||""} onChange={e=>setF({...f,adminId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.gold}`,fontSize:14,color:C.text}}><option value="">Not assigned</option>{(allPeople||[]).filter(p=>p.role==="Admin").map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
       <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",marginTop:4}}>Add Rep</button>
     </div>
@@ -2206,12 +2207,17 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const [showAdd,setShowAdd]=useState(false);
   const [showInactive,setShowInactive]=useState(false);
   const [selectedTrainer,setSelectedTrainer]=useState(null);
+  const [myRepsOnly,setMyRepsOnly]=useState(false);
   const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const isSuperAdmin=userRole==="superadmin";
   const allReps=data.reps||[];
   const activeR=allReps.filter(r=>!r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
   const inactiveR=allReps.filter(r=>r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
   const displayR=showInactive?inactiveR:activeR;
-  const filtered=displayR.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
+  const filtered=displayR.filter(r=>{
+    if(myRepsOnly&&r.adminId!==userId) return false;
+    return (r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter);
+  });
   const addRep=f=>onUpdate({...data,reps:[...allReps,{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
   // Include trainers in search if admin and search is active
@@ -2231,6 +2237,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:13,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
+        {isAdmin&&!showInactive&&<button onClick={()=>setMyRepsOnly(m=>!m)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:`1px solid ${myRepsOnly?C.gold:C.border}`,background:myRepsOnly?C.gold+"11":"white",cursor:"pointer",color:myRepsOnly?C.gold:C.textMid,fontWeight:600}}>{myRepsOnly?"My Reps Only ✓":"My Reps Only"}</button>}
         {inactiveR.length>0&&<button onClick={()=>setShowInactive(!showInactive)} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+(showInactive?C.danger:C.border),background:showInactive?C.danger+"11":"white",cursor:"pointer",color:showInactive?C.danger:C.textMid,fontWeight:600}}>{showInactive?"View Active":"Inactive ("+inactiveR.length+")"}</button>}
         
         {isAdmin&&!showInactive&&<button onClick={()=>setShowAdd(true)} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Rep</button>}
@@ -3682,12 +3689,16 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
 // ══════════════════════════════════════════════════
 function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const [myRepsOnlyAcct,setMyRepsOnlyAcct]=useState(false);
   const allReps = data.reps||[];
   const trainers = data.trainers||[];
   const allTrainers = [...trainers,...(data.admins||[])];
-  const reps = isAdmin 
+  const allRepsAndTrainers = isAdmin 
     ? [...allReps, ...trainers.map(t=>({...t,isTrainer:true,track:"licensed"}))]
     : allReps.filter(r=>r.trainerId===userId);
+  const reps = (isAdmin&&myRepsOnlyAcct)
+    ? allRepsAndTrainers.filter(r=>r.adminId===userId)
+    : allRepsAndTrainers;
   const activityLogs = data.activityLogs||{};
   const leadTasks = data.leadTasks||{};
   const today = localDate();
@@ -3815,7 +3826,10 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   };
 
   return <div>
-    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Accountability Dashboard</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Accountability Dashboard</div>
+      {isAdmin&&<button onClick={()=>setMyRepsOnlyAcct(m=>!m)} style={{fontSize:12,padding:"5px 12px",borderRadius:7,border:`1px solid ${myRepsOnlyAcct?C.gold:C.border}`,background:myRepsOnlyAcct?C.gold+"11":"white",cursor:"pointer",color:myRepsOnlyAcct?C.gold:C.textMid,fontWeight:600}}>{myRepsOnlyAcct?"My Reps Only ✓":"My Reps Only"}</button>}
+    </div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Track rep activity, daily log submissions, checklist progress, and coaching notes — all in one place.</div>
 
     {/* How to Read This Dashboard */}
@@ -3991,6 +4005,20 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
               <option value="">Not specified</option>
               {[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])].map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+
+          {/* Assign RVP/Admin */}
+          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3}}>Assigned RVP / Admin</div>
+            <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>Determines whose "My Reps" filter this rep appears under.</div>
+            <select value={rep.adminId||""} onChange={e=>{
+              const val=e.target.value;
+              const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:val}:r);
+              onUpdate({...data,reps:updated});
+            }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.gold}`,fontSize:13,color:C.text}}>
+              <option value="">Not assigned</option>
+              {(data.admins||[]).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
 
