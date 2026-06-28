@@ -1744,6 +1744,7 @@ function ManageTeamPage({data,onUpdate}) {
       primerMonthEnds:localData.primerMonthEnds,
       rvpBookingLinks:localData.rvpBookingLinks,
       announcements:localData.announcements,
+      teamBrands:localData.teamBrands,
     });
     setHasChanges(false);setConfirm(null);}});
 
@@ -1760,6 +1761,25 @@ function ManageTeamPage({data,onUpdate}) {
         </div>
       </div>
     </div>}
+
+    {/* Team Branding */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Login Screen Branding</div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:10}}>Add team names and logos shown on the login screen. As you promote more RVPs, just add a new team here. Paste any public image URL for logos.</div>
+      {(localData.teamBrands||[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>{
+        const brands=localData.teamBrands||[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}];
+        return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"40px 1fr auto",gap:6,alignItems:"center",marginBottom:6}}>
+            <input placeholder="⭐" value={team.emoji||""} onChange={e=>{const u=brands.map((b,j)=>j===i?{...b,emoji:e.target.value}:b);updateLocal({...localData,teamBrands:u});}} style={{padding:"4px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:16,textAlign:"center"}}/>
+            <input placeholder="Team name (e.g. Wealth Creators)" value={team.name||""} onChange={e=>{const u=brands.map((b,j)=>j===i?{...b,name:e.target.value}:b);updateLocal({...localData,teamBrands:u});}} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <button onClick={()=>{const u=brands.filter((_,j)=>j!==i);updateLocal({...localData,teamBrands:u});}} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:16}}>x</button>
+          </div>
+          <input placeholder="Logo image URL (optional — paste public image URL)" value={team.logo||""} onChange={e=>{const u=brands.map((b,j)=>j===i?{...b,logo:e.target.value.trim()}:b);updateLocal({...localData,teamBrands:u});}} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:11,color:C.text,boxSizing:"border-box"}}/>
+          {team.logo&&<img src={team.logo} alt="preview" style={{height:36,marginTop:5,borderRadius:5,objectFit:"contain"}} onError={e=>e.target.style.display="none"}/>}
+        </div>;
+      })}
+      <button onClick={()=>{const brands=localData.teamBrands||[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}];updateLocal({...localData,teamBrands:[...brands,{name:"",logo:"",emoji:"⭐"}]});}} style={{width:"100%",padding:"7px",borderRadius:8,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add Team</button>
+    </Card>
 
     {/* Announcements */}
     <AnnouncementsManager data={data} onUpdate={onUpdate}/>
@@ -1884,6 +1904,7 @@ function ManageTeam({data,onUpdate,onClose}) {
       primerMonthEnds:localData.primerMonthEnds,
       rvpBookingLinks:localData.rvpBookingLinks,
       announcements:localData.announcements,
+      teamBrands:localData.teamBrands,
     });
     setHasChanges(false);setConfirm(null);}});
   const handleClose=()=>hasChanges?setConfirm({msg:"You have unsaved changes. Close without saving?",onYes:()=>{setConfirm(null);onClose();}}):onClose();
@@ -2489,10 +2510,13 @@ function LoginScreen({data,onLogin}) {
         </div>
         <div style={{color:"white",fontSize:22,fontWeight:800,letterSpacing:"0.5px",lineHeight:1.2}}>NextLevel</div>
         <div style={{color:C.teal,fontSize:14,fontWeight:600,letterSpacing:"3px",textTransform:"uppercase",marginBottom:14}}>Field Training Hub</div>
-        {/* Team badges */}
-        <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.5)",fontSize:13,fontWeight:700,color:"#f59e0b",letterSpacing:"0.5px"}}>⚡ Team PrimeTime</div>
-          <div style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>🏆 Triumphant Families</div>
+        {/* Team logos / badges — dynamic */}
+        <div style={{display:"flex",gap:10,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
+          {((data.teamBrands&&data.teamBrands.length>0)?data.teamBrands:[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>
+            team.logo
+              ?<img key={i} src={team.logo} alt={team.name} style={{height:48,borderRadius:8,objectFit:"contain"}}/>
+              :<div key={i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>{team.emoji||"⭐"} {team.name}</div>
+          )}
         </div>
       </div>
       <div style={{background:"white",borderRadius:16,padding:24,boxShadow:"0 20px 50px rgba(0,0,0,0.3)"}}>
