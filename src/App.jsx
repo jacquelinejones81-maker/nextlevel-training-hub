@@ -1508,13 +1508,15 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
       <ResetPinButton person={rep} personType="rep" data={data} onUpdate={onUpdate||upd}/>
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
-    {/* Assign RVP/Admin — outside header row for visibility */}
+    {/* Assign RVP/Admin */}
     <div style={{marginBottom:10,padding:"10px 12px",background:C.gold+"08",borderRadius:8,border:`1px solid ${C.gold}33`}}>
       <div style={{fontSize:13,fontWeight:600,color:"#b45309",marginBottom:8}}>Assigned RVP / Admin</div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-        <button onClick={()=>{const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:""}:r);onUpdate({...data,reps:updated});}} style={{padding:"6px 12px",borderRadius:7,border:`2px solid ${!rep.adminId?C.gold:C.border}`,background:!rep.adminId?C.gold+"22":"white",cursor:"pointer",fontSize:12,fontWeight:!rep.adminId?700:400,color:!rep.adminId?"#b45309":C.textMid}}>Not assigned</button>
-        {(data.admins||[]).map(a=><button key={a.id} onClick={()=>{const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:a.id}:r);onUpdate({...data,reps:updated});}} style={{padding:"6px 12px",borderRadius:7,border:`2px solid ${rep.adminId===a.id?C.gold:C.border}`,background:rep.adminId===a.id?C.gold+"22":"white",cursor:"pointer",fontSize:12,fontWeight:rep.adminId===a.id?700:400,color:rep.adminId===a.id?"#b45309":C.text}}>{a.name}</button>)}
-      </div>
+      {[{id:"",name:"Not assigned"},...(data.admins||[])].map(a=><button key={a.id||"none"} onClick={()=>onUpdate(rep.id,{...rep,adminId:a.id})} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,border:`1px solid ${rep.adminId===(a.id||"")?"" :C.border}`,background:(rep.adminId===a.id||(a.id===""&&!rep.adminId))?"white":"white",cursor:"pointer",marginBottom:5,textAlign:"left"}}>
+        <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${(rep.adminId===a.id||(a.id===""&&!rep.adminId))?C.gold:C.border}`,background:(rep.adminId===a.id||(a.id===""&&!rep.adminId))?C.gold:"white",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {(rep.adminId===a.id||(a.id===""&&!rep.adminId))&&<div style={{width:8,height:8,borderRadius:4,background:"white"}}/>}
+        </div>
+        <span style={{fontSize:13,color:a.id?C.text:C.textMid,fontWeight:(rep.adminId===a.id||(a.id===""&&!rep.adminId))?700:400}}>{a.name}</span>
+      </button>)}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
       <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
