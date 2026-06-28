@@ -1765,7 +1765,21 @@ function ManageTeamPage({data,onUpdate}) {
     {/* Team Branding */}
     <Card style={{marginBottom:14}}>
       <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Login Screen Branding</div>
-      <div style={{fontSize:11,color:C.textLight,marginBottom:10}}>Add team names and logos shown on the login screen. As you promote more RVPs, just add a new team here. Paste any public image URL for logos.</div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:10}}>Add team names and logos shown on the login screen. As you promote more RVPs, just add a new team here.</div>
+      <div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"10px 12px",marginBottom:12,fontSize:11,color:C.text,lineHeight:1.7}}>
+        <div style={{fontWeight:700,color:C.teal,marginBottom:6}}>📸 How to add a team logo — step by step:</div>
+        <div style={{marginBottom:3}}><strong>Step 1:</strong> Upload your logo image to Google Drive</div>
+        <div style={{marginBottom:3}}><strong>Step 2:</strong> Right-click the file → <strong>Share</strong> → change access to <strong>"Anyone with the link"</strong> → click Done</div>
+        <div style={{marginBottom:3}}><strong>Step 3:</strong> Click <strong>Copy link</strong> — you'll get a link like:<br/><span style={{fontFamily:"monospace",fontSize:10,background:"rgba(0,0,0,0.06)",padding:"1px 4px",borderRadius:3}}>https://drive.google.com/file/d/<strong style={{color:C.teal}}>YOUR_FILE_ID</strong>/view?usp=sharing</span></div>
+        <div style={{marginBottom:3}}><strong>Step 4:</strong> Copy just the ID part (the long text between <strong>/d/</strong> and <strong>/view</strong>)</div>
+        <div style={{marginBottom:6}}><strong>Step 5:</strong> Build your image URL like this:<br/><span style={{fontFamily:"monospace",fontSize:10,background:"rgba(14,165,160,0.1)",padding:"1px 4px",borderRadius:3,color:C.teal}}>https://lh3.googleusercontent.com/d/<strong>YOUR_FILE_ID</strong></span></div>
+        <div style={{background:"rgba(0,0,0,0.04)",borderRadius:6,padding:"6px 8px",fontSize:10,color:C.textMid}}>
+          <strong>Example:</strong> If your Google Drive link is<br/>
+          <span style={{fontFamily:"monospace"}}>drive.google.com/file/d/<strong>1ABC123xyz</strong>/view</span><br/>
+          Then your logo URL is<br/>
+          <span style={{fontFamily:"monospace",color:C.teal}}>https://lh3.googleusercontent.com/d/<strong>1ABC123xyz</strong></span>
+        </div>
+      </div>
       {(localData.teamBrands||[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>{
         const brands=localData.teamBrands||[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}];
         return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"8px 10px",marginBottom:8}}>
@@ -2492,18 +2506,7 @@ function LoginScreen({data,onLogin}) {
   return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 60%,${C.navyLight} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{width:"100%",maxWidth:420}}>
       <div style={{textAlign:"center",marginBottom:28}}>
-        {/* Shield logo */}
-        <div style={{position:"relative",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
-          <svg width="90" height="100" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M45 4L8 18V52C8 72 45 96 45 96C45 96 82 72 82 52V18L45 4Z" fill="rgba(14,165,160,0.15)" stroke={C.teal} strokeWidth="2.5"/>
-            <path d="M45 4L8 18V52C8 72 45 96 45 96C45 96 82 72 82 52V18L45 4Z" fill="url(#shieldGrad)"/>
-            <defs><linearGradient id="shieldGrad" x1="45" y1="4" x2="45" y2="96" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor={C.teal} stopOpacity="0.25"/><stop offset="100%" stopColor={C.teal} stopOpacity="0.05"/></linearGradient></defs>
-            <path d="M30 50L40 60L62 38" stroke={C.teal} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-            <text x="45" y="85" textAnchor="middle" fill={C.teal} fontSize="9" fontWeight="700" fontFamily="Arial" letterSpacing="1">NL</text>
-          </svg>
-          {/* Glow effect */}
-          <div style={{position:"absolute",width:90,height:90,borderRadius:"50%",background:C.teal,opacity:0.08,filter:"blur(20px)",zIndex:-1}}/>
-        </div>
+
         {/* Welcome banner */}
         <div style={{background:"linear-gradient(90deg,rgba(245,158,11,0.15),rgba(14,165,160,0.15),rgba(245,158,11,0.15))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:30,padding:"6px 20px",display:"inline-block",marginBottom:12}}>
           <span style={{fontSize:13,fontWeight:700,color:"#f59e0b",letterSpacing:"2px",textTransform:"uppercase"}}>✦ Welcome to the Team ✦</span>
@@ -2514,8 +2517,14 @@ function LoginScreen({data,onLogin}) {
         <div style={{display:"flex",gap:10,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
           {((data.teamBrands&&data.teamBrands.length>0)?data.teamBrands:[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>
             team.logo
-              ?<img key={i} src={team.logo} alt={team.name} style={{height:48,borderRadius:8,objectFit:"contain"}}/>
-              :<div key={i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>{team.emoji||"⭐"} {team.name}</div>
+              ?<img key={i} src={team.logo} alt={team.name}
+                  style={{height:80,maxWidth:160,borderRadius:10,objectFit:"contain"}}
+                  onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="inline-block";}}
+                />
+              :null
+          )}
+          {((data.teamBrands&&data.teamBrands.length>0)?data.teamBrands:[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>
+            <div key={"badge"+i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px",display:team.logo?"none":"inline-block"}}>{team.emoji||"⭐"} {team.name}</div>
           )}
         </div>
       </div>
