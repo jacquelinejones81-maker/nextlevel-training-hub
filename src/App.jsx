@@ -1227,12 +1227,12 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           <div style={{height:4,background:C.teal,borderRadius:2,width:pct+"%",transition:"width 0.3s"}}/>
         </div>
       </div>
-      {/* Meet with Trainer/RVP */}
-      {trainer?.bookingLink&&<div style={{marginTop:10}}>
-        <a href={trainer.bookingLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none"}}>
+      {/* Meet with RVP — from rvpBookingLinks in Team Management */}
+      {(data.rvpBookingLinks||[]).filter(r=>r.link).length>0&&<div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
+        {(data.rvpBookingLinks||[]).filter(r=>r.link).map((rvp,i)=><a key={i} href={rvp.link} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",textDecoration:"none"}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
-          <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>Schedule with {trainer.name}</span>
-        </a>
+          <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>Meet with RVP — {rvp.name}</span>
+        </a>)}
       </div>}
       {/* Rewatch milestone videos — only for granted access levels */}
       {((rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
@@ -1854,6 +1854,20 @@ function ManageTeamPage({data,onUpdate}) {
         <button onClick={()=>updateLocal({...localData,customRVPs:(localData.customRVPs||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>
       </div>)}
       <button onClick={()=>updateLocal({...localData,customRVPs:[...(localData.customRVPs||[]),{name:"",rvpId:""}]})} style={{fontSize:13,color:C.teal,background:"none",border:`1px solid ${C.teal}`,borderRadius:6,padding:"4px 10px",cursor:"pointer",marginTop:4}}>+ Add RVP</button>
+    </Card>
+
+    {/* RVP Booking Links */}
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>RVP Booking Links</div>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>These show as "Meet with RVP" buttons in every rep's sidebar. Add one per RVP.</div>
+      {(localData.rvpBookingLinks||[]).map((rvp,i)=><div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:8,marginBottom:6}}>
+        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5}}>
+          <input value={rvp.name||""} onChange={e=>{const u=(localData.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,name:e.target.value}:r);updateLocal({...localData,rvpBookingLinks:u});}} placeholder="RVP Name" style={{flex:1,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,fontWeight:600}}/>
+          <button onClick={()=>updateLocal({...localData,rvpBookingLinks:(localData.rvpBookingLinks||[]).filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
+        </div>
+        <input value={rvp.link||""} onChange={e=>{const u=(localData.rvpBookingLinks||[]).map((r,j)=>j===i?{...r,link:e.target.value}:r);updateLocal({...localData,rvpBookingLinks:u});}} placeholder="Calendly or booking link" style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+      </div>)}
+      <button onClick={()=>updateLocal({...localData,rvpBookingLinks:[...(localData.rvpBookingLinks||[]),{name:"",link:""}]})} style={{width:"100%",padding:"6px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:4}}>+ Add RVP</button>
     </Card>
 
     {/* Primerica Month End Dates */}
