@@ -1509,12 +1509,12 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
     {/* Assign RVP/Admin — outside header row for visibility */}
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"8px 12px",background:C.gold+"08",borderRadius:8,border:`1px solid ${C.gold}33`}}>
-      <span style={{fontSize:13,fontWeight:600,color:"#b45309",whiteSpace:"nowrap"}}>Assigned RVP / Admin:</span>
-      <select value={rep.adminId||""} onChange={e=>{const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:e.target.value}:r);onUpdate({...data,reps:updated});}} style={{flex:1,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.gold}`,fontSize:13,color:C.text,background:"white"}}>
-        <option value="">Not assigned</option>
-        {(data.admins||[]).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
-      </select>
+    <div style={{marginBottom:10,padding:"10px 12px",background:C.gold+"08",borderRadius:8,border:`1px solid ${C.gold}33`}}>
+      <div style={{fontSize:13,fontWeight:600,color:"#b45309",marginBottom:8}}>Assigned RVP / Admin</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+        <button onClick={()=>{const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:""}:r);onUpdate({...data,reps:updated});}} style={{padding:"6px 12px",borderRadius:7,border:`2px solid ${!rep.adminId?C.gold:C.border}`,background:!rep.adminId?C.gold+"22":"white",cursor:"pointer",fontSize:12,fontWeight:!rep.adminId?700:400,color:!rep.adminId?"#b45309":C.textMid}}>Not assigned</button>
+        {(data.admins||[]).map(a=><button key={a.id} onClick={()=>{const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:a.id}:r);onUpdate({...data,reps:updated});}} style={{padding:"6px 12px",borderRadius:7,border:`2px solid ${rep.adminId===a.id?C.gold:C.border}`,background:rep.adminId===a.id?C.gold+"22":"white",cursor:"pointer",fontSize:12,fontWeight:rep.adminId===a.id?700:400,color:rep.adminId===a.id?"#b45309":C.text}}>{a.name}</button>)}
+      </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
       <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
