@@ -7713,6 +7713,8 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
   };
   const cats=["All","Life Insurance","Investments","Recruiting",...[...new Set(customCards.map(c=>c.cat).filter(c=>!["Life Insurance","Investments","Recruiting"].includes(c)))]];
 
+  const allCards=[...OBJECTION_CARDS.map(c=>({...getCard(c),isBuiltIn:true,_originalId:c.id})),...customCards.map(c=>({...c,isBuiltIn:false}))];
+
   const filtered=allCards.filter(c=>{
     if(cat!=="All"&&c.cat!==cat) return false;
     if(filter==="mastered"&&!mastered[c.id]) return false;
@@ -7753,8 +7755,6 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
     setEditingId(c.id);
     setShowLibraryForm(true);
   };
-
-  const allCards=[...OBJECTION_CARDS.map(c=>({...getCard(c),isBuiltIn:true,_originalId:c.id})),...customCards.map(c=>({...c,isBuiltIn:false}))];
 
   return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
     {/* Edit Built-In Modal */}
