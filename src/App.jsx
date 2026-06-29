@@ -1369,7 +1369,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
-    {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.textMid,lineHeight:1.6}}>"{s.content}"</div></Card>)}</div>}
+    {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div></Card>)}</div>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
@@ -7117,7 +7117,7 @@ function ScriptsPage({data,onUpdate,userRole}) {
               <button onClick={()=>deleteScript(i)} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
             </div>}
           </div>
-          <div style={{background:C.surface,borderRadius:8,padding:"10px 12px",fontSize:dv(12,15),color:C.textMid,lineHeight:1.7}}>"{s.content}"</div>
+          <div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:dv(12,15),color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div>
         </div>
       )}
     </Card>)}
@@ -7724,7 +7724,16 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
   };
   const cats=["All","Life Insurance","Investments","Recruiting",...[...new Set(customCards.map(c=>c.cat).filter(c=>!["Life Insurance","Investments","Recruiting"].includes(c)))]];
 
-  const allCards=[...OBJECTION_CARDS.map(c=>({...getCard(c),isBuiltIn:true,_originalId:c.id})),...customCards.map(c=>({...c,isBuiltIn:false}))];
+  const allCards=[
+    ...OBJECTION_CARDS.map(c=>({...getCard(c),isBuiltIn:true,_originalId:c.id})),
+    ...customCards.map(c=>({
+      ...c,
+      isBuiltIn:false,
+      // Normalize flat Firebase structure to nested structure
+      front:c.front||{title:c.frontTitle||"",prospect:c.frontProspect||""},
+      back:c.back||{best:c.backBest||"",keyPhrase:c.backKeyPhrase||"",dontSay:c.backDontSay||"",coaching:c.backCoaching||"",variations:[]}
+    }))
+  ];
 
   const filtered=allCards.filter(c=>{
     if(cat!=="All"&&c.cat!==cat) return false;
