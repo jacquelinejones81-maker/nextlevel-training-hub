@@ -7885,9 +7885,14 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
             <div style={{fontSize:13,color:C.text,marginBottom:4}}><strong>Best:</strong> {c.back.best?.slice(0,100)}...</div>
             {c.back.keyPhrase&&<div style={{fontSize:13,color:C.gold,fontWeight:600}}>⚡ "{c.back.keyPhrase}"</div>}
           </div>
-          {isAdmin&&customCards.find(cc=>cc.id===c.id)&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-            <button onClick={()=>editCard(c)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Edit</button>
-            <button onClick={()=>deleteCard(c.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:13,color:C.danger}}>Delete</button>
+          {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0,flexDirection:"column",alignItems:"flex-end"}}>
+            {c.isBuiltIn
+              ?<><button onClick={()=>startEditBuiltIn(OBJECTION_CARDS.find(oc=>oc.id===(c._originalId||c.id))||c)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Edit</button>
+              {builtInEdits[c._originalId||c.id]&&<button onClick={()=>resetBuiltIn(c._originalId||c.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.gold}33`,background:"white",cursor:"pointer",fontSize:11,color:C.gold}}>Reset</button>}</>
+              :<><button onClick={()=>editCard(c)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Edit</button>
+              <button onClick={()=>deleteCard(c.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:13,color:C.danger}}>Delete</button></>
+            }
+            {builtInEdits[c._originalId||c.id]&&c.isBuiltIn&&<Badge color={C.gold} small>Edited</Badge>}
           </div>}
         </div>
         <button onClick={()=>{const idx=deck.findIndex(d=>d.id===c.id);if(idx>=0){setCardIndex(idx);setFlipped(false);setTab("practice");}else{setCat("All");setFilter("all");setCardIndex(allCards.indexOf(c));setFlipped(false);setTab("practice");}}} style={{marginTop:8,width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${C.teal}33`,background:C.teal+"08",color:C.teal,fontSize:13,fontWeight:600,cursor:"pointer"}}>📚 Practice This Card</button>
