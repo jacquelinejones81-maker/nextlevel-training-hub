@@ -7258,6 +7258,17 @@ const PROSPECTING_CARDS = [
     purpose:"Reframe the opportunity away from sales and toward service and education. Most people who say they're not salespeople actually hate pushy selling — which is not what we do.",
     tip:"The best reps don't think of themselves as salespeople. They think of themselves as advisors."
   },
+  {
+    id:"p9",
+    emoji:"🔺",
+    situation:"Skeptical Prospect / Industry Pushback",
+    context:"Someone expresses skepticism about the industry, mentions MLMs, or seems dismissive before they've heard anything. Also works as a pattern interrupt when a prospect seems checked out.",
+    opening:"You know what's interesting — most people I talk to are already in a structure that looks exactly like what you're describing and don't even know it. Let me show you what I mean.",
+    ifYes:"Walk them through all five points: Point 1: 'Most people already have someone above them making more money and someone below them making less. The difference is most people can't move up — and if they do, there's a ceiling they'll never break through. What I want to show you is how to remove that ceiling.' Point 2: 'Most people's income is capped. Hourly wages, salary — it doesn't matter how hard they work because someone else already decided what they're worth. Here the only limit is how much someone is willing to put in.' Point 3: 'Most people are already selling every single day — selling their boss on why they deserve a raise, why they deserve a promotion. And most of the time they get very little in return. Here you learn to channel that same energy into building your own income.' Point 4: 'Most people say they want freedom but keep making choices that guarantee security — and then wonder why nothing changes. This is the vehicle that lets someone earn their way out of that cycle.' Point 5: 'Most people say they want more but tend to avoid environments that are actually going to require more of them. People who put in the work here get paid very well. It's that straightforward.' Close: 'I'm not asking you to make any decisions today. I'm just asking for twenty minutes to show you something that might change how you think about your options. Can you do that?'",
+    ifNo:"That's actually the most common reaction — and it's exactly why I want to sit down with you. Because what I'm going to show you looks very different from what you're picturing right now.",
+    purpose:"Most people have already been conditioned to reject this opportunity before they understand it. This approach meets their skepticism head on without getting defensive. By making it about what most people experience rather than what they personally are doing, you keep the conversation open and let them draw their own conclusions. Curiosity does the work — not pressure.",
+    tip:"You don't have to deliver all five points perfectly. The goal is to get them curious enough to say yes to a meeting — not to close them on the phone. If they're engaged after point two or three, go straight to the close."
+  },
 ];
 
 function ProspectingPage({data,onUpdate,userRole}) {
