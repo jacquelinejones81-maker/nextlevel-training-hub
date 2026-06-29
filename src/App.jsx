@@ -3835,7 +3835,20 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     });
 
     // Scorecard
-    const scorecard = (data.scorecards||{})[rep.id]||{};
+    const scorecardAll = (data.scorecards||{})[rep.id]||{};
+    const currentWeekKey = getWeekStart();
+    const scorecard = scorecardAll[currentWeekKey]||{contacts:0,apptSet:0,apptDone:0};
+    // Monthly totals — sum all weeks whose Monday falls in current month
+    const now = new Date();
+    const scorecardMonth = Object.entries(scorecardAll).reduce((s,[wk,d])=>{
+      const wkDate = new Date(wk+"T12:00:00");
+      if(wkDate.getMonth()===now.getMonth()&&wkDate.getFullYear()===now.getFullYear()){
+        s.contacts+=(d.contacts||0);
+        s.apptSet+=(d.apptSet||0);
+        s.apptDone+=(d.apptDone||0);
+      }
+      return s;
+    },{contacts:0,apptSet:0,apptDone:0});
 
     // Login history
     const loginHistory = (data.loginHistory||{})[rep.id]||[];
@@ -3848,7 +3861,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
       return dd.getMonth()===new Date().getMonth()&&dd.getFullYear()===new Date().getFullYear();
     }).length;
 
-    return {...rep,submittedToday,streak,status,isAtRisk,openTasks,progress,recruiter,last7,todayLog,weekTotals,scorecard,lastLogin,loginsThisWeek,loginsThisMonth};
+    return {...rep,submittedToday,streak,status,isAtRisk,openTasks,progress,recruiter,last7,todayLog,weekTotals,scorecard,scorecardMonth,lastLogin,loginsThisWeek,loginsThisMonth};
   });
 
   const filtered = repStats.filter(r=>{
@@ -4173,9 +4186,16 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <h2>SCORECARD — WEEKLY PRODUCTION</h2>
             <p class="note">The scorecard tracks formal weekly production goals. Compare these numbers against the activity totals above to identify where the process is breaking down.</p>
             <div class="grid">
-              <div class="card"><div class="big">${rep.scorecard?.contacts||0}<span style="font-size:14px;color:#999">/100</span></div><div class="label">Contacts Made</div></div>
-              <div class="card"><div class="big">${rep.scorecard?.apptSet||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Set</div></div>
-              <div class="card"><div class="big">${rep.scorecard?.apptDone||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Done</div></div>
+              <div class="card"><div class="big">${rep.scorecard?.contacts||0}<span style="font-size:14px;color:#999">/100</span></div><div class="label">Contacts Made (This Week)</div></div>
+              <div class="card"><div class="big">${rep.scorecard?.apptSet||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Set (This Week)</div></div>
+              <div class="card"><div class="big">${rep.scorecard?.apptDone||0}<span style="font-size:14px;color:#999">/20</span></div><div class="label">Appointments Done (This Week)</div></div>
+            </div>
+            <h2>SCORECARD — MONTHLY TOTALS</h2>
+            <p class="note">Running totals for all weeks in ${new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})}. This shows consistency over the full month, not just this week.</p>
+            <div class="grid">
+              <div class="card"><div class="big">${rep.scorecardMonth?.contacts||0}</div><div class="label">Total Contacts This Month</div></div>
+              <div class="card"><div class="big">${rep.scorecardMonth?.apptSet||0}</div><div class="label">Total Appts Set This Month</div></div>
+              <div class="card"><div class="big">${rep.scorecardMonth?.apptDone||0}</div><div class="label">Total Appts Done This Month</div></div>
             </div>
 
             <h2>PRODUCTION</h2>
