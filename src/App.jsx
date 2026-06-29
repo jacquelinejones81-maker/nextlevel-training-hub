@@ -523,7 +523,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
         <div style={{marginBottom:10}}>
           <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:6}}>Select Your RVP ID</div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...((data&&data.customRVPs)||[])].map((rvp,i)=>{
+            {[{id:"BXKX9",name:"Tellis Bolton"},{id:"519KU",name:"Jacqueline Jones"},...((data&&data.customRVPs)||[]).filter(r=>r.id&&r.id.trim())].map((rvp,i)=>{
               const selected=rep.selectedRVP===rvp.id;
               return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,border:`2px solid ${selected?C.gold:C.border}`,background:selected?C.gold+"11":"white",cursor:readOnly?"default":"pointer"}}
                 onClick={()=>!readOnly&&onUpdate({...rep,selectedRVP:rvp.id})}>
