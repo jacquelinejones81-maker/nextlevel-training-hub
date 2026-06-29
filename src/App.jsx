@@ -1137,6 +1137,18 @@ function RefsEditor({rep,data,onUpdate}) {
 function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpenCommitment}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
+
+  // Phone back button — go back to checklist tab if on another tab
+  useEffect(()=>{
+    const handler=()=>{
+      try {
+        window.history.pushState({appNav:true},'',window.location.href);
+        if(tab&&tab!=="checklist"){setTab("checklist");}
+      } catch(e){}
+    };
+    window.addEventListener('popstate',handler);
+    return()=>window.removeEventListener('popstate',handler);
+  },[tab]);
   const track=TRACK_INFO[rep.track];
   const cl=track?.checklist||[];
   const checked=rep.checked||{};
@@ -8372,14 +8384,42 @@ export default function App() {
 
   const signOut=()=>{setSession(null);setSelRepId(null);};
 
-  // Prevent phone back button from logging out
+  // Smart phone back button navigation
   useEffect(()=>{
     if(!session) return;
-    window.history.pushState(null,'',window.location.href);
-    const handler=()=>window.history.pushState(null,'',window.location.href);
+    // Push initial state so we have somewhere to go back to
+    window.history.pushState({appNav:true},'',window.location.href);
+
+    const handler=(e)=>{
+      // Always re-push so we never actually leave the page
+      window.history.pushState({appNav:true},'',window.location.href);
+
+      try {
+        // Priority 1: Close any open modals/popups first
+        if(showCommitmentPopup){setShowCommitmentPopup(false);return;}
+        if(showChoosePath){setShowChoosePath(false);return;}
+        if(showWelcome){setShowWelcome(false);return;}
+        if(showLicensedVideo){setShowLicensedVideo(false);return;}
+        if(showFieldTrainerVideo){setShowFieldTrainerVideo(false);return;}
+        if(showRvpPathVideo){setShowRvpPathVideo(false);return;}
+        if(birthdayInfo){setBirthdayInfo(null);return;}
+
+        // Priority 2: Close rep profile if open
+        if(selRepId){setSelRepId(null);return;}
+
+        // Priority 3: Go back to dashboard if on another section
+        if(section&&section!=="dashboard"){setSection("dashboard");setSelRepId(null);return;}
+
+        // Priority 4: Already on dashboard — do nothing (don't sign out)
+      } catch(err) {
+        // Safety net — never crash on back button
+        console.warn("Back nav error:",err);
+      }
+    };
+
     window.addEventListener('popstate',handler);
     return()=>window.removeEventListener('popstate',handler);
-  },[session]);
+  },[session,selRepId,section,showCommitmentPopup,showChoosePath,showWelcome,showLicensedVideo,showFieldTrainerVideo,showRvpPathVideo,birthdayInfo]);
 
   if(loading) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"white",flexDirection:"column",gap:12}}>
     <div style={{width:40,height:40,border:`3px solid ${C.teal}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
