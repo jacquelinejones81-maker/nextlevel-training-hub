@@ -7268,8 +7268,43 @@ function ProspectingPage({data,onUpdate,userRole}) {
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
   const [form,setForm]=useState({emoji:"💬",situation:"",context:"",opening:"",ifYes:"",ifNo:"",purpose:"",tip:""});
+  const [editingBuiltInP,setEditingBuiltInP]=useState(null);
   const customLines=data.prospectingLibrary||[];
-  const allCards=[...PROSPECTING_CARDS,...customLines];
+  const prospEdits=data.prospectingEdits||{};
+
+  const getPCard=(card)=>{
+    const edit=prospEdits[card.id];
+    if(!edit) return card;
+    return {...card,...edit,id:card.id};
+  };
+
+  const startEditBuiltInP=(card)=>{
+    const edit=prospEdits[card.id]||{};
+    setEditingBuiltInP({id:card.id,form:{
+      emoji:edit.emoji||card.emoji||"",
+      situation:edit.situation||card.situation||"",
+      context:edit.context||card.context||"",
+      opening:edit.opening||card.opening||"",
+      ifYes:edit.ifYes||card.ifYes||"",
+      ifNo:edit.ifNo||card.ifNo||"",
+      purpose:edit.purpose||card.purpose||"",
+      tip:edit.tip||card.tip||"",
+    }});
+  };
+
+  const saveBuiltInPEdit=()=>{
+    if(!editingBuiltInP) return;
+    onUpdate({...data,prospectingEdits:{...prospEdits,[editingBuiltInP.id]:editingBuiltInP.form}});
+    setEditingBuiltInP(null);
+  };
+
+  const resetBuiltInP=(id)=>{
+    const newEdits={...prospEdits};
+    delete newEdits[id];
+    onUpdate({...data,prospectingEdits:newEdits});
+  };
+
+  const allCards=[...PROSPECTING_CARDS.map(c=>getPCard(c)),...customLines];
   const card=allCards[cardIndex]||null;
 
   const next=()=>{setCardIndex(i=>Math.min(i+1,allCards.length-1));setFlipped(false);};
@@ -7300,6 +7335,21 @@ function ProspectingPage({data,onUpdate,userRole}) {
   };
 
   return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
+    {editingBuiltInP&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div style={{background:"white",borderRadius:16,padding:20,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>Edit Prospecting Card</div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:12}}>Your edits save to Firebase. The original is preserved — use Reset to restore it anytime.</div>
+        {[["emoji","Emoji",""],["situation","Situation Title",""],["context","Context / Setup",""],["opening","Opening Line",""],["ifYes","If They Say Yes",""],["ifNo","If They Say No",""],["purpose","The Purpose",""],["tip","Pro Tip",""]].map(([k,l,ph])=><div key={k} style={{marginBottom:8}}>
+          <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3,fontWeight:600}}>{l}</label>
+          <textarea value={editingBuiltInP.form[k]||""} onChange={e=>setEditingBuiltInP({...editingBuiltInP,form:{...editingBuiltInP.form,[k]:e.target.value}})} placeholder={ph} rows={k==="opening"||k==="purpose"?3:2} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",boxSizing:"border-box"}}/>
+        </div>)}
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <button onClick={()=>setEditingBuiltInP(null)} style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+          <button onClick={()=>{resetBuiltInP(editingBuiltInP.id);setEditingBuiltInP(null);}} style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${C.danger}33`,background:"white",cursor:"pointer",fontSize:12,color:C.danger}}>Reset to Original</button>
+          <button onClick={saveBuiltInPEdit} style={{flex:2,padding:"9px",borderRadius:9,background:C.teal,border:"none",color:"white",cursor:"pointer",fontSize:12,fontWeight:700}}>Save Changes</button>
+        </div>
+      </div>
+    </div>}
     <div style={{marginBottom:16}}>
       <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:4}}>🎯 Prospecting Training</div>
       <div style={{fontSize:13,color:C.textMid}}>Real-world scenarios and proven approaches for starting conversations naturally.</div>
@@ -7396,6 +7446,19 @@ function ProspectingPage({data,onUpdate,userRole}) {
         <div style={{fontSize:13,marginBottom:4}}>No custom lines yet</div>
         {isAdmin?<div style={{fontSize:11}}>Add prospecting lines that have worked for your team so everyone can learn from them.</div>:<div style={{fontSize:11}}>Your admin will add team prospecting lines here as they're discovered in the field.</div>}
       </div>}
+      {/* Built-in cards with edit option */}
+      {PROSPECTING_CARDS.map((origCard,i)=>{const c=getPCard(origCard);return <div key={c.id} style={{borderRadius:10,border:`1px solid ${C.border}`,padding:"12px 14px",marginBottom:8,background:"white"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text}}>{c.emoji||"💬"} {c.situation}</div>
+          <div style={{display:"flex",gap:4,flexShrink:0,alignItems:"center"}}>
+            {prospEdits[c.id]&&<Badge color={C.gold} small>Edited</Badge>}
+            {isAdmin&&<button onClick={()=>startEditBuiltInP(origCard)} style={{padding:"3px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:11,color:C.textMid}}>Edit</button>}
+          </div>
+        </div>
+        <div style={{fontSize:12,color:C.teal,fontWeight:600,marginBottom:4,fontStyle:"italic"}}>"{c.opening}"</div>
+        <button onClick={()=>{const idx=allCards.findIndex(ac=>ac.id===c.id);if(idx>=0){setCardIndex(idx);setFlipped(false);setTab("situations");}}} style={{marginTop:4,width:"100%",padding:"5px",borderRadius:7,border:`1px solid ${C.teal}33`,background:C.teal+"08",color:C.teal,fontSize:11,fontWeight:600,cursor:"pointer"}}>📚 View as Flashcard</button>
+      </div>;})}
+      {customLines.length>0&&<div style={{fontSize:11,fontWeight:700,color:C.textMid,margin:"12px 0 6px",textTransform:"uppercase",letterSpacing:"0.5px"}}>Team's Custom Lines</div>}
       {customLines.map((c,i)=><div key={c.id} style={{borderRadius:10,border:`1px solid ${C.border}`,padding:"12px 14px",marginBottom:8,background:"white"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:8}}>
           <div style={{fontSize:13,fontWeight:700,color:C.text}}>{c.emoji||"💬"} {c.situation}</div>
@@ -7605,9 +7668,49 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
   const [showLibraryForm,setShowLibraryForm]=useState(false);
   const [libraryForm,setLibraryForm]=useState({cat:"Life Insurance",emoji:"💬",frontTitle:"",frontProspect:"",backBest:"",backKeyPhrase:"",backDontSay:"",backCoaching:""});
   const [editingId,setEditingId]=useState(null);
+  const [editingBuiltIn,setEditingBuiltIn]=useState(null); // {id, form}
 
   const customCards=data.objectionLibrary||[];
-  const allCards=[...OBJECTION_CARDS,...customCards];
+  const builtInEdits=data.objectionEdits||{};
+
+  // Get effective card — built-in with any admin edits applied
+  const getCard=(card)=>{
+    const edit=builtInEdits[card.id];
+    if(!edit) return card;
+    return {
+      ...card,
+      emoji:edit.emoji||card.emoji,
+      cat:edit.cat||card.cat,
+      front:{title:edit.frontTitle||card.front.title,prospect:edit.frontProspect||card.front.prospect},
+      back:{best:edit.backBest||card.back.best,keyPhrase:edit.backKeyPhrase||card.back.keyPhrase,dontSay:edit.backDontSay||card.back.dontSay,coaching:edit.backCoaching||card.back.coaching,variations:card.back.variations}
+    };
+  };
+
+  const startEditBuiltIn=(card)=>{
+    const edit=builtInEdits[card.id]||{};
+    setEditingBuiltIn({id:card.id,form:{
+      emoji:edit.emoji||card.emoji,
+      cat:edit.cat||card.cat,
+      frontTitle:edit.frontTitle||card.front.title,
+      frontProspect:edit.frontProspect||card.front.prospect,
+      backBest:edit.backBest||card.back.best,
+      backKeyPhrase:edit.backKeyPhrase||card.back.keyPhrase,
+      backDontSay:edit.backDontSay||card.back.dontSay,
+      backCoaching:edit.backCoaching||card.back.coaching,
+    }});
+  };
+
+  const saveBuiltInEdit=()=>{
+    if(!editingBuiltIn) return;
+    onUpdate({...data,objectionEdits:{...builtInEdits,[editingBuiltIn.id]:editingBuiltIn.form}});
+    setEditingBuiltIn(null);
+  };
+
+  const resetBuiltIn=(id)=>{
+    const newEdits={...builtInEdits};
+    delete newEdits[id];
+    onUpdate({...data,objectionEdits:newEdits});
+  };
   const cats=["All","Life Insurance","Investments","Recruiting",...[...new Set(customCards.map(c=>c.cat).filter(c=>!["Life Insurance","Investments","Recruiting"].includes(c)))]];
 
   const filtered=allCards.filter(c=>{
@@ -7651,7 +7754,25 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
     setShowLibraryForm(true);
   };
 
+  const allCards=[...OBJECTION_CARDS.map(c=>({...getCard(c),isBuiltIn:true,_originalId:c.id})),...customCards.map(c=>({...c,isBuiltIn:false}))];
+
   return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
+    {/* Edit Built-In Modal */}
+    {editingBuiltIn&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div style={{background:"white",borderRadius:16,padding:20,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>Edit Card</div>
+        <div style={{fontSize:11,color:C.textMid,marginBottom:12}}>Your edits save to Firebase. The original is always preserved — use Reset to restore anytime.</div>
+        {[["emoji","Emoji"],["cat","Category"],["frontTitle","Situation Title"],["frontProspect","Prospect Says..."],["backBest","Best Response"],["backKeyPhrase","Key Phrase"],["backDontSay","Don't Say"],["backCoaching","Coaching Note"]].map(([k,l])=><div key={k} style={{marginBottom:8}}>
+          <label style={{fontSize:11,color:C.textMid,display:"block",marginBottom:3,fontWeight:600}}>{l}</label>
+          <textarea value={editingBuiltIn.form[k]||""} onChange={e=>setEditingBuiltIn({...editingBuiltIn,form:{...editingBuiltIn.form,[k]:e.target.value}})} rows={k==="backBest"||k==="backCoaching"?4:2} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,resize:"vertical",boxSizing:"border-box"}}/>
+        </div>)}
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <button onClick={()=>setEditingBuiltIn(null)} style={{flex:1,padding:"10px",borderRadius:9,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:600}}>Cancel</button>
+          <button onClick={()=>{resetBuiltIn(editingBuiltIn.id);setEditingBuiltIn(null);}} style={{flex:1,padding:"10px",borderRadius:9,border:`1px solid ${C.danger}44`,background:"white",cursor:"pointer",fontSize:13,color:C.danger,fontWeight:600}}>Reset</button>
+          <button onClick={saveBuiltInEdit} style={{flex:2,padding:"10px",borderRadius:9,background:C.teal,border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Save Changes</button>
+        </div>
+      </div>
+    </div>}
     {/* Header */}
     <div style={{marginBottom:16}}>
       <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:4}}>🎯 Objection Training</div>
