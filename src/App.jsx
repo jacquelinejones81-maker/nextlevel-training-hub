@@ -1172,6 +1172,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"fame",l:"Wall of Fame"},
     {k:"objectiontraining",l:"Objection Training"},
     {k:"prospecting",l:"Prospecting"},
+    {k:"planner",l:"Daily Planner"},
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
@@ -1393,6 +1394,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
     {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
     {tab==="prospecting"&&<ProspectingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
+    {tab==="planner"&&<DailyPlanner session={session||{id:rep.id,role:"rep"}} db={db}/>}
       </div>
     </div>
   </div>;
@@ -7150,6 +7152,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
     {k:"objectiontraining",l:"Objection Training",d:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"},
     {k:"prospecting",l:"Prospecting",d:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"},
+    {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
@@ -8078,6 +8081,264 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock,recruitsOverride,pre
   </Card>;
 }
 
+
+// ── DAILY BLOCK PLANNER ──
+const PLANNER_CATS = [
+  {id:"work",    label:"Work",     color:"#0ea5a0"},
+  {id:"client",  label:"Client",   color:"#8b5cf6"},
+  {id:"training",label:"Training", color:"#f59e0b"},
+  {id:"personal",label:"Personal", color:"#10b981"},
+  {id:"admin",   label:"Admin",    color:"#6366f1"},
+  {id:"break",   label:"Break",    color:"#94a3b8"},
+];
+const SLOT_START = 6;   // 6 AM
+const SLOT_END   = 22;  // 10 PM
+const TOTAL_SLOTS = (SLOT_END - SLOT_START) * 2; // 32 half-hour slots
+
+function slotToTime(slot) {
+  const h = SLOT_START + Math.floor(slot / 2);
+  const m = slot % 2 === 0 ? "00" : "30";
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${h12}:${m} ${ampm}`;
+}
+
+function nowSlot() {
+  const d = new Date();
+  const h = d.getHours();
+  const m = d.getMinutes();
+  if (h < SLOT_START || h >= SLOT_END) return -1;
+  return (h - SLOT_START) * 2 + (m >= 30 ? 1 : 0);
+}
+
+function DailyPlanner({ session, db }) {
+  const today = localDate();
+  const [selDate, setSelDate] = useState(today);
+  const [blocks, setBlocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newTitle, setNewTitle] = useState("");
+  const [newCat, setNewCat] = useState("work");
+  const [newDur, setNewDur] = useState(2); // in half-hour units
+  const [editBlock, setEditBlock] = useState(null);
+  const [nowS, setNowS] = useState(nowSlot());
+  const userId = session?.id;
+
+  // Tick the now line every minute
+  useEffect(() => {
+    const t = setInterval(() => setNowS(nowSlot()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Load blocks for selected date
+  useEffect(() => {
+    if (!userId || !db) return;
+    setLoading(true);
+    const ref = doc(db, "userSchedules", `${userId}_${selDate}`);
+    const unsub = onSnapshot(ref, snap => {
+      if (snap.exists()) {
+        const d = snap.data();
+        setBlocks(d.blocks || []);
+      } else {
+        setBlocks([]);
+      }
+      setLoading(false);
+    }, () => { setLoading(false); });
+    return () => unsub();
+  }, [userId, selDate]);
+
+  // Save blocks to Firestore
+  const saveBlocks = async (newBlocks) => {
+    if (!userId || !db) return;
+    try {
+      await setDoc(doc(db, "userSchedules", `${userId}_${selDate}`), {
+        blocks: newBlocks, userId, date: selDate, updatedAt: new Date().toISOString()
+      });
+    } catch(e) { console.warn("Save failed:", e); }
+  };
+
+  // Check for conflicts
+  const hasConflict = (slot, dur, excludeId = null) => {
+    return blocks.some(b => {
+      if (b.id === excludeId) return false;
+      const bEnd = b.slot + b.dur;
+      const nEnd = slot + dur;
+      return slot < bEnd && nEnd > b.slot;
+    });
+  };
+
+  // Add block to slot
+  const addBlock = (slot) => {
+    if (!newTitle.trim()) return;
+    if (hasConflict(slot, newDur)) return;
+    if (slot + newDur > TOTAL_SLOTS) return;
+    const nb = { id: Date.now().toString(), title: newTitle.trim(), cat: newCat, dur: newDur, slot, notes: "", createdAt: new Date().toISOString() };
+    const updated = [...blocks, nb].sort((a, b) => a.slot - b.slot);
+    setBlocks(updated);
+    saveBlocks(updated);
+  };
+
+  // Save edit
+  const saveEdit = () => {
+    if (!editBlock) return;
+    // Check conflict excluding self
+    if (hasConflict(editBlock.slot, editBlock.dur, editBlock.id)) {
+      alert("This change would overlap another block.");
+      return;
+    }
+    const updated = blocks.map(b => b.id === editBlock.id ? editBlock : b).sort((a,b) => a.slot - b.slot);
+    setBlocks(updated);
+    saveBlocks(updated);
+    setEditBlock(null);
+  };
+
+  // Delete block
+  const deleteBlock = (id) => {
+    const updated = blocks.filter(b => b.id !== id);
+    setBlocks(updated);
+    saveBlocks(updated);
+    setEditBlock(null);
+  };
+
+  // Date options — today + next 6 days
+  const dateOptions = Array.from({length: 7}, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return localDate(d);
+  });
+
+  const dateLabel = (d) => {
+    if (d === today) return "Today";
+    const dt = new Date(d + "T12:00:00");
+    return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  // Stats
+  const totalMins = blocks.reduce((s, b) => s + b.dur * 30, 0);
+  const statsByCat = PLANNER_CATS.map(cat => {
+    const mins = blocks.filter(b => b.cat === cat.id).reduce((s, b) => s + b.dur * 30, 0);
+    return { ...cat, mins };
+  }).filter(c => c.mins > 0);
+
+  const catColor = (id) => PLANNER_CATS.find(c => c.id === id)?.color || C.teal;
+  const catLabel = (id) => PLANNER_CATS.find(c => c.id === id)?.label || id;
+
+  const isToday = selDate === today;
+
+  return <div style={{ padding: dv(14, 24), maxWidth: 600, margin: "0 auto" }}>
+    {/* Edit Modal */}
+    {editBlock && <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:"white", borderRadius:16, padding:20, width:"100%", maxWidth:400 }}>
+        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:12 }}>Edit Block</div>
+        <div style={{ marginBottom:8 }}>
+          <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Title</label>
+          <input value={editBlock.title} onChange={e=>setEditBlock({...editBlock, title:e.target.value})} style={{ width:"100%", padding:"7px 9px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, color:C.text, boxSizing:"border-box" }}/>
+        </div>
+        <div style={{ marginBottom:8 }}>
+          <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Category</label>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+            {PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setEditBlock({...editBlock,cat:cat.id})} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${editBlock.cat===cat.id?cat.color:C.border}`, background:editBlock.cat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:editBlock.cat===cat.id?cat.color:C.textMid, fontWeight:editBlock.cat===cat.id?700:400 }}>{cat.label}</button>)}
+          </div>
+        </div>
+        <div style={{ marginBottom:8 }}>
+          <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Duration</label>
+          <div style={{ display:"flex", gap:5 }}>
+            {[[1,"30m"],[2,"1h"],[3,"1.5h"],[4,"2h"],[6,"3h"]].map(([v,l])=><button key={v} onClick={()=>setEditBlock({...editBlock,dur:v})} style={{ flex:1, padding:"5px", borderRadius:7, border:`2px solid ${editBlock.dur===v?C.teal:C.border}`, background:editBlock.dur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.dur===v?C.teal:C.textMid, fontWeight:editBlock.dur===v?700:400 }}>{l}</button>)}
+          </div>
+        </div>
+        <div style={{ marginBottom:12 }}>
+          <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Notes</label>
+          <textarea value={editBlock.notes||""} onChange={e=>setEditBlock({...editBlock,notes:e.target.value})} rows={2} style={{ width:"100%", padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, resize:"vertical", boxSizing:"border-box" }}/>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={()=>setEditBlock(null)} style={{ flex:1, padding:"9px", borderRadius:9, border:`1px solid ${C.border}`, background:"white", cursor:"pointer", fontSize:12, color:C.textMid }}>Cancel</button>
+          <button onClick={()=>deleteBlock(editBlock.id)} style={{ flex:1, padding:"9px", borderRadius:9, border:`1px solid ${C.danger}33`, background:"white", cursor:"pointer", fontSize:12, color:C.danger, fontWeight:600 }}>Delete</button>
+          <button onClick={saveEdit} style={{ flex:2, padding:"9px", borderRadius:9, background:C.teal, border:"none", color:"white", cursor:"pointer", fontSize:12, fontWeight:700 }}>Save</button>
+        </div>
+      </div>
+    </div>}
+
+    {/* Header */}
+    <div style={{ fontSize:dv(19,24), fontWeight:800, color:C.text, marginBottom:4 }}>📅 Daily Planner</div>
+    <div style={{ fontSize:13, color:C.textMid, marginBottom:14 }}>Block your time. Protect your priorities.</div>
+
+    {/* Date Selector */}
+    <div style={{ display:"flex", gap:5, overflowX:"auto", marginBottom:14, paddingBottom:4 }}>
+      {dateOptions.map(d => <button key={d} onClick={()=>setSelDate(d)} style={{ padding:"6px 12px", borderRadius:20, border:`1px solid ${selDate===d?C.teal:C.border}`, background:selDate===d?C.teal:"white", color:selDate===d?"white":C.textMid, fontSize:12, fontWeight:selDate===d?700:400, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>{dateLabel(d)}</button>)}
+    </div>
+
+    {/* New Block Form */}
+    <Card style={{ marginBottom:14 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>Add a Block</div>
+      <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="What are you blocking time for?" style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:`1px solid ${C.border}`, fontSize:13, color:C.text, marginBottom:8, boxSizing:"border-box" }}/>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:8 }}>
+        {PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setNewCat(cat.id)} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${newCat===cat.id?cat.color:C.border}`, background:newCat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:newCat===cat.id?cat.color:C.textMid, fontWeight:newCat===cat.id?700:400 }}>{cat.label}</button>)}
+      </div>
+      <div style={{ display:"flex", gap:5, marginBottom:10 }}>
+        {[[1,"30m"],[2,"1hr"],[3,"1.5hr"],[4,"2hr"],[6,"3hr"]].map(([v,l])=><button key={v} onClick={()=>setNewDur(v)} style={{ flex:1, padding:"5px", borderRadius:7, border:`2px solid ${newDur===v?C.teal:C.border}`, background:newDur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:newDur===v?C.teal:C.textMid, fontWeight:newDur===v?700:400 }}>{l}</button>)}
+      </div>
+      <div style={{ fontSize:11, color:C.textMid }}>
+        {newTitle.trim() ? "👆 Tap a time slot below to place this block" : "Enter a title first, then tap a time slot"}
+      </div>
+    </Card>
+
+    {/* Time Grid */}
+    <div style={{ position:"relative" }}>
+      {Array.from({length: TOTAL_SLOTS}, (_, slot) => {
+        const isHour = slot % 2 === 0;
+        const block = blocks.find(b => b.slot === slot);
+        const covered = blocks.find(b => b.slot < slot && b.slot + b.dur > slot);
+        const conflict = newTitle.trim() && hasConflict(slot, newDur);
+        const overflows = slot + newDur > TOTAL_SLOTS;
+        const canPlace = newTitle.trim() && !conflict && !overflows;
+        const isNow = isToday && nowS === slot;
+        const isNowCovered = isToday && nowS > slot && nowS < slot + (block?.dur || 1);
+
+        if (covered && !block) return null; // Hidden — inside a multi-slot block
+
+        if (block) {
+          const cat = PLANNER_CATS.find(c => c.id === block.cat);
+          const blockH = block.dur * 28;
+          return <div key={slot} onClick={()=>setEditBlock({...block})} style={{ display:"flex", cursor:"pointer", marginBottom:1, position:"relative" }}>
+            <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
+            <div style={{ flex:1, height:blockH, borderRadius:8, background:cat?.color+"22", border:`2px solid ${cat?.color}`, padding:"4px 8px", overflow:"hidden", position:"relative" }}>
+              <div style={{ fontSize:12, fontWeight:700, color:cat?.color }}>{block.title}</div>
+              <div style={{ fontSize:10, color:cat?.color+"aa" }}>{cat?.label} · {slotToTime(block.slot)} – {slotToTime(block.slot+block.dur)}</div>
+              {block.notes&&<div style={{ fontSize:10, color:C.textMid, marginTop:2 }}>{block.notes}</div>}
+              {isToday&&nowS>=block.slot&&nowS<block.slot+block.dur&&<div style={{ position:"absolute", left:0, right:0, top:`${((nowS-block.slot)/block.dur)*100}%`, height:2, background:"red", opacity:0.6 }}/>}
+            </div>
+          </div>;
+        }
+
+        return <div key={slot} onClick={()=>canPlace&&addBlock(slot)} style={{ display:"flex", marginBottom:1, cursor:canPlace?"pointer":"default" }}>
+          <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
+          <div style={{ flex:1, height:28, borderRadius:4, background:conflict?"rgba(239,68,68,0.06)":canPlace?"rgba(14,165,160,0.06)":"rgba(0,0,0,0.02)", border:`1px dashed ${conflict?"rgba(239,68,68,0.3)":isHour?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.04)"}`, display:"flex", alignItems:"center", paddingLeft:8, transition:"background 0.1s", position:"relative" }}>
+            {isNow&&<div style={{ position:"absolute", left:0, right:0, top:0, height:2, background:"#ef4444" }}><div style={{ position:"absolute", left:0, top:-4, width:8, height:8, borderRadius:4, background:"#ef4444" }}/></div>}
+            {canPlace&&<div style={{ fontSize:10, color:C.teal, opacity:0 }} className="slot-hint">+ Add here</div>}
+            {conflict&&<div style={{ fontSize:10, color:"#ef4444" }}>Overlap</div>}
+          </div>
+        </div>;
+      })}
+    </div>
+
+    {/* Stats */}
+    {blocks.length > 0 && <Card style={{ marginTop:14 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>
+        {dateLabel(selDate)} — {(totalMins/60).toFixed(1)} hours scheduled
+      </div>
+      {statsByCat.map(cat => <div key={cat.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+        <div style={{ width:10, height:10, borderRadius:5, background:cat.color, flexShrink:0 }}/>
+        <div style={{ flex:1, fontSize:12, color:C.text }}>{cat.label}</div>
+        <div style={{ fontSize:12, color:C.textMid }}>{(cat.mins/60).toFixed(1)}h</div>
+        <div style={{ width:80, height:6, background:"rgba(0,0,0,0.06)", borderRadius:3, overflow:"hidden" }}>
+          <div style={{ height:"100%", borderRadius:3, background:cat.color, width:`${Math.min(100,(cat.mins/totalMins)*100)}%` }}/>
+        </div>
+      </div>)}
+    </Card>}
+
+    {loading && <div style={{ textAlign:"center", padding:20, color:C.textLight, fontSize:13 }}>Loading...</div>}
+  </div>;
+}
+
 // ── CHOOSE YOUR PATH SCREEN ──
 function ChooseYourPath({rep,onChoose}) {
   const [chosen,setChosen]=useState(null);
@@ -8550,7 +8811,8 @@ export default function App() {
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
-    if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="team") return <div><div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>Team Management</div><ManageTeamPage data={data} onUpdate={upd}/></div>;
     return null;
