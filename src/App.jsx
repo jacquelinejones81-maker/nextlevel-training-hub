@@ -1160,6 +1160,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
   const tabs=[
     {k:"checklist",l:"Checklist"},
+    {k:"planner",l:"Daily Planner"},
     {k:"milestones",l:"Milestones"},
     ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"pipeline",l:"My Pipeline"}]:[]),
     {k:"prospects",l:"Prospects"},
@@ -1172,7 +1173,6 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"fame",l:"Wall of Fame"},
     {k:"objectiontraining",l:"Objection Training"},
     {k:"prospecting",l:"Prospecting"},
-    {k:"planner",l:"Daily Planner"},
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
@@ -1394,7 +1394,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
     {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
     {tab==="prospecting"&&<ProspectingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
-    {tab==="planner"&&<DailyPlanner session={session||{id:rep.id,role:"rep"}} db={db}/>}
+    {tab==="planner"&&<DailyPlanner session={{id:rep.id,role:"rep"}} db={db}/>}
       </div>
     </div>
   </div>;
