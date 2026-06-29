@@ -8213,9 +8213,11 @@ function DailyPlanner({ session, db }) {
   };
 
   // Stats
-  const totalMins = blocks.reduce((s, b) => s + b.dur * 30, 0);
+  const activeBlocks = blocks.filter(b => !b.done);
+  const doneBlocks = blocks.filter(b => b.done);
+  const totalMins = activeBlocks.reduce((s, b) => s + b.dur * 30, 0);
   const statsByCat = PLANNER_CATS.map(cat => {
-    const mins = blocks.filter(b => b.cat === cat.id).reduce((s, b) => s + b.dur * 30, 0);
+    const mins = activeBlocks.filter(b => b.cat === cat.id).reduce((s, b) => s + b.dur * 30, 0);
     return { ...cat, mins };
   }).filter(c => c.mins > 0);
 
@@ -8248,6 +8250,11 @@ function DailyPlanner({ session, db }) {
         <div style={{ marginBottom:12 }}>
           <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Notes</label>
           <textarea value={editBlock.notes||""} onChange={e=>setEditBlock({...editBlock,notes:e.target.value})} rows={2} style={{ width:"100%", padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, resize:"vertical", boxSizing:"border-box" }}/>
+        </div>
+        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+          <button onClick={()=>setEditBlock({...editBlock,done:!editBlock.done})} style={{ width:"100%", padding:"9px", borderRadius:9, border:`1px solid ${editBlock.done?C.success:C.border}`, background:editBlock.done?C.success+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.done?C.success:C.textMid, fontWeight:600 }}>
+            {editBlock.done?"✅ Done — tap to unmark":"Mark as Done"}
+          </button>
         </div>
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={()=>setEditBlock(null)} style={{ flex:1, padding:"9px", borderRadius:9, border:`1px solid ${C.border}`, background:"white", cursor:"pointer", fontSize:12, color:C.textMid }}>Cancel</button>
@@ -8300,11 +8307,11 @@ function DailyPlanner({ session, db }) {
           const blockH = block.dur * 28;
           return <div key={slot} onClick={()=>setEditBlock({...block})} style={{ display:"flex", cursor:"pointer", marginBottom:1, position:"relative" }}>
             <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
-            <div style={{ flex:1, height:blockH, borderRadius:8, background:cat?.color+"22", border:`2px solid ${cat?.color}`, padding:"4px 8px", overflow:"hidden", position:"relative" }}>
-              <div style={{ fontSize:12, fontWeight:700, color:cat?.color }}>{block.title}</div>
-              <div style={{ fontSize:10, color:cat?.color+"aa" }}>{cat?.label} · {slotToTime(block.slot)} – {slotToTime(block.slot+block.dur)}</div>
-              {block.notes&&<div style={{ fontSize:10, color:C.textMid, marginTop:2 }}>{block.notes}</div>}
-              {isToday&&nowS>=block.slot&&nowS<block.slot+block.dur&&<div style={{ position:"absolute", left:0, right:0, top:`${((nowS-block.slot)/block.dur)*100}%`, height:2, background:"red", opacity:0.6 }}/>}
+            <div style={{ flex:1, height:blockH, borderRadius:8, background:block.done?"rgba(0,0,0,0.04)":cat?.color+"22", border:`2px solid ${block.done?"rgba(0,0,0,0.1)":cat?.color}`, padding:"4px 8px", overflow:"hidden", position:"relative" }}>
+              <div style={{ fontSize:12, fontWeight:700, color:block.done?C.textLight:cat?.color, textDecoration:block.done?"line-through":"none", opacity:block.done?0.6:1 }}>{block.title}</div>
+              <div style={{ fontSize:10, color:block.done?C.textLight:cat?.color+"aa", opacity:block.done?0.5:1 }}>{cat?.label} · {slotToTime(block.slot)} – {slotToTime(block.slot+block.dur)}{block.done?" · ✅ Done":""}</div>
+              {block.notes&&!block.done&&<div style={{ fontSize:10, color:C.textMid, marginTop:2 }}>{block.notes}</div>}
+              {isToday&&!block.done&&nowS>=block.slot&&nowS<block.slot+block.dur&&<div style={{ position:"absolute", left:0, right:0, top:`${((nowS-block.slot)/block.dur)*100}%`, height:2, background:"red", opacity:0.6 }}/>}
             </div>
           </div>;
         }
@@ -8322,8 +8329,9 @@ function DailyPlanner({ session, db }) {
 
     {/* Stats */}
     {blocks.length > 0 && <Card style={{ marginTop:14 }}>
-      <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>
-        {dateLabel(selDate)} — {(totalMins/60).toFixed(1)} hours scheduled
+      <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:4 }}>
+        {dateLabel(selDate)} — {(totalMins/60).toFixed(1)} hrs remaining
+        {doneBlocks.length>0&&<span style={{ fontSize:11, color:C.success, fontWeight:400, marginLeft:8 }}>✅ {doneBlocks.length} completed</span>}
       </div>
       {statsByCat.map(cat => <div key={cat.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
         <div style={{ width:10, height:10, borderRadius:5, background:cat.color, flexShrink:0 }}/>
