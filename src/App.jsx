@@ -8129,6 +8129,32 @@ function DailyPlanner({ session, db }) {
     return () => clearInterval(t);
   }, []);
 
+  const [recurringBlocks, setRecurringBlocks] = useState([]);
+
+  // Load recurring blocks once
+  useEffect(() => {
+    if (!userId || !db) return;
+    const ref = doc(db, "userSchedules", `${userId}_recurring`);
+    const unsub = onSnapshot(ref, snap => {
+      if (snap.exists()) {
+        setRecurringBlocks(snap.data().blocks || []);
+      } else {
+        setRecurringBlocks([]);
+      }
+    }, () => {});
+    return () => unsub();
+  }, [userId]);
+
+  // Save recurring blocks
+  const saveRecurring = async (newBlocks) => {
+    if (!userId || !db) return;
+    try {
+      await setDoc(doc(db, "userSchedules", `${userId}_recurring`), {
+        blocks: newBlocks, userId, updatedAt: new Date().toISOString()
+      });
+    } catch(e) { console.warn("Save recurring failed:", e); }
+  };
+
   // Load blocks for selected date
   useEffect(() => {
     if (!userId || !db) return;
@@ -8156,9 +8182,24 @@ function DailyPlanner({ session, db }) {
     } catch(e) { console.warn("Save failed:", e); }
   };
 
-  // Check for conflicts
+  // Merge recurring blocks with daily blocks for display
+  // Daily blocks can override recurring (by matching slot)
+  // done status from daily overrides recurring for that day
+  const dailyOverrideIds = new Set(blocks.map(b => b.recurringId).filter(Boolean));
+  const mergedBlocks = [
+    ...recurringBlocks
+      .filter(r => !dailyOverrideIds.has(r.id))
+      .map(r => {
+        // Check if this recurring block has a done override for today
+        const doneOverride = blocks.find(b => b.recurringId === r.id);
+        return {...r, isRecurring:true, done: doneOverride?.done||false, _dailyId: doneOverride?.id };
+      }),
+    ...blocks.filter(b => !b.recurringId) // non-recurring daily blocks
+  ].sort((a,b) => a.slot - b.slot);
+
+  // Check for conflicts across merged blocks
   const hasConflict = (slot, dur, excludeId = null) => {
-    return blocks.some(b => {
+    return mergedBlocks.some(b => {
       if (b.id === excludeId) return false;
       const bEnd = b.slot + b.dur;
       const nEnd = slot + dur;
@@ -8166,36 +8207,76 @@ function DailyPlanner({ session, db }) {
     });
   };
 
+  const [newRepeat, setNewRepeat] = useState(false);
+
   // Add block to slot
   const addBlock = (slot) => {
     if (!newTitle.trim()) return;
     if (hasConflict(slot, newDur)) return;
     if (slot + newDur > TOTAL_SLOTS) return;
-    const nb = { id: Date.now().toString(), title: newTitle.trim(), cat: newCat, dur: newDur, slot, notes: "", createdAt: new Date().toISOString() };
-    const updated = [...blocks, nb].sort((a, b) => a.slot - b.slot);
-    setBlocks(updated);
-    saveBlocks(updated);
+    const id = Date.now().toString();
+    const nb = { id, title: newTitle.trim(), cat: newCat, dur: newDur, slot, notes: "", createdAt: new Date().toISOString() };
+    if (newRepeat) {
+      // Save to recurring
+      const updatedR = [...recurringBlocks, nb].sort((a,b) => a.slot - b.slot);
+      setRecurringBlocks(updatedR);
+      saveRecurring(updatedR);
+    } else {
+      const updated = [...blocks, nb].sort((a, b) => a.slot - b.slot);
+      setBlocks(updated);
+      saveBlocks(updated);
+    }
+    setNewTitle("");
   };
 
   // Save edit
   const saveEdit = () => {
     if (!editBlock) return;
-    // Check conflict excluding self
     if (hasConflict(editBlock.slot, editBlock.dur, editBlock.id)) {
       alert("This change would overlap another block.");
       return;
     }
-    const updated = blocks.map(b => b.id === editBlock.id ? editBlock : b).sort((a,b) => a.slot - b.slot);
-    setBlocks(updated);
-    saveBlocks(updated);
+    if (editBlock.isRecurring) {
+      // For recurring blocks, only save done status to daily overrides
+      // Full edits go to recurring collection
+      if (editBlock._doneOnly) {
+        // Just saving done status — write a daily override
+        const override = { id: editBlock._dailyId||Date.now().toString(), recurringId: editBlock.id, done: editBlock.done, slot: editBlock.slot, dur: editBlock.dur, title: editBlock.title, cat: editBlock.cat, notes: editBlock.notes, createdAt: new Date().toISOString() };
+        const updated = editBlock._dailyId
+          ? blocks.map(b => b.id === editBlock._dailyId ? override : b)
+          : [...blocks, override];
+        setBlocks(updated);
+        saveBlocks(updated);
+      } else {
+        // Full edit — update recurring collection
+        const updatedR = recurringBlocks.map(b => b.id === editBlock.id ? {...editBlock, isRecurring:undefined, _dailyId:undefined, _doneOnly:undefined} : b);
+        setRecurringBlocks(updatedR);
+        saveRecurring(updatedR);
+      }
+    } else {
+      const updated = blocks.map(b => b.id === editBlock.id ? editBlock : b).sort((a,b) => a.slot - b.slot);
+      setBlocks(updated);
+      saveBlocks(updated);
+    }
     setEditBlock(null);
   };
 
   // Delete block
   const deleteBlock = (id) => {
-    const updated = blocks.filter(b => b.id !== id);
-    setBlocks(updated);
-    saveBlocks(updated);
+    if (editBlock?.isRecurring) {
+      // Remove from recurring
+      const updatedR = recurringBlocks.filter(b => b.id !== id);
+      setRecurringBlocks(updatedR);
+      saveRecurring(updatedR);
+      // Also remove any daily overrides
+      const updated = blocks.filter(b => b.recurringId !== id);
+      setBlocks(updated);
+      saveBlocks(updated);
+    } else {
+      const updated = blocks.filter(b => b.id !== id);
+      setBlocks(updated);
+      saveBlocks(updated);
+    }
     setEditBlock(null);
   };
 
@@ -8213,8 +8294,8 @@ function DailyPlanner({ session, db }) {
   };
 
   // Stats
-  const activeBlocks = blocks.filter(b => !b.done);
-  const doneBlocks = blocks.filter(b => b.done);
+  const activeBlocks = mergedBlocks.filter(b => !b.done);
+  const doneBlocks = mergedBlocks.filter(b => b.done);
   const totalMins = activeBlocks.reduce((s, b) => s + b.dur * 30, 0);
   const statsByCat = PLANNER_CATS.map(cat => {
     const mins = activeBlocks.filter(b => b.cat === cat.id).reduce((s, b) => s + b.dur * 30, 0);
@@ -8251,9 +8332,12 @@ function DailyPlanner({ session, db }) {
           <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Notes</label>
           <textarea value={editBlock.notes||""} onChange={e=>setEditBlock({...editBlock,notes:e.target.value})} rows={2} style={{ width:"100%", padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, resize:"vertical", boxSizing:"border-box" }}/>
         </div>
+        {editBlock.isRecurring&&<div style={{ background:C.gold+"11", border:`1px solid ${C.gold}33`, borderRadius:7, padding:"6px 10px", marginBottom:8, fontSize:11, color:"#b45309" }}>
+          🔁 This is a recurring block — it appears every day. Edits here will update all future days.
+        </div>}
         <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-          <button onClick={()=>setEditBlock({...editBlock,done:!editBlock.done})} style={{ width:"100%", padding:"9px", borderRadius:9, border:`1px solid ${editBlock.done?C.success:C.border}`, background:editBlock.done?C.success+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.done?C.success:C.textMid, fontWeight:600 }}>
-            {editBlock.done?"✅ Done — tap to unmark":"Mark as Done"}
+          <button onClick={()=>{setEditBlock({...editBlock, done:!editBlock.done, _doneOnly:true});}} style={{ width:"100%", padding:"9px", borderRadius:9, border:`1px solid ${editBlock.done?C.success:C.border}`, background:editBlock.done?C.success+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.done?C.success:C.textMid, fontWeight:600 }}>
+            {editBlock.done?"✅ Done — tap to unmark":"Mark as Done (today only)"}
           </button>
         </div>
         <div style={{ display:"flex", gap:8 }}>
@@ -8283,6 +8367,12 @@ function DailyPlanner({ session, db }) {
       <div style={{ display:"flex", gap:5, marginBottom:10 }}>
         {[[1,"30m"],[2,"1hr"],[3,"1.5hr"],[4,"2hr"],[6,"3hr"]].map(([v,l])=><button key={v} onClick={()=>setNewDur(v)} style={{ flex:1, padding:"5px", borderRadius:7, border:`2px solid ${newDur===v?C.teal:C.border}`, background:newDur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:newDur===v?C.teal:C.textMid, fontWeight:newDur===v?700:400 }}>{l}</button>)}
       </div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <button onClick={()=>setNewRepeat(r=>!r)} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:`1px solid ${newRepeat?C.gold:C.border}`, background:newRepeat?C.gold+"11":"white", cursor:"pointer", fontSize:12, color:newRepeat?"#b45309":C.textMid, fontWeight:newRepeat?700:400 }}>
+          🔁 {newRepeat?"Repeats Daily":"One-time only"}
+        </button>
+        <div style={{ fontSize:11, color:C.textLight }}>{newRepeat?"Shows every day automatically":"Only appears on the selected date"}</div>
+      </div>
       <div style={{ fontSize:11, color:C.textMid }}>
         {newTitle.trim() ? "👆 Tap a time slot below to place this block" : "Enter a title first, then tap a time slot"}
       </div>
@@ -8292,8 +8382,8 @@ function DailyPlanner({ session, db }) {
     <div style={{ position:"relative" }}>
       {Array.from({length: TOTAL_SLOTS}, (_, slot) => {
         const isHour = slot % 2 === 0;
-        const block = blocks.find(b => b.slot === slot);
-        const covered = blocks.find(b => b.slot < slot && b.slot + b.dur > slot);
+        const block = mergedBlocks.find(b => b.slot === slot);
+        const covered = mergedBlocks.find(b => b.slot < slot && b.slot + b.dur > slot);
         const conflict = newTitle.trim() && hasConflict(slot, newDur);
         const overflows = slot + newDur > TOTAL_SLOTS;
         const canPlace = newTitle.trim() && !conflict && !overflows;
@@ -8309,7 +8399,7 @@ function DailyPlanner({ session, db }) {
             <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
             <div style={{ flex:1, height:blockH, borderRadius:8, background:block.done?"rgba(0,0,0,0.04)":cat?.color+"22", border:`2px solid ${block.done?"rgba(0,0,0,0.1)":cat?.color}`, padding:"4px 8px", overflow:"hidden", position:"relative" }}>
               <div style={{ fontSize:12, fontWeight:700, color:block.done?C.textLight:cat?.color, textDecoration:block.done?"line-through":"none", opacity:block.done?0.6:1 }}>{block.title}</div>
-              <div style={{ fontSize:10, color:block.done?C.textLight:cat?.color+"aa", opacity:block.done?0.5:1 }}>{cat?.label} · {slotToTime(block.slot)} – {slotToTime(block.slot+block.dur)}{block.done?" · ✅ Done":""}</div>
+              <div style={{ fontSize:10, color:block.done?C.textLight:cat?.color+"aa", opacity:block.done?0.5:1 }}>{block.isRecurring?"🔁 ":""}{cat?.label} · {slotToTime(block.slot)} – {slotToTime(block.slot+block.dur)}{block.done?" · ✅ Done":""}</div>
               {block.notes&&!block.done&&<div style={{ fontSize:10, color:C.textMid, marginTop:2 }}>{block.notes}</div>}
               {isToday&&!block.done&&nowS>=block.slot&&nowS<block.slot+block.dur&&<div style={{ position:"absolute", left:0, right:0, top:`${((nowS-block.slot)/block.dur)*100}%`, height:2, background:"red", opacity:0.6 }}/>}
             </div>
