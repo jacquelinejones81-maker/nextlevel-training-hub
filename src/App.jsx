@@ -236,6 +236,8 @@ const SCRIPTS = [
   {title:"Setting Appointments - Warm Market",content:"Hey [Name], this is [Your Name]. I am calling because I recently partnered with a financial services company and I am in training. I need to complete some practice appointments and I thought of you. It is completely educational - no pressure, no sales. I just need to practice presenting. Would you be willing to help me out? It only takes about 45 minutes. When works better for you?"},
   {title:"Setting Appointments - New Contact",content:"Hi [Name], my name is [Your Name]. We met [where you met]. I am a financial professional and I am building my practice. I make it a point to sit down with people I meet and just share some information about what I do. There is no obligation whatsoever. I would love to get together for about 45 minutes. Are you available [Day 1] or [Day 2]?"},
   {title:"Opportunity Night Invite",content:"Hey [Name], I am attending a financial education event this [day] and I think you would really get value from it. It is about how money works and strategies people use to build wealth. It is free and only about an hour. I would love for you to come as my guest. Can you make it at [time]?"},
+  {title:"\"I Don't Have Time\" — Recruiting Opener",content:"[Name]! I know. That's exactly why we need to get together. I'm gonna sit down with you — ten to twenty minutes. I want to share with you exactly what I'm doing and what's taking me out of my job — or what's already taken me out of my job — so I can work less but still make the same amount of money working remote. [Name], you can't tell me you don't want to hear about that.\n\nI know you don't work 168 hours a week. When's the best time to get together — during the week or on the weekends? [Let them answer.] Morning or evening? [Let them answer.] Book the appointment.\n\nIMPORTANT: If they ask what it is before the meeting, say: \"That's exactly what I want to show you — that's why I want to sit down with you.\" Protect the curiosity. Never pitch before the meeting."},
+  {title:"\"How Much Have You Made?\" — Honest Answer + Redirect",content:"Be honest. Tell them exactly what you've made. Then say:\n\n\"But here's what I want you to think about — how does what I made have any bearing on what YOU'RE going to do? It doesn't. I could go on to make a million dollars and that doesn't guarantee you will. And you could outwork me and make ten times what I've made in the same amount of time. Your results are going to be based on YOU.\"\n\nRemember: Honesty builds trust. Dodging the question kills it. Own your number, then redirect to their potential."},
 ];
 
 const BONUS_GOALS = [
@@ -7555,6 +7557,38 @@ const OBJECTION_CARDS = [
       dontSay:"'This is totally different' — without explaining HOW it's different, this sounds like exactly what every MLM rep says.",
       coaching:"This objection requires specific differentiation. Ask what they sold before — if it was supplements, candles, or cosmetics, the contrast with financial services is easy to draw. Focus on the difference between selling discretionary products vs. essential financial protection.",
       variations:["I lost money with Herbalife","I tried selling leggings and it ruined friendships","Every MLM promises the same thing"]
+    }
+  },
+  {
+    id:"o15",
+    cat:"Recruiting",
+    emoji:"⏰",
+    front:{
+      title:"I don't have time / I work too much",
+      prospect:"I can't add anything else to my plate right now. I work constantly and barely have time for my family as it is."
+    },
+    back:{
+      best:"Use their own objection as the opener. The fact that they work too much is exactly WHY they need to hear this. Say: \"That's exactly why we need to get together. I just need ten to twenty minutes with you. I want to share what I'm doing — what's already taken me out of my job or is taking me out — so I can work less and still make the same amount of money working remote. You can't tell me you don't want to hear about that.\" Then: \"I know you don't work 168 hours a week. When's the best time — during the week or on the weekends?\" Let them answer. \"Morning or evening?\" Let them answer. Book the appointment.",
+      keyPhrase:"\"That's exactly why we need to get together.\"",
+      dontSay:"Don't explain what the business is before the meeting. If they ask, say 'That's exactly what I want to show you — that's why I want to sit down with you.' Protect the curiosity.",
+      coaching:"The rep who struggles with this objection is usually trying to pitch the opportunity instead of selling the meeting. The goal of this conversation is one thing only — get ten minutes on the calendar. Lead with the outcome (work less, make the same money, work remote) and let them sell themselves on wanting to know more. The two-question close at the end makes booking feel natural, not pushy.",
+      variations:["I'm too busy","I already have a full-time job","I don't have time for a side hustle","My schedule is crazy right now"]
+    }
+  },
+  {
+    id:"o16",
+    cat:"Recruiting",
+    emoji:"💰",
+    front:{
+      title:"How much have you made so far?",
+      prospect:"Before I consider this, I want to know — how much money have you actually made doing this?"
+    },
+    back:{
+      best:"Be honest. Tell them exactly what you've made — don't dodge it, don't exaggerate. Then immediately follow with: \"But here's what I want you to think about — how does what I made have any bearing on what YOU'RE going to do? It doesn't. I could go on to make a million dollars and that doesn't guarantee you will. And you could outwork me and make ten times what I've made. Your results are going to be based on YOU.\"",
+      keyPhrase:"\"How does what I made have any bearing on what you're going to do?\"",
+      dontSay:"Don't dodge the question. Don't make up a number. Don't say 'it depends' or 'I'm just getting started' without owning it. Honesty builds trust — trying to spin your answer kills it instantly.",
+      coaching:"This isn't really an objection — it's a transparency question. And the rep who struggles with it usually struggles because they're insecure about their own answer. The real coaching here is: look in the mirror and ask yourself why you don't have a better answer yet. The best handler for this question is a bigger paycheck. In the meantime, own your number, then redirect to their potential — because their results have nothing to do with yours.",
+      variations:["Are you making good money at this?","What's your income been like?","Is this actually worth it financially?","How long before you start making real money?"]
     }
   },
 ];
