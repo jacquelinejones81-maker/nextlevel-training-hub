@@ -1604,20 +1604,39 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
       {tab==="investments"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:C.textMid}}>{l}</div></div>)}</div>
         {investmentsOnly&&<div style={{background:C.purple+"08",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.purple,marginBottom:6}}>Monthly Investment Goal</div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <input type="number" placeholder="e.g. 500000" value={myProd.monthlyInvestmentGoal||""} onChange={e=>onUpdate({...myProd,monthlyInvestmentGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <span style={{fontSize:13,color:C.textMid}}>this month</span>
+          <div style={{fontSize:12,fontWeight:700,color:C.purple,marginBottom:8}}>Monthly Investment Goals</div>
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>PAC Goal ($/mo recurring)</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <input type="number" placeholder="e.g. 5000" value={myProd.monthlyPACGoal||""} onChange={e=>onUpdate({...myProd,monthlyPACGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+              <span style={{fontSize:13,color:C.textMid}}>/mo</span>
+            </div>
+            {myProd.monthlyPACGoal&&Number(myProd.monthlyPACGoal)>0&&<div style={{marginTop:6}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
+                <span>PAC Progress</span>
+                <span style={{fontWeight:700,color:C.gold}}>${Math.round(totPAC).toLocaleString()}/mo / ${Number(myProd.monthlyPACGoal).toLocaleString()}/mo</span>
+              </div>
+              <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:3,background:C.gold,width:Math.min(100,Math.round((totPAC/Number(myProd.monthlyPACGoal))*100))+"%"}}/>
+              </div>
+            </div>}
           </div>
-          {myProd.monthlyInvestmentGoal&&Number(myProd.monthlyInvestmentGoal)>0&&<div style={{marginTop:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
-              <span>Progress (PAC × 12 + Lump Sum)</span>
-              <span style={{fontWeight:700,color:C.purple}}>${Math.round(totPAC*12+totLump).toLocaleString()} / ${Number(myProd.monthlyInvestmentGoal).toLocaleString()}</span>
+          <div>
+            <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Lump Sum Goal ($ this month)</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <input type="number" placeholder="e.g. 250000" value={myProd.monthlyLumpGoal||""} onChange={e=>onUpdate({...myProd,monthlyLumpGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+              <span style={{fontSize:13,color:C.textMid}}>this month</span>
             </div>
-            <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-              <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round(((totPAC*12+totLump)/Number(myProd.monthlyInvestmentGoal))*100))+"%"}}/>
-            </div>
-          </div>}
+            {myProd.monthlyLumpGoal&&Number(myProd.monthlyLumpGoal)>0&&<div style={{marginTop:6}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
+                <span>Lump Sum Progress</span>
+                <span style={{fontWeight:700,color:C.purple}}>${Math.round(totLump).toLocaleString()} / ${Number(myProd.monthlyLumpGoal).toLocaleString()}</span>
+              </div>
+              <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((totLump/Number(myProd.monthlyLumpGoal))*100))+"%"}}/>
+              </div>
+            </div>}
+          </div>
         </div>}
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
           <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
@@ -3439,7 +3458,6 @@ function MyActivityReport({session,data}) {
   })());
   const pacMonth = investments.reduce((s,i)=>s+(Number(i.pac)||0),0); // running total (not date filtered — PAC is ongoing)
   const lumpMonth = investmentsThisMonth.reduce((s,i)=>s+parseLump(i.lumpSum),0);
-  const investmentTotalMonth = (pacMonth*12) + lumpMonth;
 
   // ── Scorecard — this week + this month ──
   const scorecardAll = (data.scorecards||{})[userId] || {};
@@ -3459,7 +3477,8 @@ function MyActivityReport({session,data}) {
 
   // ── Goals ──
   const incomeGoal = Number(staffRecord.monthlyIncomeGoal)||0;
-  const investmentGoal = Number(myProd.monthlyInvestmentGoal)||0;
+  const pacGoal = Number(myProd.monthlyPACGoal)||0;
+  const lumpGoal = Number(myProd.monthlyLumpGoal)||0;
   const PROMO_LEVELS = [{key:"rep",pct:25},{key:"sr_rep",pct:35},{key:"dl",pct:50},{key:"divl",pct:60},{key:"rl",pct:70},{key:"srl",pct:80},{key:"rvp",pct:110}];
   const promo = PROMO_LEVELS.find(p=>p.key===(staffRecord.promotionLevel||"rep")) || PROMO_LEVELS[0];
   const annualEarned = ((totalPremiumMonth*12) - 65) * (promo.pct/100);
@@ -3492,21 +3511,41 @@ function MyActivityReport({session,data}) {
     }
   }
 
-  // Investment goal coaching
-  if (investmentGoal > 0) {
-    const invPct = Math.round((investmentTotalMonth/investmentGoal)*100);
-    if (invPct < monthPct - 10) {
-      const gap = investmentGoal - investmentTotalMonth;
-      const avgPerClient = investmentsThisMonth.length>0 ? investmentTotalMonth/investmentsThisMonth.length : 0;
-      const clientsNeeded = avgPerClient>0 ? Math.ceil(gap/avgPerClient) : null;
+  // PAC goal coaching
+  if (pacGoal > 0) {
+    const pacPct = Math.round((pacMonth/pacGoal)*100);
+    if (pacPct < monthPct - 10) {
+      const gap = pacGoal - pacMonth;
+      const avgPACPerClient = investmentsThisMonth.length>0 ? investmentsThisMonth.reduce((s,i)=>s+(Number(i.pac)||0),0)/investmentsThisMonth.length : 0;
+      const clientsNeeded = avgPACPerClient>0 ? Math.ceil(gap/avgPACPerClient) : null;
       coaching.push({
-        type:"investment",
-        severity: invPct < monthPct - 25 ? "high" : "medium",
-        title:"Investment Goal Behind Pace",
-        detail:`You set a goal of $${investmentGoal.toLocaleString()} in investments this month — you're at $${Math.round(investmentTotalMonth).toLocaleString()} (${invPct}%) with ${monthPct}% of the month gone. You're $${Math.round(gap).toLocaleString()} behind pace.`,
+        type:"pac",
+        severity: pacPct < monthPct - 25 ? "high" : "medium",
+        title:"PAC Goal Behind Pace",
+        detail:`Your PAC (monthly recurring) goal is $${pacGoal.toLocaleString()}/mo — you're at $${Math.round(pacMonth).toLocaleString()}/mo (${pacPct}%). You're $${Math.round(gap).toLocaleString()}/mo behind your goal.`,
         action: clientsNeeded
-          ? `At your average of $${Math.round(avgPerClient).toLocaleString()} per investment client this month, you'd need about ${clientsNeeded} more ${clientsNeeded===1?"client":"clients"} to hit your goal.`
-          : `Focus on booking investment review appointments — no investment clients logged yet this month.`
+          ? `At your average of $${Math.round(avgPACPerClient).toLocaleString()}/mo PAC per new client this month, you'd need about ${clientsNeeded} more ${clientsNeeded===1?"client":"clients"} on PAC to hit your goal.`
+          : `Focus on setting up new PAC accounts with clients — no new PAC clients logged yet this month.`
+      });
+    }
+  }
+
+  // Lump Sum goal coaching
+  if (lumpGoal > 0) {
+    const lumpPct = Math.round((lumpMonth/lumpGoal)*100);
+    if (lumpPct < monthPct - 10) {
+      const gap = lumpGoal - lumpMonth;
+      const lumpClients = investmentsThisMonth.filter(i=>parseLump(i.lumpSum)>0);
+      const avgLumpPerClient = lumpClients.length>0 ? lumpMonth/lumpClients.length : 0;
+      const clientsNeeded = avgLumpPerClient>0 ? Math.ceil(gap/avgLumpPerClient) : null;
+      coaching.push({
+        type:"lump",
+        severity: lumpPct < monthPct - 25 ? "high" : "medium",
+        title:"Lump Sum Goal Behind Pace",
+        detail:`Your Lump Sum goal is $${lumpGoal.toLocaleString()} this month — you're at $${Math.round(lumpMonth).toLocaleString()} (${lumpPct}%) with ${monthPct}% of the month gone. You're $${Math.round(gap).toLocaleString()} behind pace.`,
+        action: clientsNeeded
+          ? `At your average of $${Math.round(avgLumpPerClient).toLocaleString()} per lump sum client this month, you'd need about ${clientsNeeded} more ${clientsNeeded===1?"client":"clients"} to hit your goal.`
+          : `Focus on rollover and lump sum conversations — no lump sum deposits logged yet this month.`
       });
     }
   }
@@ -3557,7 +3596,7 @@ function MyActivityReport({session,data}) {
     });
   }
 
-  const hasGoalsSet = incomeGoal>0 || investmentGoal>0;
+  const hasGoalsSet = incomeGoal>0 || pacGoal>0 || lumpGoal>0;
   const hasCoaching = coaching.length>0;
 
   return <div style={{ maxWidth:700, margin:"0 auto" }}>
@@ -3615,7 +3654,7 @@ function MyActivityReport({session,data}) {
     {/* Investments */}
     <Card style={{ marginBottom:12 }}>
       <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>📈 Investments</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
         <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
           <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{investmentsThisMonth.length}</div>
           <div style={{ fontSize:11, color:C.textMid }}>New Clients This Month</div>
@@ -3629,10 +3668,14 @@ function MyActivityReport({session,data}) {
           <div style={{ fontSize:11, color:C.textMid }}>Lump Sum This Month</div>
         </div>
         <div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{investmentGoal>0?Math.round((investmentTotalMonth/investmentGoal)*100)+"%":"—"}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Investment Goal Progress{investmentGoal>0?` ($${investmentGoal.toLocaleString()})`:""}</div>
+          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{pacGoal>0?Math.round((pacMonth/pacGoal)*100)+"%":"—"}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>PAC Goal Progress{pacGoal>0?` ($${pacGoal.toLocaleString()}/mo)`:""}</div>
         </div>
       </div>
+      {lumpGoal>0&&<div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
+        <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{Math.round((lumpMonth/lumpGoal)*100)}%</div>
+        <div style={{ fontSize:11, color:C.textMid }}>Lump Sum Goal Progress (${lumpGoal.toLocaleString()})</div>
+      </div>}
     </Card>
 
     {/* Scorecard */}
