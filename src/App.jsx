@@ -8206,9 +8206,11 @@ function DailyPlanner({ session, db }) {
   // Daily blocks can override recurring (by matching slot)
   // done status from daily overrides recurring for that day
   const dailyOverrideIds = new Set(blocks.map(b => b.recurringId).filter(Boolean));
+  const selWeekday = new Date(selDate+"T12:00:00").getDay(); // 0=Sun..6=Sat
   const mergedBlocks = [
     ...recurringBlocks
       .filter(r => !dailyOverrideIds.has(r.id))
+      .filter(r => !r.days || r.days.length===0 || r.days.includes(selWeekday)) // days=[] or undefined means every day
       .map(r => {
         // Check if this recurring block has a done override for today
         const doneOverride = blocks.find(b => b.recurringId === r.id);
@@ -8228,6 +8230,8 @@ function DailyPlanner({ session, db }) {
   };
 
   const [newRepeat, setNewRepeat] = useState(false);
+  const [newDays, setNewDays] = useState([]); // empty = every day
+  const WEEKDAY_LABELS = ["S","M","T","W","T","F","S"];
 
   // Add block to slot
   const addBlock = (slot) => {
@@ -8237,8 +8241,8 @@ function DailyPlanner({ session, db }) {
     const id = Date.now().toString();
     const nb = { id, title: newTitle.trim(), cat: newCat, dur: newDur, slot, notes: "", createdAt: new Date().toISOString() };
     if (newRepeat) {
-      // Save to recurring
-      const updatedR = [...recurringBlocks, nb].sort((a,b) => a.slot - b.slot);
+      // Save to recurring — include selected days (empty array = every day)
+      const updatedR = [...recurringBlocks, {...nb, days: newDays}].sort((a,b) => a.slot - b.slot);
       setRecurringBlocks(updatedR);
       saveRecurring(updatedR);
     } else {
@@ -8247,6 +8251,7 @@ function DailyPlanner({ session, db }) {
       saveBlocks(updated);
     }
     setNewTitle("");
+    setNewDays([]);
   };
 
   // Save edit
@@ -8352,8 +8357,13 @@ function DailyPlanner({ session, db }) {
           <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Notes</label>
           <textarea value={editBlock.notes||""} onChange={e=>setEditBlock({...editBlock,notes:e.target.value})} rows={2} style={{ width:"100%", padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, resize:"vertical", boxSizing:"border-box" }}/>
         </div>
-        {editBlock.isRecurring&&<div style={{ background:C.gold+"11", border:`1px solid ${C.gold}33`, borderRadius:7, padding:"6px 10px", marginBottom:8, fontSize:11, color:"#b45309" }}>
-          🔁 This is a recurring block — it appears every day. Edits here will update all future days.
+        {editBlock.isRecurring&&<div style={{ background:C.gold+"11", border:`1px solid ${C.gold}33`, borderRadius:7, padding:"8px 10px", marginBottom:8, fontSize:11, color:"#b45309" }}>
+          <div style={{marginBottom:6}}>🔁 This is a recurring block. Full edits below update all future days.</div>
+          <div style={{ fontSize:10, marginBottom:4, fontWeight:600 }}>Repeats on:</div>
+          <div style={{ display:"flex", gap:4 }}>
+            {WEEKDAY_LABELS.map((lbl,i)=><button key={i} onClick={()=>setEditBlock(eb=>({...eb,days:(eb.days||[]).includes(i)?(eb.days||[]).filter(x=>x!==i):[...(eb.days||[]),i],_doneOnly:false}))} style={{ width:26, height:26, borderRadius:13, border:`2px solid ${(editBlock.days||[]).includes(i)?C.gold:C.border}`, background:(editBlock.days||[]).includes(i)?C.gold:"white", color:(editBlock.days||[]).includes(i)?"white":C.textMid, fontSize:11, fontWeight:700, cursor:"pointer" }}>{lbl}</button>)}
+          </div>
+          <div style={{fontSize:9,color:"#b45309",marginTop:3}}>{(editBlock.days||[]).length===0?"Currently: every day":"Currently: selected days only"}</div>
         </div>}
         <div style={{ display:"flex", gap:8, marginBottom:8 }}>
           <button onClick={()=>{setEditBlock({...editBlock, done:!editBlock.done, _doneOnly:true});}} style={{ width:"100%", padding:"9px", borderRadius:9, border:`1px solid ${editBlock.done?C.success:C.border}`, background:editBlock.done?C.success+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.done?C.success:C.textMid, fontWeight:600 }}>
@@ -8387,12 +8397,18 @@ function DailyPlanner({ session, db }) {
       <div style={{ display:"flex", gap:5, marginBottom:10 }}>
         {[[1,"30m"],[2,"1hr"],[3,"1.5hr"],[4,"2hr"],[6,"3hr"]].map(([v,l])=><button key={v} onClick={()=>setNewDur(v)} style={{ flex:1, padding:"5px", borderRadius:7, border:`2px solid ${newDur===v?C.teal:C.border}`, background:newDur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:newDur===v?C.teal:C.textMid, fontWeight:newDur===v?700:400 }}>{l}</button>)}
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-        <button onClick={()=>setNewRepeat(r=>!r)} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:`1px solid ${newRepeat?C.gold:C.border}`, background:newRepeat?C.gold+"11":"white", cursor:"pointer", fontSize:12, color:newRepeat?"#b45309":C.textMid, fontWeight:newRepeat?700:400 }}>
-          🔁 {newRepeat?"Repeats Daily":"One-time only"}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
+        <button onClick={()=>{setNewRepeat(r=>!r);if(newRepeat)setNewDays([]);}} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:`1px solid ${newRepeat?C.gold:C.border}`, background:newRepeat?C.gold+"11":"white", cursor:"pointer", fontSize:12, color:newRepeat?"#b45309":C.textMid, fontWeight:newRepeat?700:400 }}>
+          🔁 {newRepeat?(newDays.length>0?"Repeats Weekly":"Repeats Daily"):"One-time only"}
         </button>
-        <div style={{ fontSize:11, color:C.textLight }}>{newRepeat?"Shows every day automatically":"Only appears on the selected date"}</div>
+        <div style={{ fontSize:11, color:C.textLight }}>{newRepeat?(newDays.length>0?`Only on selected days`:"Shows every day automatically"):"Only appears on the selected date"}</div>
       </div>
+      {newRepeat&&<div style={{ marginBottom:8 }}>
+        <div style={{ fontSize:11, color:C.textMid, marginBottom:5 }}>Repeat on specific days (leave blank for every day):</div>
+        <div style={{ display:"flex", gap:4 }}>
+          {WEEKDAY_LABELS.map((lbl,i)=><button key={i} onClick={()=>setNewDays(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i])} style={{ width:32, height:32, borderRadius:16, border:`2px solid ${newDays.includes(i)?C.gold:C.border}`, background:newDays.includes(i)?C.gold:"white", color:newDays.includes(i)?"white":C.textMid, fontSize:12, fontWeight:700, cursor:"pointer" }}>{lbl}</button>)}
+        </div>
+      </div>}
       <div style={{ fontSize:11, color:C.textMid }}>
         {newTitle.trim() ? "👆 Tap a time slot below to place this block" : "Enter a title first, then tap a time slot"}
       </div>
