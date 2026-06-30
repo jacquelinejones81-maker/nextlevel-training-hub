@@ -1603,6 +1603,22 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
       </div>}
       {tab==="investments"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 8px",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:C.textMid}}>{l}</div></div>)}</div>
+        {investmentsOnly&&<div style={{background:C.purple+"08",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.purple,marginBottom:6}}>Monthly Investment Goal</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <input type="number" placeholder="e.g. 500000" value={myProd.monthlyInvestmentGoal||""} onChange={e=>onUpdate({...myProd,monthlyInvestmentGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <span style={{fontSize:13,color:C.textMid}}>this month</span>
+          </div>
+          {myProd.monthlyInvestmentGoal&&Number(myProd.monthlyInvestmentGoal)>0&&<div style={{marginTop:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
+              <span>Progress (PAC × 12 + Lump Sum)</span>
+              <span style={{fontWeight:700,color:C.purple}}>${Math.round(totPAC*12+totLump).toLocaleString()} / ${Number(myProd.monthlyInvestmentGoal).toLocaleString()}</span>
+            </div>
+            <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
+              <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round(((totPAC*12+totLump)/Number(myProd.monthlyInvestmentGoal))*100))+"%"}}/>
+            </div>
+          </div>}
+        </div>}
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
           <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
@@ -3390,6 +3406,269 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
 
 
 // ── MY PROFILE PAGE ──
+// ── MY ACTIVITY REPORT (for admins/trainers to view their own production + coaching) ──
+function MyActivityReport({session,data}) {
+  const userId = session?.id;
+  const isTrainerRole = (data.trainers||[]).some(t=>t.id===userId);
+  const staffRecord = (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || {};
+  const myProd = (data.myProduction||{})[userId] || {};
+  const lifeApps = myProd.lifeApps || [];
+  const investments = myProd.investments || [];
+  const parseLump = v => Number(String(v||"").replace(/[$,]/g,""))||0;
+
+  // ── This month boundaries ──
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStartStr = monthStart.toISOString().split("T")[0];
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const dayOfMonth = now.getDate();
+  const monthPct = Math.round((dayOfMonth/daysInMonth)*100);
+
+  // ── Recruits this month ──
+  const myRecruits = (data.reps||[]).filter(r => r.trainerId===userId);
+  const recruitsThisMonth = myRecruits.filter(r => r.createdAt && new Date(r.createdAt) >= monthStart);
+
+  // ── Life apps / premium this month ──
+  const lifeAppsThisMonth = lifeApps.filter(a => a.date && a.date >= monthStartStr);
+  const totalPremiumMonth = lifeAppsThisMonth.reduce((s,a)=>s+(Number(a.premium)||0),0);
+  const annualPremiumMonth = totalPremiumMonth * 12;
+
+  // ── Investments this month ──
+  const investmentsThisMonth = investments.filter(i => i.date && (()=>{
+    try{ return new Date(i.date) >= monthStart; }catch(e){ return false; }
+  })());
+  const pacMonth = investments.reduce((s,i)=>s+(Number(i.pac)||0),0); // running total (not date filtered — PAC is ongoing)
+  const lumpMonth = investmentsThisMonth.reduce((s,i)=>s+parseLump(i.lumpSum),0);
+  const investmentTotalMonth = (pacMonth*12) + lumpMonth;
+
+  // ── Scorecard — this week + this month ──
+  const scorecardAll = (data.scorecards||{})[userId] || {};
+  const currentWeekKey = getWeekStart();
+  const scorecardWeek = scorecardAll[currentWeekKey] || {contacts:0,apptSet:0,apptDone:0};
+  const scorecardMonth = Object.entries(scorecardAll).reduce((s,[wk,d])=>{
+    try {
+      const wkDate = new Date(wk+"T12:00:00");
+      if(wkDate.getMonth()===now.getMonth() && wkDate.getFullYear()===now.getFullYear()){
+        s.contacts += (d.contacts||0);
+        s.apptSet += (d.apptSet||0);
+        s.apptDone += (d.apptDone||0);
+      }
+    } catch(e){}
+    return s;
+  },{contacts:0,apptSet:0,apptDone:0});
+
+  // ── Goals ──
+  const incomeGoal = Number(staffRecord.monthlyIncomeGoal)||0;
+  const investmentGoal = Number(myProd.monthlyInvestmentGoal)||0;
+  const PROMO_LEVELS = [{key:"rep",pct:25},{key:"sr_rep",pct:35},{key:"dl",pct:50},{key:"divl",pct:60},{key:"rl",pct:70},{key:"srl",pct:80},{key:"rvp",pct:110}];
+  const promo = PROMO_LEVELS.find(p=>p.key===(staffRecord.promotionLevel||"rep")) || PROMO_LEVELS[0];
+  const annualEarned = ((totalPremiumMonth*12) - 65) * (promo.pct/100);
+  const upfrontEarned = annualEarned > 0 ? annualEarned * (9/12) : 0;
+
+  // ── Conversion ratios (from this month's scorecard) ──
+  const contactToApptRate = scorecardMonth.contacts>0 ? (scorecardMonth.apptSet/scorecardMonth.contacts) : 0;
+  const apptToShowRate = scorecardMonth.apptSet>0 ? (scorecardMonth.apptDone/scorecardMonth.apptSet) : 0;
+
+  // ── Coaching engine — rule based ──
+  const coaching = [];
+
+  // Income goal coaching
+  if (incomeGoal > 0) {
+    const incomePct = Math.round((upfrontEarned/incomeGoal)*100);
+    const expectedPct = monthPct;
+    if (incomePct < expectedPct - 10) {
+      const gap = incomeGoal - upfrontEarned;
+      const avgPerApp = lifeAppsThisMonth.length>0 ? totalPremiumMonth/lifeAppsThisMonth.length : 0;
+      const appsNeeded = avgPerApp>0 ? Math.ceil((gap/(promo.pct/100)/12*(12/9))/avgPerApp) : null;
+      coaching.push({
+        type:"income",
+        severity: incomePct < expectedPct - 25 ? "high" : "medium",
+        title: "Income Goal Behind Pace",
+        detail: `You've earned $${Math.round(upfrontEarned).toLocaleString()} of your $${incomeGoal.toLocaleString()} goal (${incomePct}%) with ${monthPct}% of the month gone.`,
+        action: appsNeeded
+          ? `Based on your average premium per app this month, you'd need approximately ${appsNeeded} more life ${appsNeeded===1?"app":"apps"} to close the gap.`
+          : `Log a few more life apps this month to start building toward your goal.`
+      });
+    }
+  }
+
+  // Investment goal coaching
+  if (investmentGoal > 0) {
+    const invPct = Math.round((investmentTotalMonth/investmentGoal)*100);
+    if (invPct < monthPct - 10) {
+      const gap = investmentGoal - investmentTotalMonth;
+      const avgPerClient = investmentsThisMonth.length>0 ? investmentTotalMonth/investmentsThisMonth.length : 0;
+      const clientsNeeded = avgPerClient>0 ? Math.ceil(gap/avgPerClient) : null;
+      coaching.push({
+        type:"investment",
+        severity: invPct < monthPct - 25 ? "high" : "medium",
+        title:"Investment Goal Behind Pace",
+        detail:`You set a goal of $${investmentGoal.toLocaleString()} in investments this month — you're at $${Math.round(investmentTotalMonth).toLocaleString()} (${invPct}%) with ${monthPct}% of the month gone. You're $${Math.round(gap).toLocaleString()} behind pace.`,
+        action: clientsNeeded
+          ? `At your average of $${Math.round(avgPerClient).toLocaleString()} per investment client this month, you'd need about ${clientsNeeded} more ${clientsNeeded===1?"client":"clients"} to hit your goal.`
+          : `Focus on booking investment review appointments — no investment clients logged yet this month.`
+      });
+    }
+  }
+
+  // Scorecard coaching — contacts
+  const weeksElapsedThisMonth = Math.ceil(dayOfMonth/7);
+  const expectedContacts = 100 * weeksElapsedThisMonth;
+  if (scorecardMonth.contacts < expectedContacts * 0.7 && weeksElapsedThisMonth > 0) {
+    coaching.push({
+      type:"contacts",
+      severity:"medium",
+      title:"Contacts Below Weekly Pace",
+      detail:`Your scorecard goal is 100 contacts/week. This month you've logged ${scorecardMonth.contacts} contacts across ${weeksElapsedThisMonth} week${weeksElapsedThisMonth!==1?"s":""} (expected ~${expectedContacts}).`,
+      action:`Increasing contacts directly drives your pipeline — every other number on this report starts here. Block dedicated prospecting time on your Daily Planner.`
+    });
+  }
+
+  // Scorecard coaching — appt set rate
+  if (scorecardMonth.contacts >= 20 && contactToApptRate < 0.15) {
+    coaching.push({
+      type:"conversion",
+      severity:"medium",
+      title:"Contact-to-Appointment Rate Low",
+      detail:`Out of ${scorecardMonth.contacts} contacts this month, only ${scorecardMonth.apptSet} became appointments (${Math.round(contactToApptRate*100)}%). A healthy rate is typically 1 appointment per 5 contacts (20%).`,
+      action:`Review your prospecting approach — consider practicing your opener in Prospecting Training or your closes in Objection Training to improve this conversion.`
+    });
+  }
+
+  // Scorecard coaching — show rate
+  if (scorecardMonth.apptSet >= 5 && apptToShowRate < 0.6) {
+    coaching.push({
+      type:"showrate",
+      severity:"medium",
+      title:"Appointment Show Rate Needs Attention",
+      detail:`Of ${scorecardMonth.apptSet} appointments set this month, only ${scorecardMonth.apptDone} were completed (${Math.round(apptToShowRate*100)}% show rate).`,
+      action:`Consider confirming appointments 24 hours in advance and anchoring the appointment time clearly when booking — this typically improves show rate.`
+    });
+  }
+
+  // Recruiting coaching
+  if (recruitsThisMonth.length === 0 && dayOfMonth > 10) {
+    coaching.push({
+      type:"recruiting",
+      severity:"low",
+      title:"No Recruits Logged This Month Yet",
+      detail:`It's day ${dayOfMonth} of the month and no new recruits have been added under your name.`,
+      action:`If recruiting is part of your goals this month, revisit your warm market list or use the Prospecting Training scripts to restart conversations.`
+    });
+  }
+
+  const hasGoalsSet = incomeGoal>0 || investmentGoal>0;
+  const hasCoaching = coaching.length>0;
+
+  return <div style={{ maxWidth:700, margin:"0 auto" }}>
+    <div style={{ fontSize:dv(19,24), fontWeight:800, color:C.text, marginBottom:4 }}>📊 My Activity Report</div>
+    <div style={{ fontSize:13, color:C.textMid, marginBottom:16 }}>
+      {now.toLocaleDateString("en-US",{month:"long",year:"numeric"})} — Day {dayOfMonth} of {daysInMonth} ({monthPct}% of month elapsed)
+    </div>
+
+    {/* Coaching Section — shown first if there's anything to flag */}
+    {hasCoaching && <Card style={{ marginBottom:16, border:`2px solid ${C.gold}55` }}>
+      <div style={{ fontSize:14, fontWeight:800, color:"#b45309", marginBottom:10 }}>🎯 Where You May Be Lagging</div>
+      {coaching.map((c,i) => <div key={i} style={{ marginBottom: i<coaching.length-1?12:0, paddingBottom: i<coaching.length-1?12:0, borderBottom: i<coaching.length-1?`1px solid ${C.border}`:"none" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+          <span style={{ fontSize:14 }}>{c.severity==="high"?"🔴":c.severity==="medium"?"🟡":"🔵"}</span>
+          <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{c.title}</div>
+        </div>
+        <div style={{ fontSize:12, color:C.textMid, lineHeight:1.6, marginBottom:5 }}>{c.detail}</div>
+        <div style={{ fontSize:12, color:C.teal, lineHeight:1.6, background:C.teal+"0c", borderRadius:7, padding:"7px 10px" }}>💡 {c.action}</div>
+      </div>)}
+    </Card>}
+
+    {!hasCoaching && hasGoalsSet && <Card style={{ marginBottom:16, border:`2px solid ${C.success}55`, background:C.success+"08" }}>
+      <div style={{ fontSize:14, fontWeight:800, color:C.success }}>✅ On Pace</div>
+      <div style={{ fontSize:12, color:C.textMid, marginTop:4 }}>You're tracking well against your goals this month. Keep up the consistency.</div>
+    </Card>}
+
+    {!hasGoalsSet && <Card style={{ marginBottom:16, border:`1px solid ${C.gold}33`, background:C.gold+"06" }}>
+      <div style={{ fontSize:13, fontWeight:700, color:"#b45309" }}>⏳ No Goals Set Yet</div>
+      <div style={{ fontSize:12, color:C.textMid, marginTop:4 }}>Set a Monthly Income Goal and Monthly Investment Goal in your Production tab to unlock personalized coaching here.</div>
+    </Card>}
+
+    {/* Income */}
+    <Card style={{ marginBottom:12 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>💰 Income & Life Apps</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{lifeAppsThisMonth.length}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Life Apps This Month</div>
+        </div>
+        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(totalPremiumMonth).toLocaleString()}/mo</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Premium Written</div>
+        </div>
+        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>${Math.round(upfrontEarned).toLocaleString()}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Earned This Month (Upfront)</div>
+        </div>
+        <div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{incomeGoal>0?Math.round((upfrontEarned/incomeGoal)*100)+"%":"—"}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Income Goal Progress{incomeGoal>0?` ($${incomeGoal.toLocaleString()})`:""}</div>
+        </div>
+      </div>
+    </Card>
+
+    {/* Investments */}
+    <Card style={{ marginBottom:12 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>📈 Investments</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{investmentsThisMonth.length}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>New Clients This Month</div>
+        </div>
+        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(pacMonth).toLocaleString()}/mo</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Total PAC (Running)</div>
+        </div>
+        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>${Math.round(lumpMonth).toLocaleString()}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Lump Sum This Month</div>
+        </div>
+        <div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{investmentGoal>0?Math.round((investmentTotalMonth/investmentGoal)*100)+"%":"—"}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Investment Goal Progress{investmentGoal>0?` ($${investmentGoal.toLocaleString()})`:""}</div>
+        </div>
+      </div>
+    </Card>
+
+    {/* Scorecard */}
+    <Card style={{ marginBottom:12 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>📋 Scorecard</div>
+      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>This Week</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:12 }}>
+        <div style={{ background:C.surface, borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.text }}>{scorecardWeek.contacts}<span style={{fontSize:11,color:C.textLight}}>/100</span></div><div style={{ fontSize:10, color:C.textMid }}>Contacts</div></div>
+        <div style={{ background:C.surface, borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.text }}>{scorecardWeek.apptSet}<span style={{fontSize:11,color:C.textLight}}>/20</span></div><div style={{ fontSize:10, color:C.textMid }}>Appts Set</div></div>
+        <div style={{ background:C.surface, borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.text }}>{scorecardWeek.apptDone}<span style={{fontSize:11,color:C.textLight}}>/20</span></div><div style={{ fontSize:10, color:C.textMid }}>Appts Done</div></div>
+      </div>
+      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>This Month (Total)</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
+        <div style={{ background:C.purple+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.purple }}>{scorecardMonth.contacts}</div><div style={{ fontSize:10, color:C.textMid }}>Contacts</div></div>
+        <div style={{ background:C.purple+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.purple }}>{scorecardMonth.apptSet}</div><div style={{ fontSize:10, color:C.textMid }}>Appts Set</div></div>
+        <div style={{ background:C.purple+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.purple }}>{scorecardMonth.apptDone}</div><div style={{ fontSize:10, color:C.textMid }}>Appts Done</div></div>
+      </div>
+    </Card>
+
+    {/* Recruiting */}
+    <Card style={{ marginBottom:12 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>🤝 Recruiting</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{recruitsThisMonth.length}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Recruits This Month</div>
+        </div>
+        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>{myRecruits.length}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Total Active Recruits</div>
+        </div>
+      </div>
+    </Card>
+  </div>;
+}
+
 function MyProfilePage({session,data,onUpdate}) {
   const profilePhotos = data.profilePhotos||{};
   const photo = (()=>{
@@ -7184,6 +7463,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11Z"},
     ...(role==="trainer"||role==="superadmin"||alsoRecruits?[{k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"}]:[]),
   ];
+  if(role==="admin"||role==="superadmin") nav.push({k:"myactivity",l:"My Activity Report",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"});
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
     <div style={{padding:"18px 14px 14px",borderBottom:`1px solid ${C.borderLight}`,display:"flex",alignItems:"center",gap:9}}>
@@ -8932,6 +9212,7 @@ export default function App() {
     if(section==="advancement") return <AdvancementLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin")) return <MyActivityReport session={session} data={data}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
