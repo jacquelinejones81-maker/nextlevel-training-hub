@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { getFirestore, doc, getDoc, onSnapshot, setDoc, deleteDoc, collection, getDocs, query, orderBy, runTransaction } from "firebase/firestore";
 
 
 // ── FIREBASE ──
@@ -30,19 +30,21 @@ const mmApp = initializeApp(mmConfig, "moneymap");
 const mmDb = getFirestore(mmApp);
 
 const saveToFirebase = async (data) => {
-  const size = new Blob([JSON.stringify(data)]).size;
+  // reps now live in their own Firestore collection — never let them get re-embedded here
+  const { reps: _omitReps, ...dataNoReps } = data;
+  const size = new Blob([JSON.stringify(dataNoReps)]).size;
   if(size > 900000) {
     console.warn("Firebase document size warning:", Math.round(size/1024)+"KB — approaching 1MB limit");
   }
   try {
-    await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) });
+    await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(dataNoReps) });
     return true;
   } catch(e) {
     console.error("Firebase save error", e);
     // If document too large, try saving without photos
     if(e.message&&(e.message.includes("maximum")||e.message.includes("size")||size>900000)){
       try {
-        const stripped={...data};
+        const stripped={...dataNoReps};
         // Remove large photo data to make room
         if(stripped.profilePhotos) stripped.profilePhotos={};
         if(stripped.wofPhotos) stripped.wofPhotos={};
@@ -52,6 +54,43 @@ const saveToFirebase = async (data) => {
       } catch(e2){ console.error("Emergency save also failed",e2); }
     }
     return false;
+  }
+};
+
+// ── SAFE VERSIONED SAVE ──
+// Prevents the "silent overwrite" bug: if two people (or two tabs/devices) save around
+// the same time, whoever saves LAST used to win and wipe out the other person's changes
+// (e.g. a newly-added rep vanishing). This wraps the save in a Firestore transaction that
+// checks a version number (__v) hasn't moved since this browser last loaded the data.
+// If it HAS moved, the save is rejected instead of silently clobbering the newer data.
+const saveToFirebaseVersioned = async (newData, expectedVersion) => {
+  // reps now live in their own Firestore collection — never let them get re-embedded here
+  const { reps: _omitReps, ...newDataNoReps } = newData;
+  const ref = doc(db, "appdata", "main");
+  try {
+    const outcome = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      const current = snap.exists() ? JSON.parse(snap.data().payload || "{}") : {};
+      const currentVersion = current.__v || 0;
+      if (currentVersion !== expectedVersion) {
+        return { conflict: true, currentVersion };
+      }
+      const nextVersion = currentVersion + 1;
+      const payload = { ...newDataNoReps, __v: nextVersion };
+      const size = new Blob([JSON.stringify(payload)]).size;
+      if (size > 900000) {
+        console.warn("Firebase document size warning:", Math.round(size/1024)+"KB — approaching 1MB limit");
+      }
+      tx.set(ref, { payload: JSON.stringify(payload) });
+      return { conflict: false, nextVersion };
+    });
+    return outcome;
+  } catch (e) {
+    console.error("Versioned save error, falling back to plain save", e);
+    // Fallback so a transient transaction error (e.g. brief network hiccup) doesn't
+    // block saving entirely — behaves like the old save-always behavior in that case.
+    const ok = await saveToFirebase(newDataNoReps);
+    return ok ? { conflict: false, nextVersion: (expectedVersion||0) + 1, fellBack: true } : { conflict: false, error: e };
   }
 };
 
@@ -9008,15 +9047,49 @@ export default function App() {
 
   // Subscribe to Firebase
   const lastSaveRef=useRef(0);
+  const versionRef=useRef(0);
+
+  // ── REPS COLLECTION (each rep is now its own Firestore document) ──
+  const repsFromCollectionRef=useRef([]);
+  const repsCollectionLoadedRef=useRef(false);
+  const legacyRepsCapturedRef=useRef(null); // captured once from the old embedded array, for one-time migration
+  const migrationDoneRef=useRef(false);
+  const [appdataLoaded,setAppdataLoaded]=useState(false);
+  const [repsLoaded,setRepsLoaded]=useState(false);
+
+  useEffect(()=>{
+    if(appdataLoaded&&repsLoaded) setLoading(false);
+  },[appdataLoaded,repsLoaded]);
+
+  useEffect(()=>{
+    const unsub=onSnapshot(collection(db,"reps"),(snap)=>{
+      const list=[];
+      snap.forEach(docSnap=>{ list.push({...docSnap.data(),id:docSnap.id}); });
+      repsFromCollectionRef.current=list;
+      repsCollectionLoadedRef.current=true;
+      setRepsLoaded(true);
+      setData(prev=>({...prev,reps:list}));
+    },(err)=>{console.error("Reps collection read error",err);setRepsLoaded(true);});
+    return ()=>unsub();
+  },[]);
+
   useEffect(()=>{
     const unsub=onSnapshot(doc(db,"appdata","main"),(snap)=>{
       if(snap.exists()){
         try{
           const d=JSON.parse(snap.data().payload||"{}");
+          versionRef.current=d.__v||0;
+          // Capture the legacy embedded reps array once, so we can migrate it into its own collection
+          if(legacyRepsCapturedRef.current===null){
+            legacyRepsCapturedRef.current=Array.isArray(d.reps)?d.reps:[];
+          }
+          const dataForState = repsCollectionLoadedRef.current
+            ? {...d, reps: repsFromCollectionRef.current}
+            : d;
           if(Date.now()-lastSaveRef.current>5000){
             // Migrate photos to localStorage to free Firebase space
-            const profilePhotos=d.profilePhotos||{};
-            const wofPhotos=d.wofPhotos||{};
+            const profilePhotos=dataForState.profilePhotos||{};
+            const wofPhotos=dataForState.wofPhotos||{};
             let needsClean=false;
             Object.entries(profilePhotos).forEach(([id,photo])=>{
               if(photo){
@@ -9031,32 +9104,100 @@ export default function App() {
               }
             });
             if(needsClean&&(Object.keys(profilePhotos).length>0||Object.keys(wofPhotos).length>0)){
-              const cleaned={...d,profilePhotos:{},wofPhotos:{}};
+              const cleaned={...dataForState,profilePhotos:{},wofPhotos:{}};
               setData(cleaned);
-              saveToFirebase(cleaned);
+              saveToFirebase(cleaned); // saveToFirebase always strips reps before writing
             } else {
-              setData(d);
+              setData(dataForState);
             }
           }
         }catch{}
       }
-      setLoading(false);
-    },(err)=>{console.error("Firebase read error",err);setLoading(false);});
+      setAppdataLoaded(true);
+    },(err)=>{console.error("Firebase read error",err);setAppdataLoaded(true);});
     return ()=>unsub();
   },[]);
 
+  // ── ONE-TIME MIGRATION: move any legacy embedded reps into the new reps collection ──
+  useEffect(()=>{
+    if(migrationDoneRef.current) return;
+    if(!repsLoaded||!appdataLoaded) return;
+    if(legacyRepsCapturedRef.current===null) return;
+    const legacyReps=legacyRepsCapturedRef.current;
+    const collectionReps=repsFromCollectionRef.current;
+    if(legacyReps.length===0){ migrationDoneRef.current=true; return; }
+    if(collectionReps.length>0){ migrationDoneRef.current=true; return; } // already migrated (by this device or another)
+    migrationDoneRef.current=true; // claim immediately so we don't double-run
+    (async()=>{
+      try{
+        console.log(`Migrating ${legacyReps.length} rep(s) into their own Firestore collection...`);
+        for(const rep of legacyReps){
+          if(rep&&rep.id){
+            await setDoc(doc(db,"reps",rep.id),rep);
+          }
+        }
+        // Remove the now-migrated reps array from appdata/main so it's never embedded there again
+        const mainSnap=await getDoc(doc(db,"appdata","main"));
+        if(mainSnap.exists()){
+          const mainData=JSON.parse(mainSnap.data().payload||"{}");
+          const { reps:_omit, ...rest } = mainData;
+          await setDoc(doc(db,"appdata","main"),{payload:JSON.stringify(rest)});
+        }
+        console.log("Rep migration complete — reps now live in their own collection.");
+      }catch(e){
+        console.error("Rep migration failed, will retry next load",e);
+        migrationDoneRef.current=false;
+      }
+    })();
+  },[repsLoaded,appdataLoaded]);
+
+  const dataRef=useRef(data);
+  useEffect(()=>{dataRef.current=data;},[data]);
+
+  const [saveConflict,setSaveConflict]=useState(false);
   const upd=useCallback((d)=>{
-    lastSaveRef.current=Date.now();
     setData(d);
+
+    // ── Sync reps individually to their own collection (diff-based, so only changed reps write) ──
+    const newReps=Array.isArray(d.reps)?d.reps:[];
+    const prevReps=Array.isArray(dataRef.current?.reps)?dataRef.current.reps:[];
+    const prevById={};
+    prevReps.forEach(r=>{ if(r&&r.id) prevById[r.id]=r; });
+    const newIds=new Set();
+    newReps.forEach(rep=>{
+      if(!rep||!rep.id) return;
+      newIds.add(rep.id);
+      const prevRep=prevById[rep.id];
+      if(!prevRep||JSON.stringify(prevRep)!==JSON.stringify(rep)){
+        setDoc(doc(db,"reps",rep.id),rep).catch(e=>console.error("Rep save error",rep.id,e));
+      }
+    });
+    prevReps.forEach(rep=>{
+      if(rep&&rep.id&&!newIds.has(rep.id)){
+        deleteDoc(doc(db,"reps",rep.id)).catch(e=>console.error("Rep delete error",rep.id,e));
+      }
+    });
+
+    // ── Save everything else to the shared appdata document (reps excluded — own collection now) ──
     const profilePhotos=d.profilePhotos||{};
     const wofPhotos=d.wofPhotos||{};
     Object.entries(profilePhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("profilePhoto_"+id,photo);}catch(e){}});
     Object.entries(wofPhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}});
-    const lean={...d,profilePhotos:{},wofPhotos:{}};
-    saveToFirebase(lean);
+    const { reps:_omitReps, ...rest } = d;
+    const lean={...rest,profilePhotos:{},wofPhotos:{}};
+    const expectedVersion=versionRef.current;
+    saveToFirebaseVersioned(lean,expectedVersion).then(result=>{
+      if(result&&result.conflict){
+        // Someone else saved in between — do NOT let this write silently win.
+        // Firebase's realtime listener will bring back the correct current data;
+        // we just surface a heads-up so the person knows to double check/redo their change.
+        setSaveConflict(true);
+      } else if(result&&result.nextVersion){
+        versionRef.current=result.nextVersion;
+        lastSaveRef.current=Date.now();
+      }
+    });
   },[]);
-  const dataRef=useRef(data);
-  useEffect(()=>{dataRef.current=data;},[data]);
 
   // Track login — must be before any conditional returns
   useEffect(()=>{
@@ -9067,8 +9208,7 @@ export default function App() {
       const todayEntry=userLogins.find(l=>l.date===today);
       if(!todayEntry){
         const updated={...logins,[session.id]:[...userLogins,{date:today,ts:new Date().toISOString()}].slice(-60)};
-        setData(d=>({...d,loginHistory:updated}));
-        saveToFirebase({...data,loginHistory:updated});
+        upd({...data,loginHistory:updated});
       }
     }
   },[session?.id]);
@@ -9214,6 +9354,13 @@ export default function App() {
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
+      {saveConflict&&<div style={{background:"#fef2f2",borderBottom:"2px solid #dc2626",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexShrink:0}}>
+        <div style={{fontSize:13,color:"#991b1b",fontWeight:600}}>⚠️ Someone else saved a change at the same time as you. Your last change was NOT saved — please refresh the page and try again.</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>window.location.reload()} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#dc2626",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Refresh Now</button>
+          <button onClick={()=>setSaveConflict(false)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid #dc262633",background:"white",color:"#991b1b",fontSize:12,fontWeight:600,cursor:"pointer"}}>Dismiss</button>
+        </div>
+      </div>}
       <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <div style={{color:"white",fontWeight:700,fontSize:14}}>NextLevel Field Training Hub</div>
         <div style={{display:"flex",gap:6}}>
@@ -9332,6 +9479,13 @@ export default function App() {
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
+      {saveConflict&&<div style={{background:"#fef2f2",borderBottom:"2px solid #dc2626",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexShrink:0}}>
+        <div style={{fontSize:13,color:"#991b1b",fontWeight:600}}>⚠️ Someone else saved a change at the same time as you (maybe another admin, or another tab/device). Your last change was NOT saved — please refresh the page and try again.</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>window.location.reload()} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#dc2626",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Refresh Now</button>
+          <button onClick={()=>setSaveConflict(false)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid #dc262633",background:"white",color:"#991b1b",fontSize:12,fontWeight:600,cursor:"pointer"}}>Dismiss</button>
+        </div>
+      </div>}
       <div style={{background:"white",borderBottom:`1px solid ${C.border}`,padding:"9px 14px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
         <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:3,display:"flex",flexDirection:"column",gap:3}}>
           <div style={{width:17,height:2,background:C.text,borderRadius:1}}/><div style={{width:13,height:2,background:C.text,borderRadius:1}}/><div style={{width:17,height:2,background:C.text,borderRadius:1}}/>
