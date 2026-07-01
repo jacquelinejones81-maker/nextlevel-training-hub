@@ -9155,6 +9155,7 @@ export default function App() {
   useEffect(()=>{dataRef.current=data;},[data]);
 
   const [saveConflict,setSaveConflict]=useState(false);
+  const saveQueueRef=useRef(Promise.resolve());
   const upd=useCallback((d)=>{
     setData(d);
 
@@ -9185,18 +9186,23 @@ export default function App() {
     Object.entries(wofPhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}});
     const { reps:_omitReps, ...rest } = d;
     const lean={...rest,profilePhotos:{},wofPhotos:{}};
-    const expectedVersion=versionRef.current;
-    saveToFirebaseVersioned(lean,expectedVersion).then(result=>{
-      if(result&&result.conflict){
-        // Someone else saved in between — do NOT let this write silently win.
-        // Firebase's realtime listener will bring back the correct current data;
-        // we just surface a heads-up so the person knows to double check/redo their change.
-        setSaveConflict(true);
-      } else if(result&&result.nextVersion){
-        versionRef.current=result.nextVersion;
-        lastSaveRef.current=Date.now();
-      }
-    });
+    // Saves are queued one-at-a-time (not fired in parallel) so quick back-to-back edits
+    // in the SAME browser tab never race each other and trigger a false "conflict" warning.
+    // The version is read fresh at the moment this save actually runs, after any earlier
+    // queued save has finished and updated versionRef.
+    saveQueueRef.current = saveQueueRef.current.then(()=>{
+      const expectedVersion=versionRef.current;
+      return saveToFirebaseVersioned(lean,expectedVersion).then(result=>{
+        if(result&&result.conflict){
+          // A save from ANOTHER tab/device (not this one — same-tab races are ruled out above)
+          // landed in between. Don't let this write silently win.
+          setSaveConflict(true);
+        } else if(result&&result.nextVersion){
+          versionRef.current=result.nextVersion;
+          lastSaveRef.current=Date.now();
+        }
+      });
+    }).catch(e=>console.error("Queued save error",e));
   },[]);
 
   // Track login — must be before any conditional returns
