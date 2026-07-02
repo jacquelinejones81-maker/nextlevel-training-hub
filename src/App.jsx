@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, onSnapshot, setDoc, deleteDoc, collection, getDocs, query, orderBy, runTransaction } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 
 
 // ── FIREBASE ──
@@ -30,21 +30,19 @@ const mmApp = initializeApp(mmConfig, "moneymap");
 const mmDb = getFirestore(mmApp);
 
 const saveToFirebase = async (data) => {
-  // reps now live in their own Firestore collection — never let them get re-embedded here
-  const { reps: _omitReps, ...dataNoReps } = data;
-  const size = new Blob([JSON.stringify(dataNoReps)]).size;
+  const size = new Blob([JSON.stringify(data)]).size;
   if(size > 900000) {
     console.warn("Firebase document size warning:", Math.round(size/1024)+"KB — approaching 1MB limit");
   }
   try {
-    await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(dataNoReps) });
+    await setDoc(doc(db, "appdata", "main"), { payload: JSON.stringify(data) });
     return true;
   } catch(e) {
     console.error("Firebase save error", e);
     // If document too large, try saving without photos
     if(e.message&&(e.message.includes("maximum")||e.message.includes("size")||size>900000)){
       try {
-        const stripped={...dataNoReps};
+        const stripped={...data};
         // Remove large photo data to make room
         if(stripped.profilePhotos) stripped.profilePhotos={};
         if(stripped.wofPhotos) stripped.wofPhotos={};
@@ -54,43 +52,6 @@ const saveToFirebase = async (data) => {
       } catch(e2){ console.error("Emergency save also failed",e2); }
     }
     return false;
-  }
-};
-
-// ── SAFE VERSIONED SAVE ──
-// Prevents the "silent overwrite" bug: if two people (or two tabs/devices) save around
-// the same time, whoever saves LAST used to win and wipe out the other person's changes
-// (e.g. a newly-added rep vanishing). This wraps the save in a Firestore transaction that
-// checks a version number (__v) hasn't moved since this browser last loaded the data.
-// If it HAS moved, the save is rejected instead of silently clobbering the newer data.
-const saveToFirebaseVersioned = async (newData, expectedVersion) => {
-  // reps now live in their own Firestore collection — never let them get re-embedded here
-  const { reps: _omitReps, ...newDataNoReps } = newData;
-  const ref = doc(db, "appdata", "main");
-  try {
-    const outcome = await runTransaction(db, async (tx) => {
-      const snap = await tx.get(ref);
-      const current = snap.exists() ? JSON.parse(snap.data().payload || "{}") : {};
-      const currentVersion = current.__v || 0;
-      if (currentVersion !== expectedVersion) {
-        return { conflict: true, currentVersion };
-      }
-      const nextVersion = currentVersion + 1;
-      const payload = { ...newDataNoReps, __v: nextVersion };
-      const size = new Blob([JSON.stringify(payload)]).size;
-      if (size > 900000) {
-        console.warn("Firebase document size warning:", Math.round(size/1024)+"KB — approaching 1MB limit");
-      }
-      tx.set(ref, { payload: JSON.stringify(payload) });
-      return { conflict: false, nextVersion };
-    });
-    return outcome;
-  } catch (e) {
-    console.error("Versioned save error, falling back to plain save", e);
-    // Fallback so a transient transaction error (e.g. brief network hiccup) doesn't
-    // block saving entirely — behaves like the old save-always behavior in that case.
-    const ok = await saveToFirebase(newDataNoReps);
-    return ok ? { conflict: false, nextVersion: (expectedVersion||0) + 1, fellBack: true } : { conflict: false, error: e };
   }
 };
 
@@ -2449,6 +2410,88 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   </div>;
 }
 
+
+// ── MONTH END ARCHIVE PROMPT ──
+function MonthEndArchivePrompt({data,onUpdate,userRole}) {
+  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const [confirmed,setConfirmed] = useState(false);
+  const [done,setDone] = useState(false);
+  if(!isAdmin) return null;
+
+  const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const today = localDate();
+
+  // Find the most recently closed Primerica month
+  const sorted = [...(data.primerMonthEnds||[])].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
+  const lastClosed = sorted.filter(m=>m.cutoff<today).slice(-1)[0];
+  if(!lastClosed) return null;
+
+  const archiveKey = lastClosed.label.replace(/\s+/g,"_");
+  const alreadyArchived = (data.wofHistory||{})[archiveKey] || (data.productionHistory||[]).some(h=>h.monthKey===archiveKey);
+  if(alreadyArchived || done) return null;
+
+  const doArchive = () => {
+    const now = new Date();
+    // Snapshot Wall of Fame
+    const wofSnapshot = data.wallOfFame||[];
+    // Snapshot production
+    const allPeople = [...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+    const prodSnapshot = {
+      monthKey: archiveKey,
+      monthLabel: lastClosed.label,
+      cutoff: lastClosed.cutoff,
+      archivedAt: now.toISOString(),
+      totalPremium: (data.reps||[]).reduce((s,r)=>{
+        const apps = (r.selfPremium||[]).filter(a=>a.date&&a.date>=pm.start&&a.date<=lastClosed.cutoff);
+        return s + apps.reduce((ss,a)=>ss+(Number(a.premium)||0),0);
+      },0),
+      totalRecruits: (data.reps||[]).filter(r=>r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm.start&&new Date(r.createdAt).toISOString().split("T")[0]<=lastClosed.cutoff).length,
+      repSnapshots: (data.reps||[]).map(r=>({
+        id:r.id, name:r.name,
+        premium:(r.selfPremium||[]).filter(a=>a.date&&a.date>=pm.start&&a.date<=lastClosed.cutoff).reduce((s,a)=>s+(Number(a.premium)||0),0),
+        recruits:(data.reps||[]).filter(rr=>rr.recruitedBy===r.id&&rr.createdAt&&new Date(rr.createdAt).toISOString().split("T")[0]>=pm.start&&new Date(rr.createdAt).toISOString().split("T")[0]<=lastClosed.cutoff).length,
+      })).filter(r=>r.premium>0||r.recruits>0),
+    };
+
+    onUpdate({
+      ...data,
+      // Archive Wall of Fame
+      wofHistory:{...(data.wofHistory||{}),[archiveKey]:wofSnapshot},
+      wallOfFame:[], // Clear for new month
+      // Archive production
+      productionHistory:[...(data.productionHistory||[]),prodSnapshot],
+    });
+    setDone(true);
+  };
+
+  if(confirmed) return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{background:"white",borderRadius:16,padding:24,width:"100%",maxWidth:400,textAlign:"center"}}>
+      <div style={{fontSize:32,marginBottom:12}}>📦</div>
+      <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:8}}>Archive {lastClosed.label}?</div>
+      <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:20}}>
+        This will:<br/>
+        ✅ Save a permanent copy of the Wall of Fame<br/>
+        ✅ Save a production snapshot for {lastClosed.label}<br/>
+        🗑️ Clear the Wall of Fame for the new month<br/><br/>
+        <strong>This cannot be undone.</strong>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={()=>setConfirmed(false)} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:600}}>Cancel</button>
+        <button onClick={doArchive} style={{flex:2,padding:"11px",borderRadius:10,background:C.teal,border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Archive & Start Fresh</button>
+      </div>
+    </div>
+  </div>;
+
+  return <div style={{background:`linear-gradient(135deg,${C.navy},#16304f)`,borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+    <div style={{fontSize:24}}>📦</div>
+    <div style={{flex:1}}>
+      <div style={{fontSize:14,fontWeight:700,color:"white",marginBottom:2}}>{lastClosed.label} has closed</div>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.65)"}}>Archive the Wall of Fame and production snapshot before starting the new month.</div>
+    </div>
+    <button onClick={()=>setConfirmed(true)} style={{padding:"8px 16px",borderRadius:8,background:C.gold,border:"none",color:"white",cursor:"pointer",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>📦 Archive Now</button>
+  </div>;
+}
+
 // ── DASHBOARD ──
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const [showTrainerCommitment,setShowTrainerCommitment]=useState(false);
@@ -2527,6 +2570,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
 
+    {(userRole==="admin"||userRole==="superadmin")&&<MonthEndArchivePrompt data={data} onUpdate={onUpdate} userRole={userRole}/>}
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
     {userRole==="trainer"&&(()=>{
       const trRec=(data.trainers||[]).find(t=>t.id===userId);
@@ -5547,6 +5591,9 @@ function WallOfFame({data,onUpdate,userRole}) {
   };
 
   const remove = (id) => onUpdate({...data,wallOfFame:recognitions.filter(r=>r.id!==id)});
+  const [showHistory,setShowHistory] = useState(false);
+  const wofHistory = data.wofHistory||{};
+  const historyMonths = Object.keys(wofHistory).sort().reverse();
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -6382,6 +6429,7 @@ function Leaderboard({data,userId}) {
 
 // ── TOP RECRUITERS ──
 function TopRecruiters({data}) {
+  const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
   const allPeople = [
     ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
     ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
@@ -6389,7 +6437,13 @@ function TopRecruiters({data}) {
   ];
   const recruitCounts = allPeople.map(p=>({
     ...p,
-    recruits:(data.reps||[]).filter(r=>r.recruitedBy===p.id),
+    // Filter recruits to current Primerica month only
+    recruits:(data.reps||[]).filter(r=>{
+      if(r.recruitedBy!==p.id) return false;
+      if(!r.createdAt) return false;
+      try { return new Date(r.createdAt).toISOString().split("T")[0] >= pm.start; }
+      catch(e) { return false; }
+    }),
   })).filter(p=>p.recruits.length>0).sort((a,b)=>b.recruits.length-a.recruits.length);
 
   if(recruitCounts.length===0) return null;
@@ -6397,7 +6451,10 @@ function TopRecruiters({data}) {
   const medals=["1st","2nd","3rd"];
 
   return <Card style={{marginBottom:14}}>
-    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Top Recruiters</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Top Recruiters</div>
+      <div style={{fontSize:11,color:C.textMid}}>{pm.label}</div>
+    </div>
     {recruitCounts.slice(0,5).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,marginBottom:8,padding:"7px 9px",borderRadius:8,background:i===0?C.gold+"11":"transparent",border:i===0?`1px solid ${C.gold}33`:"none"}}>
       <div style={{fontSize:i<3?9:11,fontWeight:700,width:28,height:20,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:4,background:i===0?C.gold+"22":i===1?"rgba(148,163,184,0.15)":i===2?"rgba(180,83,9,0.1)":"transparent",color:i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.textLight}}>{i<3?medals[i]:i+1}</div>
       <div style={{width:28,height:28,borderRadius:8,background:roleColors[p.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:roleColors[p.role],flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
@@ -9047,49 +9104,15 @@ export default function App() {
 
   // Subscribe to Firebase
   const lastSaveRef=useRef(0);
-  const versionRef=useRef(0);
-
-  // ── REPS COLLECTION (each rep is now its own Firestore document) ──
-  const repsFromCollectionRef=useRef([]);
-  const repsCollectionLoadedRef=useRef(false);
-  const legacyRepsCapturedRef=useRef(null); // captured once from the old embedded array, for one-time migration
-  const migrationDoneRef=useRef(false);
-  const [appdataLoaded,setAppdataLoaded]=useState(false);
-  const [repsLoaded,setRepsLoaded]=useState(false);
-
-  useEffect(()=>{
-    if(appdataLoaded&&repsLoaded) setLoading(false);
-  },[appdataLoaded,repsLoaded]);
-
-  useEffect(()=>{
-    const unsub=onSnapshot(collection(db,"reps"),(snap)=>{
-      const list=[];
-      snap.forEach(docSnap=>{ list.push({...docSnap.data(),id:docSnap.id}); });
-      repsFromCollectionRef.current=list;
-      repsCollectionLoadedRef.current=true;
-      setRepsLoaded(true);
-      setData(prev=>({...prev,reps:list}));
-    },(err)=>{console.error("Reps collection read error",err);setRepsLoaded(true);});
-    return ()=>unsub();
-  },[]);
-
   useEffect(()=>{
     const unsub=onSnapshot(doc(db,"appdata","main"),(snap)=>{
       if(snap.exists()){
         try{
           const d=JSON.parse(snap.data().payload||"{}");
-          versionRef.current=d.__v||0;
-          // Capture the legacy embedded reps array once, so we can migrate it into its own collection
-          if(legacyRepsCapturedRef.current===null){
-            legacyRepsCapturedRef.current=Array.isArray(d.reps)?d.reps:[];
-          }
-          const dataForState = repsCollectionLoadedRef.current
-            ? {...d, reps: repsFromCollectionRef.current}
-            : d;
           if(Date.now()-lastSaveRef.current>5000){
             // Migrate photos to localStorage to free Firebase space
-            const profilePhotos=dataForState.profilePhotos||{};
-            const wofPhotos=dataForState.wofPhotos||{};
+            const profilePhotos=d.profilePhotos||{};
+            const wofPhotos=d.wofPhotos||{};
             let needsClean=false;
             Object.entries(profilePhotos).forEach(([id,photo])=>{
               if(photo){
@@ -9104,106 +9127,32 @@ export default function App() {
               }
             });
             if(needsClean&&(Object.keys(profilePhotos).length>0||Object.keys(wofPhotos).length>0)){
-              const cleaned={...dataForState,profilePhotos:{},wofPhotos:{}};
+              const cleaned={...d,profilePhotos:{},wofPhotos:{}};
               setData(cleaned);
-              saveToFirebase(cleaned); // saveToFirebase always strips reps before writing
+              saveToFirebase(cleaned);
             } else {
-              setData(dataForState);
+              setData(d);
             }
           }
         }catch{}
       }
-      setAppdataLoaded(true);
-    },(err)=>{console.error("Firebase read error",err);setAppdataLoaded(true);});
+      setLoading(false);
+    },(err)=>{console.error("Firebase read error",err);setLoading(false);});
     return ()=>unsub();
   },[]);
 
-  // ── ONE-TIME MIGRATION: move any legacy embedded reps into the new reps collection ──
-  useEffect(()=>{
-    if(migrationDoneRef.current) return;
-    if(!repsLoaded||!appdataLoaded) return;
-    if(legacyRepsCapturedRef.current===null) return;
-    const legacyReps=legacyRepsCapturedRef.current;
-    const collectionReps=repsFromCollectionRef.current;
-    if(legacyReps.length===0){ migrationDoneRef.current=true; return; }
-    if(collectionReps.length>0){ migrationDoneRef.current=true; return; } // already migrated (by this device or another)
-    migrationDoneRef.current=true; // claim immediately so we don't double-run
-    (async()=>{
-      try{
-        console.log(`Migrating ${legacyReps.length} rep(s) into their own Firestore collection...`);
-        for(const rep of legacyReps){
-          if(rep&&rep.id){
-            await setDoc(doc(db,"reps",rep.id),rep);
-          }
-        }
-        // Remove the now-migrated reps array from appdata/main so it's never embedded there again
-        const mainSnap=await getDoc(doc(db,"appdata","main"));
-        if(mainSnap.exists()){
-          const mainData=JSON.parse(mainSnap.data().payload||"{}");
-          const { reps:_omit, ...rest } = mainData;
-          await setDoc(doc(db,"appdata","main"),{payload:JSON.stringify(rest)});
-        }
-        console.log("Rep migration complete — reps now live in their own collection.");
-      }catch(e){
-        console.error("Rep migration failed, will retry next load",e);
-        migrationDoneRef.current=false;
-      }
-    })();
-  },[repsLoaded,appdataLoaded]);
-
-  const dataRef=useRef(data);
-  useEffect(()=>{dataRef.current=data;},[data]);
-
-  const [saveConflict,setSaveConflict]=useState(false);
-  const saveQueueRef=useRef(Promise.resolve());
   const upd=useCallback((d)=>{
+    lastSaveRef.current=Date.now();
     setData(d);
-
-    // ── Sync reps individually to their own collection (diff-based, so only changed reps write) ──
-    const newReps=Array.isArray(d.reps)?d.reps:[];
-    const prevReps=Array.isArray(dataRef.current?.reps)?dataRef.current.reps:[];
-    const prevById={};
-    prevReps.forEach(r=>{ if(r&&r.id) prevById[r.id]=r; });
-    const newIds=new Set();
-    newReps.forEach(rep=>{
-      if(!rep||!rep.id) return;
-      newIds.add(rep.id);
-      const prevRep=prevById[rep.id];
-      if(!prevRep||JSON.stringify(prevRep)!==JSON.stringify(rep)){
-        setDoc(doc(db,"reps",rep.id),rep).catch(e=>console.error("Rep save error",rep.id,e));
-      }
-    });
-    prevReps.forEach(rep=>{
-      if(rep&&rep.id&&!newIds.has(rep.id)){
-        deleteDoc(doc(db,"reps",rep.id)).catch(e=>console.error("Rep delete error",rep.id,e));
-      }
-    });
-
-    // ── Save everything else to the shared appdata document (reps excluded — own collection now) ──
     const profilePhotos=d.profilePhotos||{};
     const wofPhotos=d.wofPhotos||{};
     Object.entries(profilePhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("profilePhoto_"+id,photo);}catch(e){}});
     Object.entries(wofPhotos).forEach(([id,photo])=>{if(photo)try{localStorage.setItem("wofPhoto_"+id,photo);}catch(e){}});
-    const { reps:_omitReps, ...rest } = d;
-    const lean={...rest,profilePhotos:{},wofPhotos:{}};
-    // Saves are queued one-at-a-time (not fired in parallel) so quick back-to-back edits
-    // in the SAME browser tab never race each other and trigger a false "conflict" warning.
-    // The version is read fresh at the moment this save actually runs, after any earlier
-    // queued save has finished and updated versionRef.
-    saveQueueRef.current = saveQueueRef.current.then(()=>{
-      const expectedVersion=versionRef.current;
-      return saveToFirebaseVersioned(lean,expectedVersion).then(result=>{
-        if(result&&result.conflict){
-          // A save from ANOTHER tab/device (not this one — same-tab races are ruled out above)
-          // landed in between. Don't let this write silently win.
-          setSaveConflict(true);
-        } else if(result&&result.nextVersion){
-          versionRef.current=result.nextVersion;
-          lastSaveRef.current=Date.now();
-        }
-      });
-    }).catch(e=>console.error("Queued save error",e));
+    const lean={...d,profilePhotos:{},wofPhotos:{}};
+    saveToFirebase(lean);
   },[]);
+  const dataRef=useRef(data);
+  useEffect(()=>{dataRef.current=data;},[data]);
 
   // Track login — must be before any conditional returns
   useEffect(()=>{
@@ -9214,7 +9163,8 @@ export default function App() {
       const todayEntry=userLogins.find(l=>l.date===today);
       if(!todayEntry){
         const updated={...logins,[session.id]:[...userLogins,{date:today,ts:new Date().toISOString()}].slice(-60)};
-        upd({...data,loginHistory:updated});
+        setData(d=>({...d,loginHistory:updated}));
+        saveToFirebase({...data,loginHistory:updated});
       }
     }
   },[session?.id]);
@@ -9360,13 +9310,6 @@ export default function App() {
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
-      {saveConflict&&<div style={{background:"#fef2f2",borderBottom:"2px solid #dc2626",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexShrink:0}}>
-        <div style={{fontSize:13,color:"#991b1b",fontWeight:600}}>⚠️ Someone else saved a change at the same time as you. Your last change was NOT saved — please refresh the page and try again.</div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>window.location.reload()} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#dc2626",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Refresh Now</button>
-          <button onClick={()=>setSaveConflict(false)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid #dc262633",background:"white",color:"#991b1b",fontSize:12,fontWeight:600,cursor:"pointer"}}>Dismiss</button>
-        </div>
-      </div>}
       <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <div style={{color:"white",fontWeight:700,fontSize:14}}>NextLevel Field Training Hub</div>
         <div style={{display:"flex",gap:6}}>
@@ -9485,13 +9428,6 @@ export default function App() {
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
-      {saveConflict&&<div style={{background:"#fef2f2",borderBottom:"2px solid #dc2626",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexShrink:0}}>
-        <div style={{fontSize:13,color:"#991b1b",fontWeight:600}}>⚠️ Someone else saved a change at the same time as you (maybe another admin, or another tab/device). Your last change was NOT saved — please refresh the page and try again.</div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>window.location.reload()} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#dc2626",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Refresh Now</button>
-          <button onClick={()=>setSaveConflict(false)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid #dc262633",background:"white",color:"#991b1b",fontSize:12,fontWeight:600,cursor:"pointer"}}>Dismiss</button>
-        </div>
-      </div>}
       <div style={{background:"white",borderBottom:`1px solid ${C.border}`,padding:"9px 14px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
         <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:3,display:"flex",flexDirection:"column",gap:3}}>
           <div style={{width:17,height:2,background:C.text,borderRadius:1}}/><div style={{width:13,height:2,background:C.text,borderRadius:1}}/><div style={{width:17,height:2,background:C.text,borderRadius:1}}/>
