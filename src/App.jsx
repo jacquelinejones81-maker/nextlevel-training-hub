@@ -2570,7 +2570,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
 
-    {(userRole==="admin"||userRole==="superadmin")&&<MonthEndArchivePrompt data={data} onUpdate={onUpdate} userRole={userRole}/>}
+    {false&&(userRole==="admin"||userRole==="superadmin")&&<MonthEndArchivePrompt data={data} onUpdate={onUpdate} userRole={userRole}/>}
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
     {userRole==="trainer"&&(()=>{
       const trRec=(data.trainers||[]).find(t=>t.id===userId);
