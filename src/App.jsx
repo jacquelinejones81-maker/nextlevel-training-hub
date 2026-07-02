@@ -2416,19 +2416,17 @@ function MonthEndArchivePrompt({data,onUpdate,userRole}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const [confirmed,setConfirmed] = useState(false);
   const [done,setDone] = useState(false);
-  if(!isAdmin) return null;
 
-  const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
   const today = localDate();
-
-  // Find the most recently closed Primerica month
   const sorted = [...(data.primerMonthEnds||[])].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
   const lastClosed = sorted.filter(m=>m.cutoff<today).slice(-1)[0];
-  if(!lastClosed) return null;
+  const archiveKey = lastClosed ? lastClosed.label.replace(/\s+/g,"_") : null;
+  const alreadyArchived = archiveKey ? ((data.wofHistory||{})[archiveKey] || (data.productionHistory||[]).some(h=>h.monthKey===archiveKey)) : true;
 
-  const archiveKey = lastClosed.label.replace(/\s+/g,"_");
-  const alreadyArchived = (data.wofHistory||{})[archiveKey] || (data.productionHistory||[]).some(h=>h.monthKey===archiveKey);
-  if(alreadyArchived || done) return null;
+  // All hooks must be called before any conditional return
+  if(!isAdmin || !lastClosed || alreadyArchived || done) return null;
+
+  const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
 
   const doArchive = () => {
     const now = new Date();
@@ -2570,7 +2568,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
 
-    {false&&(userRole==="admin"||userRole==="superadmin")&&<MonthEndArchivePrompt data={data} onUpdate={onUpdate} userRole={userRole}/>}
+    {(userRole==="admin"||userRole==="superadmin")&&<MonthEndArchivePrompt data={data} onUpdate={onUpdate} userRole={userRole}/>}
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
     {userRole==="trainer"&&(()=>{
       const trRec=(data.trainers||[]).find(t=>t.id===userId);
