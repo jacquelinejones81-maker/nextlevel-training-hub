@@ -2523,7 +2523,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
 
     <BirthdayAnniversaryWidget data={data}/>
-    {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data}/>}
+    {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data} onUpdate={onUpdate} userRole={userRole}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
 
@@ -6381,7 +6381,8 @@ function Leaderboard({data,userId}) {
 
 
 // ── TOP RECRUITERS ──
-function TopRecruiters({data}) {
+function TopRecruiters({data,onUpdate,userRole}) {
+  const resetAt = data.topRecruitersResetAt || 0; // 0 = never cleared, show all-time
   const allPeople = [
     ...(data.admins||[]).map(p=>({...p,role:"Admin"})),
     ...(data.trainers||[]).map(p=>({...p,role:"Trainer"})),
@@ -6389,15 +6390,37 @@ function TopRecruiters({data}) {
   ];
   const recruitCounts = allPeople.map(p=>({
     ...p,
-    recruits:(data.reps||[]).filter(r=>r.recruitedBy===p.id),
+    // Only count recruits added since the last "Clear" — nothing about the reps
+    // themselves (or who recruited them) is ever deleted, just what's displayed here.
+    recruits:(data.reps||[]).filter(r=>r.recruitedBy===p.id&&(!resetAt||!r.createdAt||r.createdAt>=resetAt)),
   })).filter(p=>p.recruits.length>0).sort((a,b)=>b.recruits.length-a.recruits.length);
 
-  if(recruitCounts.length===0) return null;
+  const canClear=(userRole==="admin"||userRole==="superadmin")&&typeof onUpdate==="function";
+  const clearSince = resetAt ? new Date(resetAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : null;
+
+  const handleClear=()=>{
+    if(!window.confirm("Clear Top Recruiters for a new month?\n\nThis only resets what's SHOWN here — it does NOT delete any rep, and does not change who recruited who. Past months' recruits just won't count toward this list anymore.")) return;
+    onUpdate({...data,topRecruitersResetAt:Date.now()});
+  };
+
+  if(recruitCounts.length===0){
+    if(!canClear) return null;
+    return <Card style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text}}>Top Recruiters</div>
+        <button onClick={handleClear} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600}}>Clear</button>
+      </div>
+      <div style={{fontSize:12,color:C.textLight}}>{clearSince?`No recruits since ${clearSince}`:"No recruits yet"}</div>
+    </Card>;
+  }
   const roleColors={Admin:C.teal,Trainer:C.purple,Rep:C.gold};
   const medals=["1st","2nd","3rd"];
 
   return <Card style={{marginBottom:14}}>
-    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:12}}>Top Recruiters</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>Top Recruiters{clearSince&&<span style={{fontSize:11,fontWeight:500,color:C.textLight}}> (since {clearSince})</span>}</div>
+      {canClear&&<button onClick={handleClear} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Clear</button>}
+    </div>
     {recruitCounts.slice(0,5).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,marginBottom:8,padding:"7px 9px",borderRadius:8,background:i===0?C.gold+"11":"transparent",border:i===0?`1px solid ${C.gold}33`:"none"}}>
       <div style={{fontSize:i<3?9:11,fontWeight:700,width:28,height:20,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:4,background:i===0?C.gold+"22":i===1?"rgba(148,163,184,0.15)":i===2?"rgba(180,83,9,0.1)":"transparent",color:i===0?C.gold:i===1?"#94a3b8":i===2?"#b45309":C.textLight}}>{i<3?medals[i]:i+1}</div>
       <div style={{width:28,height:28,borderRadius:8,background:roleColors[p.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:roleColors[p.role],flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
