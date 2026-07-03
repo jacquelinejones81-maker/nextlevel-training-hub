@@ -1424,7 +1424,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         <button onClick={()=>setShowAutoHomePopup(false)} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it!</button>
       </div>
     </div>}
-    {tab==="checklist"&&<div>{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
+    {tab==="checklist"&&<div>{rep.track!=="licensed"&&!rep.referencesNotRequired&&rep.createdAt&&(Date.now()-rep.createdAt)>=3*86400000&&(rep.references||[]).filter(r=>r&&r.name&&r.name.trim()).length<5&&isOwnView&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+      <div style={{fontSize:13,color:"#92400e",fontWeight:600}}>📋 Don't forget to add your 5 references — they help us learn more about you and your goals.</div>
+      <button onClick={()=>setTab("refs")} style={{fontSize:12,padding:"6px 12px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>Add References</button>
+    </div>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
@@ -6318,6 +6321,10 @@ function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
 
   reps.forEach(rep=>{
     if(rep.referencesNotRequired) return;
+    const namedRefs = (rep.references||[]).filter(r=>r&&r.name&&r.name.trim());
+    if(rep.track!=="licensed"&&namedRefs.length===0&&rep.createdAt&&(now-rep.createdAt)>=THRESHOLD){
+      alerts.push({key:rep.id+"_norefs",repName:rep.name,refName:"—",msg:"No references entered yet",days:Math.floor((now-rep.createdAt)/86400000)});
+    }
     (rep.references||[]).forEach((r,i)=>{
       if(!r||!r.name) return;
       const stagesDone = REF_STAGES.filter(s=>(r.status||{})[s.k]);
@@ -6353,7 +6360,7 @@ function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
       <div key={a.key} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none",flexWrap:"wrap"}}>
         <div style={{width:6,height:6,borderRadius:3,background:C.danger,flexShrink:0}}/>
         <span style={{fontSize:13,fontWeight:600,color:C.text}}>{a.repName}</span>
-        <span style={{fontSize:12,color:C.textMid,flex:1}}>Ref: {a.refName} — {a.msg}</span>
+        <span style={{fontSize:12,color:C.textMid,flex:1}}>{a.refName==="—"?a.msg:`Ref: ${a.refName} — ${a.msg}`}</span>
         <span style={{fontSize:11,fontWeight:700,color:C.danger,background:C.danger+"11",padding:"2px 8px",borderRadius:6,whiteSpace:"nowrap"}}>{a.days}d</span>
         <button onClick={()=>dismiss(a.key)} style={{fontSize:12,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
       </div>
