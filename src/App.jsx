@@ -4760,7 +4760,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const REF_STAGES_R=["textSent","callScheduled","called","callComplete","trainingApptSet"];
               const REF_LABELS_R={"textSent":"Text Sent","callScheduled":"Call Scheduled","called":"Called Ref","callComplete":"Call Complete","trainingApptSet":"Appt Set"};
               let refRows=refs.filter(r=>r.name).map((r)=>{
-                const completed=REF_STAGES_R.filter(s=>r[s]);
+                const completed=REF_STAGES_R.filter(s=>(r.status||{})[s]);
                 const latest=completed.length>0?REF_LABELS_R[completed[completed.length-1]]:"No outreach yet";
                 const bg=completed.length>=5?"#d1fae5":completed.length>0?"#fef3c7":"#f1f5f9";
                 const col=completed.length>=5?"#059669":completed.length>0?"#d97706":"#94a3b8";
