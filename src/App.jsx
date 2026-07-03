@@ -7291,6 +7291,56 @@ function MyTasksPage({session,data,onUpdate}) {
     return (task.days||[]).includes(dayOfWeek);
   };
 
+  // ── INCOME GOAL CAMPAIGN (admin/superadmin, fully editable, reusable for future campaigns) ──
+  const campaign = (data.incomeCampaign||{})[userId] || null;
+  const updateCampaign = (patch) => {
+    onUpdate({...data,incomeCampaign:{...(data.incomeCampaign||{}),[userId]:{...campaign,...patch}}});
+  };
+  const loadIncomeCampaign = () => {
+    if(campaign){ return; }
+    const defaultCampaign = {
+      deadline:"2026-08-07",
+      targetIncome:53956,
+      weeklyGoal:10792,
+      dailyGoal:1459,
+      totalDays:37,
+      dailyFocus:"Highest-income activity first",
+      dailyQuestion:"What is the highest-income activity I can complete before the day ends?",
+      targets:[
+        {id:1,category:"Jackie's Investment Override",goalValue:"Approx. $4,900",done:false},
+        {id:2,category:"Securities Production",goalValue:"$900,000 AUM = approx. $27,000",done:false},
+        {id:3,category:"Mortgage Closing",goalValue:"$268,500 close = approx. $2,660",done:false},
+        {id:4,category:"Life Insurance",goalValue:"25 applications at $84/month average premium",done:false},
+      ],
+      weeks:[1,2,3,4,5].map(n=>({id:n,weekNum:n,revenueTarget:10792,revenueDone:false,lifeAppsTarget:5,lifeAppsDone:false,securitiesTarget:180000,securitiesDone:false,mortgageTarget:53700,mortgageDone:false,notes:n===1?"Investment override progress":""})),
+      finishLine:[
+        {id:1,label:"$53,956 income achieved",done:false},
+        {id:2,label:"$900,000 securities submitted/closed",done:false},
+        {id:3,label:"$268,500 mortgage closed",done:false},
+        {id:4,label:"25 life insurance applications submitted",done:false},
+        {id:5,label:"$4,900 Jackie investment override",done:false},
+      ],
+    };
+    onUpdate({...data,incomeCampaign:{...(data.incomeCampaign||{}),[userId]:defaultCampaign}});
+  };
+  const deleteCampaign = () => {
+    if(!window.confirm("Delete this Income Goal Campaign? This removes all targets, weekly scorecard, and finish line progress.")) return;
+    const {[userId]:_omit,...restCampaigns} = data.incomeCampaign||{};
+    onUpdate({...data,incomeCampaign:restCampaigns});
+  };
+  const updateTarget=(id,patch)=>updateCampaign({targets:campaign.targets.map(t=>t.id===id?{...t,...patch}:t)});
+  const addTarget=()=>updateCampaign({targets:[...campaign.targets,{id:Date.now(),category:"New Category",goalValue:"",done:false}]});
+  const removeTarget=(id)=>updateCampaign({targets:campaign.targets.filter(t=>t.id!==id)});
+  const updateWeek=(id,patch)=>updateCampaign({weeks:campaign.weeks.map(w=>w.id===id?{...w,...patch}:w)});
+  const addWeek=()=>{
+    const nextNum=(campaign.weeks[campaign.weeks.length-1]?.weekNum||0)+1;
+    updateCampaign({weeks:[...campaign.weeks,{id:Date.now(),weekNum:nextNum,revenueTarget:campaign.weeklyGoal||0,revenueDone:false,lifeAppsTarget:0,lifeAppsDone:false,securitiesTarget:0,securitiesDone:false,mortgageTarget:0,mortgageDone:false,notes:""}]});
+  };
+  const removeWeek=(id)=>updateCampaign({weeks:campaign.weeks.filter(w=>w.id!==id)});
+  const updateFinish=(id,patch)=>updateCampaign({finishLine:campaign.finishLine.map(f=>f.id===id?{...f,...patch}:f)});
+  const addFinish=()=>updateCampaign({finishLine:[...campaign.finishLine,{id:Date.now(),label:"New goal",done:false}]});
+  const removeFinish=(id)=>updateCampaign({finishLine:campaign.finishLine.filter(f=>f.id!==id)});
+
   const loadDailyChecklist = () => {
     const existingKeys = new Set(myTasks.filter(t=>t.dailyChecklist).map(t=>t.checklistKey));
     const newOnes = DAILY_SUCCESS_CHECKLIST_ITEMS.filter(i=>!existingKeys.has(i.key)).map((i,idx)=>({
@@ -7349,11 +7399,104 @@ function MyTasksPage({session,data,onUpdate}) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:8}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks & Goals</div>
       <div style={{display:"flex",gap:8}}>
+        {(session.role==="admin"||session.role==="superadmin")&&!campaign&&<button onClick={loadIncomeCampaign} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Load Income Goal Campaign</button>}
         {(session.role==="admin"||session.role==="superadmin")&&<button onClick={loadDailyChecklist} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:`1px solid ${C.gold}`,background:C.gold+"11",color:C.gold,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Load Daily Success Checklist</button>}
         <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>+ New Task</button>
       </div>
     </div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
+
+    {/* Income Goal Campaign */}
+    {(session.role==="admin"||session.role==="superadmin")&&campaign&&<div style={{marginBottom:24}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text}}>Income Goal Campaign</div>
+        <button onClick={deleteCampaign} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600}}>Delete Campaign</button>
+      </div>
+
+      <div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"9px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:15,flexShrink:0}}>🎯</span>
+        <input value={campaign.dailyQuestion||""} onChange={e=>updateCampaign({dailyQuestion:e.target.value})} style={{flex:1,background:"transparent",border:"none",fontSize:13,fontWeight:600,color:"#92400e",outline:"none"}}/>
+      </div>
+
+      <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,background:"white",marginBottom:10}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:10}}>
+          <div>
+            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Deadline</div>
+            <input type="date" value={campaign.deadline} onChange={e=>updateCampaign({deadline:e.target.value})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Target Income ($)</div>
+            <input type="number" value={campaign.targetIncome} onChange={e=>updateCampaign({targetIncome:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Weekly Goal ($/wk)</div>
+            <input type="number" value={campaign.weeklyGoal} onChange={e=>updateCampaign({weeklyGoal:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Daily Goal ($/day)</div>
+            <input type="number" value={campaign.dailyGoal} onChange={e=>updateCampaign({dailyGoal:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Total Days</div>
+            <input type="number" value={campaign.totalDays} onChange={e=>updateCampaign({totalDays:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Daily Focus</div>
+          <input value={campaign.dailyFocus} onChange={e=>updateCampaign({dailyFocus:e.target.value})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
+        </div>
+      </div>
+
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Income Targets</div>
+      <div style={{border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden",background:"white",marginBottom:6}}>
+        {campaign.targets.map((t,i)=><div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
+          <input type="checkbox" checked={t.done} onChange={e=>updateTarget(t.id,{done:e.target.checked})} style={{width:17,height:17,cursor:"pointer",flexShrink:0}}/>
+          <input value={t.category} onChange={e=>updateTarget(t.id,{category:e.target.value})} placeholder="Category" style={{flex:"1 1 160px",padding:"4px 7px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12,color:C.text,fontWeight:600}}/>
+          <input value={t.goalValue} onChange={e=>updateTarget(t.id,{goalValue:e.target.value})} placeholder="Goal / Value" style={{flex:"2 1 220px",padding:"4px 7px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12,color:C.textMid}}/>
+          <button onClick={()=>removeTarget(t.id)} style={{fontSize:14,color:C.textLight,background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
+        </div>)}
+      </div>
+      <button onClick={addTarget} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginBottom:18}}>+ Add Target</button>
+
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Weekly Scorecard — Complete Every Friday</div>
+      <div style={{overflowX:"auto",border:`1px solid ${C.border}`,borderRadius:10,background:"white",marginBottom:6}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:640}}>
+          <thead>
+            <tr style={{background:C.navy}}>
+              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700,textAlign:"left"}}>Week</th>
+              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Revenue</th>
+              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Life Apps</th>
+              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Securities</th>
+              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Mortgage</th>
+              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700,textAlign:"left"}}>Notes</th>
+              <th style={{padding:"7px 4px"}}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {campaign.weeks.map((w,i)=><tr key={w.id} style={{borderTop:i>0?`1px solid ${C.border}`:"none"}}>
+              <td style={{padding:"6px 8px",fontSize:12,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>Week {w.weekNum}</td>
+              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.revenueDone} onChange={e=>updateWeek(w.id,{revenueDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.revenueTarget} onChange={e=>updateWeek(w.id,{revenueTarget:Number(e.target.value)})} style={{width:64,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
+              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.lifeAppsDone} onChange={e=>updateWeek(w.id,{lifeAppsDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.lifeAppsTarget} onChange={e=>updateWeek(w.id,{lifeAppsTarget:Number(e.target.value)})} style={{width:44,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
+              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.securitiesDone} onChange={e=>updateWeek(w.id,{securitiesDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.securitiesTarget} onChange={e=>updateWeek(w.id,{securitiesTarget:Number(e.target.value)})} style={{width:72,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
+              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.mortgageDone} onChange={e=>updateWeek(w.id,{mortgageDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.mortgageTarget} onChange={e=>updateWeek(w.id,{mortgageTarget:Number(e.target.value)})} style={{width:64,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
+              <td style={{padding:"6px 6px"}}><input value={w.notes} onChange={e=>updateWeek(w.id,{notes:e.target.value})} placeholder="Notes" style={{width:"100%",padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></td>
+              <td style={{padding:"6px 4px",textAlign:"center"}}><button onClick={()=>removeWeek(w.id)} style={{fontSize:13,color:C.textLight,background:"none",border:"none",cursor:"pointer"}}>✕</button></td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+      <button onClick={addWeek} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginBottom:18}}>+ Add Week</button>
+
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Finish Line</div>
+      <div style={{border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden",background:"white"}}>
+        {campaign.finishLine.map((f,i)=><div key={f.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
+          <input type="checkbox" checked={f.done} onChange={e=>updateFinish(f.id,{done:e.target.checked})} style={{width:17,height:17,cursor:"pointer",flexShrink:0}}/>
+          <input value={f.label} onChange={e=>updateFinish(f.id,{label:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
+          <button onClick={()=>removeFinish(f.id)} style={{fontSize:14,color:C.textLight,background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
+        </div>)}
+      </div>
+      <button onClick={addFinish} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginTop:6}}>+ Add Goal</button>
+    </div>}
 
     {/* Daily Success Checklist — weekly grid */}
     {(session.role==="admin"||session.role==="superadmin")&&checklistTasks.length>0&&<div style={{marginBottom:20}}>
