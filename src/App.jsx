@@ -9160,12 +9160,9 @@ function DailyPlanner({ session, db }) {
     ...recurringBlocks
       .filter(r => !dailyOverrideIds.has(r.id))
       .filter(r => !r.days || r.days.length===0 || r.days.includes(selWeekday)) // days=[] or undefined means every day
-      .map(r => {
-        // Check if this recurring block has a done override for today
-        const doneOverride = blocks.find(b => b.recurringId === r.id);
-        return {...r, isRecurring:true, done: doneOverride?.done||false, _dailyId: doneOverride?.id };
-      }),
-    ...blocks.filter(b => !b.recurringId) // non-recurring daily blocks
+      .map(r => ({...r, isRecurring:true, done:false})),
+    ...blocks.filter(b => !b.recurringId), // non-recurring daily blocks
+    ...blocks.filter(b => b.recurringId).map(b => ({...b, isRecurring:true, _dailyId:b.id})), // recurring blocks with a done-status override for today — must render here or they vanish
   ].sort((a,b) => a.slot - b.slot);
 
   // Check for conflicts across merged blocks
