@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Fragment } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, onSnapshot, setDoc, deleteDoc, collection, getDocs, query, orderBy, runTransaction } from "firebase/firestore";
 
@@ -7177,9 +7177,32 @@ function MyPipelinePage({session,data,onUpdate}) {
 
 // ── MY TASKS ──
 const TASK_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const TASK_CATEGORIES = ["Activity","Recruiting","Personal","Business","Custom"];
+const TASK_CATEGORIES = ["Activity","Recruiting","Personal","Prospecting","Production","End of Day","Business","Custom"];
 const TASK_PRIORITIES = ["High","Medium","Low"];
 const PRIORITY_COLORS = {High:C.danger,Medium:C.gold,Low:C.success};
+
+// Preset items for the RVP Daily Success Checklist (admin/superadmin only) — loads as
+// recurring My Tasks items (Mon–Fri) using the same completedDays tracking every other
+// recurring task already uses, so no new data model or page was needed for this.
+const DAILY_SUCCESS_CHECKLIST_ITEMS = [
+  {key:"personal_time_with_god",title:"Time with God",category:"Personal"},
+  {key:"personal_workout",title:"Workout complete",category:"Personal"},
+  {key:"personal_read",title:"Read 10–20 minutes",category:"Personal"},
+  {key:"personal_review_goals",title:"Review goals",category:"Personal"},
+  {key:"prospecting_contact",title:"Contact 20–30 people",category:"Prospecting"},
+  {key:"prospecting_book_appts",title:"Book 5+ appointments",category:"Prospecting"},
+  {key:"prospecting_conduct_appts",title:"Conduct 3+ appointments",category:"Prospecting"},
+  {key:"prospecting_referrals",title:"Ask every client for referrals",category:"Prospecting"},
+  {key:"prospecting_recruit",title:"Recruit at least 1 prospective agent",category:"Prospecting"},
+  {key:"production_investment",title:"Investment appointments completed",category:"Production"},
+  {key:"production_mortgage",title:"Mortgage appointments completed",category:"Production"},
+  {key:"production_life",title:"Life insurance presentations completed",category:"Production"},
+  {key:"production_followup",title:"Follow up on pending business",category:"Production"},
+  {key:"production_submit",title:"Submit all available business today",category:"Production"},
+  {key:"eod_recorded",title:"Daily production recorded",category:"End of Day"},
+  {key:"eod_revenue",title:"Revenue updated",category:"End of Day"},
+  {key:"eod_plan_tomorrow",title:"Tomorrow planned before bed",category:"End of Day"},
+];
 
 function MyTasksPage({session,data,onUpdate}) {
   const userId = session.id;
@@ -7268,12 +7291,121 @@ function MyTasksPage({session,data,onUpdate}) {
     return (task.days||[]).includes(dayOfWeek);
   };
 
+  const loadDailyChecklist = () => {
+    const existingKeys = new Set(myTasks.filter(t=>t.dailyChecklist).map(t=>t.checklistKey));
+    const newOnes = DAILY_SUCCESS_CHECKLIST_ITEMS.filter(i=>!existingKeys.has(i.key)).map((i,idx)=>({
+      id:Date.now()+idx,
+      title:i.title,
+      description:"",
+      startDate:new Date().toISOString().split("T")[0],
+      dueDate:"",
+      recurring:true,
+      days:[1,2,3,4,5],
+      priority:"Medium",
+      category:i.category,
+      subtasks:[],
+      createdAt:new Date().toISOString(),
+      completedDays:{},
+      dailyChecklist:true,
+      checklistKey:i.key,
+    }));
+    if(newOnes.length===0){ alert("Your Daily Success Checklist is already loaded — check below for all your items."); return; }
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:[...myTasks,...newOnes]}});
+  };
+
+  // ── Weekly grid view for the Daily Success Checklist (admin/superadmin) ──
+  const [weekOffset,setWeekOffset]=useState(0);
+  const [editingItemId,setEditingItemId]=useState(null);
+  const [editingItemDraft,setEditingItemDraft]=useState("");
+  const startEditItem=(t)=>{ setEditingItemId(t.id); setEditingItemDraft(t.title); };
+  const saveEditItem=()=>{
+    if(!editingItemDraft.trim()){ setEditingItemId(null); return; }
+    const updated=myTasks.map(t=>t.id===editingItemId?{...t,title:editingItemDraft.trim(),dailyChecklist:true}:t);
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
+    setEditingItemId(null);
+  };
+  const checklistTitleSet = new Set(DAILY_SUCCESS_CHECKLIST_ITEMS.map(i=>i.title));
+  const checklistTasks = myTasks.filter(t=>t.dailyChecklist||checklistTitleSet.has(t.title));
+  const otherTasks = myTasks.filter(t=>!(t.dailyChecklist||checklistTitleSet.has(t.title)));
+  const weekDates = (()=>{
+    const now=new Date();
+    const dow=now.getDay();
+    const diffToMonday=dow===0?-6:1-dow;
+    const monday=new Date(now);
+    monday.setDate(now.getDate()+diffToMonday+weekOffset*7);
+    monday.setHours(0,0,0,0);
+    return [0,1,2,3,4].map(i=>{
+      const d=new Date(monday);
+      d.setDate(monday.getDate()+i);
+      return {label:["Mon","Tue","Wed","Thu","Fri"][i],dateStr:d.toISOString().split("T")[0],dateObj:d};
+    });
+  })();
+  const weekLabel = `${weekDates[0].dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${weekDates[4].dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"})}`;
+  const CHECKLIST_CATEGORY_ORDER=["Personal","Prospecting","Production","End of Day"];
+  const groupedChecklist={};
+  checklistTasks.forEach(t=>{ (groupedChecklist[t.category]=groupedChecklist[t.category]||[]).push(t); });
+
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:8}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks & Goals</div>
-      <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ New Task</button>
+      <div style={{display:"flex",gap:8}}>
+        {(session.role==="admin"||session.role==="superadmin")&&<button onClick={loadDailyChecklist} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:`1px solid ${C.gold}`,background:C.gold+"11",color:C.gold,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Load Daily Success Checklist</button>}
+        <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>+ New Task</button>
+      </div>
     </div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
+
+    {/* Daily Success Checklist — weekly grid */}
+    {(session.role==="admin"||session.role==="superadmin")&&checklistTasks.length>0&&<div style={{marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text}}>Daily Success Checklist</div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={()=>setWeekOffset(w=>w-1)} style={{padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid}}>‹</button>
+          <span style={{fontSize:12,color:C.textMid,whiteSpace:"nowrap",fontWeight:600}}>{weekLabel}</span>
+          <button onClick={()=>setWeekOffset(w=>w+1)} style={{padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid}}>›</button>
+          {weekOffset!==0&&<button onClick={()=>setWeekOffset(0)} style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:"none",background:C.teal+"15",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>This Week</button>}
+        </div>
+      </div>
+      <div style={{overflowX:"auto",border:`1px solid ${C.border}`,borderRadius:10,background:"white"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:460}}>
+          <thead>
+            <tr style={{background:C.navy}}>
+              <th style={{textAlign:"left",padding:"8px 10px",fontSize:12,color:"white",fontWeight:700,minWidth:160}}>Action</th>
+              {weekDates.map(wd=><th key={wd.dateStr} style={{padding:"8px 4px",fontSize:11,color:"white",fontWeight:700,textAlign:"center",minWidth:46}}>{wd.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {CHECKLIST_CATEGORY_ORDER.filter(cat=>groupedChecklist[cat]?.length).map(cat=>
+              <Fragment key={cat}>
+                <tr><td colSpan={weekDates.length+1} style={{padding:"5px 10px",fontSize:12,fontWeight:700,color:C.teal,background:C.teal+"0d"}}>{cat}</td></tr>
+                {groupedChecklist[cat].map(t=><tr key={t.id} style={{borderTop:`1px solid ${C.border}`}}>
+                  <td style={{padding:"6px 10px",fontSize:13,color:C.text}}>
+                    {editingItemId===t.id?
+                      <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                        <input autoFocus value={editingItemDraft} onChange={e=>setEditingItemDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveEditItem();if(e.key==="Escape")setEditingItemId(null);}} style={{flex:1,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,minWidth:120}}/>
+                        <button onClick={saveEditItem} style={{fontSize:11,padding:"3px 7px",borderRadius:5,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>Save</button>
+                      </div>
+                      :
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span>{t.title}</span>
+                        <button onClick={()=>startEditItem(t)} title="Edit" style={{fontSize:11,padding:"1px 5px",borderRadius:4,border:"none",background:"transparent",color:C.textLight,cursor:"pointer"}}>✎</button>
+                      </div>
+                    }
+                  </td>
+                  {weekDates.map(wd=>{
+                    const isScheduled=(t.days||[]).includes(wd.dateObj.getDay());
+                    const done=!!(t.completedDays||{})[wd.dateStr];
+                    return <td key={wd.dateStr} style={{textAlign:"center",padding:"6px 4px"}}>
+                      {isScheduled?<input type="checkbox" checked={done} onChange={()=>toggleDayComplete(t.id,wd.dateStr)} style={{width:17,height:17,cursor:"pointer"}}/>:<span style={{color:C.textLight,fontSize:12}}>—</span>}
+                    </td>;
+                  })}
+                </tr>)}
+              </Fragment>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>}
 
     {/* Task Form */}
     {showForm&&<div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"44",padding:"16px",marginBottom:14}}>
@@ -7347,14 +7479,14 @@ function MyTasksPage({session,data,onUpdate}) {
       </div>
     </div>}
 
-    {/* Task List */}
-    {myTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
+    {/* Task List — everything besides the Daily Success Checklist items shown in the grid above */}
+    {otherTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
       <div style={{fontSize:28,marginBottom:8}}>✓</div>
-      <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>No tasks yet</div>
+      <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>No other tasks yet</div>
       <div style={{fontSize:13}}>Add your first task or recurring goal above</div>
     </div>}
 
-    {[...myTasks].sort((a,b)=>{
+    {[...otherTasks].sort((a,b)=>{
       const po={High:0,Medium:1,Low:2};
       return (po[a.priority]||1)-(po[b.priority]||1);
     }).map((task,i)=>{
@@ -7591,6 +7723,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"reps",l:"My Reps",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 14C9.8 14 8 12.2 8 10C8 7.8 9.8 6 12 6C14.2 6 16 7.8 16 10C16 12.2 14.2 14 12 14Z"},
     {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
+    {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
     {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
     {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
@@ -7603,7 +7736,6 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
-    {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
     {k:"advancement",l:"Advancement",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"scripts",l:"Scripts",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5"},
