@@ -1152,14 +1152,21 @@ function RefsEditor({rep,data,onUpdate}) {
 
   const updateField=(i,f,val)=>{
     setLocalRefs(prev=>{
-      const newRefs=prev.map((r,j)=>j===i?{...r,[f]:f==="phone"?fmtRefPhone(val):val}:r);
+      const newRefs=prev.map((r,j)=>{
+        if(j!==i) return r;
+        const updated={...r,[f]:f==="phone"?fmtRefPhone(val):val};
+        if(f==="name"&&val.trim()&&!r.addedAt) updated.addedAt=Date.now();
+        return updated;
+      });
       // Save in the background using the LOCAL state as the base — never the stale rep prop
       onUpdate(rep.id,{...rep,references:newRefs});
       return newRefs;
     });
   };
 
-  return <div>{localRefs.map((r,i)=>{const status=r.status||{};const completedCount=REF_STAGES.filter(s=>status[s.k]).length;return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
+  return <div>
+    <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:9,padding:"9px 12px",fontSize:13,color:C.text,lineHeight:1.5,marginBottom:10}}>The reference you provide will be called to get information on your character, and asked whether they'd be willing to help you with your first few training appointments.</div>
+    {localRefs.map((r,i)=>{const status=r.status||{};const completedCount=REF_STAGES.filter(s=>status[s.k]).length;return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
     <div style={{fontSize:12,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
       {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
@@ -1456,7 +1463,12 @@ function AdminRefsEditor({rep,data,onUpdate}) {
 
   const updateField=(i,f,val)=>{
     setLocalRefs(prev=>{
-      const newRefs=prev.map((r,j)=>j===i?{...r,[f]:f==="phone"?fmtRefPhone(val):val}:r);
+      const newRefs=prev.map((r,j)=>{
+        if(j!==i) return r;
+        const updated={...r,[f]:f==="phone"?fmtRefPhone(val):val};
+        if(f==="name"&&val.trim()&&!r.addedAt) updated.addedAt=Date.now();
+        return updated;
+      });
       onUpdate(rep.id,{...rep,references:newRefs});
       return newRefs;
     });
@@ -1465,13 +1477,28 @@ function AdminRefsEditor({rep,data,onUpdate}) {
   const toggleStatus=(i,stageKey)=>{
     setLocalRefs(prev=>{
       const curStatus=prev[i].status||{};
-      const newRefs=prev.map((r,j)=>j===i?{...r,status:{...curStatus,[stageKey]:!curStatus[stageKey]}}:r);
+      const newRefs=prev.map((r,j)=>j===i?{...r,status:{...curStatus,[stageKey]:!curStatus[stageKey]},lastActivityAt:Date.now()}:r);
       onUpdate(rep.id,{...rep,references:newRefs});
       return newRefs;
     });
   };
 
-  return <div>{localRefs.map((r,i)=>{const status=r.status||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
+  const toggleNotRequired=()=>{
+    onUpdate(rep.id,{...rep,referencesNotRequired:!rep.referencesNotRequired});
+  };
+
+  return <div>
+    <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:9,padding:"9px 12px",fontSize:13,color:C.text,lineHeight:1.5,marginBottom:10}}>The reference you provide will be called to get information on your character, and asked whether they'd be willing to help you with your first few training appointments.</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.surface||"#f8fafc",border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",marginBottom:10}}>
+      <div>
+        <div style={{fontSize:13,fontWeight:600,color:C.text}}>References Not Required</div>
+        <div style={{fontSize:11,color:C.textMid,marginTop:1}}>Turn on for established reps — excludes them from the stalled-reference alert</div>
+      </div>
+      <div onClick={toggleNotRequired} style={{width:38,height:22,borderRadius:12,background:rep.referencesNotRequired?C.teal:"#cbd5e1",position:"relative",cursor:"pointer",flexShrink:0}}>
+        <div style={{position:"absolute",top:2,left:rep.referencesNotRequired?18:2,width:18,height:18,borderRadius:9,background:"white",transition:"left 0.15s"}}/>
+      </div>
+    </div>
+    {localRefs.map((r,i)=>{const status=r.status||{};return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
     <div style={{fontSize:12,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:r.name?8:0}}>
       {[["name","Name"],["phone","Phone"],["relationship","Relationship"]].map(([f,ph])=><input key={f} placeholder={ph} value={r[f]||""} onChange={e=>updateField(i,f,e.target.value)} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,background:"white",gridColumn:f==="relationship"?"span 2":"auto"}}/>)}
@@ -2521,6 +2548,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
+    <StalledReferencesAlert data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
 
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data} onUpdate={onUpdate} userRole={userRole}/>}
@@ -6276,6 +6304,63 @@ function BirthdayAnniversaryWidget({data}) {
 
 
 
+
+// ── STALLED REFERENCES ALERT ──
+function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
+  const [showAll,setShowAll]=useState(false);
+  if(!(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")) return null;
+
+  const reps = userRole==="trainer" ? (data.reps||[]).filter(r=>r.trainerId===userId) : (data.reps||[]);
+  const dismissedRefAlerts = data.dismissedRefAlerts||[];
+  const now = Date.now();
+  const THRESHOLD = 3*86400000; // 3 days
+  const alerts=[];
+
+  reps.forEach(rep=>{
+    if(rep.referencesNotRequired) return;
+    (rep.references||[]).forEach((r,i)=>{
+      if(!r||!r.name) return;
+      const stagesDone = REF_STAGES.filter(s=>(r.status||{})[s.k]);
+      const addedAt = r.addedAt || rep.createdAt || null; // fallback for refs added before timestamp tracking existed
+      if(stagesDone.length===0){
+        if(addedAt && (now-addedAt)>=THRESHOLD){
+          alerts.push({key:rep.id+"_ref"+i+"_none",repName:rep.name,refName:r.name,msg:"No outreach started",days:Math.floor((now-addedAt)/86400000)});
+        }
+      } else if(stagesDone.length<REF_STAGES.length){
+        const refPoint = r.lastActivityAt || addedAt;
+        if(refPoint && (now-refPoint)>=THRESHOLD){
+          const latestStage = stagesDone[stagesDone.length-1];
+          alerts.push({key:rep.id+"_ref"+i+"_stuck",repName:rep.name,refName:r.name,msg:"Stuck at "+latestStage.l,days:Math.floor((now-refPoint)/86400000)});
+        }
+      }
+    });
+  });
+
+  const visible_alerts = alerts.filter(a=>!dismissedRefAlerts.includes(a.key));
+  if(visible_alerts.length===0) return null;
+  const visible = showAll?visible_alerts:visible_alerts.slice(0,5);
+
+  const dismiss = (key) => onUpdate({...data,dismissedRefAlerts:[...dismissedRefAlerts,key]});
+  const clearAll = () => onUpdate({...data,dismissedRefAlerts:[...dismissedRefAlerts,...alerts.map(a=>a.key)]});
+
+  return <div style={{background:"white",borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 16px",marginBottom:14}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.danger}}/>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,flex:1}}>Stalled References ({visible_alerts.length})</div>
+      <button onClick={clearAll} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Clear All</button>
+    </div>
+    {visible.map((a,i)=>(
+      <div key={a.key} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none",flexWrap:"wrap"}}>
+        <div style={{width:6,height:6,borderRadius:3,background:C.danger,flexShrink:0}}/>
+        <span style={{fontSize:13,fontWeight:600,color:C.text}}>{a.repName}</span>
+        <span style={{fontSize:12,color:C.textMid,flex:1}}>Ref: {a.refName} — {a.msg}</span>
+        <span style={{fontSize:11,fontWeight:700,color:C.danger,background:C.danger+"11",padding:"2px 8px",borderRadius:6,whiteSpace:"nowrap"}}>{a.days}d</span>
+        <button onClick={()=>dismiss(a.key)} style={{fontSize:12,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
+      </div>
+    ))}
+    {visible_alerts.length>5&&<button onClick={()=>setShowAll(!showAll)} style={{width:"100%",marginTop:8,padding:"5px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>{showAll?"Show Less":"Show All "+visible_alerts.length+" Alerts"}</button>}
+  </div>;
+}
 
 // ── ACTIVITY ALERTS ──
 function ActivityAlerts({data,onUpdate,userRole,userId}) {
