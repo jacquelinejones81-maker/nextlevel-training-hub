@@ -7204,6 +7204,57 @@ const DAILY_SUCCESS_CHECKLIST_ITEMS = [
   {key:"eod_plan_tomorrow",title:"Tomorrow planned before bed",category:"End of Day"},
 ];
 
+// Money / business / work-ethic scripture for the Income Goal Campaign — King James Version
+// (public domain, no translation licensing to worry about). Picks a new one each calendar day.
+const MONEY_SCRIPTURES = [
+  {ref:"Proverbs 22:29",text:"Seest thou a man diligent in his business? he shall stand before kings; he shall not stand before mean men."},
+  {ref:"Proverbs 13:11",text:"Wealth gotten by vanity shall be diminished: but he that gathereth by labour shall increase."},
+  {ref:"Proverbs 14:23",text:"In all labour there is profit: but the talk of the lips tendeth only to penury."},
+  {ref:"Colossians 3:23",text:"And whatsoever ye do, do it heartily, as to the Lord, and not unto men."},
+  {ref:"Proverbs 21:5",text:"The thoughts of the diligent tend only to plenteousness; but of every one that is hasty only to want."},
+  {ref:"Proverbs 10:4",text:"He becometh poor that dealeth with a slack hand: but the hand of the diligent maketh rich."},
+  {ref:"Proverbs 16:3",text:"Commit thy works unto the LORD, and thy thoughts shall be established."},
+  {ref:"Ecclesiastes 9:10",text:"Whatsoever thy hand findeth to do, do it with thy might."},
+  {ref:"Proverbs 27:23",text:"Be thou diligent to know the state of thy flocks, and look well to thy herds."},
+  {ref:"Philippians 4:13",text:"I can do all things through Christ which strengtheneth me."},
+  {ref:"Proverbs 24:27",text:"Prepare thy work without, and make it fit for thyself in the field; and afterwards build thine house."},
+  {ref:"Proverbs 6:6",text:"Go to the ant, thou sluggard; consider her ways, and be wise."},
+  {ref:"Proverbs 12:24",text:"The hand of the diligent shall bear rule: but the slothful shall be under tribute."},
+  {ref:"Deuteronomy 8:18",text:"Thou shalt remember the LORD thy God: for it is he that giveth thee power to get wealth."},
+  {ref:"Proverbs 3:9",text:"Honour the LORD with thy substance, and with the firstfruits of all thine increase."},
+  {ref:"2 Corinthians 9:6",text:"He which soweth sparingly shall reap also sparingly; and he which soweth bountifully shall reap also bountifully."},
+  {ref:"Proverbs 16:9",text:"A man's heart deviseth his way: but the LORD directeth his steps."},
+  {ref:"Proverbs 31:17",text:"She girdeth her loins with strength, and strengtheneth her arms."},
+  {ref:"Galatians 6:9",text:"And let us not be weary in well doing: for in due season we shall reap, if we faint not."},
+  {ref:"Proverbs 22:6",text:"Train up a child in the way he should go: and when he is old, he will not depart from it."},
+  {ref:"Matthew 25:21",text:"Well done, thou good and faithful servant: thou hast been faithful over a few things, I will make thee ruler over many things."},
+  {ref:"Proverbs 11:25",text:"The liberal soul shall be made fat: and he that watereth shall be watered also himself."},
+  {ref:"Luke 16:10",text:"He that is faithful in that which is least is faithful also in much."},
+  {ref:"Proverbs 28:20",text:"A faithful man shall abound with blessings: but he that maketh haste to be rich shall not be innocent."},
+  {ref:"Jeremiah 29:11",text:"For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end."},
+  {ref:"Malachi 3:10",text:"Bring ye all the tithes into the storehouse, that there may be meat in mine house, and prove me now herewith, saith the LORD of hosts, if I will not open you the windows of heaven, and pour you out a blessing, that there shall not be room enough to receive it."},
+  {ref:"Proverbs 3:10",text:"So shall thy barns be filled with plenty, and thy presses shall burst out with new wine."},
+  {ref:"Leviticus 27:30",text:"And all the tithe of the land, whether of the seed of the land, or of the fruit of the tree, is the LORD's: it is holy unto the LORD."},
+  {ref:"2 Corinthians 9:7",text:"Every man according as he purposeth in his heart, so let him give; not grudgingly, or of necessity: for God loveth a cheerful giver."},
+  {ref:"Luke 6:38",text:"Give, and it shall be given unto you; good measure, pressed down, and shaken together, and running over, shall men give into your bosom."},
+  {ref:"Romans 12:11",text:"Not slothful in business; fervent in spirit; serving the Lord."},
+  {ref:"Proverbs 16:8",text:"Better is a little with righteousness than great revenues without right."},
+  {ref:"Ecclesiastes 5:19",text:"Every man also to whom God hath given riches and wealth, and hath given him power to eat thereof, and to take his portion, and to rejoice in his labour; this is the gift of God."},
+  {ref:"1 Timothy 6:10",text:"For the love of money is the root of all evil: which while some coveted after, they have erred from the faith, and pierced themselves through with many sorrows."},
+  {ref:"Proverbs 11:1",text:"A false balance is abomination to the LORD: but a just weight is his delight."},
+  {ref:"James 1:5",text:"If any of you lack wisdom, let him ask of God, that giveth to all men liberally, and upbraideth not; and it shall be given him."},
+  {ref:"Psalm 37:4",text:"Delight thyself also in the LORD; and he shall give thee the desires of thine heart."},
+  {ref:"Proverbs 15:22",text:"Without counsel purposes are disappointed: but in the multitude of counsellors they are established."},
+  {ref:"Habakkuk 2:2",text:"Write the vision, and make it plain upon tables, that he may run that readeth it."},
+  {ref:"Joshua 1:9",text:"Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest."},
+];
+const getTodaysScripture = () => {
+  const start = new Date(new Date().getFullYear(),0,0);
+  const diff = new Date() - start;
+  const dayOfYear = Math.floor(diff/86400000);
+  return MONEY_SCRIPTURES[dayOfYear % MONEY_SCRIPTURES.length];
+};
+
 function MyTasksPage({session,data,onUpdate}) {
   const userId = session.id;
   const myTasks = (data.myTasks||{})[userId]||[];
@@ -7405,6 +7456,11 @@ function MyTasksPage({session,data,onUpdate}) {
       </div>
     </div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
+
+    {(session.role==="admin"||session.role==="superadmin")&&(()=>{ const s=getTodaysScripture(); return <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:10,padding:"10px 13px",marginBottom:16}}>
+      <div style={{fontSize:13,color:C.text,fontStyle:"italic",lineHeight:1.5,marginBottom:3}}>"{s.text}"</div>
+      <div style={{fontSize:11,color:C.teal,fontWeight:700}}>{s.ref}</div>
+    </div>; })()}
 
     {/* Income Goal Campaign */}
     {(session.role==="admin"||session.role==="superadmin")&&campaign&&<div style={{marginBottom:24}}>
