@@ -3481,7 +3481,7 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
 
 // ── MY PROFILE PAGE ──
 // ── MY ACTIVITY REPORT (for admins/trainers to view their own production + coaching) ──
-function MyActivityReport({session,data}) {
+function MyActivityReport({session,data,onUpdate}) {
   const userId = session?.id;
   const isTrainerRole = (data.trainers||[]).some(t=>t.id===userId);
   const staffRecord = (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || {};
@@ -3540,6 +3540,32 @@ function MyActivityReport({session,data}) {
   const promo = PROMO_LEVELS.find(p=>p.key===(staffRecord.promotionLevel||"rep")) || PROMO_LEVELS[0];
   const annualEarned = ((totalPremiumMonth*12) - 65) * (promo.pct/100);
   const upfrontEarned = annualEarned > 0 ? annualEarned * (9/12) : 0;
+
+  // ── Monthly Production Archive — snapshots the numbers above so admins can look back ──
+  const monthlyArchive = ((data.monthlyProductionArchive||{})[userId])||[];
+  const [showMonthlyArchive,setShowMonthlyArchive]=useState(false);
+  const currentMonthLabel = now.toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  const alreadyArchivedThisMonth = monthlyArchive.some(m=>m.monthLabel===currentMonthLabel);
+  const archiveThisMonth = () => {
+    if(typeof onUpdate!=="function") return;
+    if(alreadyArchivedThisMonth&&!window.confirm(`You already archived ${currentMonthLabel}. Save another snapshot with today's numbers anyway?`)) return;
+    const snapshot = {
+      id:Date.now(),
+      archivedAt:Date.now(),
+      monthLabel:currentMonthLabel,
+      incomeGoal, incomeEarned:Math.round(upfrontEarned),
+      pacGoal, pacActual:Math.round(pacMonth),
+      pacCountGoal, pacCountActual:pacCount,
+      lumpGoal, lumpActual:Math.round(lumpMonth),
+      premiumThisMonth:Math.round(totalPremiumMonth),
+      recruitsThisMonth:recruitsThisMonth.length,
+    };
+    onUpdate({...data,monthlyProductionArchive:{...(data.monthlyProductionArchive||{}),[userId]:[snapshot,...monthlyArchive]}});
+  };
+  const deleteMonthlySnapshot=(id)=>{
+    if(!window.confirm("Delete this archived month? This cannot be undone.")) return;
+    onUpdate({...data,monthlyProductionArchive:{...(data.monthlyProductionArchive||{}),[userId]:monthlyArchive.filter(m=>m.id!==id)}});
+  };
 
   // ── Conversion ratios (from this month's scorecard) ──
   const contactToApptRate = scorecardMonth.contacts>0 ? (scorecardMonth.apptSet/scorecardMonth.contacts) : 0;
@@ -3672,10 +3698,37 @@ function MyActivityReport({session,data}) {
   const hasCoaching = coaching.length>0;
 
   return <div style={{ maxWidth:700, margin:"0 auto" }}>
-    <div style={{ fontSize:dv(19,24), fontWeight:800, color:C.text, marginBottom:4 }}>📊 My Activity Report</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap",marginBottom:4}}>
+      <div style={{ fontSize:dv(19,24), fontWeight:800, color:C.text }}>📊 My Activity Report</div>
+      <button onClick={archiveThisMonth} style={{fontSize:12,padding:"5px 11px",borderRadius:8,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>{alreadyArchivedThisMonth?"Save Another Snapshot":"Archive This Month"}</button>
+    </div>
     <div style={{ fontSize:13, color:C.textMid, marginBottom:16 }}>
       {now.toLocaleDateString("en-US",{month:"long",year:"numeric"})} — Day {dayOfMonth} of {daysInMonth} ({monthPct}% of month elapsed)
     </div>
+
+    {/* Monthly Production Archive viewer */}
+    {monthlyArchive.length>0&&<div style={{marginBottom:16}}>
+      <button onClick={()=>setShowMonthlyArchive(!showMonthlyArchive)} style={{fontSize:13,fontWeight:700,color:C.text,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6,marginBottom:showMonthlyArchive?10:0}}>
+        <span style={{transform:showMonthlyArchive?"rotate(90deg)":"none",display:"inline-block",fontSize:11}}>▶</span>
+        Archived Months ({monthlyArchive.length})
+      </button>
+      {showMonthlyArchive&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {monthlyArchive.map(m=><div key={m.id} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",background:C.surface||"#f8fafc"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{m.monthLabel}</div>
+            <button onClick={()=>deleteMonthlySnapshot(m.id)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",flexShrink:0}}>Delete</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:6,marginTop:6,fontSize:12,color:C.textMid}}>
+            {m.incomeGoal>0&&<div>Income: <b style={{color:C.text}}>${m.incomeEarned.toLocaleString()}</b> / ${m.incomeGoal.toLocaleString()}</div>}
+            {m.pacGoal>0&&<div>PAC $: <b style={{color:C.text}}>${m.pacActual.toLocaleString()}</b> / ${m.pacGoal.toLocaleString()}</div>}
+            {m.pacCountGoal>0&&<div>PAC Accounts: <b style={{color:C.text}}>{m.pacCountActual}</b> / {m.pacCountGoal}</div>}
+            {m.lumpGoal>0&&<div>Lump Sum: <b style={{color:C.text}}>${m.lumpActual.toLocaleString()}</b> / ${m.lumpGoal.toLocaleString()}</div>}
+            <div>Premium: <b style={{color:C.text}}>${m.premiumThisMonth.toLocaleString()}</b></div>
+            <div>New Recruits: <b style={{color:C.text}}>{m.recruitsThisMonth}</b></div>
+          </div>
+        </div>)}
+      </div>}
+    </div>}
 
     {/* Coaching Section — shown first if there's anything to flag */}
     {hasCoaching && <Card style={{ marginBottom:16, border:`2px solid ${C.gold}55` }}>
@@ -7375,9 +7428,26 @@ function MyTasksPage({session,data,onUpdate}) {
     onUpdate({...data,incomeCampaign:{...(data.incomeCampaign||{}),[userId]:defaultCampaign}});
   };
   const deleteCampaign = () => {
-    if(!window.confirm("Delete this Income Goal Campaign? This removes all targets, weekly scorecard, and finish line progress.")) return;
+    if(!window.confirm("Delete this Income Goal Campaign? This removes all targets, weekly scorecard, and finish line progress — permanently, with no copy saved.")) return;
     const {[userId]:_omit,...restCampaigns} = data.incomeCampaign||{};
     onUpdate({...data,incomeCampaign:restCampaigns});
+  };
+  const campaignArchive = ((data.incomeCampaignArchive||{})[userId])||[];
+  const [showArchive,setShowArchive]=useState(false);
+  const archiveCampaign = () => {
+    if(!window.confirm("Archive this campaign and start a new one?\n\nA snapshot of everything (targets, weekly scorecard, finish line) will be saved so you can look back on it later, then this campaign will be cleared so you can start fresh.")) return;
+    const snapshot = {...campaign,archivedAt:Date.now(),id:Date.now()};
+    const updatedArchive = [snapshot,...campaignArchive];
+    const {[userId]:_omit,...restCampaigns} = data.incomeCampaign||{};
+    onUpdate({
+      ...data,
+      incomeCampaign:restCampaigns,
+      incomeCampaignArchive:{...(data.incomeCampaignArchive||{}),[userId]:updatedArchive},
+    });
+  };
+  const deleteArchivedCampaign = (id) => {
+    if(!window.confirm("Permanently delete this archived campaign? This cannot be undone.")) return;
+    onUpdate({...data,incomeCampaignArchive:{...(data.incomeCampaignArchive||{}),[userId]:campaignArchive.filter(c=>c.id!==id)}});
   };
   const updateTarget=(id,patch)=>updateCampaign({targets:campaign.targets.map(t=>t.id===id?{...t,...patch}:t)});
   const addTarget=()=>updateCampaign({targets:[...campaign.targets,{id:Date.now(),category:"New Category",goalValue:"",done:false}]});
@@ -7466,7 +7536,10 @@ function MyTasksPage({session,data,onUpdate}) {
     {(session.role==="admin"||session.role==="superadmin")&&campaign&&<div style={{marginBottom:24}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text}}>Income Goal Campaign</div>
-        <button onClick={deleteCampaign} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600}}>Delete Campaign</button>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={archiveCampaign} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Archive & Start New</button>
+          <button onClick={deleteCampaign} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Delete (no copy saved)</button>
+        </div>
       </div>
 
       <div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"9px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
@@ -7552,6 +7625,31 @@ function MyTasksPage({session,data,onUpdate}) {
         </div>)}
       </div>
       <button onClick={addFinish} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginTop:6}}>+ Add Goal</button>
+    </div>}
+
+    {/* Archived Campaigns — visible any time, even with no active campaign */}
+    {(session.role==="admin"||session.role==="superadmin")&&campaignArchive.length>0&&<div style={{marginBottom:24}}>
+      <button onClick={()=>setShowArchive(!showArchive)} style={{fontSize:13,fontWeight:700,color:C.text,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6,marginBottom:showArchive?10:0}}>
+        <span style={{transform:showArchive?"rotate(90deg)":"none",display:"inline-block",fontSize:11}}>▶</span>
+        Archived Campaigns ({campaignArchive.length})
+      </button>
+      {showArchive&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {campaignArchive.map(c=>{
+          const targetsMet=(c.targets||[]).filter(t=>t.done).length;
+          const weeksMet=(c.weeks||[]).filter(w=>w.revenueDone).length;
+          const finishMet=(c.finishLine||[]).filter(f=>f.done).length;
+          return <div key={c.id} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",background:C.surface||"#f8fafc"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:C.text}}>Target: ${Number(c.targetIncome||0).toLocaleString()} by {c.deadline}</div>
+                <div style={{fontSize:11,color:C.textMid,marginTop:2}}>Archived {new Date(c.archivedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+                <div style={{fontSize:11,color:C.textMid,marginTop:4}}>{targetsMet}/{(c.targets||[]).length} targets hit · {weeksMet}/{(c.weeks||[]).length} weeks on pace · {finishMet}/{(c.finishLine||[]).length} finish line goals met</div>
+              </div>
+              <button onClick={()=>deleteArchivedCampaign(c.id)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",flexShrink:0}}>Delete</button>
+            </div>
+          </div>;
+        })}
+      </div>}
     </div>}
 
     {/* Daily Success Checklist — weekly grid */}
@@ -9805,7 +9903,7 @@ export default function App() {
     if(section==="advancement") return <AdvancementLibrary data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
-    if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin")) return <MyActivityReport session={session} data={data}/>;
+    if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin")) return <MyActivityReport session={session} data={data} onUpdate={upd}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
