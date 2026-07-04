@@ -1880,6 +1880,7 @@ function ManageTeamPage({data,onUpdate}) {
       rvpBookingLinks:localData.rvpBookingLinks,
       announcements:localData.announcements,
       teamBrands:localData.teamBrands,
+      repShareableLinks:localData.repShareableLinks,
     });
     setHasChanges(false);setConfirm(null);}});
 
@@ -2212,6 +2213,32 @@ function ManageTeam({data,onUpdate,onClose}) {
           <input placeholder="YouTube embed URL or Google Drive /preview URL" value={data.rvpPathVideoUrl||""} onChange={e=>updateLocal({...localData,rvpPathVideoUrl:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
           {data.rvpPathVideoUrl&&<div style={{fontSize:12,color:C.success,marginTop:3}}>✓ Saved</div>}
         </div>
+      </div>
+
+      {/* Rep-Shareable Links (video + survey links every rep can personalize and share) */}
+      <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginTop:16}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Rep-Shareable Links</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Links every rep can personalize and share (e.g. "How Money Works" video, recruiting video). Each rep's name — and Primerica Rep ID if they've entered one — gets inserted wherever <code style={{background:C.surface||"#f1f5f9",padding:"1px 4px",borderRadius:4}}>{"{REP}"}</code> appears in the URL below. If you leave that out, it gets added automatically as a "ref=" parameter at the end.</div>
+        {(localData.repShareableLinks||[]).map((link,i)=><div key={link.id} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
+          <div style={{display:"flex",gap:6,marginBottom:6}}>
+            <input placeholder="Label (e.g. How Money Works Video)" value={link.label||""} onChange={e=>{
+              const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,label:e.target.value}:l);
+              updateLocal({...localData,repShareableLinks:updated});
+            }} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+            <button onClick={()=>{
+              if(!window.confirm("Remove this shareable link for everyone?")) return;
+              updateLocal({...localData,repShareableLinks:(localData.repShareableLinks||[]).filter((l,j)=>j!==i)});
+            }} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:13}}>✕</button>
+          </div>
+          <input placeholder="Survey URL — include {REP} where the name/ID should go, e.g. https://form.jotform.com/xxxx?whoSentThis={REP}" value={link.templateUrl||""} onChange={e=>{
+            const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,templateUrl:e.target.value.trim()}:l);
+            updateLocal({...localData,repShareableLinks:updated});
+          }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+        </div>)}
+        <button onClick={()=>{
+          const updated=[...(localData.repShareableLinks||[]),{id:Date.now(),label:"",templateUrl:""}];
+          updateLocal({...localData,repShareableLinks:updated});
+        }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Link</button>
       </div>
       {hasChanges&&<div style={{position:"sticky",bottom:0,background:"white",paddingTop:12,borderTop:`1px solid ${C.border}`,marginTop:12}}><button onClick={saveChanges} style={{width:"100%",padding:"11px",borderRadius:10,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:700}}>💾 Save All Changes</button></div>}
     </div>
@@ -6859,11 +6886,74 @@ function ProspectsPage({session,data,onUpdate}) {
 
 
 // ── LEAD LINK PAGE (sidebar) ──
-function LeadLinkPage({session,data}) {
+function ShareableVideoLinkCard({label,url}) {
+  const [copied,setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard?.writeText(url).then(()=>{
+      setCopied(true);
+      setTimeout(()=>setCopied(false),2500);
+    });
+  };
+  return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:12,border:"1px solid "+C.teal+"33"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+      <div style={{width:8,height:8,borderRadius:4,background:C.gold}}/>
+      <div style={{fontSize:13,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.7px"}}>{label}</div>
+    </div>
+    <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+      <div style={{flex:1,fontSize:13,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{url}</div>
+    </div>
+    <button onClick={copy} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>
+      {copied?"Copied!":"Copy Link"}
+    </button>
+  </div>;
+}
+
+function buildPersonalShareLink(templateUrl,refText){
+  if(!templateUrl) return "";
+  if(templateUrl.includes("{REP}")) return templateUrl.replace("{REP}",encodeURIComponent(refText));
+  return templateUrl+(templateUrl.includes("?")?"&":"?")+"ref="+encodeURIComponent(refText);
+}
+
+function findMyRecordForLinks(data,session){
+  if(session.role==="trainer") return {arr:"trainers",rec:(data.trainers||[]).find(t=>t.id===session.id)};
+  if(session.role==="admin"||session.role==="superadmin") return {arr:"admins",rec:(data.admins||[]).find(a=>a.id===session.id)};
+  return {arr:"reps",rec:(data.reps||[]).find(r=>r.id===session.id)};
+}
+
+function LeadLinkPage({session,data,onUpdate}) {
+  const {arr,rec:myRecord} = findMyRecordForLinks(data,session);
+  const savedRepId = myRecord?.primericaRepId||"";
+  const [repIdDraft,setRepIdDraft] = useState(savedRepId);
+  useEffect(()=>{ setRepIdDraft(savedRepId); },[savedRepId]);
+
+  const saveRepId = () => {
+    if(!myRecord||typeof onUpdate!=="function") return;
+    const updatedArr = (data[arr]||[]).map(x=>x.id===myRecord.id?{...x,primericaRepId:repIdDraft.trim()}:x);
+    onUpdate({...data,[arr]:updatedArr});
+  };
+
+  const refText = session.name + (savedRepId?` (${savedRepId})`:"");
+  const shareableLinks = data.repShareableLinks||[];
+
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
     <MyLeadLink name={session.name} data={data}/>
+
+    <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:16,background:C.surface||"#f8fafc"}}>
+      <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>Your Primerica Rep ID (optional)</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:8,lineHeight:1.4}}>If you have two teammates with the same name, this makes sure you always get credit for your own shares. Leave blank and your name alone will be used.</div>
+      <div style={{display:"flex",gap:6}}>
+        <input value={repIdDraft} onChange={e=>setRepIdDraft(e.target.value)} placeholder="e.g. 12345678" style={{flex:1,padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+        <button onClick={saveRepId} style={{padding:"7px 14px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Save</button>
+      </div>
+    </div>
+
+    {shareableLinks.length>0&&<>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
+      {shareableLinks.map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,refText)}/>)}
+    </>}
+
     <Card>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>How to use your link</div>
       {[
@@ -9996,7 +10086,7 @@ export default function App() {
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
-    if(section==="leadlink") return <LeadLinkPage session={session} data={data}/>;
+    if(section==="leadlink") return <LeadLinkPage session={session} data={data} onUpdate={upd}/>;
     if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="accountability") return <AccountabilityDashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id}/>;
     // Admin trainer tools — only if alsoRecruits is enabled
