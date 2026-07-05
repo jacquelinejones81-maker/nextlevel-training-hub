@@ -2237,6 +2237,8 @@ function ManageTeam({data,onUpdate,onClose}) {
         </div>
       </div>
 
+      <div style={{background:"red",color:"white",fontSize:32,fontWeight:900,textAlign:"center",padding:"30px",marginBottom:20,border:"10px solid black"}}>TEST 123 — IF YOU SEE THIS RED BOX, THE DEPLOY WORKED</div>
+
       {/* Rep-Shareable Links (video + survey links every rep can personalize and share) */}
       <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginTop:16}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Rep-Shareable Links</div>
