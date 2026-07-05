@@ -1441,14 +1441,15 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="checklist"&&<div>{rep.track!=="licensed"&&!rep.referencesNotRequired&&rep.createdAt&&(Date.now()-rep.createdAt)>=3*86400000&&(rep.references||[]).filter(r=>r&&r.name&&r.name.trim()).length<5&&isOwnView&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
       <div style={{fontSize:13,color:"#92400e",fontWeight:600}}>📋 Don't forget to add your 5 references — they help us learn more about you and your goals.</div>
       <button onClick={()=>setTab("refs")} style={{fontSize:12,padding:"6px 12px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>Add References</button>
-    </div>}{rep.track!=="licensed"&&isOwnView&&(data.repShareableLinks||[]).length>0&&<div style={{marginBottom:16}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
-      {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))}/>)}
     </div>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="leadlink"&&<div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
       <MyLeadLink name={rep.name} data={data}/>
+      {(data.repShareableLinks||[]).length>0&&<div style={{marginTop:16}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
+        {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))}/>)}
+      </div>}
     </div>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
@@ -7306,20 +7307,9 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     return Math.floor((Date.now()-new Date(stageUpdatedAt))/(86400000));
   };
 
-  const shareableLinks = data.repShareableLinks||[];
-  const refText = (rep.name||"") + (rep.primericaRepId?` (${rep.primericaRepId})`:"");
-  const ShareLinksBlock = shareableLinks.length>0 ? <div style={{marginBottom:16}}>
-    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
-    {shareableLinks.map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,refText)}/>)}
-  </div> : null;
-
-  if(mmLeads.length===0) return <div>
-    {ShareLinksBlock}
-    <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:13}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>
-  </div>;
+  if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:13}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
 
   return <div>
-    {ShareLinksBlock}
     {/* Wants Review notification banner */}
     {leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length>0&&<div style={{background:"linear-gradient(135deg,#f97316,#ea580c)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
       <span style={{fontSize:16}}>🔔</span>
