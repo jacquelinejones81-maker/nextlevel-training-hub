@@ -1222,6 +1222,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"checklist",l:"Checklist"},
     {k:"planner",l:"Daily Planner"},
     {k:"milestones",l:"Milestones"},
+    {k:"leadlink",l:"My Lead Link"},
     ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"pipeline",l:"My Pipeline"}]:[]),
     {k:"prospects",l:"Prospects"},
     {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
@@ -1415,7 +1416,6 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         </button>
       </div>;
     })()}
-    {!readOnly&&rep.track==="licensed"&&<MyLeadLink name={rep.name} data={data}/>}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
@@ -1446,6 +1446,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))}/>)}
     </div>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
+    {tab==="leadlink"&&<div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
+      <MyLeadLink name={rep.name} data={data}/>
+    </div>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div></Card>)}</div>}
