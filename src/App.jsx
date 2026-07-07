@@ -3040,7 +3040,8 @@ const COMMITMENT_CATEGORIES = [
   {key:"recruits",label:"Recruits",icon:"🤝",manual:false},
   {key:"lifeApps",label:"Life Apps",icon:"📝",manual:false},
   {key:"premium",label:"Premium",icon:"💵",manual:false,isMoney:true},
-  {key:"investment",label:"Investment",icon:"📈",manual:false,isMoney:true},
+  {key:"pacInvestment",label:"PAC Investment",icon:"🔁",manual:false,isMoney:true},
+  {key:"lumpInvestment",label:"Lump Sum Investment",icon:"📈",manual:false,isMoney:true},
   {key:"testActivity",label:"Test Scheduled/Taken (Team)",icon:"🎓",manual:true},
 ];
 
@@ -3061,7 +3062,8 @@ function getAutoActuals(data,userId,dateStr){
     recruits:dayRecruits.length,
     lifeApps:dayLifeApps.length,
     premium:dayLifeApps.reduce((s,a)=>s+(Number(a.premium)||0),0),
-    investment:dayInvestments.reduce((s,i)=>s+(Number(i.pac)||0)+parseLump(i.lumpSum),0),
+    pacInvestment:dayInvestments.reduce((s,i)=>s+(Number(i.pac)||0),0),
+    lumpInvestment:dayInvestments.reduce((s,i)=>s+parseLump(i.lumpSum),0),
   };
 }
 
@@ -3210,6 +3212,22 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
               }
             </div>
           </div>
+        </div>;
+      })}
+    </Card>}
+
+    {/* Simple daily activity log for reps who aren't on the full commitment system yet (new/unlicensed reps) */}
+    {!canCommit&&<Card style={{marginBottom:16}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>Log Today's Activity</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>Log your contacts and appointments each day — it adds up to your weekly score below.</div>
+      {[["contacts","Contacts Made","📞"],["apptSet","Appointments Set","📅"],["apptDone","Appointments Completed","✅"]].map(([key,label,icon])=>{
+        const actual=Number(todayEntry.actual?.[key])||0;
+        return <div key={key} style={{border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 11px",marginBottom:7,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:14}}>{icon}</span>
+          <span style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{label}</span>
+          <button onClick={()=>updateActual(key,actual-1)} style={{width:28,height:28,borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:15,color:C.textMid,flexShrink:0}}>-</button>
+          <div style={{width:32,textAlign:"center",fontSize:14,fontWeight:700,color:C.text}}>{actual}</div>
+          <button onClick={()=>updateActual(key,actual+1)} style={{width:28,height:28,borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:15,flexShrink:0}}>+</button>
         </div>;
       })}
     </Card>}
