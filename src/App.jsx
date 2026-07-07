@@ -5009,7 +5009,31 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 if(noScores) return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+dr.dLabel+"</td><td colspan='3' style='text-align:center;padding:6px;color:"+col+";font-weight:600'>No scores logged</td></tr>";
                 return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+dr.dLabel+"</td><td style='text-align:right;padding:6px'>"+dr.committedTotal+"</td><td style='text-align:right;padding:6px'>"+dr.actualTotal+"</td><td style='text-align:right;padding:6px;font-weight:700;color:"+col+"'>"+pct+"%</td></tr>";
               }).join("");
-              return "<h2>WEEKLY COMMITMENT VS ACTUAL</h2><p class='note'>Daily commitment vs. actual results for "+rep.name+", combined across all tracked categories (Calls, Contacts, Appts Set/Completed, How Money Works Invitees, Recruits, Life Apps, Premium, Investment, Test Scheduled/Taken).</p><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Day</th><th style='text-align:right;padding:6px'>Committed</th><th style='text-align:right;padding:6px'>Actual</th><th style='text-align:right;padding:6px'>%</th></tr>"+rows+"</table>";
+              // Detailed category-by-category breakdown, one column per day — this is the
+              // part used to actually walk through the week on a call: "Monday you committed
+              // to 5 calls and made 0" etc.
+              const shortLabels=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+              const detailHeader="<th style='text-align:left;padding:6px'>Category</th>"+dayRows.map((dr,i)=>"<th style='text-align:center;padding:6px'>"+shortLabels[i]+"</th>").join("");
+              const detailRows=COMMITMENT_CATEGORIES.map(cat=>{
+                const cells=dayRows.map((dr,i)=>{
+                  if(dr.isFuture) return "<td style='text-align:center;padding:6px;color:#cbd5e1'>—</td>";
+                  const d=new Date(wkStartDate); d.setDate(wkStartDate.getDate()+i);
+                  const dStr=d.toISOString().split("T")[0];
+                  const entry=wkDays[dStr]||{committed:{},actual:{}};
+                  const committed=Number(entry.committed?.[cat.key])||0;
+                  const actual=getScorecardActual(data,rep.id,dStr,cat.key,entry);
+                  if(committed===0&&actual===0) return "<td style='text-align:center;padding:6px;color:#cbd5e1'>—</td>";
+                  const missed=committed>0&&actual<committed;
+                  const prefix=cat.isMoney?"$":"";
+                  return "<td style='text-align:center;padding:6px;font-size:11px;"+(missed?"color:#dc2626;font-weight:600":"color:#374151")+"'>C: "+prefix+committed+"<br/>A: "+prefix+actual+"</td>";
+                }).join("");
+                return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600;white-space:nowrap'>"+cat.icon+" "+cat.label+"</td>"+cells+"</tr>";
+              }).join("");
+              return "<h2>WEEKLY COMMITMENT VS ACTUAL</h2>"
+                +"<p class='note'>Combined daily totals for "+rep.name+" — adds together all 10 categories below into one number per day, just to show the overall trend at a glance.</p>"
+                +"<table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;margin-bottom:16px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Day</th><th style='text-align:right;padding:6px'>Committed (all categories combined)</th><th style='text-align:right;padding:6px'>Actual (all categories combined)</th><th style='text-align:right;padding:6px'>%</th></tr>"+rows+"</table>"
+                +"<p class='note'>Category-by-category breakdown — C = Committed, A = Actual. Red means they fell short that day. Use this to walk through the week day by day.</p>"
+                +"<table style='width:100%;border-collapse:collapse;font-size:11px'><tr style='background:#f0f4f8'>"+detailHeader+"</tr>"+detailRows+"</table>";
             })():""}
             <h2>TRAINING OBSERVATIONS</h2>
             <p class="note">Observations are a core part of the training process. Field Training Observations (FTO) show how actively ${rep.name} is working alongside their trainer in the field.</p>
