@@ -1223,7 +1223,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"planner",l:"Daily Planner"},
     {k:"milestones",l:"Milestones"},
     {k:"leadlink",l:"My Lead Link"},
-    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"pipeline",l:"My Pipeline"}]:[]),
+    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"production",l:"Production"},{k:"pipeline",l:"My Pipeline"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
     {k:"prospects",l:"Prospects"},
     {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
     {k:"scorecard",l:"Scorecard"},
@@ -1441,7 +1441,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="checklist"&&<div>{rep.track!=="licensed"&&!rep.referencesNotRequired&&rep.createdAt&&(Date.now()-rep.createdAt)>=3*86400000&&(rep.references||[]).filter(r=>r&&r.name&&r.name.trim()).length<5&&isOwnView&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
       <div style={{fontSize:13,color:"#92400e",fontWeight:600}}>📋 Don't forget to add your 5 references — they help us learn more about you and your goals.</div>
       <button onClick={()=>setTab("refs")} style={{fontSize:12,padding:"6px 12px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>Add References</button>
-    </div>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{(rep.track==="licensed"||rep.fieldTrainerGranted)&&!readOnly&&<RepInvestmentEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
+    </div>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
+    {tab==="production"&&(rep.track==="licensed"||rep.fieldTrainerGranted)&&<RepProductionTab rep={rep} data={data} onUpdate={onUpdate} onUpdateData={onUpdateData} readOnly={readOnly}/>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="leadlink"&&<div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
@@ -1762,7 +1763,41 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
 }
 
 
-// ── INVESTMENT BREAKDOWN ──
+// ── REP PRODUCTION TAB (licensed reps / field-trainer-granted) ──
+// Mirrors the field trainer/admin "Production" page exactly: promotion level, life apps
+// with income goal, and investments with PAC/Lump goal tracking.
+function RepProductionTab({rep,data,onUpdate,onUpdateData,readOnly}) {
+  const PROMO_LEVELS=[{key:"rep",label:"Rep",pct:25},{key:"sr_rep",label:"Senior Rep",pct:35},{key:"dl",label:"District Leader",pct:50},{key:"divl",label:"Division Leader",pct:60},{key:"rl",label:"Regional Leader",pct:70},{key:"srl",label:"Senior Regional Leader",pct:80},{key:"rvp",label:"RVP",pct:110}];
+  const myProdRaw=(data.myProduction||{})[rep.id]||{};
+  // One-time migration safety net: if this rep already logged investments the old way
+  // (stored directly on the rep record) and hasn't logged any here yet, show those so
+  // nothing already entered is lost. New entries go through the shared myProduction store.
+  const hasNewInvestments=(myProdRaw.investments||[]).length>0;
+  const hasLegacyInvestments=(rep.investments||[]).length>0;
+  const myProd=(!hasNewInvestments&&hasLegacyInvestments)?{...myProdRaw,investments:rep.investments}:myProdRaw;
+
+  const updateMyProd=(patch)=>{
+    if(typeof onUpdateData!=="function") return;
+    onUpdateData({...data,myProduction:{...(data.myProduction||{}),[rep.id]:patch}});
+  };
+
+  return <div>
+    <Card style={{marginBottom:12,border:`1px solid ${C.gold}33`}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>My Contract Level</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Select your current Primerica promotion level. Updates commission calculations automatically.</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+        {PROMO_LEVELS.map(p=><button key={p.key} disabled={readOnly} onClick={()=>onUpdate(rep.id,{...rep,promotionLevel:p.key})} style={{padding:"6px 8px",borderRadius:7,border:`1px solid ${(rep.promotionLevel||"rep")===p.key?C.gold:C.border}`,background:(rep.promotionLevel||"rep")===p.key?C.gold+"11":"white",cursor:readOnly?"default":"pointer",textAlign:"left"}}>
+          <div style={{fontSize:13,fontWeight:700,color:(rep.promotionLevel||"rep")===p.key?C.gold:C.text}}>{p.label}</div>
+          <div style={{fontSize:12,color:C.textMid}}>{p.pct}%</div>
+        </button>)}
+      </div>
+    </Card>
+    {!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
+    <MyProd myProd={myProd} onUpdate={updateMyProd} investmentsOnly={true}/>
+  </div>;
+}
+
+
 function InvestmentBreakdown({data,reps,allStaff,totPAC,totLump}) {
   const [open,setOpen] = useState(false);
 
