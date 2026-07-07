@@ -1461,7 +1461,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
-    {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep"/>}
+    {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep" track={rep.track}/>}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
     {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
     {tab==="prospecting"&&<ProspectingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
@@ -2237,8 +2237,6 @@ function ManageTeam({data,onUpdate,onClose}) {
         </div>
       </div>
 
-      <div style={{background:"red",color:"white",fontSize:32,fontWeight:900,textAlign:"center",padding:"30px",marginBottom:20,border:"10px solid black"}}>TEST 123 — IF YOU SEE THIS RED BOX, THE DEPLOY WORKED</div>
-
       {/* Rep-Shareable Links (video + survey links every rep can personalize and share) */}
       <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginTop:16}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Rep-Shareable Links</div>
@@ -2995,21 +2993,89 @@ function getWeekStart(date=new Date()) {
   return d.toISOString().split("T")[0];
 }
 
-function ScorecardPage({data,onUpdate,userId,userRole}) {
+// ── DAILY COMMITMENT TRACKING (Scorecard) ──
+// "manual" categories have no other data source in the app — logged by hand each day.
+// Non-manual categories are auto-pulled from existing production/recruiting data so nobody double-enters them.
+const COMMITMENT_CATEGORIES = [
+  {key:"calls",label:"Calls",icon:"📱",manual:true},
+  {key:"contacts",label:"Contacts",icon:"📞",manual:true},
+  {key:"apptSet",label:"Appts Set",icon:"📅",manual:true},
+  {key:"apptDone",label:"Appts Completed",icon:"✅",manual:true},
+  {key:"hmwInvitees",label:"How Money Works Thurs. Invitees",icon:"💰",manual:true},
+  {key:"recruits",label:"Recruits",icon:"🤝",manual:false},
+  {key:"lifeApps",label:"Life Apps",icon:"📝",manual:false},
+  {key:"premium",label:"Premium",icon:"💵",manual:false,isMoney:true},
+  {key:"investment",label:"Investment",icon:"📈",manual:false,isMoney:true},
+  {key:"testActivity",label:"Test Scheduled/Taken (Team)",icon:"🎓",manual:true},
+];
+
+// Auto-computed actuals for a given user on a given date (YYYY-MM-DD), pulled from
+// existing production/recruiting data — never stored, always computed fresh.
+function getAutoActuals(data,userId,dateStr){
+  const myProd=(data.myProduction||{})[userId]||{};
+  const lifeAppsArr=myProd.lifeApps||[];
+  const investmentsArr=myProd.investments||[];
+  const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
+  const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr);
+  const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
+  const dayRecruits=(data.reps||[]).filter(r=>{
+    if(r.trainerId!==userId||!r.createdAt) return false;
+    try{ return new Date(r.createdAt).toISOString().split("T")[0]===dateStr; }catch(e){ return false; }
+  });
+  return {
+    recruits:dayRecruits.length,
+    lifeApps:dayLifeApps.length,
+    premium:dayLifeApps.reduce((s,a)=>s+(Number(a.premium)||0),0),
+    investment:dayInvestments.reduce((s,i)=>s+(Number(i.pac)||0)+parseLump(i.lumpSum),0),
+  };
+}
+
+function getScorecardActual(data,userId,dateStr,catKey,dayEntry){
+  const cat=COMMITMENT_CATEGORIES.find(c=>c.key===catKey);
+  if(!cat) return 0;
+  if(!cat.manual) return getAutoActuals(data,userId,dateStr)[catKey]||0;
+  return (dayEntry?.actual||{})[catKey]||0;
+}
+
+function ScorecardPage({data,onUpdate,userId,userRole,track}) {
+
   const weekKey=getWeekStart();
+  const todayStr=new Date().toISOString().split("T")[0];
   const allScores=data.scorecards||{};
   const myScores=allScores[userId]||{};
-  const week=myScores[weekKey]||{contacts:0,apptSet:0,apptDone:0};
+  const week=myScores[weekKey]||{contacts:0,apptSet:0,apptDone:0,days:{}};
+  const weekDays=week.days||{};
+  const todayEntry=weekDays[todayStr]||{committed:{},actual:{}};
   const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const isTrainer=userRole==="trainer";
+  const canCommit=(userRole==="rep"&&track==="licensed")||isTrainer;
 
   const goals={contacts:100,apptSet:20,apptDone:20};
 
-  const update=(field,val)=>{
-    const updated={...data,scorecards:{...allScores,[userId]:{...myScores,[weekKey]:{...week,[field]:Math.max(0,val)}}}};
-    onUpdate(updated);
+  // Weekly totals: sum daily entries when present, otherwise fall back to the old flat
+  // weekly fields (for weeks logged before this daily system existed — nothing is lost).
+  const weeklyTotal=(key)=>{
+    const dayList=Object.values(weekDays);
+    if(dayList.length>0){
+      const cat=COMMITMENT_CATEGORIES.find(c=>c.key===key);
+      if(cat&&!cat.manual){
+        return Object.keys(weekDays).reduce((s,d)=>s+(getAutoActuals(data,userId,d)[key]||0),0);
+      }
+      return dayList.reduce((s,d)=>s+(Number(d.actual?.[key])||0),0);
+    }
+    return Number(week[key])||0;
   };
 
-  const totalPct=Math.round(((week.contacts/goals.contacts)+(week.apptSet/goals.apptSet)+(week.apptDone/goals.apptDone))/3*100);
+  const updateCommitted=(key,val)=>{
+    const newDays={...weekDays,[todayStr]:{...todayEntry,committed:{...todayEntry.committed,[key]:Math.max(0,val)}}};
+    onUpdate({...data,scorecards:{...allScores,[userId]:{...myScores,[weekKey]:{...week,days:newDays}}}});
+  };
+  const updateActual=(key,val)=>{
+    const newDays={...weekDays,[todayStr]:{...todayEntry,actual:{...todayEntry.actual,[key]:Math.max(0,val)}}};
+    onUpdate({...data,scorecards:{...allScores,[userId]:{...myScores,[weekKey]:{...week,days:newDays}}}});
+  };
+
+  const totalPct=Math.round(((weeklyTotal("contacts")/goals.contacts)+(weeklyTotal("apptSet")/goals.apptSet)+(weeklyTotal("apptDone")/goals.apptDone))/3*100);
   const getMessage=()=>{
     if(totalPct>=80) return {msg:"Outstanding week! You are on fire!",color:C.success};
     if(totalPct>=50) return {msg:"You are building momentum! Keep going!",color:C.teal};
@@ -3018,37 +3084,42 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
   };
   const {msg,color}=getMessage();
 
-  const contactRate=week.contacts>0?Math.round((week.apptSet/week.contacts)*100):0;
-  const showRate=week.apptSet>0?Math.round((week.apptDone/week.apptSet)*100):0;
-
-  const metrics=[
-    {key:"contacts",label:"Contacts Made",goal:goals.contacts,val:week.contacts,color:C.teal,icon:"📞",desc:"Top of the funnel — every appointment starts with a contact"},
-    {key:"apptSet",label:"Appointments Set",goal:goals.apptSet,val:week.apptSet,color:C.purple,icon:"📅",desc:"Target 1 appointment per 5 contacts"},
-    {key:"apptDone",label:"Appointments Completed",goal:goals.apptDone,val:week.apptDone,color:C.success,icon:"✅",desc:"Tracks your show rate — follow-through is everything"},
-  ];
+  const wkContacts=weeklyTotal("contacts"), wkApptSet=weeklyTotal("apptSet"), wkApptDone=weeklyTotal("apptDone");
+  const contactRate=wkContacts>0?Math.round((wkApptSet/wkContacts)*100):0;
+  const showRate=wkApptSet>0?Math.round((wkApptDone/wkApptSet)*100):0;
 
   // Get week history (last 4 weeks)
   const weekHistory=Array.from({length:4},(_,i)=>{
     const d=new Date();
     d.setDate(d.getDate()-(i*7));
     const wk=getWeekStart(d);
-    const wkData=myScores[wk]||{contacts:0,apptSet:0,apptDone:0};
-    const pct=Math.round(((wkData.contacts/goals.contacts)+(wkData.apptSet/goals.apptSet)+(wkData.apptDone/goals.apptDone))/3*100);
-    return {week:wk,label:i===0?"This Week":i===1?"Last Week":`${i} Weeks Ago`,pct,data:wkData};
+    const wkData=myScores[wk]||{contacts:0,apptSet:0,apptDone:0,days:{}};
+    const wkDayList=Object.values(wkData.days||{});
+    const tot=(key)=>wkDayList.length>0?wkDayList.reduce((s,dd)=>s+(Number(dd.actual?.[key])||0),0):(Number(wkData[key])||0);
+    const c=tot("contacts"),s=tot("apptSet"),dn=tot("apptDone");
+    const pct=Math.round(((c/goals.contacts)+(s/goals.apptSet)+(dn/goals.apptDone))/3*100);
+    return {week:wk,label:i===0?"This Week":i===1?"Last Week":`${i} Weeks Ago`,pct,c,s,dn};
   });
 
-  // Team summary for admins
-  const allUsers=[...(data.trainers||[]),...(data.admins||[])];
-  const teamRows=isAdmin?allUsers.map(u=>{
-    const uScores=(data.scorecards||{})[u.id]||{};
-    const uWeek=uScores[weekKey]||{contacts:0,apptSet:0,apptDone:0};
-    const uPct=Math.round(((uWeek.contacts/goals.contacts)+(uWeek.apptSet/goals.apptSet)+(uWeek.apptDone/goals.apptDone))/3*100);
-    return {...u,week:uWeek,pct:uPct};
-  }):[];
+  // Team Today dashboard — admins see everyone who can commit, trainers see their own reps + themselves
+  const licensedReps=(data.reps||[]).filter(r=>r.track==="licensed"&&!r.inactive);
+  const trainers=data.trainers||[];
+  let teamMembers=[];
+  if(isAdmin) teamMembers=[...trainers,...licensedReps];
+  else if(isTrainer) teamMembers=[{id:userId,name:(trainers.find(t=>t.id===userId)||{}).name||"Me"},...licensedReps.filter(r=>r.trainerId===userId)];
+  const teamToday=teamMembers.map(m=>{
+    const mScores=(data.scorecards||{})[m.id]||{};
+    const mWeek=mScores[weekKey]||{days:{}};
+    const mToday=(mWeek.days||{})[todayStr]||{committed:{},actual:{}};
+    const committedTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+(Number(mToday.committed?.[c.key])||0),0);
+    const actualTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+getScorecardActual(data,m.id,todayStr,c.key,mToday),0);
+    const pct=committedTotal>0?Math.round((actualTotal/committedTotal)*100):(actualTotal>0?100:0);
+    return {...m,committedTotal,actualTotal,pct};
+  });
 
   return <div>
-    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Weekly Scorecard</div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Week of {new Date(weekKey+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Scorecard</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Today — {new Date(todayStr+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · Week of {new Date(weekKey+"T12:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
 
     {/* Why this matters banner */}
     <div style={{background:`linear-gradient(135deg,${C.navyMid},${C.navyLight})`,borderRadius:12,padding:"14px 16px",marginBottom:16,color:"white"}}>
@@ -3056,10 +3127,46 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
       <div style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>Production tracks your <strong style={{color:"white"}}>results</strong>. The scorecard tracks your <strong style={{color:"white"}}>activity</strong> — the daily work that creates results. You can't control whether someone buys, but you can control how many calls you make. <strong style={{color:C.teal}}>Focus on the activity and the results will follow.</strong></div>
     </div>
 
+    {/* Today's Commitment vs Actual */}
+    {canCommit&&<Card style={{marginBottom:16}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>Today's Commitment</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>Set what you're committing to this morning. Recruits, Life Apps, Premium, and Investment fill in automatically from your production — everything else, log as you go.</div>
+      {COMMITMENT_CATEGORIES.map(cat=>{
+        const committed=Number(todayEntry.committed?.[cat.key])||0;
+        const actual=getScorecardActual(data,userId,todayStr,cat.key,todayEntry);
+        const hitGoal=committed>0&&actual>=committed;
+        return <div key={cat.key} style={{border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 11px",marginBottom:7}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
+            <span style={{fontSize:14}}>{cat.icon}</span>
+            <span style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{cat.label}</span>
+            {hitGoal&&<span style={{fontSize:11,fontWeight:700,color:C.success}}>✓ Hit</span>}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div>
+              <div style={{fontSize:10,color:C.textLight,marginBottom:2,textTransform:"uppercase",letterSpacing:"0.4px"}}>Committed</div>
+              <input type="number" min="0" value={committed||""} onChange={e=>updateCommitted(cat.key,Number(e.target.value))} placeholder="0" style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:10,color:C.textLight,marginBottom:2,textTransform:"uppercase",letterSpacing:"0.4px"}}>Actual{!cat.manual&&" (auto)"}</div>
+              {cat.manual?
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <button onClick={()=>updateActual(cat.key,actual-1)} style={{width:28,height:28,borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:15,color:C.textMid,flexShrink:0}}>-</button>
+                  <div style={{flex:1,textAlign:"center",fontSize:14,fontWeight:700,color:hitGoal?C.success:C.text}}>{cat.isMoney?"$":""}{actual}</div>
+                  <button onClick={()=>updateActual(cat.key,actual+1)} style={{width:28,height:28,borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:15,flexShrink:0}}>+</button>
+                </div>
+                :
+                <div style={{padding:"6px 8px",borderRadius:6,background:C.surface||"#f1f5f9",fontSize:14,fontWeight:700,color:hitGoal?C.success:C.text,textAlign:"center"}}>{cat.isMoney?"$":""}{actual.toLocaleString()}</div>
+              }
+            </div>
+          </div>
+        </div>;
+      })}
+    </Card>}
+
     {/* Weekly score */}
     <Card style={{marginBottom:16,background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,border:"none"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div><div style={{fontSize:14,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Average across all 3 goals</div></div>
+        <div><div style={{fontSize:14,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Contacts / Appts Set / Appts Completed vs. weekly goals</div></div>
         <div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:totalPct>=80?C.success:totalPct>=50?C.teal:C.gold}}>{totalPct}%</div></div>
       </div>
       <Bar pct={totalPct} color={totalPct>=80?C.success:totalPct>=50?C.teal:C.gold} h={8}/>
@@ -3067,7 +3174,7 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
     </Card>
 
     {/* Conversion rates */}
-    {(week.contacts>0||week.apptSet>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+    {(wkContacts>0||wkApptSet>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
       <Card style={{padding:"10px 12px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:C.purple}}>{contactRate}%</div>
         <div style={{fontSize:13,color:C.textMid}}>Contact-to-Appt Rate</div>
@@ -3080,29 +3187,6 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
       </Card>
     </div>}
 
-    {/* Metric cards */}
-    {metrics.map(m=><Card key={m.key} style={{marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-        <div style={{flex:1}}>
-          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
-            <span style={{fontSize:16}}>{m.icon}</span>
-            <span style={{fontSize:14,fontWeight:700,color:C.text}}>{m.label}</span>
-          </div>
-          <div style={{fontSize:13,color:C.textLight}}>{m.desc}</div>
-        </div>
-        <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
-          <div style={{fontSize:22,fontWeight:800,color:m.color}}>{m.val}</div>
-          <div style={{fontSize:12,color:C.textLight}}>Goal: {m.goal}</div>
-        </div>
-      </div>
-      <Bar pct={(m.val/m.goal)*100} color={m.val>=m.goal?C.success:m.color} h={6}/>
-      <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center"}}>
-        <button onClick={()=>update(m.key,m.val-1)} style={{width:36,height:36,borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:18,color:C.textMid,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>-</button>
-        <div style={{flex:1,textAlign:"center",fontSize:13,color:C.textMid}}>{m.val>=m.goal?<span style={{color:C.success,fontWeight:700}}>Goal reached!</span>:`${m.goal-m.val} more to reach goal`}</div>
-        <button onClick={()=>update(m.key,m.val+1)} style={{width:36,height:36,borderRadius:8,border:`none`,background:m.color,cursor:"pointer",fontSize:18,color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>+</button>
-      </div>
-    </Card>)}
-
     {/* History */}
     <Card style={{marginBottom:16}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Recent History</div>
@@ -3110,18 +3194,19 @@ function ScorecardPage({data,onUpdate,userId,userRole}) {
         <div style={{width:80,fontSize:13,color:i===0?C.text:C.textMid,fontWeight:i===0?700:400}}>{wh.label}</div>
         <div style={{flex:1}}><Bar pct={wh.pct} color={wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold} h={5}/></div>
         <div style={{fontSize:13,fontWeight:600,color:wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{wh.pct}%</div>
-        <div style={{fontSize:12,color:C.textLight,width:80,textAlign:"right"}}>{wh.data.contacts}c / {wh.data.apptSet}s / {wh.data.apptDone}d</div>
+        <div style={{fontSize:12,color:C.textLight,width:80,textAlign:"right"}}>{wh.c}c / {wh.s}s / {wh.dn}d</div>
       </div>)}
     </Card>
 
-    {/* Team summary - admin only */}
-    {isAdmin&&teamRows.length>0&&<Card>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Team This Week</div>
-      {teamRows.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
+    {/* Team Today dashboard — admins see the whole team, trainers see their own */}
+    {(isAdmin||isTrainer)&&teamToday.length>0&&<Card>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>Team Today</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>Commitment vs. actual across all 10 categories, combined</div>
+      {teamToday.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
         <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
-          <div style={{fontSize:12,color:C.textLight}}>{u.week.contacts}c / {u.week.apptSet}s / {u.week.apptDone}d</div>
+          <div style={{fontSize:12,color:C.textLight}}>{u.actualTotal} actual / {u.committedTotal} committed</div>
         </div>
         <div style={{flex:1}}><Bar pct={u.pct} color={u.pct>=80?C.success:u.pct>=50?C.teal:C.gold} h={4}/></div>
         <div style={{fontSize:13,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
