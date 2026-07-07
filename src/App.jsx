@@ -3083,7 +3083,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
   const todayEntry=weekDays[todayStr]||{committed:{},actual:{}};
   const isAdmin=userRole==="admin"||userRole==="superadmin";
   const isTrainer=userRole==="trainer";
-  const canCommit=(userRole==="rep"&&track==="licensed")||isTrainer;
+  const canCommit=(userRole==="rep"&&track==="licensed")||isTrainer||isAdmin;
 
   const goals={contacts:100,apptSet:20,apptDone:20};
 
@@ -3139,10 +3139,20 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
   // Team Today dashboard — admins see everyone who can commit, trainers see their own reps + themselves
   const licensedReps=(data.reps||[]).filter(r=>r.track==="licensed"&&!r.inactive);
   const trainers=data.trainers||[];
+  const allAdmins=data.admins||[];
+  const [teamScope,setTeamScope]=useState("mine");
+  const [teamSearch,setTeamSearch]=useState("");
+  const [teamExpanded,setTeamExpanded]=useState(false);
+
   let teamMembers=[];
-  if(isAdmin) teamMembers=[...trainers,...licensedReps];
+  if(isAdmin){
+    if(teamScope==="all") teamMembers=[...trainers,...licensedReps];
+    else if(teamScope==="mine") teamMembers=[...trainers.filter(t=>t.adminId===userId),...licensedReps.filter(r=>r.adminId===userId)];
+    else teamMembers=[...trainers.filter(t=>t.adminId===teamScope),...licensedReps.filter(r=>r.adminId===teamScope)];
+  }
   else if(isTrainer) teamMembers=[{id:userId,name:(trainers.find(t=>t.id===userId)||{}).name||"Me"},...licensedReps.filter(r=>r.trainerId===userId)];
-  const teamToday=teamMembers.map(m=>{
+
+  const teamTodayAll=teamMembers.map(m=>{
     const mScores=(data.scorecards||{})[m.id]||{};
     const mWeek=mScores[weekKey]||{days:{}};
     const mToday=(mWeek.days||{})[todayStr]||{committed:{},actual:{}};
@@ -3151,6 +3161,12 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     const pct=committedTotal>0?Math.round((actualTotal/committedTotal)*100):(actualTotal>0?100:0);
     return {...m,committedTotal,actualTotal,pct};
   });
+  // Only show people actually using it today — no point reviewing someone with nothing logged
+  const teamActive=teamTodayAll.filter(m=>m.committedTotal>0||m.actualTotal>0);
+  const teamFiltered=teamSearch.trim()?teamActive.filter(m=>m.name?.toLowerCase().includes(teamSearch.trim().toLowerCase())):teamActive;
+  const teamToday=[...teamFiltered].sort((a,b)=>a.pct-b.pct);
+  const onPaceCount=teamActive.filter(m=>m.pct>=80).length;
+  const behindCount=teamActive.length-onPaceCount;
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Scorecard</div>
@@ -3234,18 +3250,40 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     </Card>
 
     {/* Team Today dashboard — admins see the whole team, trainers see their own */}
-    {(isAdmin||isTrainer)&&teamToday.length>0&&<Card>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>Team Today</div>
-      <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>Commitment vs. actual across all 10 categories, combined</div>
-      {teamToday.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
-        <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
-          <div style={{fontSize:12,color:C.textLight}}>{u.actualTotal} actual / {u.committedTotal} committed</div>
+    {(isAdmin||isTrainer)&&<Card>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Today</div>
+        {teamActive.length>0&&<button onClick={()=>setTeamExpanded(!teamExpanded)} style={{fontSize:12,color:C.teal,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>{teamExpanded?"Collapse":"Expand"}</button>}
+      </div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>Only shows people with something logged today — no news from someone means nothing to review yet</div>
+
+      {isAdmin&&allAdmins.length>1&&<div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
+        <button onClick={()=>setTeamScope("mine")} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${teamScope==="mine"?C.teal:C.border}`,background:teamScope==="mine"?C.teal+"11":"white",color:teamScope==="mine"?C.teal:C.textMid,cursor:"pointer",fontWeight:teamScope==="mine"?700:500}}>My Team</button>
+        {allAdmins.filter(a=>a.id!==userId).map(a=><button key={a.id} onClick={()=>setTeamScope(a.id)} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${teamScope===a.id?C.teal:C.border}`,background:teamScope===a.id?C.teal+"11":"white",color:teamScope===a.id?C.teal:C.textMid,cursor:"pointer",fontWeight:teamScope===a.id?700:500}}>{a.name}'s Team</button>)}
+        <button onClick={()=>setTeamScope("all")} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${teamScope==="all"?C.teal:C.border}`,background:teamScope==="all"?C.teal+"11":"white",color:teamScope==="all"?C.teal:C.textMid,cursor:"pointer",fontWeight:teamScope==="all"?700:500}}>Everyone</button>
+      </div>}
+
+      {teamActive.length===0?
+        <div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No one's logged a commitment yet today</div>
+        :
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",background:C.surface,borderRadius:8,marginBottom:teamExpanded?10:0}}>
+          <div style={{fontSize:13,color:C.text}}><b style={{color:C.success}}>{onPaceCount}</b> of <b>{teamActive.length}</b> on pace{behindCount>0&&<span>, <b style={{color:C.gold}}>{behindCount}</b> falling behind</span>}</div>
         </div>
-        <div style={{flex:1}}><Bar pct={u.pct} color={u.pct>=80?C.success:u.pct>=50?C.teal:C.gold} h={4}/></div>
-        <div style={{fontSize:13,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
-      </div>)}
+      }
+
+      {teamExpanded&&teamActive.length>0&&<>
+        <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Search by name..." style={{width:"100%",padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+        {teamToday.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
+          <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
+            <div style={{fontSize:12,color:C.textLight}}>{u.actualTotal} actual / {u.committedTotal} committed</div>
+          </div>
+          <div style={{flex:1}}><Bar pct={u.pct} color={u.pct>=80?C.success:u.pct>=50?C.teal:C.gold} h={4}/></div>
+          <div style={{fontSize:13,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
+        </div>)}
+        {teamToday.length===0&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No match for "{teamSearch}"</div>}
+      </>}
     </Card>}
   </div>;
 }
@@ -4561,11 +4599,16 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     return {green:"Active Today",yellow:"1 Day Idle",red:"3+ Days Silent"}[status];
   };
 
-  const addCheckIn = (repId) => {
+  const addCheckIn = (repId,isTrainerRec) => {
     if(!checkInNote.trim()) return;
     const note={text:checkInNote,date:new Date().toISOString(),by:userId};
-    const updated=(data.reps||[]).map(r=>r.id===repId?{...r,checkIns:[...(r.checkIns||[]),note]}:r);
-    onUpdate({...data,reps:updated});
+    if(isTrainerRec){
+      const updated=(data.trainers||[]).map(t=>t.id===repId?{...t,checkIns:[...(t.checkIns||[]),note]}:t);
+      onUpdate({...data,trainers:updated});
+    } else {
+      const updated=(data.reps||[]).map(r=>r.id===repId?{...r,checkIns:[...(r.checkIns||[]),note]}:r);
+      onUpdate({...data,reps:updated});
+    }
     setCheckInNote("");
   };
 
@@ -4770,8 +4813,13 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             <div style={{fontSize:11,color:C.textMid,marginBottom:6}}>Determines whose "My Reps" filter this rep appears under.</div>
             <select value={rep.adminId||""} onChange={e=>{
               const val=e.target.value;
-              const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:val}:r);
-              onUpdate({...data,reps:updated});
+              if(rep.isTrainer){
+                const updated=(data.trainers||[]).map(t=>t.id===rep.id?{...t,adminId:val}:t);
+                onUpdate({...data,trainers:updated});
+              } else {
+                const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,adminId:val}:r);
+                onUpdate({...data,reps:updated});
+              }
             }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:`1px solid ${C.gold}`,fontSize:13,color:C.text}}>
               <option value="">Not assigned</option>
               {(data.admins||[]).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
@@ -4787,8 +4835,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
             </div>)}
             <div style={{display:"flex",gap:6,marginTop:6}}>
-              <input placeholder="Add a coaching note..." value={checkInNote} onChange={e=>setCheckInNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCheckIn(rep.id)} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
-              <button onClick={()=>addCheckIn(rep.id)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+              <input placeholder="Add a coaching note..." value={checkInNote} onChange={e=>setCheckInNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCheckIn(rep.id,rep.isTrainer)} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+              <button onClick={()=>addCheckIn(rep.id,rep.isTrainer)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
             </div>
           </div>
 
@@ -4917,6 +4965,32 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               me.forEach(e=>{const c=calcC2(Number(e.premium)||0);const isCOD=!!e.cod;const isPending=isCOD&&!e.codAccepted;const statusCell=isCOD?"<td style='text-align:center;padding:6px'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(isPending?"#fef3c7":"#d1fae5")+";color:"+(isPending?"#d97706":"#059669")+"'>"+(isPending?"⏳ COD Pending":"✅ COD Accepted")+"</span></td>":"<td></td>";rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+(e.client||"")+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td>"+statusCell+"<td style='text-align:right;padding:6px;color:"+(isPending?"#999":"#10b981")+";font-weight:600'>"+(isPending?"—":"$"+c.up.toFixed(0))+"</td><td style='text-align:right;padding:6px'>"+(isPending?"—":"$"+c.ae.toFixed(0))+"</td><td style='text-align:right;padding:6px;font-weight:600'>"+(isPending?"—":"$"+c.tot.toFixed(0))+"</td></tr>";});
               const table=me.length>0?"<h2>THIS MONTH'S APPS</h2><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Client</th><th style='text-align:right;padding:6px'>Mo. Premium</th><th style='text-align:center;padding:6px'>Status</th><th style='text-align:right;padding:6px'>Upfront</th><th style='text-align:right;padding:6px'>As Earned</th><th style='text-align:right;padding:6px'>Total 1yr</th></tr>"+rows+"</table>":"<p style='color:#999;font-size:12px'>No apps logged this month</p>";
               return "<h2>INCOME GOAL & COMMISSION</h2><p class='note'>Commission tracking for "+rep.name+". Based on promotion level and logged life apps.</p><div class='grid2'><div class='card'><div class='big'>"+promo.label+"</div><div class='label'>Promotion Level ("+promo.pct+"%)</div></div><div class='card'><div class='big'>$"+(goal2>0?goal2.toLocaleString():"Not set")+"</div><div class='label'>Monthly Income Goal</div></div><div class='card'><div class='big'>$"+mEarned.toFixed(0)+"</div><div class='label'>Earned This Month (upfront)</div></div><div class='card'><div class='big'>"+gPct+"%</div><div class='label'>Goal Progress</div></div></div>"+table;
+            })():""}
+            ${(rep.track==="licensed"||rep.fieldTrainerGranted)?(()=>{
+              const wkKey=getWeekStart();
+              const repScores=((data.scorecards||{})[rep.id]||{})[wkKey]||{days:{}};
+              const wkDays=repScores.days||{};
+              const wkStartDate=new Date(wkKey+"T12:00:00");
+              const now3=new Date();
+              const dayRows=[0,1,2,3,4,5,6].map(i=>{
+                const d=new Date(wkStartDate); d.setDate(wkStartDate.getDate()+i);
+                const dStr=d.toISOString().split("T")[0];
+                const dLabel=d.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+                const entry=wkDays[dStr]||{committed:{},actual:{}};
+                const committedTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+(Number(entry.committed?.[c.key])||0),0);
+                const actualTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+getScorecardActual(data,rep.id,dStr,c.key,entry),0);
+                const isFuture=d>now3&&dStr!==now3.toISOString().split("T")[0];
+                return {dLabel,committedTotal,actualTotal,isFuture};
+              });
+              const rows=dayRows.map(dr=>{
+                const noScores=!dr.isFuture&&dr.committedTotal===0&&dr.actualTotal===0;
+                const pct=dr.committedTotal>0?Math.round((dr.actualTotal/dr.committedTotal)*100):(dr.actualTotal>0?100:0);
+                const col=dr.isFuture?"#94a3b8":noScores?"#dc2626":pct>=80?"#059669":pct>=50?"#0ea5a0":"#d97706";
+                if(dr.isFuture) return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+dr.dLabel+"</td><td style='text-align:right;padding:6px' colspan='3'>—</td></tr>";
+                if(noScores) return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+dr.dLabel+"</td><td colspan='3' style='text-align:center;padding:6px;color:"+col+";font-weight:600'>No scores logged</td></tr>";
+                return "<tr style='border-bottom:1px solid #eee'><td style='padding:6px;font-weight:600'>"+dr.dLabel+"</td><td style='text-align:right;padding:6px'>"+dr.committedTotal+"</td><td style='text-align:right;padding:6px'>"+dr.actualTotal+"</td><td style='text-align:right;padding:6px;font-weight:700;color:"+col+"'>"+pct+"%</td></tr>";
+              }).join("");
+              return "<h2>WEEKLY COMMITMENT VS ACTUAL</h2><p class='note'>Daily commitment vs. actual results for "+rep.name+", combined across all tracked categories (Calls, Contacts, Appts Set/Completed, How Money Works Invitees, Recruits, Life Apps, Premium, Investment, Test Scheduled/Taken).</p><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Day</th><th style='text-align:right;padding:6px'>Committed</th><th style='text-align:right;padding:6px'>Actual</th><th style='text-align:right;padding:6px'>%</th></tr>"+rows+"</table>";
             })():""}
             <h2>TRAINING OBSERVATIONS</h2>
             <p class="note">Observations are a core part of the training process. Field Training Observations (FTO) show how actively ${rep.name} is working alongside their trainer in the field.</p>
