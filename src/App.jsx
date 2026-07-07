@@ -1687,7 +1687,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
           <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
           <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6}}>
             <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toLocaleDateString(),id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toISOString().split("T")[0],id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
           </div>
           <div style={{fontSize:13,color:C.textMid}}>Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>{addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}</div>
         </div>}
@@ -1754,7 +1754,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
             <input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
             <select value={ni.type} onChange={e=>setNi({...ni,type:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option>Mutual Fund</option><option>Annuity</option></select>
           </div>
-          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:new Date().toLocaleDateString()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
+          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:new Date().toISOString().split("T")[0]}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
         </div>
         {invs.map((inv,i)=><div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>)}
       </div>}
@@ -4200,7 +4200,8 @@ function ProfileRepIdCard({session,data,onUpdate}) {
 
 // ── WALL OF FAME BANNER (scrollable strip) ──
 function WallOfFameBanner({data}) {
-  const recognitions = data.wallOfFame||[];
+  const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const recognitions = (data.wallOfFame||[]).filter(r=>r.postedAt&&r.postedAt>=pm.start);
   if(recognitions.length===0) return null;
   const FAME_COLORS_B = {"First Life App":C.teal,"Licensed!":C.gold,"Top Producer":C.success,"Field Trainer Approved":C.purple,"Recruiter of the Month":C.teal,"Most Improved":C.gold,"Going Above and Beyond":C.success,"Custom":C.textMid};
 
@@ -4222,7 +4223,7 @@ function WallOfFameBanner({data}) {
   };
 
   return <div style={{marginBottom:12}}>
-    <div style={{fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:8,paddingLeft:2}}>Wall of Fame</div>
+    <div style={{fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:8,paddingLeft:2}}>{pm.label} Wall of Fame</div>
     <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
       {recognitions.map((r,i)=>{
         const photo = getPhotoB(r);
@@ -5849,7 +5850,11 @@ const FAME_COLORS = {"First Life App":C.teal,"Licensed!":C.gold,"Top Producer":C
 
 function WallOfFame({data,onUpdate,userRole}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
-  const recognitions = data.wallOfFame||[];
+  const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const allRecognitions = data.wallOfFame||[];
+  const recognitions = allRecognitions.filter(r=>r.postedAt&&r.postedAt>=pm.start);
+  const pastRecognitions = allRecognitions.filter(r=>!r.postedAt||r.postedAt<pm.start);
+  const [showPast,setShowPast] = useState(false);
   const [showForm,setShowForm] = useState(false);
   const [form,setForm] = useState({personId:"",category:"First Life App",message:"",customPhoto:null});
   const [personSearch,setPersonSearch] = useState("");
@@ -5891,19 +5896,19 @@ function WallOfFame({data,onUpdate,userRole}) {
       postedAt:new Date().toISOString(),
       id:Date.now()
     };
-    onUpdate({...newData,wallOfFame:[entry,...recognitions]});
+    onUpdate({...newData,wallOfFame:[entry,...allRecognitions]});
     setForm({personId:"",category:"First Life App",message:"",customPhoto:null});
     setPersonSearch("");
     setShowForm(false);
   };
 
-  const remove = (id) => onUpdate({...data,wallOfFame:recognitions.filter(r=>r.id!==id)});
+  const remove = (id) => onUpdate({...data,wallOfFame:allRecognitions.filter(r=>r.id!==id)});
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div>
-        <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Wall of Fame</div>
-        <div style={{fontSize:13,color:C.textMid}}>Celebrating our team's achievements</div>
+        <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>{pm.label} Wall of Fame</div>
+        <div style={{fontSize:13,color:C.textMid}}>Celebrating our team's achievements — resets automatically each new Primerica month</div>
       </div>
       {isAdmin&&<button onClick={()=>setShowForm(!showForm)} style={{fontSize:13,padding:"6px 12px",borderRadius:8,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700}}>+ Add Recognition</button>}
     </div>
@@ -5999,6 +6004,30 @@ function WallOfFame({data,onUpdate,userRole}) {
         </div>;
       })}
     </div>
+
+    {pastRecognitions.length>0&&<div style={{marginTop:20}}>
+      <button onClick={()=>setShowPast(!showPast)} style={{fontSize:13,fontWeight:700,color:C.textMid,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6}}>
+        <span style={{transform:showPast?"rotate(90deg)":"none",display:"inline-block",fontSize:11}}>▶</span>
+        Past Recognitions ({pastRecognitions.length})
+      </button>
+      {showPast&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}}>
+        {pastRecognitions.map((r,i)=>{
+          const photo = r.customPhoto||(data.wofPhotos||{})[r.personId]||(data.profilePhotos||{})[r.personId];
+          const catColor = FAME_COLORS[r.category]||C.gold;
+          return <div key={i} style={{borderRadius:12,border:"1px solid "+C.border,background:C.surface,overflow:"hidden",position:"relative",opacity:0.85}}>
+            {isAdmin&&<button onClick={()=>remove(r.id)} style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:10,background:"rgba(0,0,0,0.15)",color:"white",border:"none",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}}>x</button>}
+            <div style={{padding:"12px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                {photo?<img src={photo} alt={r.personName} style={{width:32,height:32,borderRadius:16,objectFit:"cover"}}/>:<div style={{width:32,height:32,borderRadius:16,background:catColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"white"}}>{r.personName?.charAt(0)?.toUpperCase()}</div>}
+                <div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.personName}</div>
+              </div>
+              <div style={{fontSize:12,color:C.textMid,fontStyle:"italic"}}>"{r.message}"</div>
+              <div style={{fontSize:10,color:C.textLight,marginTop:5}}>{r.postedAt?new Date(r.postedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</div>
+            </div>
+          </div>;
+        })}
+      </div>}
+    </div>}
   </div>;
 }
 
@@ -10348,9 +10377,9 @@ export default function App() {
         </div>
       </div>}
       <div style={{background:"white",borderBottom:`1px solid ${C.border}`,padding:"9px 14px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-        <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:3,display:"flex",flexDirection:"column",gap:3}}>
+        {winWidth<768&&<button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:3,display:"flex",flexDirection:"column",gap:3}}>
           <div style={{width:17,height:2,background:C.text,borderRadius:1}}/><div style={{width:13,height:2,background:C.text,borderRadius:1}}/><div style={{width:17,height:2,background:C.text,borderRadius:1}}/>
-        </button>
+        </button>}
         <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:C.text,textTransform:"capitalize"}}>{selRep?selRep.name:section.replace(/([A-Z])/," $1")}</div><div style={{fontSize:12,color:C.textMid}}>NextLevel Field Training Hub</div></div>
         <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal}}>{session.name?.charAt(0)?.toUpperCase()}</div>
       </div>
