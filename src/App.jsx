@@ -1687,7 +1687,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
           <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
           <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6}}>
             <input type="number" placeholder="New amount $/mo" value={addPrem} onChange={e=>setAddPrem(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:new Date().toISOString().split("T")[0],id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+            <button onClick={()=>{if(!addPrem)return;onUpdate({...myProd,lifeApps:[...apps,{clientName:"Additional Premium",premium:addPrem,date:localDateStr(),id:Date.now()}]});setAddPrem("");}} style={{padding:"6px 12px",borderRadius:6,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
           </div>
           <div style={{fontSize:13,color:C.textMid}}>Current: <strong style={{color:C.gold}}>${totPrem.toFixed(0)}/mo</strong>{addPrem&&<span> + ${addPrem} = <strong style={{color:C.success}}>${(totPrem+Number(addPrem)).toFixed(0)}/mo (${((totPrem+Number(addPrem))*12).toFixed(0)}/yr)</strong></span>}</div>
         </div>}
@@ -1754,7 +1754,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
             <input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
             <select value={ni.type} onChange={e=>setNi({...ni,type:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option>Mutual Fund</option><option>Annuity</option></select>
           </div>
-          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:new Date().toISOString().split("T")[0]}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
+          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:localDateStr()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
         </div>
         {invs.map((inv,i)=><div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>)}
       </div>}
@@ -1767,13 +1767,13 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
 // Feeds directly into the Recruits auto-actual on Scorecard/Coaching Report.
 function QuickRecruitLog({person,onSave}) {
   const [showForm,setShowForm]=useState(false);
-  const [form,setForm]=useState({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
+  const [form,setForm]=useState({name:"",phone:"",date:localDateStr()});
   const log=person?.myRecruitLog||[];
   const addRecruit=()=>{
     if(!form.name.trim()) return;
     const updated=[...log,{...form,id:Date.now(),addedAt:new Date().toISOString()}];
     onSave(updated);
-    setForm({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
+    setForm({name:"",phone:"",date:localDateStr()});
     setShowForm(false);
   };
   const removeRecruit=(id)=>onSave(log.filter(r=>r.id!==id));
@@ -3061,13 +3061,21 @@ function ResourceLibrary({data,onUpdate,userRole}) {
 
 
 // ── SCORECARD ──
+// Local calendar date as YYYY-MM-DD — NOT toISOString(), which converts to UTC and can
+// silently roll a date over to "tomorrow" for anyone west of UTC in the evening.
+function localDateStr(d=new Date()){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
 function getWeekStart(date=new Date()) {
   const d=new Date(date);
   const day=d.getDay();
   const diff=d.getDate()-day+(day===0?-6:1);
   d.setDate(diff);
   d.setHours(0,0,0,0);
-  return d.toISOString().split("T")[0];
+  return localDateStr(d);
 }
 
 // ── DAILY COMMITMENT TRACKING (Scorecard) ──
@@ -3102,7 +3110,7 @@ function getAutoActuals(data,userId,dateStr){
   const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
   const dayRecruits=(data.reps||[]).filter(r=>{
     if(r.trainerId!==userId||!r.createdAt) return false;
-    try{ return new Date(r.createdAt).toISOString().split("T")[0]===dateStr; }catch(e){ return false; }
+    try{ return localDateStr(new Date(r.createdAt))===dateStr; }catch(e){ return false; }
   });
   // Also count recruits logged through the "Recruits"/quick-log form (a person doesn't
   // need a full account in the system yet for the day you recruited them to count).
@@ -3127,7 +3135,7 @@ function getScorecardActual(data,userId,dateStr,catKey,dayEntry){
 function ScorecardPage({data,onUpdate,userId,userRole,track}) {
 
   const weekKey=getWeekStart();
-  const todayStr=new Date().toISOString().split("T")[0];
+  const todayStr=localDateStr();
   const allScores=data.scorecards||{};
   const myScores=allScores[userId]||{};
   const week=myScores[weekKey]||{contacts:0,apptSet:0,apptDone:0,days:{}};
@@ -5044,15 +5052,15 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const repScores=((data.scorecards||{})[rep.id]||{})[wkKey]||{days:{}};
               const wkDays=repScores.days||{};
               const wkStartDate=new Date(wkKey+"T12:00:00");
-              const now3=new Date();
+              const todayLocal=localDateStr();
               const dayRows=[0,1,2,3,4,5,6].map(i=>{
                 const d=new Date(wkStartDate); d.setDate(wkStartDate.getDate()+i);
-                const dStr=d.toISOString().split("T")[0];
+                const dStr=localDateStr(d);
                 const dLabel=d.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
                 const entry=wkDays[dStr]||{committed:{},actual:{}};
                 const committedTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+(Number(entry.committed?.[c.key])||0),0);
                 const actualTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+getScorecardActual(data,rep.id,dStr,c.key,entry),0);
-                const isFuture=d>now3&&dStr!==now3.toISOString().split("T")[0];
+                const isFuture=dStr>todayLocal;
                 return {dLabel,committedTotal,actualTotal,isFuture};
               });
               const rows=dayRows.map(dr=>{
@@ -5072,7 +5080,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 const cells=dayRows.map((dr,i)=>{
                   if(dr.isFuture) return "<td style='text-align:center;padding:6px;color:#cbd5e1'>—</td>";
                   const d=new Date(wkStartDate); d.setDate(wkStartDate.getDate()+i);
-                  const dStr=d.toISOString().split("T")[0];
+                  const dStr=localDateStr(d);
                   const entry=wkDays[dStr]||{committed:{},actual:{}};
                   const committed=Number(entry.committed?.[cat.key])||0;
                   const actual=getScorecardActual(data,rep.id,dStr,cat.key,entry);
@@ -7002,7 +7010,7 @@ function CollapsibleRepList({reps,data,onUpdateData}) {
 // ── RECRUITS TAB ──
 function RecruitsTab({rep,data,myRecruits,onUpdate}) {
   const [showForm,setShowForm] = useState(false);
-  const [form,setForm] = useState({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
+  const [form,setForm] = useState({name:"",phone:"",date:localDateStr()});
   const myLoggedRecruits = rep.myRecruitLog||(()=>{try{const ls=localStorage.getItem("recruitLog_"+rep.id);return ls?JSON.parse(ls):[];}catch(e){return [];}})();
 
   const addRecruit = () => {
@@ -7010,7 +7018,7 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
     const updated = [...myLoggedRecruits,{...form,addedAt:new Date().toISOString(),id:Date.now()}];
     try{localStorage.setItem("recruitLog_"+rep.id,JSON.stringify(updated));}catch(e){}
     onUpdate(rep.id,{...rep,myRecruitLog:updated});
-    setForm({name:"",phone:"",date:new Date().toISOString().split("T")[0]});
+    setForm({name:"",phone:"",date:localDateStr()});
     setShowForm(false);
   };
 
@@ -9355,7 +9363,7 @@ const COMMITMENT_TIERS = [
 ];
 
 function getCurrentPrimerMonth(primerMonthEnds=[]) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDateStr();
   // Sort by cutoff date
   const sorted = [...primerMonthEnds].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
   // Find the current month — the one whose cutoff is in the future (or today)
@@ -9371,8 +9379,8 @@ function getCurrentPrimerMonth(primerMonthEnds=[]) {
   const y=now.getFullYear();
   const m=now.getMonth();
   const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const lastDay=new Date(y,m+1,0).toISOString().split("T")[0];
-  return {label:`${monthNames[m]} ${y}`,cutoff:lastDay,start:new Date(y,m,1).toISOString().split("T")[0],key:`${monthNames[m]}_${y}`};
+  const lastDay=localDateStr(new Date(y,m+1,0));
+  return {label:`${monthNames[m]} ${y}`,cutoff:lastDay,start:localDateStr(new Date(y,m,1)),key:`${monthNames[m]}_${y}`};
 }
 
 function getDaysRemaining(cutoff) {
