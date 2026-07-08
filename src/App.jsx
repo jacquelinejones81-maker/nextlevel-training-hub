@@ -1401,7 +1401,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     }{(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{
       const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
       const c=rep.commitments?.[pm.key];
-      if(c) return <CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}}/>;
+      if(c) return <CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}} recruitsOverride={countPeriodRecruits(data,rep.id,pm.start)}/>;
       if(!onOpenCommitment) return null;
       return <div style={{marginBottom:12,borderRadius:12,border:`2px solid ${C.gold}`,background:C.gold+"11",padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -1787,7 +1787,8 @@ function QuickRecruitLog({person,onSave}) {
       <button onClick={()=>setShowForm(!showForm)} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>{showForm?"Cancel":"+ Add"}</button>
     </div>
     {showForm&&<div style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
-      <input placeholder="Recruit's name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,marginBottom:6,boxSizing:"border-box"}}/>
+      <input placeholder="Recruit's name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box"}}/>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:6,marginTop:3}}>Use their exact name — if you add them as a full rep later, spell it the same way (e.g. "Mike" here and "Michael" later won't match).</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
         <input placeholder="Phone (optional)" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
         <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
@@ -2393,7 +2394,7 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
     {/* OVERVIEW TAB */}
     {tab==="overview"&&<div>
       {/* Commitment Card */}
-      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={(data.reps||[]).filter(r=>r.trainerId===trainer.id&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm.start).length} premiumOverride={(data.myProduction||{})[trainer.id]?.lifeApps?.filter(a=>a.date&&a.date>=pm.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0} onUnlock={()=>{
+      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={countPeriodRecruits(data,trainer.id,pm.start)} premiumOverride={(data.myProduction||{})[trainer.id]?.lifeApps?.filter(a=>a.date&&a.date>=pm.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0} onUnlock={()=>{
         const updated={...trainer,commitments:{...(trainer.commitments||{}),[pm.key]:undefined}};
         onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===trainer.id?updated:t)});
       }}/>:<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
@@ -2690,7 +2691,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const pm3=getCurrentPrimerMonth(data.primerMonthEnds||[]);
       const c3=trRec?.commitments?.[pm3.key];
       if(c3){
-        const trRecruits=(data.reps||[]).filter(r=>r.trainerId===userId&&r.createdAt&&new Date(r.createdAt).toISOString().split("T")[0]>=pm3.start).length;
+        const trRecruits=countPeriodRecruits(data,userId,pm3.start);
         const trPremium=(data.myProduction||{})[userId]?.lifeApps?.filter(a=>a.date&&a.date>=pm3.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0;
         return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}} recruitsOverride={trRecruits} premiumOverride={trPremium}/>;
       }
@@ -3099,6 +3100,26 @@ function findPersonRecord(data,userId){
   return (data.reps||[]).find(r=>r.id===userId) || (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || null;
 }
 
+// Counts recruits within a period two ways combined: real rep accounts created under this
+// person, AND quick-logged recruits (name/phone, no account needed yet) — so someone doesn't
+// have to wait for a prospect's full onboarding before it counts toward their commitment.
+// A quick-logged entry is excluded once that same name shows up as a real account under this
+// person (any time, not just this period) so the same recruit is never counted twice.
+function countPeriodRecruits(data,personId,periodStart){
+  const allMyRealReps=(data.reps||[]).filter(r=>r.trainerId===personId);
+  const realNames=new Set(allMyRealReps.map(r=>(r.name||"").trim().toLowerCase()).filter(Boolean));
+  const realAccounts=allMyRealReps.filter(r=>{
+    if(!r.createdAt) return false;
+    try{ return localDateStr(new Date(r.createdAt))>=periodStart; }catch(e){ return false; }
+  }).length;
+  const person=findPersonRecord(data,personId);
+  const loggedRecruits=((person?.myRecruitLog)||[]).filter(r=>{
+    if(!r.date||r.date<periodStart) return false;
+    return !realNames.has((r.name||"").trim().toLowerCase()); // already has a real account — don't double count
+  }).length;
+  return realAccounts+loggedRecruits;
+}
+
 // Auto-computed actuals for a given user on a given date (YYYY-MM-DD), pulled from
 // existing production/recruiting data — never stored, always computed fresh.
 function getAutoActuals(data,userId,dateStr){
@@ -3113,9 +3134,12 @@ function getAutoActuals(data,userId,dateStr){
     try{ return localDateStr(new Date(r.createdAt))===dateStr; }catch(e){ return false; }
   });
   // Also count recruits logged through the "Recruits"/quick-log form (a person doesn't
-  // need a full account in the system yet for the day you recruited them to count).
+  // need a full account in the system yet for the day you recruited them to count) —
+  // excluding anyone who already has a real account under this person, so the same
+  // recruit is never counted twice on the day they're both logged and onboarded.
   const person=findPersonRecord(data,userId);
-  const loggedRecruitsToday=((person?.myRecruitLog)||[]).filter(r=>r.date===dateStr).length;
+  const myRealNames=new Set((data.reps||[]).filter(r=>r.trainerId===userId).map(r=>(r.name||"").trim().toLowerCase()).filter(Boolean));
+  const loggedRecruitsToday=((person?.myRecruitLog)||[]).filter(r=>r.date===dateStr&&!myRealNames.has((r.name||"").trim().toLowerCase())).length;
   return {
     recruits:dayRecruits.length+loggedRecruitsToday,
     lifeApps:dayLifeApps.length,
@@ -5023,7 +5047,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const c2=rep.commitments?.[pm2.key];
               if(!c2) return "<h2>MONTHLY COMMITMENT</h2><p class='note'>"+rep.name+" has not set a commitment for "+pm2.label+" yet.</p>";
               const mStart2=pm2.start;
-              const recs2=(rep.recruits||[]).filter(r=>r.date&&r.date>=mStart2).length;
+              const recs2=countPeriodRecruits(data,rep.id,mStart2);
               const prem2=(rep.selfPremium||[]).filter(e=>e.date&&e.date>=mStart2&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
               const rPct2=c2.recruits>0?Math.min(100,Math.round((recs2/c2.recruits)*100)):0;
               const pPct2=c2.premium>0?Math.min(100,Math.round((prem2/c2.premium)*100)):0;
@@ -7085,7 +7109,8 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
     <Card style={{border:"1px solid "+C.teal+"44"}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Log a New Recruit</div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:10}}>Track everyone you bring into the opportunity. This is your personal record.</div>
-      <input placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <input placeholder="Full Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+      <div style={{fontSize:11,color:C.textLight,marginBottom:8,marginTop:3}}>Use their exact name — if they're added as a full rep later, spell it the same way here (e.g. "Mike" here and "Michael" later won't match).</div>
       <input placeholder="Phone Number" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
       <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
       <div style={{display:"flex",gap:8}}>
