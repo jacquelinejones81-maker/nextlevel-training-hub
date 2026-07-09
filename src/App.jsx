@@ -1445,7 +1445,6 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="production"&&(rep.track==="licensed"||rep.fieldTrainerGranted)&&<RepProductionTab rep={rep} data={data} onUpdate={onUpdate} onUpdateData={onUpdateData} readOnly={readOnly}/>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="leadlink"&&<div>
-      <div style={{background:"red",color:"white",fontSize:22,fontWeight:900,textAlign:"center",padding:"20px",marginBottom:16,border:"6px solid black"}}>REP LEAD LINK TEST — IF YOU SEE THIS, THE DEPLOY WORKED</div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
       <MyLeadLink name={rep.name} data={data}/>
       {(data.repShareableLinks||[]).length>0&&<div style={{marginTop:16}}>
@@ -1997,7 +1996,6 @@ function ManageTeamPage({data,onUpdate}) {
   useEffect(()=>{if(!hasChanges) setLocalData(data);},[data]);
 
   return <div style={{maxWidth:560}}>
-    <div style={{background:"red",color:"white",fontSize:26,fontWeight:900,textAlign:"center",padding:"24px",marginBottom:20,border:"8px solid black"}}>TEAM MGMT TEST — IF YOU SEE THIS, THE DEPLOY WORKED</div>
     {confirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",borderRadius:16,padding:24,width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{fontSize:14,color:C.text,lineHeight:1.6,marginBottom:20,whiteSpace:"pre-line"}}>{confirm.msg}</div>
@@ -7351,7 +7349,6 @@ function LeadLinkPage({session,data,onUpdate}) {
   const shareableLinks = data.repShareableLinks||[];
 
   return <div>
-    <div style={{background:"red",color:"white",fontSize:26,fontWeight:900,textAlign:"center",padding:"24px",marginBottom:20,border:"8px solid black"}}>LEAD LINK TEST — IF YOU SEE THIS, THE DEPLOY WORKED</div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
     <MyLeadLink name={session.name} data={data}/>
