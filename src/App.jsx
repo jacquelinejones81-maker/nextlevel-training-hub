@@ -2146,6 +2146,58 @@ function ManageTeamPage({data,onUpdate}) {
       </div>)}
     </Card>
 
+    {/* Rep-Shareable Links (video + survey links every rep can personalize and share) */}
+    <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Rep-Shareable Links</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Links every rep can personalize and share (e.g. "How Money Works" video, recruiting video). Each rep's name — and Primerica Rep ID if they've entered one — gets inserted wherever <code style={{background:C.surface||"#f1f5f9",padding:"1px 4px",borderRadius:4}}>{"{REP}"}</code> appears in the URL below. If you leave that out, it gets added automatically as a "ref=" parameter at the end.</div>
+      {(localData.repShareableLinks||[]).map((link,i)=><div key={link.id} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          <input placeholder="Label (e.g. How Money Works Video)" value={link.label||""} onChange={e=>{
+            const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,label:e.target.value}:l);
+            updateLocal({...localData,repShareableLinks:updated});
+          }} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <button onClick={()=>{
+            if(!window.confirm("Remove this shareable link for everyone?")) return;
+            updateLocal({...localData,repShareableLinks:(localData.repShareableLinks||[]).filter((l,j)=>j!==i)});
+          }} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:13}}>✕</button>
+        </div>
+        <input placeholder="Survey URL — include {REP} where the name/ID should go, e.g. https://form.jotform.com/xxxx?whoSentThis={REP}" value={link.templateUrl||""} onChange={e=>{
+          const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,templateUrl:e.target.value.trim()}:l);
+          updateLocal({...localData,repShareableLinks:updated});
+        }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+      </div>)}
+      <button onClick={()=>{
+        const updated=[...(localData.repShareableLinks||[]),{id:Date.now(),label:"",templateUrl:""}];
+        updateLocal({...localData,repShareableLinks:updated});
+      }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Link</button>
+    </div>
+
+    {/* Quick Links — simple links visible to everyone on My Lead Link, no personalization */}
+    <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Quick Links</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Plain links everyone can see on their My Lead Link page — new reps, licensed reps, field trainers, and admins. Same link for everyone, no personalization.</div>
+      {(localData.teamLinks||[]).map((link,i)=><div key={link.id} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          <input placeholder="Label (e.g. Team Facebook Group)" value={link.label||""} onChange={e=>{
+            const updated=(localData.teamLinks||[]).map((l,j)=>j===i?{...l,label:e.target.value}:l);
+            updateLocal({...localData,teamLinks:updated});
+          }} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+          <button onClick={()=>{
+            if(!window.confirm("Remove this link for everyone?")) return;
+            updateLocal({...localData,teamLinks:(localData.teamLinks||[]).filter((l,j)=>j!==i)});
+          }} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:13}}>✕</button>
+        </div>
+        <input placeholder="URL — e.g. https://facebook.com/groups/yourteam" value={link.url||""} onChange={e=>{
+          const updated=(localData.teamLinks||[]).map((l,j)=>j===i?{...l,url:e.target.value.trim()}:l);
+          updateLocal({...localData,teamLinks:updated});
+        }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+      </div>)}
+      <button onClick={()=>{
+        const updated=[...(localData.teamLinks||[]),{id:Date.now(),label:"",url:""}];
+        updateLocal({...localData,teamLinks:updated});
+      }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Link</button>
+    </div>
+
     <button onClick={saveChanges} disabled={!hasChanges} style={{width:"100%",padding:"12px",borderRadius:10,background:hasChanges?C.teal:C.textLight,color:"white",border:"none",cursor:hasChanges?"pointer":"default",fontSize:14,fontWeight:700,marginBottom:20}}>
       💾 {hasChanges?"Save All Changes":"No Changes to Save"}
     </button>
@@ -2323,57 +2375,6 @@ function ManageTeam({data,onUpdate,onClose}) {
         </div>
       </div>
 
-      {/* Rep-Shareable Links (video + survey links every rep can personalize and share) */}
-      <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginTop:16}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Rep-Shareable Links</div>
-        <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Links every rep can personalize and share (e.g. "How Money Works" video, recruiting video). Each rep's name — and Primerica Rep ID if they've entered one — gets inserted wherever <code style={{background:C.surface||"#f1f5f9",padding:"1px 4px",borderRadius:4}}>{"{REP}"}</code> appears in the URL below. If you leave that out, it gets added automatically as a "ref=" parameter at the end.</div>
-        {(localData.repShareableLinks||[]).map((link,i)=><div key={link.id} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
-          <div style={{display:"flex",gap:6,marginBottom:6}}>
-            <input placeholder="Label (e.g. How Money Works Video)" value={link.label||""} onChange={e=>{
-              const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,label:e.target.value}:l);
-              updateLocal({...localData,repShareableLinks:updated});
-            }} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <button onClick={()=>{
-              if(!window.confirm("Remove this shareable link for everyone?")) return;
-              updateLocal({...localData,repShareableLinks:(localData.repShareableLinks||[]).filter((l,j)=>j!==i)});
-            }} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:13}}>✕</button>
-          </div>
-          <input placeholder="Survey URL — include {REP} where the name/ID should go, e.g. https://form.jotform.com/xxxx?whoSentThis={REP}" value={link.templateUrl||""} onChange={e=>{
-            const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,templateUrl:e.target.value.trim()}:l);
-            updateLocal({...localData,repShareableLinks:updated});
-          }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
-        </div>)}
-        <button onClick={()=>{
-          const updated=[...(localData.repShareableLinks||[]),{id:Date.now(),label:"",templateUrl:""}];
-          updateLocal({...localData,repShareableLinks:updated});
-        }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Link</button>
-      </div>
-
-      {/* Quick Links — simple links visible to everyone on My Lead Link, no personalization */}
-      <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginTop:16}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Quick Links</div>
-        <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>Plain links everyone can see on their My Lead Link page — new reps, licensed reps, field trainers, and admins. Same link for everyone, no personalization.</div>
-        {(localData.teamLinks||[]).map((link,i)=><div key={link.id} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
-          <div style={{display:"flex",gap:6,marginBottom:6}}>
-            <input placeholder="Label (e.g. Team Facebook Group)" value={link.label||""} onChange={e=>{
-              const updated=(localData.teamLinks||[]).map((l,j)=>j===i?{...l,label:e.target.value}:l);
-              updateLocal({...localData,teamLinks:updated});
-            }} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <button onClick={()=>{
-              if(!window.confirm("Remove this link for everyone?")) return;
-              updateLocal({...localData,teamLinks:(localData.teamLinks||[]).filter((l,j)=>j!==i)});
-            }} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:13}}>✕</button>
-          </div>
-          <input placeholder="URL — e.g. https://facebook.com/groups/yourteam" value={link.url||""} onChange={e=>{
-            const updated=(localData.teamLinks||[]).map((l,j)=>j===i?{...l,url:e.target.value.trim()}:l);
-            updateLocal({...localData,teamLinks:updated});
-          }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
-        </div>)}
-        <button onClick={()=>{
-          const updated=[...(localData.teamLinks||[]),{id:Date.now(),label:"",url:""}];
-          updateLocal({...localData,teamLinks:updated});
-        }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Link</button>
-      </div>
       {hasChanges&&<div style={{position:"sticky",bottom:0,background:"white",paddingTop:12,borderTop:`1px solid ${C.border}`,marginTop:12}}><button onClick={saveChanges} style={{width:"100%",padding:"11px",borderRadius:10,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:700}}>💾 Save All Changes</button></div>}
     </div>
   </div>;
