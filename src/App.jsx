@@ -1446,17 +1446,14 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="leadlink"&&<div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
-      <MyLeadLink name={rep.name} data={data}/>
+      <MyLeadLink name={rep.name} data={data} onUpdate={onUpdate} personId={rep.id}/>
       {(data.repShareableLinks||[]).length>0&&<div style={{marginTop:16}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
-        {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))}/>)}
+        {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))} data={data} onUpdate={onUpdate} personId={rep.id}/>)}
       </div>}
       {(data.teamLinks||[]).length>0&&<div style={{marginTop:16}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Quick Links</div>
-        {(data.teamLinks||[]).map(link=><a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 14px",marginBottom:8,background:"white"}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.teal}}>{link.label||"Link"}</div>
-          <div style={{fontSize:11,color:C.textLight,marginTop:2,wordBreak:"break-all"}}>{link.url}</div>
-        </a>)}
+        {(data.teamLinks||[]).map(link=><QuickLinkCard key={link.id} label={link.label} url={link.url} data={data} onUpdate={onUpdate} personId={rep.id}/>)}
       </div>}
     </div>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
@@ -3129,10 +3126,33 @@ const COMMITMENT_CATEGORIES = [
   {key:"pacInvestment",label:"PAC Investment",icon:"🔁",manual:false,isMoney:true},
   {key:"lumpInvestment",label:"Lump Sum Investment",icon:"📈",manual:false,isMoney:true},
   {key:"testActivity",label:"Test Scheduled/Taken (Team)",icon:"🎓",manual:true},
+  {key:"linksShared",label:"Links Shared",icon:"🔗",manual:false},
 ];
 
 function findPersonRecord(data,userId){
   return (data.reps||[]).find(r=>r.id===userId) || (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || null;
+}
+
+// Logs one "share" action against whichever array this person actually lives in (reps,
+// trainers, or admins) and saves it via the correct save path for that context. Returns
+// nothing — just fires the update. Every call adds a new entry, so sharing the same link
+// multiple times in a day counts each time.
+function logLinkShare(data,onUpdate,userId,linkLabel){
+  const entry={id:Date.now(),date:localDateStr(),linkLabel:linkLabel||"Link"};
+  if((data.reps||[]).some(r=>r.id===userId)){
+    const rep=(data.reps||[]).find(r=>r.id===userId);
+    onUpdate(userId,{...rep,linkShareLog:[...(rep.linkShareLog||[]),entry]});
+    return;
+  }
+  if((data.trainers||[]).some(t=>t.id===userId)){
+    const updated=(data.trainers||[]).map(t=>t.id===userId?{...t,linkShareLog:[...(t.linkShareLog||[]),entry]}:t);
+    onUpdate({...data,trainers:updated});
+    return;
+  }
+  if((data.admins||[]).some(a=>a.id===userId)){
+    const updated=(data.admins||[]).map(a=>a.id===userId?{...a,linkShareLog:[...(a.linkShareLog||[]),entry]}:a);
+    onUpdate({...data,admins:updated});
+  }
 }
 
 // Counts recruits within a period two ways combined: real rep accounts created under this
@@ -3175,12 +3195,15 @@ function getAutoActuals(data,userId,dateStr){
   const person=findPersonRecord(data,userId);
   const myRealNames=new Set((data.reps||[]).filter(r=>r.trainerId===userId).map(r=>(r.name||"").trim().toLowerCase()).filter(Boolean));
   const loggedRecruitsToday=((person?.myRecruitLog)||[]).filter(r=>r.date===dateStr&&!myRealNames.has((r.name||"").trim().toLowerCase())).length;
+  // Every "Mark as Shared" tap logs its own entry — sharing the same link twice counts twice.
+  const linksSharedToday=((person?.linkShareLog)||[]).filter(s=>s.date===dateStr).length;
   return {
     recruits:dayRecruits.length+loggedRecruitsToday,
     lifeApps:dayLifeApps.length,
     premium:dayLifeApps.reduce((s,a)=>s+(Number(a.premium)||0),0),
     pacInvestment:dayInvestments.reduce((s,i)=>s+(Number(i.pac)||0),0),
     lumpInvestment:dayInvestments.reduce((s,i)=>s+parseLump(i.lumpSum),0),
+    linksShared:linksSharedToday,
   };
 }
 
@@ -4402,8 +4425,9 @@ function compressImage(file, callback, maxSize=400, quality=0.7) {
 
 
 // ── MY LEAD LINK ──
-function MyLeadLink({name,data}) {
+function MyLeadLink({name,data,onUpdate,personId}) {
   const [copied,setCopied] = useState(false);
+  const [shared,setShared] = useState(false);
   // Check if this admin has a custom link name set
   const adminRecord = (typeof data!=="undefined")&&(data.admins||[]).find(a=>a.name===name);
   const safeName = adminRecord?.linkName||(name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -4424,6 +4448,13 @@ function MyLeadLink({name,data}) {
     }
   };
 
+  const markShared = () => {
+    if(typeof onUpdate!=="function"||!personId) return;
+    logLinkShare(data,onUpdate,personId,"My Lead Link");
+    setShared(true);
+    setTimeout(()=>setShared(false),2000);
+  };
+
   return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
@@ -4441,6 +4472,9 @@ function MyLeadLink({name,data}) {
         Share
       </button>
     </div>
+    {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:8,padding:"8px",borderRadius:8,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:12,fontWeight:600}}>
+      {shared?"✓ Logged!":"Mark as Shared"}
+    </button>}
   </div>;
 }
 
@@ -7309,13 +7343,39 @@ function ProspectsPage({session,data,onUpdate}) {
 
 
 // ── LEAD LINK PAGE (sidebar) ──
-function ShareableVideoLinkCard({label,url}) {
+function QuickLinkCard({label,url,data,onUpdate,personId}) {
+  const [shared,setShared] = useState(false);
+  const markShared = () => {
+    if(typeof onUpdate!=="function"||!personId) return;
+    logLinkShare(data,onUpdate,personId,label||"Quick Link");
+    setShared(true);
+    setTimeout(()=>setShared(false),2000);
+  };
+  return <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 14px",marginBottom:8,background:"white"}}>
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none"}}>
+      <div style={{fontSize:13,fontWeight:600,color:C.teal}}>{label||"Link"}</div>
+      <div style={{fontSize:11,color:C.textLight,marginTop:2,wordBreak:"break-all"}}>{url}</div>
+    </a>
+    {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:8,padding:"6px",borderRadius:7,border:shared?`1px solid ${C.success}`:`1px solid ${C.border}`,background:shared?C.success+"11":"white",color:shared?C.success:C.textMid,cursor:"pointer",fontSize:11,fontWeight:600}}>
+      {shared?"✓ Logged!":"Mark as Shared"}
+    </button>}
+  </div>;
+}
+
+function ShareableVideoLinkCard({label,url,data,onUpdate,personId}) {
   const [copied,setCopied] = useState(false);
+  const [shared,setShared] = useState(false);
   const copy = () => {
     navigator.clipboard?.writeText(url).then(()=>{
       setCopied(true);
       setTimeout(()=>setCopied(false),2500);
     });
+  };
+  const markShared = () => {
+    if(typeof onUpdate!=="function"||!personId) return;
+    logLinkShare(data,onUpdate,personId,label||"Shareable Link");
+    setShared(true);
+    setTimeout(()=>setShared(false),2000);
   };
   return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:12,border:"1px solid "+C.teal+"33"}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -7328,6 +7388,9 @@ function ShareableVideoLinkCard({label,url}) {
     <button onClick={copy} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>
       {copied?"Copied!":"Copy Link"}
     </button>
+    {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:7,padding:"8px",borderRadius:8,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:12,fontWeight:600}}>
+      {shared?"✓ Logged!":"Mark as Shared"}
+    </button>}
   </div>;
 }
 
@@ -7352,30 +7415,27 @@ function LeadLinkPage({session,data,onUpdate}) {
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>My Lead Link</div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
-    <MyLeadLink name={session.name} data={data}/>
+    <MyLeadLink name={session.name} data={data} onUpdate={onUpdate} personId={session.id}/>
 
     {!savedRepId&&<div style={{border:`1px solid ${C.danger}`,borderRadius:10,padding:"10px 13px",marginBottom:16,background:C.danger+"0a",fontSize:13,color:C.text,lineHeight:1.5}}>⚠️ You haven't entered your Primerica Rep ID yet — head to <b>My Profile</b> to add it so you get credit when you share your video links below.</div>}
 
     {shareableLinks.length>0&&<>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
-      {shareableLinks.map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,refText)}/>)}
+      {shareableLinks.map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,refText)} data={data} onUpdate={onUpdate} personId={session.id}/>)}
     </>}
 
     {(data.teamLinks||[]).length>0&&<div style={{marginBottom:16}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Quick Links</div>
-      {(data.teamLinks||[]).map(link=><a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 14px",marginBottom:8,background:"white"}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.teal}}>{link.label||"Link"}</div>
-        <div style={{fontSize:11,color:C.textLight,marginTop:2,wordBreak:"break-all"}}>{link.url}</div>
-      </a>)}
+      {(data.teamLinks||[]).map(link=><QuickLinkCard key={link.id} label={link.label} url={link.url} data={data} onUpdate={onUpdate} personId={session.id}/>)}
     </div>}
 
     <Card>
-      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>How to use your link</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>How to use your links</div>
       {[
-        {step:"1",text:"Copy your personal link above"},
+        {step:"1",text:"Copy whichever link fits the conversation — your MoneyMap link, a shareable video, or a Quick Link"},
         {step:"2",text:"Share it via text, email, social media, or in person"},
-        {step:"3",text:"Your prospect clicks the link and completes their MoneyMap"},
-        {step:"4",text:"Follow up with them to review their results and set an appointment"},
+        {step:"3",text:"They click it and take the next step — complete their MoneyMap, watch the video, or check out the resource"},
+        {step:"4",text:"Follow up with them to talk through it and set an appointment"},
       ].map((item,i)=><div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<3?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
         <div style={{width:22,height:22,borderRadius:11,background:C.teal+"22",border:"1px solid "+C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <span style={{fontSize:12,fontWeight:700,color:C.teal}}>{item.step}</span>
