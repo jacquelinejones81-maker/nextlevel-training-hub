@@ -8672,7 +8672,7 @@ function ScriptsPage({data,onUpdate,userRole}) {
 }
 
 // ── SIDEBAR ──
-function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false}) {
+function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null}) {
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"reps",l:"My Reps",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 14C9.8 14 8 12.2 8 10C8 7.8 9.8 6 12 6C14.2 6 16 7.8 16 10C16 12.2 14.2 14 12 14Z"},
@@ -8707,6 +8707,12 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
       <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:"white",lineHeight:1.2}}>NextLevel</div><div style={{fontSize:10,color:C.textLight,lineHeight:1.2}}>Field Training Hub</div></div>
       {onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:18,padding:0,lineHeight:1}}>x</button>}
     </div>
+    {rewatchVideo&&<div style={{padding:"10px 14px 0"}}>
+      <button onClick={()=>{rewatchVideo.trigger();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"7px 9px",borderRadius:7,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:500}}>{rewatchVideo.label}</span>
+      </button>
+    </div>}
     <nav style={{flex:1,padding:"10px 7px",overflowY:"auto"}}>
       {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
@@ -10340,6 +10346,18 @@ export default function App() {
     }
     setSession({role,id,name:userData?.name||(role==="admin"?"Admin":"User")});
     setSection("dashboard");
+    if(role==="trainer"){
+      const trainer=(data.trainers||[]).find(t=>t.id===id);
+      if(trainer&&!(trainer?.seenVideos?.fieldTrainer)&&data.fieldTrainerVideoUrl){
+        setShowFieldTrainerVideo(true);
+      }
+    }
+    if(role==="admin"||role==="superadmin"){
+      const admin=(data.admins||[]).find(a=>a.id===id);
+      if(admin&&!(admin?.seenVideos?.rvpPath)&&data.rvpPathVideoUrl){
+        setShowRvpPathVideo(true);
+      }
+    }
     if(role==="rep"){
       const rep=(data.reps||[]).find(r=>r.id===id);
       // Welcome video — Fast Start / Regular Start, first login ever
@@ -10579,16 +10597,32 @@ export default function App() {
     return null;
   };
 
+  const rewatchVideo = session.role==="trainer"
+    ? (data.fieldTrainerVideoUrl?{url:data.fieldTrainerVideoUrl,label:"Rewatch: Field Trainer",title:"Welcome, Field Trainer!",trigger:()=>setShowFieldTrainerVideo(true)}:null)
+    : (session.role==="admin"||session.role==="superadmin")
+    ? (data.rvpPathVideoUrl?{url:data.rvpPathVideoUrl,label:"Rewatch: RVP Path",title:"Welcome to the RVP Path!",trigger:()=>setShowRvpPathVideo(true)}:null)
+    : null;
+
   return <div style={{display:"flex",height:"100vh",background:C.surface,overflow:"hidden"}}>
     {showTour&&<AppTour role={session.role} onClose={()=>setShowTour(false)}/>}
     {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
+    {showFieldTrainerVideo&&data.fieldTrainerVideoUrl&&<VideoPopupModal videoUrl={data.fieldTrainerVideoUrl} repName={session.name} emoji="🧑‍🏫" title="Welcome, Field Trainer!" subtitle="Hey {name}! Watch this video to learn what's expected of you as a Field Trainer." onClose={()=>{
+      const updatedTrainers=(data.trainers||[]).map(t=>t.id===session.id?{...t,seenVideos:{...(t.seenVideos||{}),fieldTrainer:true}}:t);
+      upd({...data,trainers:updatedTrainers});
+      setShowFieldTrainerVideo(false);
+    }}/>}
+    {showRvpPathVideo&&data.rvpPathVideoUrl&&<VideoPopupModal videoUrl={data.rvpPathVideoUrl} repName={session.name} emoji="🚀" title="Welcome to the RVP Path!" subtitle="Hey {name}! Watch this video to learn what's expected of you on the RVP Path." onClose={()=>{
+      const updatedAdmins=(data.admins||[]).map(a=>a.id===session.id?{...a,seenVideos:{...(a.seenVideos||{}),rvpPath:true}}:a);
+      upd({...data,admins:updatedAdmins});
+      setShowRvpPathVideo(false);
+    }}/>}
     {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
     <div style={{display:"flex",flexShrink:0,width:winWidth>=768?(winWidth>=900?260:240):0,overflow:"hidden"}}>
-      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"}/>}
+      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo}/>}
     </div>
     {/* Mobile sidebar overlay */}
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo}/>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
