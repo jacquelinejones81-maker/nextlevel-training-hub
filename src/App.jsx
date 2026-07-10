@@ -7434,10 +7434,11 @@ function LeadLinkPage({session,data,onUpdate}) {
       {[
         {step:"1",text:"Copy whichever link fits the conversation — your MoneyMap link, a shareable video, or a Quick Link"},
         {step:"2",text:"Share it via text, email, social media, or in person"},
-        {step:"3",text:"They click it and take the next step — complete their MoneyMap, watch the video, or check out the resource"},
-        {step:"4",text:"Follow up with them to talk through it and set an appointment"},
-        {step:"5",text:"If there's more than one version of a recruiting link (like a male or female speaker on the recruiting video), use whichever one fits the person you're sending it to — any version is fine to use, pick based on who's on the other end"},
-      ].map((item,i)=><div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<4?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
+        {step:"3",text:"Tap \"Mark as Shared\" right after sending it — that's how you get credit for the share, and it feeds straight into your Scorecard"},
+        {step:"4",text:"They click it and take the next step — complete their MoneyMap, watch the video, or check out the resource"},
+        {step:"5",text:"Follow up with them to talk through it and set an appointment"},
+        {step:"6",text:"Some links, like the recruiting video, come in more than one version — for example, a male or female speaker. Either version is fine to send; just pick whichever fits the person you're sending it to"},
+      ].map((item,i)=><div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<5?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
         <div style={{width:22,height:22,borderRadius:11,background:C.teal+"22",border:"1px solid "+C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <span style={{fontSize:12,fontWeight:700,color:C.teal}}>{item.step}</span>
         </div>
