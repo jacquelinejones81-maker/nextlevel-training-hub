@@ -8607,13 +8607,15 @@ function CareerPath({rep,data,onUpdate}) {
 }
 
 // ── SCRIPTS PAGE (editable by admins) ──
+const SCRIPT_CATEGORIES = ["Cold Market","Warm Market","Objection Handling","Recruiting","Other"];
+
 function ScriptsPage({data,onUpdate,userRole}) {
   const scripts = data.scripts || SCRIPTS;
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const [editing,setEditing] = useState(null);
-  const [draft,setDraft] = useState({title:"",content:""});
+  const [draft,setDraft] = useState({title:"",category:"",content:"",link:""});
   const [showAdd,setShowAdd] = useState(false);
-  const [newScript,setNewScript] = useState({title:"",content:""});
+  const [newScript,setNewScript] = useState({title:"",category:"",content:"",link:""});
 
   const saveEdit = (i) => {
     const updated = scripts.map((s,idx)=>idx===i?{...draft}:s);
@@ -8626,56 +8628,87 @@ function ScriptsPage({data,onUpdate,userRole}) {
   const addScript = () => {
     if(!newScript.title||!newScript.content) return;
     onUpdate({...data,scripts:[...scripts,{...newScript}]});
-    setNewScript({title:"",content:""});
+    setNewScript({title:"",category:"",content:"",link:""});
     setShowAdd(false);
   };
   const resetToDefault = () => {
     if(window.confirm("Reset all scripts to the original defaults?")) onUpdate({...data,scripts:SCRIPTS});
   };
 
+  // Group by category — anything without one lands in "Uncategorized" so nothing gets lost
+  const grouped={};
+  scripts.forEach((s,i)=>{
+    const cat=s.category||"Uncategorized";
+    if(!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push(i);
+  });
+  const catOrder=[...SCRIPT_CATEGORIES,"Uncategorized"].filter(c=>grouped[c]);
+
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Scripts</div>
       {isAdmin&&<div style={{display:"flex",gap:7}}>
         <button onClick={resetToDefault} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Reset Defaults</button>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Script</button>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>{showAdd?"Cancel":"+ Add Script"}</button>
       </div>}
     </div>
     {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:13,color:C.teal}}>
-      You can edit any script below. Changes save instantly and update for everyone on the team.
+      Word-for-word scripts your team can use for calls, texts, and appointments.
     </div>}
     {showAdd&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>New Script</div>
-      <input placeholder="Script title" value={newScript.title} onChange={e=>setNewScript({...newScript,title:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-      <textarea placeholder="Script content..." value={newScript.content} onChange={e=>setNewScript({...newScript,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
+      <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Title</div>
+      <input placeholder="e.g. Warm Market Opener" value={newScript.title} onChange={e=>setNewScript({...newScript,title:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>
+      <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Category</div>
+      <select value={newScript.category} onChange={e=>setNewScript({...newScript,category:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:10,boxSizing:"border-box",background:"white"}}>
+        <option value="">Select a category...</option>
+        {SCRIPT_CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+      </select>
+      <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Script Content</div>
+      <textarea placeholder="What to say..." value={newScript.content} onChange={e=>setNewScript({...newScript,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
+      <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Link <span style={{color:C.textLight,fontWeight:400}}>(optional — e.g. a video or doc that goes with this script)</span></div>
+      <input placeholder="https://..." value={newScript.link} onChange={e=>setNewScript({...newScript,link:e.target.value.trim()})} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
       <div style={{display:"flex",gap:7,marginTop:8}}>
         <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
         <button onClick={addScript} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Script</button>
       </div>
     </Card>}
-    {scripts.map((s,i)=><Card key={i} style={{marginBottom:10}}>
-      {editing===i?(
-        <div>
-          <input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box",fontWeight:600}}/>
-          <textarea value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6}}/>
-          <div style={{display:"flex",gap:7,marginTop:8}}>
-            <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
-            <button onClick={()=>saveEdit(i)} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Changes</button>
+    {catOrder.map(cat=><div key={cat}>
+      <div style={{fontSize:12,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:"18px 0 8px"}}>{cat}</div>
+      {grouped[cat].map(i=>{const s=scripts[i]; return <Card key={i} style={{marginBottom:10}}>
+        {editing===i?(
+          <div>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Title</div>
+            <input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box",fontWeight:600}}/>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Category</div>
+            <select value={draft.category||""} onChange={e=>setDraft({...draft,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box",background:"white"}}>
+              <option value="">Select a category...</option>
+              {SCRIPT_CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Script Content</div>
+            <textarea value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,resize:"vertical",minHeight:100,boxSizing:"border-box",lineHeight:1.6,marginBottom:8}}/>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMid,marginBottom:4}}>Link <span style={{color:C.textLight,fontWeight:400}}>(optional)</span></div>
+            <input value={draft.link||""} onChange={e=>setDraft({...draft,link:e.target.value.trim()})} placeholder="https://..." style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.teal}`,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+            <div style={{display:"flex",gap:7,marginTop:8}}>
+              <button onClick={()=>setEditing(null)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
+              <button onClick={()=>saveEdit(i)} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Changes</button>
+            </div>
           </div>
-        </div>
-      ):(
-        <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-            <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
-            {isAdmin&&<div style={{display:"flex",gap:5,marginLeft:8}}>
-              <button onClick={()=>{setEditing(i);setDraft({title:s.title,content:s.content});}} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-              <button onClick={()=>deleteScript(i)} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
-            </div>}
+        ):(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
+              {isAdmin&&<div style={{display:"flex",gap:5,marginLeft:8}}>
+                <button onClick={()=>{setEditing(i);setDraft({title:s.title,category:s.category||"",content:s.content,link:s.link||""});}} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+                <button onClick={()=>deleteScript(i)} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
+              </div>}
+            </div>
+            <div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:dv(12,15),color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div>
+            {s.link&&<a href={s.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:8,fontSize:13,color:C.teal,fontWeight:600,textDecoration:"none"}}>🔗 {s.link}</a>}
           </div>
-          <div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:dv(12,15),color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div>
-        </div>
-      )}
-    </Card>)}
+        )}
+      </Card>;})}
+    </div>)}
   </div>;
 }
 
