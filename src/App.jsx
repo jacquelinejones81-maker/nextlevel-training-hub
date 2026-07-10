@@ -1185,7 +1185,7 @@ function RefsEditor({rep,data,onUpdate}) {
   };
 
   return <div>
-    <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:9,padding:"9px 12px",fontSize:13,color:C.text,lineHeight:1.5,marginBottom:10}}>The reference you provide will be called to get information on your character, and asked whether they'd be willing to help you with your first few training appointments.</div>
+    <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:9,padding:"9px 12px",fontSize:13,color:C.text,lineHeight:1.5,marginBottom:10}}>The reference you provide will be called to get information on your character, and asked whether they'd be willing to help you with your first few training appointments. For the best training experience, consider references who are married, between the ages of 25-55, have children, own a home, and have steady income — these tend to make for the strongest practice appointments.</div>
     {localRefs.map((r,i)=>{const status=r.status||{};const completedCount=REF_STAGES.filter(s=>status[s.k]).length;return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:10,marginBottom:6}}>
     <div style={{fontSize:12,fontWeight:700,color:C.textLight,marginBottom:5}}>Reference #{i+1}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
@@ -1524,7 +1524,7 @@ function AdminRefsEditor({rep,data,onUpdate}) {
   };
 
   return <div>
-    <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:9,padding:"9px 12px",fontSize:13,color:C.text,lineHeight:1.5,marginBottom:10}}>The reference you provide will be called to get information on your character, and asked whether they'd be willing to help you with your first few training appointments.</div>
+    <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:9,padding:"9px 12px",fontSize:13,color:C.text,lineHeight:1.5,marginBottom:10}}>The reference you provide will be called to get information on your character, and asked whether they'd be willing to help you with your first few training appointments. For the best training experience, consider references who are married, between the ages of 25-55, have children, own a home, and have steady income — these tend to make for the strongest practice appointments.</div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.surface||"#f8fafc",border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",marginBottom:10}}>
       <div>
         <div style={{fontSize:13,fontWeight:600,color:C.text}}>References Not Required</div>
