@@ -441,8 +441,9 @@ function DailyEventsBanner({data,onUpdateData,userRole}) {
 }
 
 // ── APPOINTMENT TRACKER ──
-function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
+function ApptTracker({appointments=[],onChange,readOnly,bookingLink,track}) {
   const [showPurpose,setShowPurpose]=useState(true);
+  const isLicensed=track==="licensed";
   const slots=Array.from({length:20},(_,i)=>appointments[i]||{id:i,name:"",phone:"",email:"",date:"",notes:"",macho:{},status:""});
   const logged=slots.filter(a=>a.name).length;
   const done=slots.filter(a=>a.status==="Completed").length;
@@ -453,8 +454,13 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink}) {
   return <div>
     {showPurpose&&<div style={{background:C.navyMid,borderRadius:12,padding:"16px 18px",marginBottom:14,position:"relative",border:`1px solid ${C.gold}44`}}>
       <button onClick={()=>setShowPurpose(false)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16}}>x</button>
-      <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Remember Your Purpose!</div>
-      <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
+      {isLicensed?<>
+        <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Complete 20 Appointments to Prepare for Field Trainer Promotion</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>These 20 appointments are your foundation to sharpen your presentation skills and put you in position to be a great field trainer. The more families you personally help, the easier it'll be when you're training someone to do that same. The reps who complete all 20 appointments walk into Field Trainer status <strong style={{color:"white"}}>ready to actually teach it</strong>, not just talk about it.</div>
+      </>:<>
+        <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Remember Your Purpose!</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
+      </>}
       <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:13,color:"rgba(255,255,255,0.7)"}}>Need help? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need!</div>
     </div>}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
@@ -1456,7 +1462,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         {(data.teamLinks||[]).map(link=><QuickLinkCard key={link.id} label={link.label} url={link.url} data={data} onUpdate={onUpdate} personId={rep.id}/>)}
       </div>}
     </div>}
-    {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink}/>}
+    {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink} track={rep.track}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div></Card>)}</div>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
@@ -1638,7 +1644,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
     </div>
     {tab==="trainer"&&<div>{Object.entries(TRAINER_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
     {tab==="rep"&&<RepView rep={liveRepData} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={false}/>}
-    {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})}/>}
+    {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} track={rep.track}/>}
     {tab==="refs"&&<AdminRefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={null} readOnly={false} data={data}/>}
     {tab==="checkins"&&<div>
