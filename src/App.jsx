@@ -1464,7 +1464,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     </div>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink} track={rep.track}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
-    {tab==="scripts"&&<div>{(data.scripts||SCRIPTS).map((s,i)=><Card key={i} style={{marginBottom:10}}><div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div><div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div></Card>)}</div>}
+    {tab==="scripts"&&<RepScriptsView scripts={data.scripts||SCRIPTS}/>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
@@ -8608,6 +8608,28 @@ function CareerPath({rep,data,onUpdate}) {
 
 // ── SCRIPTS PAGE (editable by admins) ──
 const SCRIPT_CATEGORIES = ["Cold Market","Warm Market","Objection Handling","Recruiting","Other"];
+
+// Read-only Scripts view for reps — same category grouping and link display as the
+// admin ScriptsPage, just without the edit/delete controls.
+function RepScriptsView({scripts}) {
+  const grouped={};
+  scripts.forEach((s,i)=>{
+    const cat=s.category||"Uncategorized";
+    if(!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push(i);
+  });
+  const catOrder=[...SCRIPT_CATEGORIES,"Uncategorized"].filter(c=>grouped[c]);
+  return <div>
+    {catOrder.map(cat=><div key={cat}>
+      <div style={{fontSize:12,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:"14px 0 8px"}}>{cat}</div>
+      {grouped[cat].map(i=>{const s=scripts[i]; return <Card key={i} style={{marginBottom:10}}>
+        <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div>
+        <div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div>
+        {s.link&&<a href={s.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:8,fontSize:13,color:C.teal,fontWeight:600,textDecoration:"none",wordBreak:"break-all"}}>🔗 {s.link}</a>}
+      </Card>;})}
+    </div>)}
+  </div>;
+}
 
 function ScriptsPage({data,onUpdate,userRole}) {
   const scripts = data.scripts || SCRIPTS;
