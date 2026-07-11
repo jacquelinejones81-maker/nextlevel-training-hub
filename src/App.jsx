@@ -399,7 +399,7 @@ function AddToPhoneModal({onClose}) {
     <div style={{background:"white",borderRadius:16,padding:24,maxWidth:400,width:"100%"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontSize:15,fontWeight:700,color:C.text}}>Add App to Your Phone</div><button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:C.textMid}}>x</button></div>
       <div style={{marginBottom:14}}><div style={{fontSize:14,fontWeight:700,color:C.teal,marginBottom:8}}>iPhone / Safari</div><div style={{fontSize:13,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Safari<br/>2. Tap the Share button (box with arrow)<br/>3. Scroll down and tap "Add to Home Screen"<br/>4. Tap "Add" in the top right</div></div>
-      <div><div style={{fontSize:14,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div><div style={{fontSize:13,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>1. Open this app in Chrome<br/>2. Tap the three dots menu (top right)<br/>3. Tap "Add to Home screen"<br/>4. Tap "Add"</div></div>
+      <div><div style={{fontSize:14,fontWeight:700,color:C.purple,marginBottom:8}}>Android / Chrome</div><div style={{fontSize:13,color:C.text,lineHeight:1.7,background:C.surface,borderRadius:8,padding:"10px 12px"}}>Open this app in Chrome, tap the three dots menu (top right), then choose one of these:<br/><br/><strong>Option 1:</strong> Tap "Add to Home screen" → Tap "Add"<br/><br/><strong>Option 2:</strong> Tap "Install" → Tap "Create shortcut"</div></div>
       <button onClick={onClose} style={{marginTop:16,width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:14,fontWeight:600}}>Got it!</button>
     </div>
   </div>;
@@ -2550,6 +2550,105 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
   </div>;
 }
 
+// ── MY RECRUITS THIS MONTH (admin/trainer, own scope only, auto-clears each Primer month) ──
+// ── INLINE ADD RECRUIT (minimal, just the add form — no duplicate count/list) ──
+function InlineAddRecruit({person,onSave}) {
+  const [showForm,setShowForm] = useState(false);
+  const [form,setForm] = useState({name:"",phone:"",date:localDateStr()});
+  const log = person?.myRecruitLog||[];
+  const add = () => {
+    if(!form.name.trim()) return;
+    onSave([...log,{...form,id:Date.now(),addedAt:new Date().toISOString()}]);
+    setForm({name:"",phone:"",date:localDateStr()});
+    setShowForm(false);
+  };
+  if(!showForm) return <button onClick={()=>setShowForm(true)} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,marginBottom:10}}>+ Add Recruit</button>;
+  return <div style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:10}}>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Don't see someone you recruited? Add them here so the list stays accurate.</div>
+    <input placeholder="Recruit's name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,marginBottom:6,boxSizing:"border-box"}}/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+      <input placeholder="Phone (optional)" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
+      <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
+    </div>
+    <div style={{display:"flex",gap:6}}>
+      <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+      <button onClick={add} style={{flex:2,padding:"6px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Recruit</button>
+    </div>
+  </div>;
+}
+
+function MyRecruitsThisMonth({data,userId,userRole,onUpdate}) {
+  const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const [showList,setShowList] = useState(false);
+  const [viewingLastMonth,setViewingLastMonth] = useState(false);
+  const isMine = r => r.adminId===userId || r.trainerId===userId;
+  const person = findPersonRecord(data,userId);
+  const saveRecruitLog = (log) => {
+    if(typeof onUpdate!=="function") return;
+    if((data.trainers||[]).some(t=>t.id===userId)){
+      const updated=(data.trainers||[]).map(t=>t.id===userId?{...t,myRecruitLog:log}:t);
+      onUpdate({...data,trainers:updated});
+    } else if((data.admins||[]).some(a=>a.id===userId)){
+      const updated=(data.admins||[]).map(a=>a.id===userId?{...a,myRecruitLog:log}:a);
+      onUpdate({...data,admins:updated});
+    }
+  };
+
+  const getRecruitsForPeriod = (periodStart,periodEnd) => {
+    const realAccounts = (data.reps||[]).filter(r=>{
+      if(!isMine(r)||!r.createdAt) return false;
+      let d; try{ d=localDateStr(new Date(r.createdAt)); }catch(e){ return false; }
+      return d>=periodStart && (!periodEnd||d<periodEnd);
+    }).map(r=>({name:r.name,phone:r.phone,date:localDateStr(new Date(r.createdAt)),type:"account"}));
+    const person = findPersonRecord(data,userId);
+    const realNames = new Set((data.reps||[]).filter(isMine).map(r=>(r.name||"").trim().toLowerCase()));
+    const logged = ((person?.myRecruitLog)||[]).filter(r=>{
+      if(!r.date||r.date<periodStart) return false;
+      if(periodEnd&&r.date>=periodEnd) return false;
+      return !realNames.has((r.name||"").trim().toLowerCase());
+    }).map(r=>({name:r.name,phone:r.phone,date:r.date,type:"logged"}));
+    return [...realAccounts,...logged].sort((a,b)=>b.date.localeCompare(a.date));
+  };
+
+  const thisMonthList = getRecruitsForPeriod(pm.start,null);
+
+  const sortedCutoffs = [...(data.primerMonthEnds||[])].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
+  const curStartIdx = sortedCutoffs.findIndex(m=>m.cutoff===pm.start);
+  const lastMonthDef = curStartIdx>=0?sortedCutoffs[curStartIdx]:null;
+  const lastMonthStart = curStartIdx>0?sortedCutoffs[curStartIdx-1].cutoff:"2020-01-01";
+  const lastMonthList = lastMonthDef?getRecruitsForPeriod(lastMonthStart,lastMonthDef.cutoff):[];
+
+  const displayList = viewingLastMonth?lastMonthList:thisMonthList;
+
+  return <Card style={{marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text}}>My Recruits — {viewingLastMonth?(lastMonthDef?.label||"Last Month"):pm.label}</div>
+      <div style={{fontSize:20,fontWeight:800,color:C.teal}}>{displayList.length}</div>
+    </div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>Only recruits you personally added — resets automatically each new Primerica month</div>
+    <div style={{display:"flex",gap:6,marginBottom:10}}>
+      <button onClick={()=>setShowList(!showList)} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600}}>{showList?"Hide List":"View List"}</button>
+      {lastMonthDef&&<button onClick={()=>{setViewingLastMonth(!viewingLastMonth);setShowList(true);}} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${viewingLastMonth?C.teal:C.border}`,background:viewingLastMonth?C.teal+"11":"white",color:viewingLastMonth?C.teal:C.textMid,cursor:"pointer",fontWeight:600}}>{viewingLastMonth?"Viewing Last Month":"View Last Month"}</button>}
+    </div>
+    {!viewingLastMonth&&onUpdate&&<InlineAddRecruit person={person} onSave={saveRecruitLog}/>}
+    {showList&&(displayList.length===0?
+      <div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No recruits {viewingLastMonth?"last month":"yet this month"}</div>
+      :
+      displayList.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
+        <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div>
+          <div style={{fontSize:11,color:C.textLight}}>{r.phone||"No phone"} · {new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+        </div>
+        <span style={{fontSize:10,fontWeight:700,color:r.type==="account"?C.success:C.gold,background:(r.type==="account"?C.success:C.gold)+"11",padding:"2px 7px",borderRadius:5}}>{r.type==="account"?"Account":"Logged"}</span>
+      </div>)
+    )}
+    {showList&&<div style={{fontSize:11,color:C.textLight,marginTop:10,paddingTop:8,borderTop:`1px solid ${C.border}`,lineHeight:1.6}}>
+      <span style={{fontWeight:700,color:C.success}}>Account</span> = they have a full rep record in the Hub (login, checklist, everything). <span style={{fontWeight:700,color:C.gold}}>Logged</span> = you noted them as a recruit but haven't created their account yet — once you do, it switches to Account automatically.
+    </div>}
+  </Card>;
+}
+
 function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
@@ -2583,6 +2682,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   };
 
   return <div>
+    {(isAdmin||userRole==="trainer")&&!showInactive&&<MyRecruitsThisMonth data={data} userId={userId} userRole={userRole} onUpdate={onUpdate}/>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:13,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
