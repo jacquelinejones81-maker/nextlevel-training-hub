@@ -3331,7 +3331,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
   const todayEntry=weekDays[todayStr]||{committed:{},actual:{}};
   const isAdmin=userRole==="admin"||userRole==="superadmin";
   const isTrainer=userRole==="trainer";
-  const canCommit=(userRole==="rep"&&track==="licensed")||isTrainer||isAdmin;
+  const canCommit=userRole==="rep"||isTrainer||isAdmin;
 
   const goals={contacts:100,apptSet:20,apptDone:20};
 
