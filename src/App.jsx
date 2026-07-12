@@ -257,6 +257,17 @@ const RVP_CHECKLIST = [
   {id:"rvp18",cat:"Goal",task:"Regional Vice President Promotion"},
 ];
 
+const SVP_CHECKLIST = [
+  "Have 3 first-generation RVPs in place (each producing $10,000+ submitted bonusable premium, twice within 2 months before/after their promotion)",
+  "At least 2 of those 3 RVPs are securities licensed",
+  "Submit $50,000 through 1st in Production Credit",
+  "$10,000 minimum Base Shop submitted bonusable premium",
+  "Pre-qualify the month before at 75%+ of the above",
+  "Acceptable persistency",
+  "Securities principal licensed (Series 26)",
+  "Execute SVP Agreement",
+];
+
 const TRACK_INFO = {
   fast:{label:"Fast Start",color:C.teal,days:"7-14 days",checklist:FAST_START},
   regular:{label:"Regular Start",color:C.purple,days:"30 days",checklist:REGULAR_START},
@@ -3761,6 +3772,8 @@ function TrainerCareerPath({data,onUpdate,session}) {
   const [goals,setGoals] = useState(myData.rvpGoals||{premium:10000,agents:20,teamSize:30});
   const [editGoals,setEditGoals] = useState(false);
   const [weeklyCommit,setWeeklyCommit] = useState("");
+  const [svpTargetDate,setSvpTargetDate] = useState(myData.svpTargetDate||"");
+  const [aalcTargetDate,setAalcTargetDate] = useState(myData.aalcTargetDate||"");
 
   const rvpRequested = myData.rvpPathRequested&&!myData.rvpPathGranted;
   const rvpDenied = myData.rvpPathDenied&&!myData.rvpPathRequested;
@@ -3769,6 +3782,91 @@ function TrainerCareerPath({data,onUpdate,session}) {
   const save = (updates) => {
     onUpdate({...data,trainerCareer:{...trainerData,[session.id]:{...myData,...updates}}});
   };
+
+  if(session.role==="admin"||session.role==="superadmin"){
+    const svpChecked = myData.svpChecked||{};
+    const svpDone = Object.values(svpChecked).filter(Boolean).length;
+    const svpTotal = SVP_CHECKLIST.length;
+    const toggleSvp = (i) => save({svpChecked:{...svpChecked,[i]:!svpChecked[i]}});
+    const svpDaysLeft = myData.svpTargetDate ? Math.ceil((new Date(myData.svpTargetDate+"T12:00:00")-new Date())/(86400000)) : null;
+    const svpCountdownMsg = svpDaysLeft===null?"Set your target promotion date":svpDaysLeft<=0?"Your target date has passed — keep pushing!":svpDaysLeft<=30?"You are almost there! Final push!":svpDaysLeft<=90?"You are in the home stretch!":svpDaysLeft<=180?"Great progress — stay consistent!":"Keep building every day!";
+    const svpCountdownColor = svpDaysLeft===null?C.textMid:svpDaysLeft<=0?C.danger:svpDaysLeft<=30?C.gold:C.success;
+    const adminStages=[{key:"rvp",label:"RVP",sub:"Achieved"},{key:"aalc",label:"AALC",sub:"Next Milestone"},{key:"svp",label:"SVP",sub:"Future Goal"}];
+
+    return <div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:14}}>My Career Path</div>
+
+      {/* 3-stage roadmap: RVP (done) -> AALC (next) -> SVP (future) */}
+      <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"16px",marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px",marginBottom:12}}>Your Career Journey</div>
+        <div style={{display:"flex",alignItems:"center",gap:0}}>
+          {adminStages.map((s,i)=>{
+            const isDone=i===0;
+            const isNext=i===1;
+            return <div key={s.key} style={{flex:1,textAlign:"center",position:"relative"}}>
+              {i>0&&<div style={{position:"absolute",top:14,left:0,right:"50%",height:2,background:C.success}}/>}
+              {i<adminStages.length-1&&<div style={{position:"absolute",top:14,left:"50%",right:0,height:2,background:isDone?C.success:"rgba(255,255,255,0.15)"}}/>}
+              <div style={{width:28,height:28,borderRadius:14,background:isDone?C.success:isNext?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.05)",border:"2px solid "+(isDone?C.success:isNext?C.gold+"88":"rgba(255,255,255,0.15)"),margin:"0 auto 6px",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1}}>
+                {isDone&&<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}
+                {isNext&&<span style={{color:C.gold,fontSize:13}}>★</span>}
+              </div>
+              <div style={{fontSize:10,fontWeight:isDone||isNext?700:400,color:isDone?"white":isNext?C.gold:"rgba(255,255,255,0.4)",lineHeight:1.2}}>{s.label}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>{s.sub}</div>
+            </div>;
+          })}
+        </div>
+      </div>
+
+      {/* Achievement banner */}
+      <div style={{background:"linear-gradient(135deg,"+C.gold+"22,"+C.gold+"08)",border:"1px solid "+C.gold+"44",borderRadius:12,padding:"18px 20px",marginBottom:14,textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:6}}>🏆</div>
+        <div style={{fontSize:17,fontWeight:800,color:C.text,marginBottom:6}}>You're a Regional Vice President!</div>
+        <div style={{fontSize:14,color:C.textMid,lineHeight:1.6}}>That's one of the most important roles in this business — you've built a team, and now it's time to build a legacy. Here's what's ahead on your path forward.</div>
+      </div>
+
+      {/* AALC — informational only, not tracked */}
+      <Card style={{marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.text}}>🎖️ AALC — African American Leadership Council</div>
+          <span style={{fontSize:10,fontWeight:700,color:C.purple,background:C.purple+"11",padding:"2px 8px",borderRadius:6}}>Milestone</span>
+        </div>
+        <div style={{fontSize:13,color:C.textMid,lineHeight:1.6}}>To be considered for AALC membership, hit <strong style={{color:C.text}}>$200,000 in income within any 12-month period</strong>. This is shown here as a heads up on the path ahead — not something tracked or logged in the Hub.</div>
+      </Card>
+
+      {/* AALC Target Date */}
+      <Card style={{marginBottom:14}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>AALC Target Date</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>When are you aiming to hit your $200k rolling 12-month income goal?</div>
+        <input type="date" value={aalcTargetDate} onChange={e=>{setAalcTargetDate(e.target.value);save({aalcTargetDate:e.target.value});}} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+      </Card>
+
+      {/* SVP Target Date */}
+      <Card style={{marginBottom:14}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>SVP Target Date</div>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>When are you aiming to be promoted to Senior Vice President?</div>
+        <input type="date" value={svpTargetDate} onChange={e=>{setSvpTargetDate(e.target.value);save({svpTargetDate:e.target.value});}} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+        {myData.svpTargetDate&&<div style={{marginTop:10,textAlign:"center"}}>
+          <div style={{fontSize:24,fontWeight:800,color:svpCountdownColor}}>{svpDaysLeft<=0?"Time to push harder!":svpDaysLeft+" days"}</div>
+          <div style={{fontSize:13,color:svpCountdownColor,fontWeight:600,marginTop:4}}>{svpCountdownMsg}</div>
+        </div>}
+      </Card>
+
+      {/* SVP Requirements checklist */}
+      <Card style={{marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.text}}>SVP Requirements</div>
+          <div style={{fontSize:13,color:C.textMid}}>{svpDone}/{svpTotal} complete</div>
+        </div>
+        <Bar pct={svpTotal>0?(svpDone/svpTotal)*100:0} color={C.success} h={6}/>
+        <div style={{marginTop:10}}>
+          {SVP_CHECKLIST.map((task,i)=><label key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"8px 0",borderTop:i>0?"1px solid "+C.border:"none",cursor:"pointer"}}>
+            <input type="checkbox" checked={!!svpChecked[i]} onChange={()=>toggleSvp(i)} style={{width:18,height:18,marginTop:1,accentColor:C.success,cursor:"pointer",flexShrink:0}}/>
+            <span style={{fontSize:13,color:C.text,lineHeight:1.5,textDecoration:svpChecked[i]?"line-through":"none",opacity:svpChecked[i]?0.6:1}}>{task}</span>
+          </label>)}
+        </div>
+      </Card>
+    </div>;
+  }
 
   // Countdown
   const daysLeft = myData.rvpTargetDate ? Math.ceil((new Date(myData.rvpTargetDate+"T12:00:00")-new Date())/(86400000)) : null;
