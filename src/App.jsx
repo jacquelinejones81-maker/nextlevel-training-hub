@@ -2756,6 +2756,103 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
 }
 
 // ── DASHBOARD ──
+// ── LINK SHARING ACTIVITY (admin-only, tracks link-share adoption across the team) ──
+function LinkSharingActivity({data}) {
+  const [view,setView] = useState("byLink");
+  const [period,setPeriod] = useState("week");
+  const [expandedLink,setExpandedLink] = useState(null);
+
+  const periodStart = period==="week" ? localDateStr(new Date(Date.now()-6*86400000)) : period==="month" ? localDateStr(new Date(Date.now()-29*86400000)) : null;
+
+  const roster = [
+    ...(data.reps||[]).filter(r=>!r.inactive).map(r=>({id:r.id,name:r.name,role:"Rep"})),
+    ...(data.trainers||[]).map(t=>({id:t.id,name:t.name,role:"Trainer"})),
+    ...(data.admins||[]).map(a=>({id:a.id,name:a.name,role:"Admin"})),
+  ];
+
+  const shares = [];
+  const collect = (arr,role) => (arr||[]).forEach(p=>{
+    (p.linkShareLog||[]).forEach(s=>{
+      if(!periodStart||s.date>=periodStart) shares.push({personId:p.id,personName:p.name,role,linkLabel:s.linkLabel||"Link",date:s.date});
+    });
+  });
+  collect(data.reps,"Rep"); collect(data.trainers,"Trainer"); collect(data.admins,"Admin");
+
+  // By Person — everyone on the roster, zeros included, sorted lowest first
+  const personCounts = roster.map(p=>({...p,count:shares.filter(s=>s.personId===p.id).length})).sort((a,b)=>a.count-b.count);
+
+  // By Link — every configured link, zeros included, sorted highest first
+  const configuredLinks=["My Lead Link",...(data.repShareableLinks||[]).map(l=>l.label||"Shareable Link"),...(data.teamLinks||[]).map(l=>l.label||"Link")];
+  const linkTotals={};
+  shares.forEach(s=>{ linkTotals[s.linkLabel]=(linkTotals[s.linkLabel]||0)+1; });
+  const linkList=[...new Set(configuredLinks)].map(label=>({label,count:linkTotals[label]||0})).sort((a,b)=>b.count-a.count);
+  const maxCount=Math.max(1,...linkList.map(l=>l.count));
+
+  const getBreakdownForLink=(label)=>{
+    const counts={};
+    shares.filter(s=>s.linkLabel===label).forEach(s=>{ counts[s.personId]=(counts[s.personId]||0)+1; });
+    return Object.keys(counts).map(id=>{
+      const p=roster.find(r=>r.id===id);
+      return {name:p?.name||"Unknown",count:counts[id]};
+    }).sort((a,b)=>b.count-a.count);
+  };
+
+  return <Card style={{marginBottom:14}}>
+    <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>Link Sharing Activity</div>
+    <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>{view==="byLink"?"Tap any link to see who's sharing it":"See who's actually sharing links"}</div>
+    <div style={{display:"flex",gap:6,marginBottom:12}}>
+      <button onClick={()=>{setView("byPerson");setExpandedLink(null);}} style={{fontSize:12,padding:"5px 12px",borderRadius:7,border:`1px solid ${view==="byPerson"?C.teal:C.border}`,background:view==="byPerson"?C.teal+"11":"white",color:view==="byPerson"?C.teal:C.textMid,cursor:"pointer",fontWeight:600}}>By Person</button>
+      <button onClick={()=>setView("byLink")} style={{fontSize:12,padding:"5px 12px",borderRadius:7,border:`1px solid ${view==="byLink"?C.teal:C.border}`,background:view==="byLink"?C.teal+"11":"white",color:view==="byLink"?C.teal:C.textMid,cursor:"pointer",fontWeight:600}}>By Link</button>
+    </div>
+    <div style={{display:"flex",gap:5,marginBottom:14}}>
+      {[["week","This Week"],["month","This Month"],["all","All Time"]].map(([k,l])=>
+        <button key={k} onClick={()=>setPeriod(k)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${period===k?C.navy:C.border}`,background:period===k?C.navy:"white",color:period===k?"white":C.textMid,cursor:"pointer"}}>{l}</button>
+      )}
+    </div>
+
+    {view==="byPerson"&&(personCounts.length===0?
+      <div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No one on the roster yet</div>
+      :
+      personCounts.map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 0",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
+        <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal,flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{p.name}</div>
+          <div style={{fontSize:10,color:C.textLight}}>{p.role}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:16,fontWeight:800,color:p.count===0?C.danger:p.count<3?C.gold:C.success}}>{p.count}</span>
+          {p.count===0&&<span style={{fontSize:9,fontWeight:700,color:C.danger,background:C.danger+"11",padding:"1px 6px",borderRadius:5}}>Not using it</span>}
+        </div>
+      </div>)
+    )}
+
+    {view==="byLink"&&linkList.map((l,i)=><div key={l.label} style={{borderTop:i>0?`1px solid ${C.border}`:"none",padding:"10px 0"}}>
+      <div onClick={()=>setExpandedLink(expandedLink===l.label?null:l.label)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:10,color:C.textLight,transform:expandedLink===l.label?"rotate(90deg)":"none",display:"inline-block"}}>▶</span>
+          <span style={{fontSize:13,fontWeight:600,color:C.text}}>{l.label}</span>
+        </div>
+        <span style={{fontSize:16,fontWeight:800,color:C.teal}}>{l.count}</span>
+      </div>
+      <div style={{height:5,background:C.surface,borderRadius:3,overflow:"hidden",marginTop:6}}>
+        <div style={{height:"100%",width:(l.count/maxCount*100)+"%",background:l.count===0?C.border:C.teal,borderRadius:3}}/>
+      </div>
+      {expandedLink===l.label&&<div style={{marginTop:10,background:C.surface,borderRadius:8,padding:"10px 12px"}}>
+        <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:8}}>Shared By</div>
+        {getBreakdownForLink(l.label).length===0?
+          <div style={{fontSize:12,color:C.textLight}}>No one has shared this yet</div>
+          :
+          getBreakdownForLink(l.label).map((p,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0"}}>
+            <div style={{width:22,height:22,borderRadius:6,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.teal,flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
+            <div style={{flex:1,fontSize:12,fontWeight:600,color:C.text}}>{p.name}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.teal}}>{p.count}</div>
+          </div>)
+        }
+      </div>}
+    </div>)}
+  </Card>;
+}
+
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const [showTrainerCommitment,setShowTrainerCommitment]=useState(false);
   const isTrainer=userRole==="trainer";
@@ -2830,6 +2927,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <StalledReferencesAlert data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
 
     <BirthdayAnniversaryWidget data={data}/>
+    {(userRole==="admin"||userRole==="superadmin")&&<LinkSharingActivity data={data}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data} onUpdate={onUpdate} userRole={userRole}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
