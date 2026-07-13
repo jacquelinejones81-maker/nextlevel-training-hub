@@ -1234,7 +1234,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const cats=cl.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{});
   const trainer=[...(data.trainers||[]),...(data.admins||[])].find(t=>t.id===rep.trainerId);
   const bookingLink=trainer?.bookingLink||"https://calendly.com/jacquelinejones81/trainingappointment";
-  const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id);
+  const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id&&!r.excludeFromRecruitCount);
   const tabs=[
     {k:"checklist",l:"Checklist"},
     {k:"planner",l:"Daily Planner"},
@@ -1970,6 +1970,10 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign RVP / Admin <span style={{fontSize:11,color:C.textLight,fontWeight:400}}>— determines whose My Reps filter they appear under</span></label><select value={f.adminId||""} onChange={e=>setF({...f,adminId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.gold}`,fontSize:14,color:C.text}}><option value="">Not assigned</option>{(allPeople||[]).filter(p=>p.role==="Admin").map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
+      <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,marginBottom:14,cursor:"pointer"}}>
+        <input type="checkbox" checked={!!f.excludeFromRecruitCount} onChange={e=>setF({...f,excludeFromRecruitCount:e.target.checked})} style={{width:17,height:17,marginTop:1,accentColor:C.teal,cursor:"pointer",flexShrink:0}}/>
+        <span style={{fontSize:12,color:C.textMid,lineHeight:1.5}}>This person was already working with us — we just forgot to add them. <strong style={{color:C.text}}>Don't count them toward new recruit numbers.</strong></span>
+      </label>
       <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",marginTop:4}}>Add Rep</button>
     </div>
   </div>;
@@ -2592,7 +2596,7 @@ function MyRecruitsThisMonth({data,userId,userRole,onUpdate}) {
   const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
   const [showList,setShowList] = useState(false);
   const [viewingLastMonth,setViewingLastMonth] = useState(false);
-  const isMine = r => r.adminId===userId || r.trainerId===userId;
+  const isMine = r => (r.adminId===userId || r.trainerId===userId) && !r.excludeFromRecruitCount;
   const person = findPersonRecord(data,userId);
   const saveRecruitLog = (log) => {
     if(typeof onUpdate!=="function") return;
@@ -3373,7 +3377,7 @@ function logLinkShare(data,onUpdate,userId,linkLabel){
 // A quick-logged entry is excluded once that same name shows up as a real account under this
 // person (any time, not just this period) so the same recruit is never counted twice.
 function countPeriodRecruits(data,personId,periodStart){
-  const allMyRealReps=(data.reps||[]).filter(r=>r.trainerId===personId);
+  const allMyRealReps=(data.reps||[]).filter(r=>r.trainerId===personId&&!r.excludeFromRecruitCount);
   const realNames=new Set(allMyRealReps.map(r=>(r.name||"").trim().toLowerCase()).filter(Boolean));
   const realAccounts=allMyRealReps.filter(r=>{
     if(!r.createdAt) return false;
@@ -3397,7 +3401,7 @@ function getAutoActuals(data,userId,dateStr){
   const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr);
   const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
   const dayRecruits=(data.reps||[]).filter(r=>{
-    if(r.trainerId!==userId||!r.createdAt) return false;
+    if(r.trainerId!==userId||!r.createdAt||r.excludeFromRecruitCount) return false;
     try{ return localDateStr(new Date(r.createdAt))===dateStr; }catch(e){ return false; }
   });
   // Also count recruits logged through the "Recruits"/quick-log form (a person doesn't
@@ -4196,7 +4200,7 @@ function MyActivityReport({session,data,onUpdate}) {
   const monthPct = Math.round((dayOfMonth/daysInMonth)*100);
 
   // ── Recruits this month ──
-  const myRecruits = (data.reps||[]).filter(r => r.trainerId===userId);
+  const myRecruits = (data.reps||[]).filter(r => r.trainerId===userId&&!r.excludeFromRecruitCount);
   const recruitsThisMonth = myRecruits.filter(r => r.createdAt && new Date(r.createdAt) >= monthStart);
 
   // ── Life apps / premium this month ──
@@ -5322,7 +5326,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
             // prefer the new location, fall back to legacy only if nothing's been logged there yet.
             const repProdEntry=(data.myProduction||{})[rep.id]||{};
             const investmentEntriesForReport=(repProdEntry.investments&&repProdEntry.investments.length>0)?repProdEntry.investments:(rep.investments||[]);
-            const recruitsCount=(data.reps||[]).filter(r=>r.recruitedBy===rep.id).length;
+            const recruitsCount=(data.reps||[]).filter(r=>r.recruitedBy===rep.id&&!r.excludeFromRecruitCount).length;
             w.document.write(`<!DOCTYPE html><html><head><title>Coaching Report — ${rep.name}</title><style>
               body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#1a1a2e;}
               h1{color:#0d1b2a;border-bottom:3px solid #0ea5c9;padding-bottom:10px;}
@@ -5724,7 +5728,7 @@ function MonthEndReport({data}) {
   const newlyLicensed = reps.filter(r=>r.licensedDate&&r.licensedDate>=monthStart);
   const newTrainers = reps.filter(r=>r.fieldTrainerGranted&&r.fieldTrainerGrantedAt&&r.fieldTrainerGrantedAt>=monthStart);
   const withPremium = reps.map(r=>({name:r.name,total:(r.selfPremium||[]).reduce((s,e)=>s+(Number(e.premium)||0),0)})).filter(r=>r.total>0).sort((a,b)=>b.total-a.total);
-  const withRecruits = allPeople.map(p=>({name:p.name,count:(data.reps||[]).filter(r=>r.recruitedBy===p.id).length})).filter(p=>p.count>0).sort((a,b)=>b.count-a.count);
+  const withRecruits = allPeople.map(p=>({name:p.name,count:(data.reps||[]).filter(r=>r.recruitedBy===p.id&&!r.excludeFromRecruitCount).length})).filter(p=>p.count>0).sort((a,b)=>b.count-a.count);
   const withAppts = allPeople.map(p=>({name:p.name,appts:(data.scorecards||{})[p.id]?.apptDone||0})).filter(p=>p.appts>0).sort((a,b)=>b.appts-a.appts);
   const withStreak = allPeople.map(p=>{
     const repLog=activityLogs[p.id]||{};let streak=0;const d=new Date();
@@ -7319,7 +7323,7 @@ function TopRecruiters({data,onUpdate,userRole}) {
     ...p,
     // Only count recruits added since the last "Clear" — nothing about the reps
     // themselves (or who recruited them) is ever deleted, just what's displayed here.
-    recruits:(data.reps||[]).filter(r=>r.recruitedBy===p.id&&(!resetAt||!r.createdAt||r.createdAt>=resetAt)),
+    recruits:(data.reps||[]).filter(r=>r.recruitedBy===p.id&&!r.excludeFromRecruitCount&&(!resetAt||!r.createdAt||r.createdAt>=resetAt)),
   })).filter(p=>p.recruits.length>0).sort((a,b)=>b.recruits.length-a.recruits.length);
 
   const canClear=(userRole==="admin"||userRole==="superadmin")&&typeof onUpdate==="function";
