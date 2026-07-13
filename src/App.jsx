@@ -1255,6 +1255,28 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
   const [showAutoHomePopup,setShowAutoHomePopup]=useState(false);
+  const [showProspectingReminder,setShowProspectingReminder]=useState(false);
+  useEffect(()=>{
+    if(!isOwnView) return;
+    const weekKey=getWeekStart();
+    if(rep.prospectingReminderDismissedWeek===weekKey) return;
+    const seed=(rep.id||"")+weekKey;
+    const seededRandom=s=>{let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return Math.abs(h%10000)/10000;};
+    const dayOffset=Math.floor(seededRandom(seed)*7);
+    const hourOffset=8+Math.floor(seededRandom(seed+"h")*9); // sometime between 8am-5pm
+    const revealDate=new Date(weekKey+"T00:00:00");
+    revealDate.setDate(revealDate.getDate()+dayOffset);
+    revealDate.setHours(hourOffset,0,0,0);
+    if(Date.now()>=revealDate.getTime()) setShowProspectingReminder(true);
+  },[isOwnView,rep.id]);
+  const dismissProspectingReminder=()=>{
+    onUpdate(rep.id,{...rep,prospectingReminderDismissedWeek:getWeekStart()});
+    setShowProspectingReminder(false);
+  };
+  const goPracticeProspecting=()=>{
+    dismissProspectingReminder();
+    setTab("prospecting");
+  };
   const tog=(id)=>{
     if(!readOnly){
       const newChecked={...checked,[id]:!checked[id]};
@@ -1438,6 +1460,21 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
 
     {showCelebration&&<Confetti name={rep.name} pct={celebrationPct} onClose={()=>setShowCelebration(false)}/>}
+    {showProspectingReminder&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:3400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"white",borderRadius:16,maxWidth:380,width:"100%",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,padding:"26px 24px 20px",textAlign:"center",position:"relative"}}>
+          <button onClick={dismissProspectingReminder} style={{position:"absolute",top:12,right:14,background:"none",border:"none",color:"rgba(255,255,255,0.4)",fontSize:18,cursor:"pointer"}}>✕</button>
+          <div style={{fontSize:44,marginBottom:10}}>🎯</div>
+          <div style={{color:"white",fontSize:19,fontWeight:800,marginBottom:6}}>Time to Sharpen Your Aim!</div>
+          <div style={{color:"rgba(255,255,255,0.65)",fontSize:13,lineHeight:1.5}}>A quick weekly nudge to keep your prospecting skills fresh</div>
+        </div>
+        <div style={{padding:"20px 24px 24px"}}>
+          <div style={{fontSize:14,color:C.text,lineHeight:1.6,marginBottom:16,textAlign:"center"}}>Pick a Situation Card and practice it out loud — with your trainer, a teammate, or even just in the mirror. The reps who rehearse consistently are the ones who don't freeze up in the moment.</div>
+          <button onClick={goPracticeProspecting} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:14,marginBottom:8,cursor:"pointer"}}>🎯 Go Practice a Card</button>
+          <button onClick={dismissProspectingReminder} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:"none",color:C.textMid,fontSize:13,cursor:"pointer"}}>Maybe Later</button>
+        </div>
+      </div>
+    </div>}
     {rewatchVideo&&<RewatchVideoModal videoUrl={rewatchVideo.url} title={rewatchVideo.title} onClose={()=>setRewatchVideo(null)}/>}
     {showOrientationVideo&&data?.orientationVideoUrl&&<RewatchVideoModal videoUrl={data.orientationVideoUrl} title="Orientation Video" onClose={()=>setShowOrientationVideo(false)}/>}
     {showLicensedRewatch&&data?.licensedVideoUrl&&<RewatchVideoModal videoUrl={data.licensedVideoUrl} title="Licensed Now What Video" onClose={()=>setShowLicensedRewatch(false)}/>}
