@@ -1972,7 +1972,7 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
       <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,marginBottom:14,cursor:"pointer"}}>
         <input type="checkbox" checked={!!f.excludeFromRecruitCount} onChange={e=>setF({...f,excludeFromRecruitCount:e.target.checked})} style={{width:17,height:17,marginTop:1,accentColor:C.teal,cursor:"pointer",flexShrink:0}}/>
-        <span style={{fontSize:12,color:C.textMid,lineHeight:1.5}}>This person was already working with us — we just forgot to add them. <strong style={{color:C.text}}>Don't count them toward new recruit numbers.</strong></span>
+        <span style={{fontSize:12,color:C.textMid,lineHeight:1.5}}>This person is already a rep. <strong style={{color:C.text}}>Don't count them toward new recruit numbers.</strong></span>
       </label>
       <button onClick={()=>{if(f.name){onAdd(f);onClose();}}} style={{width:"100%",padding:"10px",borderRadius:8,background:C.teal,color:"white",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",marginTop:4}}>Add Rep</button>
     </div>
