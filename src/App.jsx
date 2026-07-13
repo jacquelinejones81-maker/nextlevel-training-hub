@@ -2779,7 +2779,7 @@ function LinkSharingActivity({data}) {
   collect(data.reps,"Rep"); collect(data.trainers,"Trainer"); collect(data.admins,"Admin");
 
   // By Person — everyone on the roster, zeros included, sorted lowest first
-  const personCounts = roster.map(p=>({...p,count:shares.filter(s=>s.personId===p.id).length})).sort((a,b)=>a.count-b.count);
+  const personCounts = roster.map(p=>({...p,count:shares.filter(s=>s.personId===p.id).length})).filter(p=>p.count>0).sort((a,b)=>b.count-a.count);
 
   // By Link — every configured link, zeros included, sorted highest first
   const configuredLinks=["My Lead Link",...(data.repShareableLinks||[]).map(l=>l.label||"Shareable Link"),...(data.teamLinks||[]).map(l=>l.label||"Link")];
@@ -2811,7 +2811,7 @@ function LinkSharingActivity({data}) {
     </div>
 
     {view==="byPerson"&&(personCounts.length===0?
-      <div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No one on the roster yet</div>
+      <div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No one has shared a link yet</div>
       :
       personCounts.map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 0",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
         <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal,flexShrink:0}}>{p.name?.charAt(0)?.toUpperCase()}</div>
@@ -2819,10 +2819,7 @@ function LinkSharingActivity({data}) {
           <div style={{fontSize:13,fontWeight:600,color:C.text}}>{p.name}</div>
           <div style={{fontSize:10,color:C.textLight}}>{p.role}</div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:16,fontWeight:800,color:p.count===0?C.danger:p.count<3?C.gold:C.success}}>{p.count}</span>
-          {p.count===0&&<span style={{fontSize:9,fontWeight:700,color:C.danger,background:C.danger+"11",padding:"1px 6px",borderRadius:5}}>Not using it</span>}
-        </div>
+        <span style={{fontSize:16,fontWeight:800,color:C.success}}>{p.count}</span>
       </div>)
     )}
 
