@@ -506,6 +506,7 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink,track}) {
 function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
   const repRef2=useRef(rep);
   useEffect(()=>{repRef2.current=rep;},[rep]);
+  const [showWhyExample,setShowWhyExample]=useState(false);
   // Promotion level selector — licensed reps only
   const PROMO_LEVELS=[
     {key:"rep",label:"Rep",pct:25},
@@ -544,6 +545,11 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       <Card style={{margin:0}}>
         <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
         <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Your personal reason for joining. What would you want to change in your life over the next 12 months, and why is that important to you?</div>
+        {!readOnly&&<button onClick={()=>setShowWhyExample(!showWhyExample)} style={{fontSize:12,color:C.teal,background:"none",border:"none",fontWeight:600,cursor:"pointer",padding:0,marginBottom:8,display:"flex",alignItems:"center",gap:4}}>💡 {showWhyExample?"Hide Example":"See an Example"}</button>}
+        {showWhyExample&&<div style={{background:C.purple+"0d",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Example — for inspiration, not to copy</div>
+          <div style={{fontSize:12,color:C.text,lineHeight:1.6,fontStyle:"italic"}}>"I joined because I want more control over my time and income instead of trading hours for a paycheck. Over the next 12 months, I want to pay off my car and start actually saving instead of living check to check. That matters to me because I'm tired of feeling stressed every time something unexpected comes up — I want to be the parent who can say yes without checking the bank account first."</div>
+        </div>}
         {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit"}}/>:
         <div style={{fontSize:13,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
       </Card>
