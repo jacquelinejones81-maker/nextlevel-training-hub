@@ -543,7 +543,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
       </div>
       <Card style={{margin:0}}>
         <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>My Why</div>
-        <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Your personal reason for joining</div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Your personal reason for joining. What would you want to change in your life over the next 12 months, and why is that important to you?</div>
         {!readOnly?<textarea placeholder="I joined because..." value={rep.myWhy||""} onChange={e=>onUpdate({...rep,myWhy:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,fontFamily:"inherit"}}/>:
         <div style={{fontSize:13,lineHeight:1.5,background:C.surface,borderRadius:8,padding:"7px 9px",fontStyle:rep.myWhy?"italic":"normal",color:rep.myWhy?C.text:C.textLight}}>{rep.myWhy||"Not set yet"}</div>}
       </Card>
