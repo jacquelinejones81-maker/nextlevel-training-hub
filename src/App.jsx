@@ -2984,10 +2984,13 @@ function TeamNumbersCard({data,userId}) {
     prevStart=curStartIdx>0?sortedCutoffs[curStartIdx-1].cutoff:"2020-01-01";
   }
 
-  const allReps=(data.reps||[]).filter(r=>!r.inactive);
-  const scopedReps = scope==="mine" ? allReps.filter(r=>r.adminId===userId||r.trainerId===userId) : allReps;
+  const allReps=(data.reps||[]).filter(r=>!r.inactive).map(r=>({...r,personType:"rep"}));
+  const allTrainers=(data.trainers||[]).filter(t=>!t.inactive).map(t=>({...t,personType:"trainer"}));
+  const allPeople=[...allReps,...allTrainers];
+  const isMine = p => p.personType==="trainer" ? p.adminId===userId : (p.adminId===userId||p.trainerId===userId);
+  const scopedReps = scope==="mine" ? allPeople.filter(isMine) : allPeople;
 
-  const perRep = scopedReps.map(r=>({id:r.id,name:r.name,...sumRepMetricsForRange(data,r.id,periodStart,periodEnd)}));
+  const perRep = scopedReps.map(r=>({id:r.id,name:r.name,personType:r.personType,...sumRepMetricsForRange(data,r.id,periodStart,periodEnd)}));
   const perRepPrev = scopedReps.map(r=>sumRepMetricsForRange(data,r.id,prevStart,prevEnd));
 
   const totals={}; TEAM_NUMBER_CATS.forEach(c=>totals[c.key]=perRep.reduce((s,r)=>s+(r[c.key]||0),0));
@@ -3037,7 +3040,7 @@ function TeamNumbersCard({data,userId}) {
           <tbody>
             {sortedRows.length===0?<tr><td colSpan={TEAM_NUMBER_CATS.length+1} style={{textAlign:"center",padding:"14px",color:C.textLight}}>No matching reps</td></tr>:
             sortedRows.map(r=><tr key={r.id} style={{borderBottom:`1px solid ${C.border}`}}>
-              <td style={{padding:"7px 8px",fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>{r.name}</td>
+              <td style={{padding:"7px 8px",fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>{r.name}{r.personType==="trainer"&&<span style={{fontSize:9,fontWeight:700,color:C.gold,background:C.gold+"11",padding:"1px 6px",borderRadius:4,marginLeft:6}}>TRAINER</span>}</td>
               {TEAM_NUMBER_CATS.map(c=><td key={c.key} style={{textAlign:"center",padding:"7px 8px",color:C.text,fontWeight:600}}>{c.isMoney?"$"+(r[c.key]||0).toLocaleString():(r[c.key]||0)}</td>)}
             </tr>)}
           </tbody>
