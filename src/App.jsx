@@ -1250,7 +1250,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
     {k:"fame",l:"Wall of Fame"},
     {k:"objectiontraining",l:"Objection Training"},
-    {k:"prospecting",l:"Prospecting"},
+    {k:"prospecting",l:"Prospecting Training"},
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
@@ -1276,6 +1276,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const goPracticeProspecting=()=>{
     dismissProspectingReminder();
     setTab("prospecting");
+  };
+  const goPracticeObjections=()=>{
+    dismissProspectingReminder();
+    setTab("objectiontraining");
   };
   const tog=(id)=>{
     if(!readOnly){
@@ -1469,8 +1473,9 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           <div style={{color:"rgba(255,255,255,0.65)",fontSize:13,lineHeight:1.5}}>A quick weekly nudge to keep your prospecting skills fresh</div>
         </div>
         <div style={{padding:"20px 24px 24px"}}>
-          <div style={{fontSize:14,color:C.text,lineHeight:1.6,marginBottom:16,textAlign:"center"}}>Pick a Situation Card and practice it out loud — with your trainer, a teammate, or even just in the mirror. The reps who rehearse consistently are the ones who don't freeze up in the moment.</div>
-          <button onClick={goPracticeProspecting} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:14,marginBottom:8,cursor:"pointer"}}>🎯 Go Practice a Card</button>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:16,textAlign:"center"}}>Which skill do you want to sharpen this week? Practice out loud — with your trainer, a teammate, or even just in the mirror. The reps who rehearse consistently are the ones who don't freeze up in the moment.</div>
+          <button onClick={goPracticeProspecting} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:14,marginBottom:8,cursor:"pointer"}}>🎯 Practice Prospecting</button>
+          <button onClick={goPracticeObjections} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:C.gold,color:"white",fontWeight:700,fontSize:14,marginBottom:8,cursor:"pointer"}}>💡 Practice Objections</button>
           <button onClick={dismissProspectingReminder} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:"none",color:C.textMid,fontSize:13,cursor:"pointer"}}>Maybe Later</button>
         </div>
       </div>
@@ -2891,7 +2896,159 @@ function LinkSharingActivity({data}) {
   </Card>;
 }
 
+const TEAM_NUMBER_CATS = [
+  {key:"calls",label:"Calls",manual:true},
+  {key:"contacts",label:"Contacts",manual:true},
+  {key:"apptSet",label:"Appts Set",manual:true},
+  {key:"apptDone",label:"Appts Done",manual:true},
+  {key:"recruits",label:"Recruits",manual:false},
+  {key:"lifeApps",label:"Life Apps",manual:false},
+  {key:"premium",label:"Premium",manual:false,isMoney:true},
+  {key:"pacInvestment",label:"PAC",manual:false,isMoney:true},
+  {key:"lumpInvestment",label:"Lump Sum",manual:false,isMoney:true},
+  {key:"linksShared",label:"Links Shared",manual:false},
+];
+
+// Sums a rep's activity across a date range (inclusive). Manual categories live in daily
+// scorecard buckets (iterated day by day); auto categories are summed directly from their
+// source data, filtered by date — no need to walk day by day for those.
+function sumRepMetricsForRange(data,repId,startDate,endDate){
+  const result={}; TEAM_NUMBER_CATS.forEach(c=>result[c.key]=0);
+  const repScores=(data.scorecards||{})[repId]||{};
+  let d=new Date(startDate+"T12:00:00");
+  const end=new Date(endDate+"T12:00:00");
+  let guard=0;
+  while(d<=end&&guard<400){
+    const dStr=localDateStr(d);
+    const wk=getWeekStart(d);
+    const dayEntry=(repScores[wk]?.days||{})[dStr];
+    if(dayEntry){
+      TEAM_NUMBER_CATS.forEach(c=>{ if(c.manual) result[c.key]+=Number(dayEntry.actual?.[c.key])||0; });
+    }
+    d.setDate(d.getDate()+1);
+    guard++;
+  }
+  const myProd=(data.myProduction||{})[repId]||{};
+  const lifeAppsArr=(myProd.lifeApps||[]).filter(a=>a.date&&a.date>=startDate&&a.date<=endDate);
+  result.lifeApps=lifeAppsArr.length;
+  result.premium=lifeAppsArr.reduce((s,a)=>s+(Number(a.premium)||0),0);
+  const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
+  const investmentsArr=(myProd.investments||[]).filter(i=>i.date&&i.date>=startDate&&i.date<=endDate);
+  result.pacInvestment=investmentsArr.reduce((s,i)=>s+(Number(i.pac)||0),0);
+  result.lumpInvestment=investmentsArr.reduce((s,i)=>s+parseLump(i.lumpSum),0);
+  const person=findPersonRecord(data,repId);
+  const realNames=new Set((data.reps||[]).filter(r=>r.trainerId===repId).map(r=>(r.name||"").trim().toLowerCase()));
+  const loggedRecruits=((person?.myRecruitLog)||[]).filter(r=>r.date&&r.date>=startDate&&r.date<=endDate&&!realNames.has((r.name||"").trim().toLowerCase())).length;
+  const realRecruits=(data.reps||[]).filter(r=>{
+    if(r.trainerId!==repId||!r.createdAt) return false;
+    let dd; try{ dd=localDateStr(new Date(r.createdAt)); }catch(e){ return false; }
+    return dd>=startDate&&dd<=endDate;
+  }).length;
+  result.recruits=realRecruits+loggedRecruits;
+  result.linksShared=((person?.linkShareLog)||[]).filter(s=>s.date&&s.date>=startDate&&s.date<=endDate).length;
+  return result;
+}
+
+function TeamNumbersCard({data,userId}) {
+  const [scope,setScope]=useState("everyone");
+  const [range,setRange]=useState("week");
+  const [expanded,setExpanded]=useState(false);
+  const [search,setSearch]=useState("");
+  const [sortKey,setSortKey]=useState(null);
+  const [sortDir,setSortDir]=useState("desc");
+
+  const today=localDateStr();
+  const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
+
+  let periodStart,periodEnd,prevStart,prevEnd;
+  if(range==="week"){
+    periodStart=getWeekStart(); periodEnd=today;
+    const pw=new Date(periodStart+"T12:00:00"); pw.setDate(pw.getDate()-7);
+    prevStart=localDateStr(pw);
+    const pwEnd=new Date(prevStart+"T12:00:00"); pwEnd.setDate(pwEnd.getDate()+6);
+    prevEnd=localDateStr(pwEnd);
+  } else if(range==="month"){
+    const now=new Date();
+    periodStart=localDateStr(new Date(now.getFullYear(),now.getMonth(),1));
+    periodEnd=today;
+    const daysSoFar=Math.floor((new Date(today+"T12:00:00")-new Date(periodStart+"T12:00:00"))/86400000)+1;
+    const pmEnd=new Date(periodStart+"T12:00:00"); pmEnd.setDate(pmEnd.getDate()-1);
+    prevEnd=localDateStr(pmEnd);
+    const pmStart=new Date(pmEnd); pmStart.setDate(pmStart.getDate()-daysSoFar+1);
+    prevStart=localDateStr(pmStart);
+  } else {
+    periodStart=pm.start; periodEnd=today;
+    const sortedCutoffs=[...(data.primerMonthEnds||[])].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
+    const curStartIdx=sortedCutoffs.findIndex(m=>m.cutoff===pm.start);
+    prevEnd=pm.start;
+    prevStart=curStartIdx>0?sortedCutoffs[curStartIdx-1].cutoff:"2020-01-01";
+  }
+
+  const allReps=(data.reps||[]).filter(r=>!r.inactive);
+  const scopedReps = scope==="mine" ? allReps.filter(r=>r.adminId===userId||r.trainerId===userId) : allReps;
+
+  const perRep = scopedReps.map(r=>({id:r.id,name:r.name,...sumRepMetricsForRange(data,r.id,periodStart,periodEnd)}));
+  const perRepPrev = scopedReps.map(r=>sumRepMetricsForRange(data,r.id,prevStart,prevEnd));
+
+  const totals={}; TEAM_NUMBER_CATS.forEach(c=>totals[c.key]=perRep.reduce((s,r)=>s+(r[c.key]||0),0));
+  const prevTotals={}; TEAM_NUMBER_CATS.forEach(c=>prevTotals[c.key]=perRepPrev.reduce((s,r)=>s+(r[c.key]||0),0));
+  const trendPct=(cur,prev)=> prev>0 ? Math.round(((cur-prev)/prev)*100) : (cur>0?100:0);
+
+  const filteredRows = perRep.filter(r=>(r.name||"").toLowerCase().includes(search.trim().toLowerCase()));
+  const sortedRows = sortKey ? [...filteredRows].sort((a,b)=>sortDir==="desc"?(b[sortKey]-a[sortKey]):(a[sortKey]-b[sortKey])) : filteredRows;
+  const toggleSort=(key)=>{ if(sortKey===key) setSortDir(sortDir==="desc"?"asc":"desc"); else { setSortKey(key); setSortDir("desc"); } };
+
+  return <Card style={{marginBottom:16}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:2,flexWrap:"wrap",gap:8}}>
+      <div>
+        <div style={{fontSize:16,fontWeight:800,color:C.text}}>Team Numbers</div>
+        <div style={{fontSize:12,color:C.textMid}}>{scope==="mine"?"Only reps you're responsible for":"Whole organization — click \"My Team\" to see just your own downline"}</div>
+      </div>
+      <div style={{display:"flex",gap:4,background:C.surface,borderRadius:8,padding:3}}>
+        <button onClick={()=>setScope("everyone")} style={{fontSize:12,padding:"6px 12px",borderRadius:6,border:"none",background:scope==="everyone"?"white":"none",color:scope==="everyone"?C.teal:C.textMid,fontWeight:600,cursor:"pointer",boxShadow:scope==="everyone"?"0 1px 3px rgba(0,0,0,0.1)":"none"}}>Everyone</button>
+        <button onClick={()=>setScope("mine")} style={{fontSize:12,padding:"6px 12px",borderRadius:6,border:"none",background:scope==="mine"?"white":"none",color:scope==="mine"?C.teal:C.textMid,fontWeight:600,cursor:"pointer",boxShadow:scope==="mine"?"0 1px 3px rgba(0,0,0,0.1)":"none"}}>My Team</button>
+      </div>
+    </div>
+    <div style={{display:"flex",gap:6,margin:"12px 0"}}>
+      {[["week","This Week"],["month","This Month"],["primer",pm.label]].map(([k,l])=><button key={k} onClick={()=>setRange(k)} style={{fontSize:12,padding:"6px 12px",borderRadius:7,border:`1px solid ${range===k?C.teal:C.border}`,background:range===k?C.teal+"11":"white",color:range===k?C.teal:C.textMid,cursor:"pointer",fontWeight:600}}>{l}</button>)}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))",gap:8,marginBottom:16}}>
+      {TEAM_NUMBER_CATS.map(c=>{
+        const val=totals[c.key]||0;
+        const pct=trendPct(val,prevTotals[c.key]||0);
+        return <div key={c.key} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+          <div style={{fontSize:19,fontWeight:800,color:C.teal}}>{c.isMoney?"$"+val.toLocaleString():val.toLocaleString()}</div>
+          <div style={{fontSize:9,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.3px",marginTop:2}}>{c.label}</div>
+          {(val>0||prevTotals[c.key]>0)&&<div style={{fontSize:9,fontWeight:700,marginTop:2,color:pct>=0?C.success:C.danger}}>{pct>=0?"▲":"▼"} {Math.abs(pct)}%</div>}
+        </div>;
+      })}
+    </div>
+    <button onClick={()=>setExpanded(!expanded)} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:700,color:C.textMid,background:"none",border:"none",cursor:"pointer",padding:0}}>
+      <span style={{display:"inline-block",transform:expanded?"rotate(90deg)":"none",fontSize:11}}>▶</span> By Rep ({scopedReps.length} people)
+    </button>
+    {expanded&&<div style={{marginTop:10}}>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search reps by name..." style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,marginBottom:10,boxSizing:"border-box"}}/>
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead><tr style={{borderBottom:`2px solid ${C.border}`}}>
+            <th style={{textAlign:"left",padding:"6px 8px",color:C.textLight,textTransform:"uppercase",fontSize:10}}>Rep</th>
+            {TEAM_NUMBER_CATS.map(c=><th key={c.key} onClick={()=>toggleSort(c.key)} style={{textAlign:"center",padding:"6px 8px",color:sortKey===c.key?C.teal:C.textLight,textTransform:"uppercase",fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>{c.label}{sortKey===c.key?(sortDir==="desc"?" ▼":" ▲"):""}</th>)}
+          </tr></thead>
+          <tbody>
+            {sortedRows.length===0?<tr><td colSpan={TEAM_NUMBER_CATS.length+1} style={{textAlign:"center",padding:"14px",color:C.textLight}}>No matching reps</td></tr>:
+            sortedRows.map(r=><tr key={r.id} style={{borderBottom:`1px solid ${C.border}`}}>
+              <td style={{padding:"7px 8px",fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>{r.name}</td>
+              {TEAM_NUMBER_CATS.map(c=><td key={c.key} style={{textAlign:"center",padding:"7px 8px",color:C.text,fontWeight:600}}>{c.isMoney?"$"+(r[c.key]||0).toLocaleString():(r[c.key]||0)}</td>)}
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>}
+  </Card>;
+}
+
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
+  const isAdmin=userRole==="admin"||userRole==="superadmin";
   const [showTrainerCommitment,setShowTrainerCommitment]=useState(false);
   const isTrainer=userRole==="trainer";
   const trainerRecord=isTrainer?(data.trainers||[]).find(t=>t.id===userId):null;
@@ -2915,6 +3072,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
   const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
   return <div>
+    {isAdmin&&<TeamNumbersCard data={data} userId={userId}/>}
     {showTrainerCommitment&&isTrainer&&trainerRecord&&<CommitmentPopup rep={trainerRecord} primerMonth={pm} onSave={(commitment)=>{
       localStorage.setItem(`commitment_seen_${userId}_${pm.key}`,"true");
       onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===userId?{...t,commitments:{...(t.commitments||{}),[pm.key]:commitment}}:t)});
