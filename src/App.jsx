@@ -1251,20 +1251,20 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id&&!r.excludeFromRecruitCount);
   const tabs=[
     {k:"checklist",l:"Checklist"},
-    {k:"planner",l:"Daily Planner"},
+    {k:"refs",l:"Refs"},
     {k:"milestones",l:"Milestones"},
-    {k:"leadlink",l:"My Lead Link"},
-    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"production",l:"Production"},{k:"pipeline",l:"My Pipeline"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
-    {k:"prospects",l:"Prospects"},
     {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
     {k:"scorecard",l:"Scorecard"},
-    {k:"recruits",l:"Recruits ("+myRecruits.length+")"},
-    {k:"refs",l:"Refs"},
+    {k:"leadlink",l:"My Lead Link"},
     {k:"scripts",l:"Scripts"},
-    {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
-    {k:"fame",l:"Wall of Fame"},
     {k:"objectiontraining",l:"Objection Training"},
     {k:"prospecting",l:"Prospecting Training"},
+    {k:"planner",l:"Daily Planner"},
+    {k:"prospects",l:"Prospects"},
+    {k:"recruits",l:"Recruits ("+myRecruits.length+")"},
+    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"production",l:"Production"},{k:"pipeline",l:"My Pipeline"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
+    {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
+    {k:"fame",l:"Wall of Fame"},
     {k:"schedule",l:"Schedule"},
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
