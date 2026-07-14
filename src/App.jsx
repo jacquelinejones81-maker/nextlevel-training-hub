@@ -188,10 +188,14 @@ const FAST_START = [
   {id:"f7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
   {id:"f8",cat:"Events",task:"Attend DGO and debrief afterward"},
   {id:"f9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)",note:"Set your class type and access ExamFX study materials in the Milestones tab"},
-  {id:"f10",cat:"Licensing",task:"Schedule exam within 5 days of completing class"},
-  {id:"f11",cat:"Licensing",task:"Access exam simulator"},
-  {id:"f12",cat:"Licensing",task:"Pass exam - upload pass notice and required docs in Primerica app"},
-  {id:"f13",cat:"Licensing",task:"Request License - Now What Checklist"},
+  {id:"f11",cat:"Licensing",task:"Access Exam Simulator"},
+  {id:"f14",cat:"Licensing",task:"Complete all chapter quizzes"},
+  {id:"f15",cat:"Licensing",task:"Complete practice exam"},
+  {id:"f16",cat:"Licensing",task:"Complete readiness exam"},
+  {id:"f10",cat:"Licensing",task:"Schedule state exam within 5 days of completing class"},
+  {id:"f17",cat:"Licensing",task:"Pass state exam"},
+  {id:"f12",cat:"Licensing",task:"Upload pass notice and required docs in Primerica app"},
+  {id:"f13",cat:"Licensing",task:"Request Licensed - Now What Checklist"},
 ];
 
 const REGULAR_START = [
@@ -205,10 +209,14 @@ const REGULAR_START = [
   {id:"r7",cat:"Events",task:"Schedule Digital Grand Opening (DGO)",note:"DGO date can be set in the Milestones tab"},
   {id:"r8",cat:"Events",task:"Attend DGO and debrief afterward"},
   {id:"r9",cat:"Pre-Licensing",task:"Complete Pre-Licensing class (In-Person, Zoom, or Online)",note:"Set your class type and access ExamFX study materials in the Milestones tab"},
-  {id:"r10",cat:"Licensing",task:"Schedule exam within 5 days of completing class"},
-  {id:"r11",cat:"Licensing",task:"Access exam simulator"},
-  {id:"r12",cat:"Licensing",task:"Pass exam - upload pass notice and required docs in Primerica app"},
-  {id:"r12b",cat:"Licensing",task:"Request License - Now What Checklist"},
+  {id:"r11",cat:"Licensing",task:"Access Exam Simulator"},
+  {id:"r14",cat:"Licensing",task:"Complete all chapter quizzes"},
+  {id:"r15",cat:"Licensing",task:"Complete practice exam"},
+  {id:"r16",cat:"Licensing",task:"Complete readiness exam"},
+  {id:"r10",cat:"Licensing",task:"Schedule state exam within 5 days of completing class"},
+  {id:"r17",cat:"Licensing",task:"Pass state exam"},
+  {id:"r12",cat:"Licensing",task:"Upload pass notice and required docs in Primerica app"},
+  {id:"r12b",cat:"Licensing",task:"Request Licensed - Now What Checklist"},
 ];
 
 const LICENSED_NOW_WHAT = [
