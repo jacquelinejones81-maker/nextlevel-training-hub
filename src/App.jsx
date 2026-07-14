@@ -1474,6 +1474,19 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       </div>;
     })()}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
+    {/* ── YOUR FOCUS BANNER (static reminder, unlicensed reps only) ── */}
+    {!readOnly&&rep.track!=="licensed"&&<div style={{borderRadius:14,background:"linear-gradient(135deg,#0f172a 0%,#1e2a4a 50%,#3d2a5c 100%)",padding:"18px 18px 16px",marginBottom:12,position:"relative",overflow:"hidden",boxShadow:"0 8px 24px rgba(15,23,42,0.25)"}}>
+      <div style={{position:"absolute",top:-40,right:-40,width:140,height:140,background:"radial-gradient(circle,rgba(212,160,23,0.35),transparent 70%)"}}/>
+      <div style={{fontSize:11,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,display:"flex",alignItems:"center",gap:6,position:"relative"}}>🔥 Your Focus Right Now</div>
+      <div style={{fontSize:15,color:"white",lineHeight:1.5,fontWeight:700,marginBottom:14,position:"relative"}}>Get <span style={{color:C.gold}}>Trained</span>. Get <span style={{color:C.gold}}>Licensed</span>. Get <span style={{color:C.gold}}>Promoted</span> to District Leader.</div>
+      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",position:"relative"}}>
+        <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:800,color:C.navy,background:"white",padding:"6px 12px",borderRadius:20,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>🎓 Trained</div>
+        <span style={{color:"rgba(255,255,255,0.4)",fontSize:14,fontWeight:700}}>&rarr;</span>
+        <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:800,color:C.navy,background:"white",padding:"6px 12px",borderRadius:20,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>📋 Licensed</div>
+        <span style={{color:"rgba(255,255,255,0.4)",fontSize:14,fontWeight:700}}>&rarr;</span>
+        <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12,fontWeight:800,color:"white",background:"linear-gradient(135deg,#f0c14b,"+C.gold+")",padding:"6px 12px",borderRadius:20,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>📈 Promoted</div>
+      </div>
+    </div>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
     {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
 
