@@ -1742,7 +1742,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
 function MyProd({myProd,onUpdate,investmentsOnly=false}) {
   const [open,setOpen]=useState(true);
   const [tab,setTab]=useState(investmentsOnly?"investments":"lifeapps");
-  const [na,setNa]=useState({clientName:"",premium:"",date:""});
+  const [na,setNa]=useState({clientName:"",premium:"",date:localDateStr()});
   const [ni,setNi]=useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});
   const [addPrem,setAddPrem]=useState("");
   const apps=myProd.lifeApps||[];
@@ -1771,7 +1771,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
             <input placeholder="Monthly Premium $ (per month)" value={na.premium} onChange={e=>setNa({...na,premium:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
             <input type="date" value={na.date} onChange={e=>setNa({...na,date:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
           </div>
-          <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,id:Date.now()}]});setNa({clientName:"",premium:"",date:""}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log Life App</button>
+          <button onClick={()=>{if(!na.clientName)return;onUpdate({...myProd,lifeApps:[...apps,{...na,date:na.date||localDateStr(),id:Date.now()}]});setNa({clientName:"",premium:"",date:localDateStr()}); }} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log Life App</button>
         </div>
         {apps.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
           <div style={{fontSize:13,fontWeight:700,color:C.gold,marginBottom:8}}>Add Premium to Running Total</div>
