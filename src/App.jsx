@@ -478,7 +478,7 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink,track}) {
         <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>These 20 appointments are your foundation to sharpen your presentation skills and put you in position to be a great field trainer. The more families you personally help, the easier it'll be when you're training someone to do that same. The reps who complete all 20 appointments walk into Field Trainer status <strong style={{color:"white"}}>ready to actually teach it</strong>, not just talk about it.</div>
       </>:<>
         <div style={{fontSize:16,fontWeight:700,color:C.gold,marginBottom:8}}>Remember Your Purpose!</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6,marginBottom:10}}>This is a log of all your training appointments. Your training appointments are primarily for <strong style={{color:"white"}}>YOUR development</strong>, not to recruit or sell. Your <strong style={{color:"white"}}>#1 goal</strong> is to get in front of your trainer and sharpen your skills.</div>
       </>}
       <div style={{background:"rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 12px",fontSize:13,color:"rgba(255,255,255,0.7)"}}>Need help? <strong style={{color:C.gold}}>Tap the Scripts tab</strong> — it has everything you need!</div>
     </div>}
