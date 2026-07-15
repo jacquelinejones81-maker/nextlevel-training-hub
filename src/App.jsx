@@ -1924,7 +1924,7 @@ function RepProductionTab({rep,data,onUpdate,onUpdateData,readOnly}) {
         </button>)}
       </div>
     </Card>
-    {!readOnly&&<LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
+    <LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>
     {!readOnly&&<QuickRecruitLog person={rep} onSave={(log)=>onUpdate(rep.id,{...rep,myRecruitLog:log})}/>}
     <MyProd myProd={myProd} onUpdate={updateMyProd} investmentsOnly={true}/>
   </div>;
@@ -2956,14 +2956,15 @@ function sumRepMetricsForRange(data,repId,startDate,endDate){
     guard++;
   }
   const myProd=(data.myProduction||{})[repId]||{};
-  const lifeAppsArr=(myProd.lifeApps||[]).filter(a=>a.date&&a.date>=startDate&&a.date<=endDate);
+  const person=findPersonRecord(data,repId);
+  const combinedLifeApps=[...(myProd.lifeApps||[]),...(person?.selfPremium||[])];
+  const lifeAppsArr=combinedLifeApps.filter(a=>a.date&&a.date>=startDate&&a.date<=endDate&&(!a.cod||a.codAccepted));
   result.lifeApps=lifeAppsArr.length;
   result.premium=lifeAppsArr.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
   const investmentsArr=(myProd.investments||[]).filter(i=>i.date&&i.date>=startDate&&i.date<=endDate);
   result.pacInvestment=investmentsArr.reduce((s,i)=>s+(Number(i.pac)||0),0);
   result.lumpInvestment=investmentsArr.reduce((s,i)=>s+parseLump(i.lumpSum),0);
-  const person=findPersonRecord(data,repId);
   const realNames=new Set((data.reps||[]).filter(r=>r.trainerId===repId).map(r=>(r.name||"").trim().toLowerCase()));
   const loggedRecruits=((person?.myRecruitLog)||[]).filter(r=>r.date&&r.date>=startDate&&r.date<=endDate&&!realNames.has((r.name||"").trim().toLowerCase())).length;
   const realRecruits=(data.reps||[]).filter(r=>{
@@ -3620,10 +3621,11 @@ function countPeriodRecruits(data,personId,periodStart){
 // existing production/recruiting data — never stored, always computed fresh.
 function getAutoActuals(data,userId,dateStr){
   const myProd=(data.myProduction||{})[userId]||{};
-  const lifeAppsArr=myProd.lifeApps||[];
+  const person=findPersonRecord(data,userId);
+  const lifeAppsArr=[...(myProd.lifeApps||[]),...(person?.selfPremium||[])];
   const investmentsArr=myProd.investments||[];
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
-  const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr);
+  const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr&&(!a.cod||a.codAccepted));
   const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
   const dayRecruits=(data.reps||[]).filter(r=>{
     if(r.trainerId!==userId||!r.createdAt||r.excludeFromRecruitCount) return false;
@@ -3633,7 +3635,6 @@ function getAutoActuals(data,userId,dateStr){
   // need a full account in the system yet for the day you recruited them to count) —
   // excluding anyone who already has a real account under this person, so the same
   // recruit is never counted twice on the day they're both logged and onboarded.
-  const person=findPersonRecord(data,userId);
   const myRealNames=new Set((data.reps||[]).filter(r=>r.trainerId===userId).map(r=>(r.name||"").trim().toLowerCase()).filter(Boolean));
   const loggedRecruitsToday=((person?.myRecruitLog)||[]).filter(r=>r.date===dateStr&&!myRealNames.has((r.name||"").trim().toLowerCase())).length;
   // Every "Mark as Shared" tap logs its own entry — sharing the same link twice counts twice.
@@ -6977,7 +6978,7 @@ function QuickMessages({data,onUpdate,userRole}) {
 // ── INVESTMENT LOG ──
 function RepInvestmentEntry({rep,onUpdate}) {
   const [show,setShow] = useState(false);
-  const [form,setForm] = useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund",date:new Date().toISOString().split("T")[0]});
+  const [form,setForm] = useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund",date:localDateStr()});
   const entries = rep.investments||[];
   const totPAC = entries.reduce((s,e)=>s+(Number(e.pac)||0),0);
   const totLump = entries.reduce((s,e)=>s+(Number(e.lumpSum)||0),0);
@@ -6985,7 +6986,7 @@ function RepInvestmentEntry({rep,onUpdate}) {
   const save = () => {
     if(!form.clientName) return;
     onUpdate({...rep,investments:[...entries,{...form,id:Date.now()}]});
-    setForm({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund",date:new Date().toISOString().split("T")[0]});
+    setForm({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund",date:localDateStr()});
     setShow(false);
   };
 
@@ -7068,12 +7069,12 @@ function InvestmentLog({data,onUpdate,userRole}) {
 
 
 // ── LICENSED PREMIUM ENTRY ──
-function LicensedPremiumEntry({rep,onUpdate}) {
+function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
   const repRef=useRef(rep);
   useEffect(()=>{repRef.current=rep;},[rep]);
   const [goalInput,setGoalInput]=useState(rep.monthlyIncomeGoal||"");
   useEffect(()=>{setGoalInput(rep.monthlyIncomeGoal||"");},[rep.monthlyIncomeGoal]);
-  const [form,setForm] = useState({client:"",premium:"",date:new Date().toISOString().split("T")[0],cod:false});
+  const [form,setForm] = useState({client:"",premium:"",date:localDateStr(),cod:false});
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
   const entries = rep.selfPremium||[];
@@ -7118,7 +7119,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
   const save = () => {
     if(!form.client||!form.premium) return;
     onUpdate({...repRef.current,selfPremium:[...entries,{...form,id:Date.now(),codAccepted:false}]});
-    setForm({client:"",premium:"",date:new Date().toISOString().split("T")[0],cod:false});
+    setForm({client:"",premium:"",date:localDateStr(),cod:false});
     setShow(false);
   };
   const acceptCOD=(idx)=>{
@@ -7134,14 +7135,14 @@ function LicensedPremiumEntry({rep,onUpdate}) {
         <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Life Apps</div>
         <div style={{fontSize:13,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span> · <span style={{color:C.gold,fontWeight:600}}>{promo.label} ({promo.pct}%)</span></div>
       </div>
-      <button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>
+      {!readOnly&&<button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>}
     </div>
 
     {/* Monthly Income Goal */}
     <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
         <div style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
-        <input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>
+        {readOnly?<div style={{fontSize:13,fontWeight:700,color:C.text}}>${goal.toLocaleString()}</div>:<input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>}
         {goal>0&&<div style={{fontSize:13,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
       </div>
       {goal>0&&<div>
@@ -7157,7 +7158,7 @@ function LicensedPremiumEntry({rep,onUpdate}) {
     </div>
 
     {/* Log App Form */}
-    {show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
+    {!readOnly&&show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
       <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
         <input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
