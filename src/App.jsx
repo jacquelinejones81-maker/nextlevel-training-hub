@@ -427,7 +427,8 @@ function AddToPhoneModal({onClose}) {
 // ── DAILY EVENTS BANNER ──
 function DailyEventsBanner({data,onUpdateData,userRole}) {
   const today=new Date().getDay();
-  const todayEvents=TEAM_SCHEDULE.filter(s=>s.dayIndex===today);
+  const schedule=data.teamSchedule||TEAM_SCHEDULE;
+  const todayEvents=schedule.filter(s=>s.dayIndex===today);
   const cancelledEvents=data.cancelledEvents||{};
   const todayKey=new Date().toISOString().split("T")[0];
   if(todayEvents.length===0) return null;
@@ -437,7 +438,7 @@ function DailyEventsBanner({data,onUpdateData,userRole}) {
       const key=`${todayKey}_${i}`;
       const cancelled=cancelledEvents[key];
       const zoomLinks=data.scheduleZoomLinks||{};
-      const schedIdx=TEAM_SCHEDULE.findIndex(s=>s.title===evt.title&&s.dayIndex===today);
+      const schedIdx=schedule.findIndex(s=>s.title===evt.title&&s.dayIndex===today);
       const zEntry=zoomLinks[schedIdx]||{};
       const zUrl=typeof zEntry==="string"?zEntry:zEntry.url||"";
       const zPass=typeof zEntry==="string"?"":zEntry.password||"";
@@ -879,22 +880,57 @@ function CareerJourneyBanner({rep,onUpdate}) {
 
 
 // ── SCHEDULE VIEW WITH ZOOM LINKS ──
+const SCHEDULE_DAY_OPTIONS=[{l:"Sunday",i:0},{l:"Monday",i:1},{l:"Tuesday",i:2},{l:"Wednesday",i:3},{l:"Thursday",i:4},{l:"Friday",i:5},{l:"Saturday",i:6}];
+
 function ScheduleView({data,onUpdate,userRole}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const schedule = data.teamSchedule||TEAM_SCHEDULE;
   const zoomLinks = data.scheduleZoomLinks||{};
   const [editingIdx,setEditingIdx] = useState(null);
   const [editVal,setEditVal] = useState("");
   const [editPass,setEditPass] = useState("");
+  const [editEvt,setEditEvt] = useState({day:"",title:"",time:"",note:""});
+  const [showAdd,setShowAdd] = useState(false);
+  const [newEvt,setNewEvt] = useState({day:"Monday",title:"",time:"",note:""});
 
   const saveZoom = (idx) => {
-    onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[idx]:{url:editVal.trim(),password:editPass.trim()}}});
+    const dayObj=SCHEDULE_DAY_OPTIONS.find(d=>d.l===editEvt.day);
+    const updatedSchedule=schedule.map((s,i)=>i===idx?{...s,day:editEvt.day,title:editEvt.title,time:editEvt.time,note:editEvt.note,dayIndex:dayObj?dayObj.i:s.dayIndex}:s);
+    onUpdate({...data,teamSchedule:updatedSchedule,scheduleZoomLinks:{...zoomLinks,[idx]:{url:editVal.trim(),password:editPass.trim()}}});
     setEditingIdx(null);
     setEditVal("");
     setEditPass("");
   };
 
+  const removeEvent = (idx) => {
+    if(!window.confirm("Remove this event entirely? This can't be undone.")) return;
+    onUpdate({...data,teamSchedule:schedule.filter((_,i)=>i!==idx)});
+    setEditingIdx(null);
+  };
+
+  const addEvent = () => {
+    if(!newEvt.title.trim()||!newEvt.time.trim()) return;
+    const dayObj=SCHEDULE_DAY_OPTIONS.find(d=>d.l===newEvt.day);
+    onUpdate({...data,teamSchedule:[...schedule,{day:newEvt.day,title:newEvt.title.trim(),time:newEvt.time.trim(),note:newEvt.note.trim(),dayIndex:dayObj?dayObj.i:1}]});
+    setNewEvt({day:"Monday",title:"",time:"",note:""});
+    setShowAdd(false);
+  };
+
   return <div>
-    {TEAM_SCHEDULE.map((s,i)=>{
+    {isAdmin&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+      <button onClick={()=>setShowAdd(!showAdd)} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>{showAdd?"Cancel":"+ Add Event"}</button>
+    </div>}
+    {showAdd&&<Card style={{marginBottom:10,border:`1px solid ${C.teal}44`}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>New Event</div>
+      <select value={newEvt.day} onChange={e=>setNewEvt({...newEvt,day:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,marginBottom:8,background:"white"}}>
+        {SCHEDULE_DAY_OPTIONS.map(d=><option key={d.l} value={d.l}>{d.l}</option>)}
+      </select>
+      <input placeholder="Event title" value={newEvt.title} onChange={e=>setNewEvt({...newEvt,title:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+      <input placeholder="Time (e.g. 8:30 PM CST / 9:30 PM EST)" value={newEvt.time} onChange={e=>setNewEvt({...newEvt,time:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+      <input placeholder="Note (optional, e.g. Licensed Life Agents only)" value={newEvt.note} onChange={e=>setNewEvt({...newEvt,note:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+      <button onClick={addEvent} style={{width:"100%",padding:"8px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save New Event</button>
+    </Card>}
+    {schedule.map((s,i)=>{
       const entry = zoomLinks[i]||{};
       const zoom = typeof entry==="string"?entry:entry.url||"";
       const zoomPass = typeof entry==="string"?"":entry.password||"";
@@ -911,15 +947,23 @@ function ScheduleView({data,onUpdate,userRole}) {
               {zoomPass&&<span style={{fontSize:13,color:C.textMid}}>Password: <strong style={{color:C.text,userSelect:"all"}}>{zoomPass}</strong></span>}
             </div>}
           </div>
-          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);setEditPass(zoomPass);}} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>{zoom?"Edit Zoom":"+ Zoom"}</button>}
+          {isAdmin&&<button onClick={()=>{setEditingIdx(i);setEditVal(zoom);setEditPass(zoomPass);setEditEvt({day:s.day,title:s.title,time:s.time,note:s.note||""});}} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Edit</button>}
         </div>
         {editingIdx===i&&<div style={{marginTop:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:6}}>Event Details</div>
+          <select value={editEvt.day} onChange={e=>setEditEvt({...editEvt,day:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,marginBottom:5,background:"white"}}>
+            {SCHEDULE_DAY_OPTIONS.map(d=><option key={d.l} value={d.l}>{d.l}</option>)}
+          </select>
+          <input placeholder="Event title" value={editEvt.title} onChange={e=>setEditEvt({...editEvt,title:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,marginBottom:5,boxSizing:"border-box"}}/>
+          <input placeholder="Time" value={editEvt.time} onChange={e=>setEditEvt({...editEvt,time:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,marginBottom:5,boxSizing:"border-box"}}/>
+          <input placeholder="Note (optional)" value={editEvt.note} onChange={e=>setEditEvt({...editEvt,note:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+          <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:6}}>Zoom Info</div>
           <input placeholder="Paste Zoom link..." value={editVal} onChange={e=>setEditVal(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:5,boxSizing:"border-box"}}/>
           <input placeholder="Meeting password (optional)" value={editPass} onChange={e=>setEditPass(e.target.value)} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
           <div style={{display:"flex",gap:6}}>
             <button onClick={()=>saveZoom(i)} style={{flex:2,padding:"5px 10px",borderRadius:6,border:"none",background:"#2D8CFF",color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
             <button onClick={()=>{setEditingIdx(null);setEditVal("");setEditPass("");}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
-            {zoom&&<button onClick={()=>{onUpdate({...data,scheduleZoomLinks:{...zoomLinks,[i]:{}}});setEditingIdx(null);}} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",fontSize:13,color:C.danger}}>Remove</button>}
+            <button onClick={()=>removeEvent(i)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",fontSize:13,color:C.danger}}>Remove</button>
           </div>
         </div>}
       </Card>;
@@ -2991,10 +3035,11 @@ function TeamNumbersCard({data,userId}) {
   let periodStart,periodEnd,prevStart,prevEnd;
   if(range==="week"){
     periodStart=getWeekStart(); periodEnd=today;
-    const pw=new Date(periodStart+"T12:00:00"); pw.setDate(pw.getDate()-7);
-    prevStart=localDateStr(pw);
-    const pwEnd=new Date(prevStart+"T12:00:00"); pwEnd.setDate(pwEnd.getDate()+6);
+    const daysSoFar=Math.floor((new Date(today+"T12:00:00")-new Date(periodStart+"T12:00:00"))/86400000)+1;
+    const pwEnd=new Date(periodStart+"T12:00:00"); pwEnd.setDate(pwEnd.getDate()-1);
     prevEnd=localDateStr(pwEnd);
+    const pwStart=new Date(pwEnd); pwStart.setDate(pwStart.getDate()-daysSoFar+1);
+    prevStart=localDateStr(pwStart);
   } else if(range==="month"){
     const now=new Date();
     periodStart=localDateStr(new Date(now.getFullYear(),now.getMonth(),1));
@@ -3006,10 +3051,11 @@ function TeamNumbersCard({data,userId}) {
     prevStart=localDateStr(pmStart);
   } else {
     periodStart=pm.start; periodEnd=today;
-    const sortedCutoffs=[...(data.primerMonthEnds||[])].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
-    const curStartIdx=sortedCutoffs.findIndex(m=>m.cutoff===pm.start);
-    prevEnd=pm.start;
-    prevStart=curStartIdx>0?sortedCutoffs[curStartIdx-1].cutoff:"2020-01-01";
+    const daysSoFar=Math.floor((new Date(today+"T12:00:00")-new Date(periodStart+"T12:00:00"))/86400000)+1;
+    const pEnd=new Date(periodStart+"T12:00:00"); pEnd.setDate(pEnd.getDate()-1);
+    prevEnd=localDateStr(pEnd);
+    const pStart=new Date(pEnd); pStart.setDate(pStart.getDate()-daysSoFar+1);
+    prevStart=localDateStr(pStart);
   }
 
   const allReps=(data.reps||[]).filter(r=>!r.inactive).map(r=>({...r,personType:"rep"}));
