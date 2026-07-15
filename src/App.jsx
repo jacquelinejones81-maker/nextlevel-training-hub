@@ -4491,14 +4491,26 @@ function MyActivityReport({session,data,onUpdate}) {
   // ── Scorecard — this week + this month ──
   const scorecardAll = (data.scorecards||{})[userId] || {};
   const currentWeekKey = getWeekStart();
-  const scorecardWeek = scorecardAll[currentWeekKey] || {contacts:0,apptSet:0,apptDone:0};
+  // Sums a week's scorecard total for a category — new daily-bucketed weeks get summed
+  // from their days, older weeks (before the daily system existed) fall back to the flat
+  // field they were originally saved with, so nothing from before the rewrite is lost.
+  const legacyAwareWeekTotal=(weekData,key)=>{
+    const dayList=Object.values((weekData&&weekData.days)||{});
+    if(dayList.length>0) return dayList.reduce((s,d)=>s+(Number(d.actual?.[key])||0),0);
+    return Number(weekData?.[key])||0;
+  };
+  const scorecardWeek = {
+    contacts: legacyAwareWeekTotal(scorecardAll[currentWeekKey],"contacts"),
+    apptSet: legacyAwareWeekTotal(scorecardAll[currentWeekKey],"apptSet"),
+    apptDone: legacyAwareWeekTotal(scorecardAll[currentWeekKey],"apptDone"),
+  };
   const scorecardMonth = Object.entries(scorecardAll).reduce((s,[wk,d])=>{
     try {
       const wkDate = new Date(wk+"T12:00:00");
       if(wkDate.getMonth()===now.getMonth() && wkDate.getFullYear()===now.getFullYear()){
-        s.contacts += (d.contacts||0);
-        s.apptSet += (d.apptSet||0);
-        s.apptDone += (d.apptDone||0);
+        s.contacts += legacyAwareWeekTotal(d,"contacts");
+        s.apptSet += legacyAwareWeekTotal(d,"apptSet");
+        s.apptDone += legacyAwareWeekTotal(d,"apptDone");
       }
     } catch(e){}
     return s;
@@ -5301,15 +5313,24 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     // Scorecard
     const scorecardAll = (data.scorecards||{})[rep.id]||{};
     const currentWeekKey = getWeekStart();
-    const scorecard = scorecardAll[currentWeekKey]||{contacts:0,apptSet:0,apptDone:0};
+    const legacyAwareWeekTotal2=(weekData,key)=>{
+      const dayList=Object.values((weekData&&weekData.days)||{});
+      if(dayList.length>0) return dayList.reduce((s,d)=>s+(Number(d.actual?.[key])||0),0);
+      return Number(weekData?.[key])||0;
+    };
+    const scorecard = {
+      contacts: legacyAwareWeekTotal2(scorecardAll[currentWeekKey],"contacts"),
+      apptSet: legacyAwareWeekTotal2(scorecardAll[currentWeekKey],"apptSet"),
+      apptDone: legacyAwareWeekTotal2(scorecardAll[currentWeekKey],"apptDone"),
+    };
     // Monthly totals — sum all weeks whose Monday falls in current month
     const now = new Date();
     const scorecardMonth = Object.entries(scorecardAll).reduce((s,[wk,d])=>{
       const wkDate = new Date(wk+"T12:00:00");
       if(wkDate.getMonth()===now.getMonth()&&wkDate.getFullYear()===now.getFullYear()){
-        s.contacts+=(d.contacts||0);
-        s.apptSet+=(d.apptSet||0);
-        s.apptDone+=(d.apptDone||0);
+        s.contacts+=legacyAwareWeekTotal2(d,"contacts");
+        s.apptSet+=legacyAwareWeekTotal2(d,"apptSet");
+        s.apptDone+=legacyAwareWeekTotal2(d,"apptDone");
       }
       return s;
     },{contacts:0,apptSet:0,apptDone:0});
