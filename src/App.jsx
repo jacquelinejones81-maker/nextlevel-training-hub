@@ -10286,14 +10286,17 @@ const PLANNER_CATS = [
 ];
 const SLOT_START = 6;   // 6 AM
 const SLOT_END   = 22;  // 10 PM
-const TOTAL_SLOTS = (SLOT_END - SLOT_START) * 2; // 32 half-hour slots
+const SLOT_MINUTES = 15; // size of one grid slot
+const SLOTS_PER_HOUR = 60/SLOT_MINUTES;
+const TOTAL_SLOTS = (SLOT_END - SLOT_START) * SLOTS_PER_HOUR;
 
 function slotToTime(slot) {
-  const h = SLOT_START + Math.floor(slot / 2);
-  const m = slot % 2 === 0 ? "00" : "30";
+  const totalMin = slot*SLOT_MINUTES;
+  const h = SLOT_START + Math.floor(totalMin/60);
+  const m = totalMin%60;
   const ampm = h < 12 ? "AM" : "PM";
   const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${h12}:${m} ${ampm}`;
+  return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
 }
 
 function nowSlot() {
@@ -10301,7 +10304,7 @@ function nowSlot() {
   const h = d.getHours();
   const m = d.getMinutes();
   if (h < SLOT_START || h >= SLOT_END) return -1;
-  return (h - SLOT_START) * 2 + (m >= 30 ? 1 : 0);
+  return (h - SLOT_START) * SLOTS_PER_HOUR + Math.floor(m/SLOT_MINUTES);
 }
 
 function DailyPlanner({ session, db }) {
@@ -10311,7 +10314,8 @@ function DailyPlanner({ session, db }) {
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState("");
   const [newCat, setNewCat] = useState("work");
-  const [newDur, setNewDur] = useState(2); // in half-hour units
+  const [newDur, setNewDur] = useState(4); // in 15-minute units (4 = 1hr)
+  const [customDurMin, setCustomDurMin] = useState("");
   const [editBlock, setEditBlock] = useState(null);
   const [nowS, setNowS] = useState(nowSlot());
   const userId = session?.id;
@@ -10323,30 +10327,59 @@ function DailyPlanner({ session, db }) {
   }, []);
 
   const [recurringBlocks, setRecurringBlocks] = useState([]);
+  const [customCats, setCustomCats] = useState([]);
 
-  // Load recurring blocks once
+  // Load recurring blocks + custom categories once
   useEffect(() => {
     if (!userId || !db) return;
     const ref = doc(db, "userSchedules", `${userId}_recurring`);
     const unsub = onSnapshot(ref, snap => {
       if (snap.exists()) {
         setRecurringBlocks(snap.data().blocks || []);
+        setCustomCats(snap.data().customCats || []);
       } else {
         setRecurringBlocks([]);
+        setCustomCats([]);
       }
     }, () => {});
     return () => unsub();
   }, [userId]);
 
-  // Save recurring blocks
+  // Save recurring blocks (merge so this never wipes out customCats saved separately)
   const saveRecurring = async (newBlocks) => {
     if (!userId || !db) return;
     try {
       await setDoc(doc(db, "userSchedules", `${userId}_recurring`), {
         blocks: newBlocks, userId, updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
     } catch(e) { console.warn("Save recurring failed:", e); }
   };
+
+  // Save custom categories (merge so this never wipes out recurring blocks saved separately)
+  const saveCustomCats = async (newCats) => {
+    if (!userId || !db) return;
+    try {
+      await setDoc(doc(db, "userSchedules", `${userId}_recurring`), {
+        customCats: newCats, userId, updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch(e) { console.warn("Save custom categories failed:", e); }
+  };
+  const CUSTOM_CAT_COLORS=["#ec4899","#06b6d4","#84cc16","#f97316","#a855f7","#14b8a6"];
+  const [showAddCat,setShowAddCat]=useState(false);
+  const [newCatName,setNewCatName]=useState("");
+  const addCustomCat=()=>{
+    const name=newCatName.trim();
+    if(!name) return;
+    const id="custom_"+name.toLowerCase().replace(/[^a-z0-9]+/g,"_").slice(0,24)+"_"+Date.now();
+    const color=CUSTOM_CAT_COLORS[customCats.length%CUSTOM_CAT_COLORS.length];
+    const updated=[...customCats,{id,label:name,color}];
+    setCustomCats(updated);
+    saveCustomCats(updated);
+    setNewCat(id);
+    setNewCatName("");
+    setShowAddCat(false);
+  };
+  const ALL_PLANNER_CATS=[...PLANNER_CATS,...customCats];
 
   // Load blocks for selected date
   useEffect(() => {
@@ -10492,17 +10525,44 @@ function DailyPlanner({ session, db }) {
   const activeBlocks = mergedBlocks.filter(b => !b.done);
   const doneBlocks = mergedBlocks.filter(b => b.done);
   const totalMins = activeBlocks.reduce((s, b) => s + b.dur * 30, 0);
-  const statsByCat = PLANNER_CATS.map(cat => {
+  const statsByCat = ALL_PLANNER_CATS.map(cat => {
     const mins = activeBlocks.filter(b => b.cat === cat.id).reduce((s, b) => s + b.dur * 30, 0);
     return { ...cat, mins };
   }).filter(c => c.mins > 0);
 
-  const catColor = (id) => PLANNER_CATS.find(c => c.id === id)?.color || C.teal;
-  const catLabel = (id) => PLANNER_CATS.find(c => c.id === id)?.label || id;
+  const catColor = (id) => ALL_PLANNER_CATS.find(c => c.id === id)?.color || C.teal;
+  const catLabel = (id) => ALL_PLANNER_CATS.find(c => c.id === id)?.label || id;
 
   const isToday = selDate === today;
 
+  // In-app notification when a block's start time arrives — only fires while someone
+  // has the Hub open and this Planner has loaded; there's no real push notification here.
+  const [activeNotif, setActiveNotif] = useState(null);
+  const notifiedIdsRef = useRef(new Set());
+  const notifDayRef = useRef(today);
+  const mergedBlocksRef = useRef(mergedBlocks);
+  useEffect(() => { mergedBlocksRef.current = mergedBlocks; });
+  useEffect(() => {
+    if (!isToday || nowS < 0) return;
+    if (notifDayRef.current !== today) { notifiedIdsRef.current = new Set(); notifDayRef.current = today; }
+    const starting = mergedBlocksRef.current.find(b => b.slot === nowS && !notifiedIdsRef.current.has(b.isRecurring ? "r_"+b.id : b.id));
+    if (starting) {
+      const key = starting.isRecurring ? "r_"+starting.id : starting.id;
+      notifiedIdsRef.current.add(key);
+      setActiveNotif(starting);
+    }
+  }, [nowS, isToday]);
+
   return <div style={{ padding: dv(14, 24), maxWidth: 600, margin: "0 auto" }}>
+    {/* Block-starting notification */}
+    {activeNotif && <div style={{ background:`linear-gradient(135deg,${catColor(activeNotif.cat)},${catColor(activeNotif.cat)}cc)`, borderRadius:12, padding:"12px 14px", marginBottom:14, display:"flex", alignItems:"center", gap:10, boxShadow:"0 4px 14px rgba(0,0,0,0.15)" }}>
+      <div style={{ fontSize:22 }}>🔔</div>
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:"white" }}>Starting now: {activeNotif.title}</div>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.85)" }}>{catLabel(activeNotif.cat)} · {slotToTime(activeNotif.slot)} – {slotToTime(activeNotif.slot+activeNotif.dur)}</div>
+      </div>
+      <button onClick={()=>setActiveNotif(null)} style={{ background:"rgba(255,255,255,0.2)", border:"none", color:"white", borderRadius:6, padding:"4px 10px", fontSize:12, cursor:"pointer", fontWeight:600 }}>Dismiss</button>
+    </div>}
     {/* Edit Modal */}
     {editBlock && <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div style={{ background:"white", borderRadius:16, padding:20, width:"100%", maxWidth:400 }}>
@@ -10514,13 +10574,18 @@ function DailyPlanner({ session, db }) {
         <div style={{ marginBottom:8 }}>
           <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Category</label>
           <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-            {PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setEditBlock({...editBlock,cat:cat.id})} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${editBlock.cat===cat.id?cat.color:C.border}`, background:editBlock.cat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:editBlock.cat===cat.id?cat.color:C.textMid, fontWeight:editBlock.cat===cat.id?700:400 }}>{cat.label}</button>)}
+            {ALL_PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setEditBlock({...editBlock,cat:cat.id})} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${editBlock.cat===cat.id?cat.color:C.border}`, background:editBlock.cat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:editBlock.cat===cat.id?cat.color:C.textMid, fontWeight:editBlock.cat===cat.id?700:400 }}>{cat.label}</button>)}
           </div>
         </div>
         <div style={{ marginBottom:8 }}>
           <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Duration</label>
-          <div style={{ display:"flex", gap:5 }}>
-            {[[1,"30m"],[2,"1h"],[3,"1.5h"],[4,"2h"],[6,"3h"]].map(([v,l])=><button key={v} onClick={()=>setEditBlock({...editBlock,dur:v})} style={{ flex:1, padding:"5px", borderRadius:7, border:`2px solid ${editBlock.dur===v?C.teal:C.border}`, background:editBlock.dur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.dur===v?C.teal:C.textMid, fontWeight:editBlock.dur===v?700:400 }}>{l}</button>)}
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:6 }}>
+            {[[1,"15m"],[2,"30m"],[3,"45m"],[4,"1h"],[6,"1.5h"],[8,"2h"],[12,"3h"]].map(([v,l])=><button key={v} onClick={()=>setEditBlock({...editBlock,dur:v})} style={{ flex:"1 1 auto", minWidth:40, padding:"5px", borderRadius:7, border:`2px solid ${editBlock.dur===v?C.teal:C.border}`, background:editBlock.dur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:editBlock.dur===v?C.teal:C.textMid, fontWeight:editBlock.dur===v?700:400 }}>{l}</button>)}
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:12, color:C.textMid }}>Custom:</span>
+            <input type="number" min="15" step="15" value={editBlock.dur*SLOT_MINUTES} onChange={e=>{const v=Number(e.target.value);if(v>0)setEditBlock({...editBlock,dur:Math.max(1,Math.round(v/SLOT_MINUTES))});}} style={{ width:70, padding:"5px 7px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, color:C.text }}/>
+            <span style={{ fontSize:12, color:C.textMid }}>minutes</span>
           </div>
         </div>
         <div style={{ marginBottom:12 }}>
@@ -10562,10 +10627,20 @@ function DailyPlanner({ session, db }) {
       <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>Add a Block</div>
       <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="What are you blocking time for?" style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:`1px solid ${C.border}`, fontSize:13, color:C.text, marginBottom:8, boxSizing:"border-box" }}/>
       <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:8 }}>
-        {PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setNewCat(cat.id)} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${newCat===cat.id?cat.color:C.border}`, background:newCat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:newCat===cat.id?cat.color:C.textMid, fontWeight:newCat===cat.id?700:400 }}>{cat.label}</button>)}
+        {ALL_PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setNewCat(cat.id)} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${newCat===cat.id?cat.color:C.border}`, background:newCat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:newCat===cat.id?cat.color:C.textMid, fontWeight:newCat===cat.id?700:400 }}>{cat.label}</button>)}
+        <button onClick={()=>setShowAddCat(!showAddCat)} style={{ padding:"4px 10px", borderRadius:14, border:`2px dashed ${C.border}`, background:"white", cursor:"pointer", fontSize:12, color:C.textMid, fontWeight:400 }}>+ Custom</button>
       </div>
-      <div style={{ display:"flex", gap:5, marginBottom:10 }}>
-        {[[1,"30m"],[2,"1hr"],[3,"1.5hr"],[4,"2hr"],[6,"3hr"]].map(([v,l])=><button key={v} onClick={()=>setNewDur(v)} style={{ flex:1, padding:"5px", borderRadius:7, border:`2px solid ${newDur===v?C.teal:C.border}`, background:newDur===v?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:newDur===v?C.teal:C.textMid, fontWeight:newDur===v?700:400 }}>{l}</button>)}
+      {showAddCat&&<div style={{ display:"flex", gap:6, marginBottom:8 }}>
+        <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} placeholder="Category name..." onKeyDown={e=>e.key==="Enter"&&addCustomCat()} style={{ flex:1, padding:"6px 9px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text }}/>
+        <button onClick={addCustomCat} style={{ padding:"6px 12px", borderRadius:7, border:"none", background:C.teal, color:"white", cursor:"pointer", fontSize:12, fontWeight:600 }}>Add</button>
+      </div>}
+      <div style={{ display:"flex", gap:5, marginBottom:6, flexWrap:"wrap" }}>
+        {[[1,"15m"],[2,"30m"],[3,"45m"],[4,"1hr"],[6,"1.5hr"],[8,"2hr"],[12,"3hr"]].map(([v,l])=><button key={v} onClick={()=>{setNewDur(v);setCustomDurMin("");}} style={{ flex:"1 1 auto", minWidth:44, padding:"5px", borderRadius:7, border:`2px solid ${newDur===v&&!customDurMin?C.teal:C.border}`, background:newDur===v&&!customDurMin?C.teal+"11":"white", cursor:"pointer", fontSize:12, color:newDur===v&&!customDurMin?C.teal:C.textMid, fontWeight:newDur===v&&!customDurMin?700:400 }}>{l}</button>)}
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+        <span style={{ fontSize:12, color:C.textMid }}>Custom:</span>
+        <input type="number" min="15" step="15" value={customDurMin} onChange={e=>{const v=e.target.value;setCustomDurMin(v);if(v)setNewDur(Math.max(1,Math.round(Number(v)/SLOT_MINUTES)));}} placeholder="e.g. 90" style={{ width:70, padding:"5px 7px", borderRadius:6, border:`1px solid ${customDurMin?C.teal:C.border}`, fontSize:12, color:C.text }}/>
+        <span style={{ fontSize:12, color:C.textMid }}>minutes</span>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
         <button onClick={()=>{setNewRepeat(r=>!r);if(newRepeat)setNewDays([]);}} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:`1px solid ${newRepeat?C.gold:C.border}`, background:newRepeat?C.gold+"11":"white", cursor:"pointer", fontSize:12, color:newRepeat?"#b45309":C.textMid, fontWeight:newRepeat?700:400 }}>
@@ -10587,7 +10662,7 @@ function DailyPlanner({ session, db }) {
     {/* Time Grid */}
     <div style={{ position:"relative" }}>
       {Array.from({length: TOTAL_SLOTS}, (_, slot) => {
-        const isHour = slot % 2 === 0;
+        const isHour = slot % SLOTS_PER_HOUR === 0;
         const block = mergedBlocks.find(b => b.slot === slot);
         const covered = mergedBlocks.find(b => b.slot < slot && b.slot + b.dur > slot);
         const conflict = newTitle.trim() && hasConflict(slot, newDur);
@@ -10599,8 +10674,8 @@ function DailyPlanner({ session, db }) {
         if (covered && !block) return null; // Hidden — inside a multi-slot block
 
         if (block) {
-          const cat = PLANNER_CATS.find(c => c.id === block.cat);
-          const blockH = block.dur * 28;
+          const cat = ALL_PLANNER_CATS.find(c => c.id === block.cat);
+          const blockH = block.dur * 14; // 14px per 15-min slot = same 56px/hour as before
           return <div key={slot} onClick={()=>setEditBlock({...block})} style={{ display:"flex", cursor:"pointer", marginBottom:1, position:"relative" }}>
             <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
             <div style={{ flex:1, height:blockH, borderRadius:8, background:block.done?"rgba(0,0,0,0.04)":cat?.color+"22", border:`2px solid ${block.done?"rgba(0,0,0,0.1)":cat?.color}`, padding:"4px 8px", overflow:"hidden", position:"relative" }}>
@@ -10614,7 +10689,7 @@ function DailyPlanner({ session, db }) {
 
         return <div key={slot} onClick={()=>canPlace&&addBlock(slot)} style={{ display:"flex", marginBottom:1, cursor:canPlace?"pointer":"default" }}>
           <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
-          <div style={{ flex:1, height:28, borderRadius:4, background:conflict?"rgba(239,68,68,0.06)":canPlace?"rgba(14,165,160,0.06)":"rgba(0,0,0,0.02)", border:`1px dashed ${conflict?"rgba(239,68,68,0.3)":isHour?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.04)"}`, display:"flex", alignItems:"center", paddingLeft:8, transition:"background 0.1s", position:"relative" }}>
+          <div style={{ flex:1, height:14, borderRadius:4, background:conflict?"rgba(239,68,68,0.06)":canPlace?"rgba(14,165,160,0.06)":"rgba(0,0,0,0.02)", border:`1px dashed ${conflict?"rgba(239,68,68,0.3)":isHour?"rgba(0,0,0,0.1)":"rgba(0,0,0,0.04)"}`, display:"flex", alignItems:"center", paddingLeft:8, transition:"background 0.1s", position:"relative" }}>
             {isNow&&<div style={{ position:"absolute", left:0, right:0, top:0, height:2, background:"#ef4444" }}><div style={{ position:"absolute", left:0, top:-4, width:8, height:8, borderRadius:4, background:"#ef4444" }}/></div>}
             {canPlace&&<div style={{ fontSize:10, color:C.teal, opacity:0 }} className="slot-hint">+ Add here</div>}
             {conflict&&<div style={{ fontSize:10, color:"#ef4444" }}>Overlap</div>}
