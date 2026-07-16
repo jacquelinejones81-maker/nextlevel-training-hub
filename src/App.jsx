@@ -10316,6 +10316,7 @@ function DailyPlanner({ session, db }) {
   const [newCat, setNewCat] = useState("work");
   const [newDur, setNewDur] = useState(4); // in 15-minute units (4 = 1hr)
   const [customDurMin, setCustomDurMin] = useState("");
+  const [newStartSlot, setNewStartSlot] = useState(() => { const s = nowSlot(); return s >= 0 ? s : 0; });
   const [editBlock, setEditBlock] = useState(null);
   const [nowS, setNowS] = useState(nowSlot());
   const userId = session?.id;
@@ -10335,8 +10336,18 @@ function DailyPlanner({ session, db }) {
     const ref = doc(db, "userSchedules", `${userId}_recurring`);
     const unsub = onSnapshot(ref, snap => {
       if (snap.exists()) {
-        setRecurringBlocks(snap.data().blocks || []);
-        setCustomCats(snap.data().customCats || []);
+        const d = snap.data();
+        const rawBlocks = d.blocks || [];
+        if (d.slotUnit !== 15 && rawBlocks.length > 0) {
+          // One-time migration: old blocks were stored in 30-minute units, double
+          // slot/dur so they land on the same real-world times in the new 15-min grid.
+          const migrated = rawBlocks.map(b => ({...b, slot: b.slot*2, dur: b.dur*2}));
+          setRecurringBlocks(migrated);
+          setDoc(ref, {blocks: migrated, customCats: d.customCats||[], userId, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}).catch(()=>{});
+        } else {
+          setRecurringBlocks(rawBlocks);
+        }
+        setCustomCats(d.customCats || []);
       } else {
         setRecurringBlocks([]);
         setCustomCats([]);
@@ -10350,7 +10361,7 @@ function DailyPlanner({ session, db }) {
     if (!userId || !db) return;
     try {
       await setDoc(doc(db, "userSchedules", `${userId}_recurring`), {
-        blocks: newBlocks, userId, updatedAt: new Date().toISOString()
+        blocks: newBlocks, userId, slotUnit: 15, updatedAt: new Date().toISOString()
       }, { merge: true });
     } catch(e) { console.warn("Save recurring failed:", e); }
   };
@@ -10389,7 +10400,14 @@ function DailyPlanner({ session, db }) {
     const unsub = onSnapshot(ref, snap => {
       if (snap.exists()) {
         const d = snap.data();
-        setBlocks(d.blocks || []);
+        const rawBlocks = d.blocks || [];
+        if (d.slotUnit !== 15 && rawBlocks.length > 0) {
+          const migrated = rawBlocks.map(b => ({...b, slot: b.slot*2, dur: b.dur*2}));
+          setBlocks(migrated);
+          setDoc(ref, {blocks: migrated, userId, date: selDate, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}).catch(()=>{});
+        } else {
+          setBlocks(rawBlocks);
+        }
       } else {
         setBlocks([]);
       }
@@ -10403,7 +10421,7 @@ function DailyPlanner({ session, db }) {
     if (!userId || !db) return;
     try {
       await setDoc(doc(db, "userSchedules", `${userId}_${selDate}`), {
-        blocks: newBlocks, userId, date: selDate, updatedAt: new Date().toISOString()
+        blocks: newBlocks, userId, date: selDate, slotUnit: 15, updatedAt: new Date().toISOString()
       });
     } catch(e) { console.warn("Save failed:", e); }
   };
@@ -10572,6 +10590,17 @@ function DailyPlanner({ session, db }) {
           <input value={editBlock.title} onChange={e=>setEditBlock({...editBlock, title:e.target.value})} style={{ width:"100%", padding:"7px 9px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, color:C.text, boxSizing:"border-box" }}/>
         </div>
         <div style={{ marginBottom:8 }}>
+          <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Start Time</label>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <button onClick={()=>{const ns=editBlock.slot-1;if(ns>=0&&!hasConflict(ns,editBlock.dur,editBlock.id))setEditBlock({...editBlock,slot:ns});}} disabled={editBlock.slot<=0||hasConflict(editBlock.slot-1,editBlock.dur,editBlock.id)} style={{ width:30, height:30, borderRadius:7, border:`1px solid ${C.border}`, background:"white", cursor:"pointer", fontSize:14, color:C.textMid, flexShrink:0 }}>−</button>
+            <select value={editBlock.slot} onChange={e=>{const ns=Number(e.target.value);if(!hasConflict(ns,editBlock.dur,editBlock.id))setEditBlock({...editBlock,slot:ns});}} style={{ flex:1, padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, background:"white" }}>
+              {Array.from({length:TOTAL_SLOTS},(_,s)=>s).map(s=>{const conflict=s!==editBlock.slot&&hasConflict(s,editBlock.dur,editBlock.id);return <option key={s} value={s} disabled={conflict}>{slotToTime(s)}{conflict?" (busy)":""}</option>;})}
+            </select>
+            <button onClick={()=>{const ns=editBlock.slot+1;if(ns+editBlock.dur<=TOTAL_SLOTS&&!hasConflict(ns,editBlock.dur,editBlock.id))setEditBlock({...editBlock,slot:ns});}} disabled={editBlock.slot+editBlock.dur>=TOTAL_SLOTS||hasConflict(editBlock.slot+1,editBlock.dur,editBlock.id)} style={{ width:30, height:30, borderRadius:7, border:`1px solid ${C.border}`, background:"white", cursor:"pointer", fontSize:14, color:C.textMid, flexShrink:0 }}>+</button>
+          </div>
+          <div style={{ fontSize:10, color:C.textLight, marginTop:3 }}>Use −/+ to nudge by {SLOT_MINUTES} min, or pick a time directly</div>
+        </div>
+        <div style={{ marginBottom:8 }}>
           <label style={{ fontSize:11, color:C.textMid, display:"block", marginBottom:3 }}>Category</label>
           <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
             {ALL_PLANNER_CATS.map(cat => <button key={cat.id} onClick={()=>setEditBlock({...editBlock,cat:cat.id})} style={{ padding:"4px 10px", borderRadius:14, border:`2px solid ${editBlock.cat===cat.id?cat.color:C.border}`, background:editBlock.cat===cat.id?cat.color+"22":"white", cursor:"pointer", fontSize:12, color:editBlock.cat===cat.id?cat.color:C.textMid, fontWeight:editBlock.cat===cat.id?700:400 }}>{cat.label}</button>)}
@@ -10654,8 +10683,16 @@ function DailyPlanner({ session, db }) {
           {WEEKDAY_LABELS.map((lbl,i)=><button key={i} onClick={()=>setNewDays(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i])} style={{ width:32, height:32, borderRadius:16, border:`2px solid ${newDays.includes(i)?C.gold:C.border}`, background:newDays.includes(i)?C.gold:"white", color:newDays.includes(i)?"white":C.textMid, fontSize:12, fontWeight:700, cursor:"pointer" }}>{lbl}</button>)}
         </div>
       </div>}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+        <span style={{ fontSize:12, color:C.textMid, whiteSpace:"nowrap" }}>Start time:</span>
+        <select value={newStartSlot} onChange={e=>setNewStartSlot(Number(e.target.value))} style={{ flex:1, padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, background:"white" }}>
+          {Array.from({length:TOTAL_SLOTS},(_,s)=>s).map(s=><option key={s} value={s}>{slotToTime(s)}</option>)}
+        </select>
+        <button onClick={()=>{if(!newTitle.trim())return;if(hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)return;addBlock(newStartSlot);}} disabled={!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS} style={{ padding:"6px 14px", borderRadius:7, border:"none", background:(!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)?C.textLight:C.teal, color:"white", cursor:(!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)?"default":"pointer", fontSize:12, fontWeight:600, whiteSpace:"nowrap" }}>Place Block</button>
+      </div>
+      {newTitle.trim()&&hasConflict(newStartSlot,newDur)&&<div style={{ fontSize:11, color:"#ef4444", marginBottom:8 }}>That time overlaps another block — pick a different start time or tap an open slot below.</div>}
       <div style={{ fontSize:11, color:C.textMid }}>
-        {newTitle.trim() ? "👆 Tap a time slot below to place this block" : "Enter a title first, then tap a time slot"}
+        {newTitle.trim() ? "👆 Or tap a time slot below to place this block" : "Enter a title first, then pick a start time or tap a slot below"}
       </div>
     </Card>
 
