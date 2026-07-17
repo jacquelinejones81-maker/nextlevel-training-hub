@@ -10374,6 +10374,14 @@ function DailyPlanner({ session, db }) {
   const today = localDate();
   const [selDate, setSelDate] = useState(today);
   const [blocks, setBlocks] = useState([]);
+  // Refs mirror the state above on every render so mutation functions (addBlock, saveEdit,
+  // deleteBlock) always build on the true latest data — never a stale closure from the
+  // render they were defined in. This is what prevents rapid back-to-back edits from
+  // silently overwriting each other.
+  const blocksRef = useRef([]);
+  const recurringBlocksRef = useRef([]);
+  useEffect(() => { blocksRef.current = blocks; }, [blocks]);
+  useEffect(() => { recurringBlocksRef.current = recurringBlocks; }, [recurringBlocks]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState("");
   const [newCat, setNewCat] = useState("work");
@@ -10408,10 +10416,12 @@ function DailyPlanner({ session, db }) {
           // Block all edits until this fully finishes writing, so nothing can race it.
           setMigrating(true);
           const migrated = rawBlocks.map(b => ({...b, slot: b.slot*2, dur: b.dur*2}));
+          recurringBlocksRef.current = migrated;
           setRecurringBlocks(migrated);
           try { await setDoc(ref, {blocks: migrated, customCats: d.customCats||[], userId, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}); } catch(e) {}
           setMigrating(false);
         } else {
+          recurringBlocksRef.current = rawBlocks;
           setRecurringBlocks(rawBlocks);
         }
         setCustomCats(d.customCats || []);
@@ -10471,10 +10481,12 @@ function DailyPlanner({ session, db }) {
         if (d.slotUnit !== 15 && rawBlocks.length > 0) {
           setMigrating(true);
           const migrated = rawBlocks.map(b => ({...b, slot: b.slot*2, dur: b.dur*2}));
+          blocksRef.current = migrated;
           setBlocks(migrated);
           try { await setDoc(ref, {blocks: migrated, userId, date: selDate, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}); } catch(e) {}
           setMigrating(false);
         } else {
+          blocksRef.current = rawBlocks;
           setBlocks(rawBlocks);
         }
       } else {
@@ -10532,11 +10544,13 @@ function DailyPlanner({ session, db }) {
     const nb = { id, title: newTitle.trim(), cat: newCat, dur: newDur, slot, notes: "", createdAt: new Date().toISOString() };
     if (newRepeat) {
       // Save to recurring — include selected days (empty array = every day)
-      const updatedR = [...recurringBlocks, {...nb, days: newDays}].sort((a,b) => a.slot - b.slot);
+      const updatedR = [...recurringBlocksRef.current, {...nb, days: newDays}].sort((a,b) => a.slot - b.slot);
+      recurringBlocksRef.current = updatedR;
       setRecurringBlocks(updatedR);
       saveRecurring(updatedR);
     } else {
-      const updated = [...blocks, nb].sort((a, b) => a.slot - b.slot);
+      const updated = [...blocksRef.current, nb].sort((a, b) => a.slot - b.slot);
+      blocksRef.current = updated;
       setBlocks(updated);
       saveBlocks(updated);
     }
@@ -10558,18 +10572,21 @@ function DailyPlanner({ session, db }) {
         // Just saving done status — write a daily override
         const override = { id: editBlock._dailyId||Date.now().toString(), recurringId: editBlock.id, done: editBlock.done, slot: editBlock.slot, dur: editBlock.dur, title: editBlock.title, cat: editBlock.cat, notes: editBlock.notes, createdAt: new Date().toISOString() };
         const updated = editBlock._dailyId
-          ? blocks.map(b => b.id === editBlock._dailyId ? override : b)
-          : [...blocks, override];
+          ? blocksRef.current.map(b => b.id === editBlock._dailyId ? override : b)
+          : [...blocksRef.current, override];
+        blocksRef.current = updated;
         setBlocks(updated);
         saveBlocks(updated);
       } else {
         // Full edit — update recurring collection
-        const updatedR = recurringBlocks.map(b => b.id === editBlock.id ? {...editBlock, isRecurring:undefined, _dailyId:undefined, _doneOnly:undefined} : b);
+        const updatedR = recurringBlocksRef.current.map(b => b.id === editBlock.id ? {...editBlock, isRecurring:undefined, _dailyId:undefined, _doneOnly:undefined} : b);
+        recurringBlocksRef.current = updatedR;
         setRecurringBlocks(updatedR);
         saveRecurring(updatedR);
       }
     } else {
-      const updated = blocks.map(b => b.id === editBlock.id ? editBlock : b).sort((a,b) => a.slot - b.slot);
+      const updated = blocksRef.current.map(b => b.id === editBlock.id ? editBlock : b).sort((a,b) => a.slot - b.slot);
+      blocksRef.current = updated;
       setBlocks(updated);
       saveBlocks(updated);
     }
@@ -10580,15 +10597,18 @@ function DailyPlanner({ session, db }) {
   const deleteBlock = (id) => {
     if (editBlock?.isRecurring) {
       // Remove from recurring
-      const updatedR = recurringBlocks.filter(b => b.id !== id);
+      const updatedR = recurringBlocksRef.current.filter(b => b.id !== id);
+      recurringBlocksRef.current = updatedR;
       setRecurringBlocks(updatedR);
       saveRecurring(updatedR);
       // Also remove any daily overrides
-      const updated = blocks.filter(b => b.recurringId !== id);
+      const updated = blocksRef.current.filter(b => b.recurringId !== id);
+      blocksRef.current = updated;
       setBlocks(updated);
       saveBlocks(updated);
     } else {
-      const updated = blocks.filter(b => b.id !== id);
+      const updated = blocksRef.current.filter(b => b.id !== id);
+      blocksRef.current = updated;
       setBlocks(updated);
       saveBlocks(updated);
     }
