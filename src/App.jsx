@@ -10329,21 +10329,25 @@ function DailyPlanner({ session, db }) {
 
   const [recurringBlocks, setRecurringBlocks] = useState([]);
   const [customCats, setCustomCats] = useState([]);
+  const [migrating, setMigrating] = useState(false);
 
   // Load recurring blocks + custom categories once
   useEffect(() => {
     if (!userId || !db) return;
     const ref = doc(db, "userSchedules", `${userId}_recurring`);
-    const unsub = onSnapshot(ref, snap => {
+    const unsub = onSnapshot(ref, async snap => {
       if (snap.exists()) {
         const d = snap.data();
         const rawBlocks = d.blocks || [];
         if (d.slotUnit !== 15 && rawBlocks.length > 0) {
           // One-time migration: old blocks were stored in 30-minute units, double
           // slot/dur so they land on the same real-world times in the new 15-min grid.
+          // Block all edits until this fully finishes writing, so nothing can race it.
+          setMigrating(true);
           const migrated = rawBlocks.map(b => ({...b, slot: b.slot*2, dur: b.dur*2}));
           setRecurringBlocks(migrated);
-          setDoc(ref, {blocks: migrated, customCats: d.customCats||[], userId, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}).catch(()=>{});
+          try { await setDoc(ref, {blocks: migrated, customCats: d.customCats||[], userId, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}); } catch(e) {}
+          setMigrating(false);
         } else {
           setRecurringBlocks(rawBlocks);
         }
@@ -10397,14 +10401,16 @@ function DailyPlanner({ session, db }) {
     if (!userId || !db) return;
     setLoading(true);
     const ref = doc(db, "userSchedules", `${userId}_${selDate}`);
-    const unsub = onSnapshot(ref, snap => {
+    const unsub = onSnapshot(ref, async snap => {
       if (snap.exists()) {
         const d = snap.data();
         const rawBlocks = d.blocks || [];
         if (d.slotUnit !== 15 && rawBlocks.length > 0) {
+          setMigrating(true);
           const migrated = rawBlocks.map(b => ({...b, slot: b.slot*2, dur: b.dur*2}));
           setBlocks(migrated);
-          setDoc(ref, {blocks: migrated, userId, date: selDate, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}).catch(()=>{});
+          try { await setDoc(ref, {blocks: migrated, userId, date: selDate, slotUnit: 15, updatedAt: new Date().toISOString()}, {merge:true}); } catch(e) {}
+          setMigrating(false);
         } else {
           setBlocks(rawBlocks);
         }
@@ -10572,6 +10578,11 @@ function DailyPlanner({ session, db }) {
   }, [nowS, isToday]);
 
   return <div style={{ padding: dv(14, 24), maxWidth: 600, margin: "0 auto" }}>
+    {/* Migration in progress — blocks all edits until the one-time schedule upgrade finishes saving */}
+    {migrating && <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+      <div style={{ fontSize:16 }}>⏳</div>
+      <div style={{ fontSize:12, color:C.textMid }}>Updating your schedule to the new format — just a moment, don't add or edit blocks yet.</div>
+    </div>}
     {/* Block-starting notification */}
     {activeNotif && <div style={{ background:`linear-gradient(135deg,${catColor(activeNotif.cat)},${catColor(activeNotif.cat)}cc)`, borderRadius:12, padding:"12px 14px", marginBottom:14, display:"flex", alignItems:"center", gap:10, boxShadow:"0 4px 14px rgba(0,0,0,0.15)" }}>
       <div style={{ fontSize:22 }}>🔔</div>
@@ -10688,7 +10699,7 @@ function DailyPlanner({ session, db }) {
         <select value={newStartSlot} onChange={e=>setNewStartSlot(Number(e.target.value))} style={{ flex:1, padding:"6px 8px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, color:C.text, background:"white" }}>
           {Array.from({length:TOTAL_SLOTS},(_,s)=>s).map(s=><option key={s} value={s}>{slotToTime(s)}</option>)}
         </select>
-        <button onClick={()=>{if(!newTitle.trim())return;if(hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)return;addBlock(newStartSlot);}} disabled={!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS} style={{ padding:"6px 14px", borderRadius:7, border:"none", background:(!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)?C.textLight:C.teal, color:"white", cursor:(!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)?"default":"pointer", fontSize:12, fontWeight:600, whiteSpace:"nowrap" }}>Place Block</button>
+        <button onClick={()=>{if(migrating||!newTitle.trim())return;if(hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)return;addBlock(newStartSlot);}} disabled={migrating||!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS} style={{ padding:"6px 14px", borderRadius:7, border:"none", background:(migrating||!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)?C.textLight:C.teal, color:"white", cursor:(migrating||!newTitle.trim()||hasConflict(newStartSlot,newDur)||newStartSlot+newDur>TOTAL_SLOTS)?"default":"pointer", fontSize:12, fontWeight:600, whiteSpace:"nowrap" }}>Place Block</button>
       </div>
       {newTitle.trim()&&hasConflict(newStartSlot,newDur)&&<div style={{ fontSize:11, color:"#ef4444", marginBottom:8 }}>That time overlaps another block — pick a different start time or tap an open slot below.</div>}
       <div style={{ fontSize:11, color:C.textMid }}>
@@ -10704,7 +10715,7 @@ function DailyPlanner({ session, db }) {
         const covered = mergedBlocks.find(b => b.slot < slot && b.slot + b.dur > slot);
         const conflict = newTitle.trim() && hasConflict(slot, newDur);
         const overflows = slot + newDur > TOTAL_SLOTS;
-        const canPlace = newTitle.trim() && !conflict && !overflows;
+        const canPlace = !migrating && newTitle.trim() && !conflict && !overflows;
         const isNow = isToday && nowS === slot;
         const isNowCovered = isToday && nowS > slot && nowS < slot + (block?.dur || 1);
 
@@ -10713,7 +10724,7 @@ function DailyPlanner({ session, db }) {
         if (block) {
           const cat = ALL_PLANNER_CATS.find(c => c.id === block.cat);
           const blockH = block.dur * 14; // 14px per 15-min slot = same 56px/hour as before
-          return <div key={slot} onClick={()=>setEditBlock({...block})} style={{ display:"flex", cursor:"pointer", marginBottom:1, position:"relative" }}>
+          return <div key={slot} onClick={()=>!migrating&&setEditBlock({...block})} style={{ display:"flex", cursor:migrating?"default":"pointer", marginBottom:1, position:"relative" }}>
             <div style={{ width:52, flexShrink:0, paddingTop:4, fontSize:11, color:C.textLight, textAlign:"right", paddingRight:8 }}>{isHour?slotToTime(slot):""}</div>
             <div style={{ flex:1, height:blockH, borderRadius:8, background:block.done?"rgba(0,0,0,0.04)":cat?.color+"22", border:`2px solid ${block.done?"rgba(0,0,0,0.1)":cat?.color}`, padding:"4px 8px", overflow:"hidden", position:"relative" }}>
               <div style={{ fontSize:12, fontWeight:700, color:block.done?C.textLight:cat?.color, textDecoration:block.done?"line-through":"none", opacity:block.done?0.6:1 }}>{block.title}</div>
