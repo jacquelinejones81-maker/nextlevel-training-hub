@@ -1578,8 +1578,12 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
       <MyLeadLink name={rep.name} data={data} onUpdate={onUpdate} personId={rep.id}/>
       {(data.repShareableLinks||[]).length>0&&<div style={{marginTop:16}}>
+        <div style={{background:C.gold+"11",border:`2px solid ${C.gold}`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#92400e",lineHeight:1.5}}>YOUR JOB IS NOT TO EXPLAIN THE OPPORTUNITY.</div>
+          <div style={{fontSize:12,color:"#92400e",lineHeight:1.5,marginTop:4}}>Your job is to identify interest, send the appropriate video, and make sure the person completes the form. The video provides the overview. The form identifies their interest. From there, a follow-up conversation — or an interview for recruiting opportunities — determines the fit.</div>
+        </div>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
-        {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))} data={data} onUpdate={onUpdate} personId={rep.id}/>)}
+        {(data.repShareableLinks||[]).map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,(rep.name||"")+(rep.primericaRepId?` (${rep.primericaRepId})`:""))} data={data} onUpdate={onUpdate} personId={rep.id} sendTo={link.sendTo} messages={link.messages}/>)}
       </div>}
       {(data.teamLinks||[]).length>0&&<div style={{marginTop:16}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Quick Links</div>
@@ -2295,10 +2299,40 @@ function ManageTeamPage({data,onUpdate}) {
         <input placeholder="Survey URL — include {REP} where the name/ID should go, e.g. https://form.jotform.com/xxxx?whoSentThis={REP}" value={link.templateUrl||""} onChange={e=>{
           const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,templateUrl:e.target.value.trim()}:l);
           updateLocal({...localData,repShareableLinks:updated});
-        }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+        }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",marginBottom:8}}/>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:3}}>Who Should I Send This To?</div>
+        <textarea placeholder="e.g. Someone who may be open to additional part-time income, a career change, getting licensed..." value={link.sendTo||""} onChange={e=>{
+          const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,sendTo:e.target.value}:l);
+          updateLocal({...localData,repShareableLinks:updated});
+        }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",minHeight:44,resize:"vertical",fontFamily:"inherit",marginBottom:8}}/>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>Message Stages (shown as a dropdown to reps if you add more than one)</div>
+        {(link.messages||[]).map((msg,mi)=><div key={mi} style={{border:`1px solid ${C.border}`,borderRadius:7,padding:8,marginBottom:6,background:C.surface}}>
+          <div style={{display:"flex",gap:5,marginBottom:5}}>
+            <input placeholder="Stage label (e.g. Initial Message, If They Say Yes...)" value={msg.label||""} onChange={e=>{
+              const updatedMsgs=(link.messages||[]).map((m,j)=>j===mi?{...m,label:e.target.value}:m);
+              const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,messages:updatedMsgs}:l);
+              updateLocal({...localData,repShareableLinks:updated});
+            }} style={{flex:1,padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
+            <button onClick={()=>{
+              const updatedMsgs=(link.messages||[]).filter((m,j)=>j!==mi);
+              const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,messages:updatedMsgs}:l);
+              updateLocal({...localData,repShareableLinks:updated});
+            }} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:12}}>✕</button>
+          </div>
+          <textarea placeholder="Message text..." value={msg.content||""} onChange={e=>{
+            const updatedMsgs=(link.messages||[]).map((m,j)=>j===mi?{...m,content:e.target.value}:m);
+            const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,messages:updatedMsgs}:l);
+            updateLocal({...localData,repShareableLinks:updated});
+          }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",minHeight:70,resize:"vertical",fontFamily:"inherit"}}/>
+        </div>)}
+        <button onClick={()=>{
+          const updatedMsgs=[...(link.messages||[]),{label:"",content:""}];
+          const updated=(localData.repShareableLinks||[]).map((l,j)=>j===i?{...l,messages:updatedMsgs}:l);
+          updateLocal({...localData,repShareableLinks:updated});
+        }} style={{fontSize:12,padding:"5px 10px",borderRadius:6,border:`1px solid ${C.gold}`,background:C.gold+"11",color:C.gold,cursor:"pointer",fontWeight:600}}>+ Add Message Stage</button>
       </div>)}
       <button onClick={()=>{
-        const updated=[...(localData.repShareableLinks||[]),{id:Date.now(),label:"",templateUrl:""}];
+        const updated=[...(localData.repShareableLinks||[]),{id:Date.now(),label:"",templateUrl:"",sendTo:"",messages:[]}];
         updateLocal({...localData,repShareableLinks:updated});
       }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Link</button>
     </div>
@@ -7958,13 +7992,24 @@ function QuickLinkCard({label,url,data,onUpdate,personId}) {
   </div>;
 }
 
-function ShareableVideoLinkCard({label,url,data,onUpdate,personId}) {
+function ShareableVideoLinkCard({label,url,data,onUpdate,personId,sendTo,messages}) {
   const [copied,setCopied] = useState(false);
   const [shared,setShared] = useState(false);
+  const [msgCopied,setMsgCopied] = useState(false);
+  const msgList = messages||[];
+  const [msgIdx,setMsgIdx] = useState(0);
   const copy = () => {
     navigator.clipboard?.writeText(url).then(()=>{
       setCopied(true);
       setTimeout(()=>setCopied(false),2500);
+    });
+  };
+  const copyMsg = () => {
+    const text = msgList[msgIdx]?.content||"";
+    if(!text) return;
+    navigator.clipboard?.writeText(text).then(()=>{
+      setMsgCopied(true);
+      setTimeout(()=>setMsgCopied(false),2500);
     });
   };
   const markShared = () => {
@@ -7978,6 +8023,10 @@ function ShareableVideoLinkCard({label,url,data,onUpdate,personId}) {
       <div style={{width:8,height:8,borderRadius:4,background:C.gold}}/>
       <div style={{fontSize:13,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.7px"}}>{label}</div>
     </div>
+    {sendTo&&<div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>Who Should I Send This To?</div>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>{sendTo}</div>
+    </div>}
     <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
       <div style={{flex:1,fontSize:13,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{url}</div>
     </div>
@@ -7987,6 +8036,16 @@ function ShareableVideoLinkCard({label,url,data,onUpdate,personId}) {
     {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:7,padding:"8px",borderRadius:8,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:12,fontWeight:600}}>
       {shared?"✓ Logged!":"Mark as Shared"}
     </button>}
+    {msgList.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.12)"}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Message to Send</div>
+      {msgList.length>1&&<select value={msgIdx} onChange={e=>setMsgIdx(Number(e.target.value))} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid rgba(255,255,255,0.2)",background:C.navyMid,color:"white",fontSize:12,marginBottom:8}}>
+        {msgList.map((m,i)=><option key={i} value={i} style={{background:C.navy}}>{m.label}</option>)}
+      </select>}
+      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"9px 11px",marginBottom:8,fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:160,overflowY:"auto"}}>{msgList[msgIdx]?.content}</div>
+      <button onClick={copyMsg} style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:msgCopied?C.success:"rgba(255,255,255,0.1)",color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+        {msgCopied?"Copied!":"📋 Copy Message"}
+      </button>
+    </div>}
   </div>;
 }
 
@@ -8016,8 +8075,12 @@ function LeadLinkPage({session,data,onUpdate}) {
     {!savedRepId&&<div style={{border:`1px solid ${C.danger}`,borderRadius:10,padding:"10px 13px",marginBottom:16,background:C.danger+"0a",fontSize:13,color:C.text,lineHeight:1.5}}>⚠️ You haven't entered your Primerica Rep ID yet — head to <b>My Profile</b> to add it so you get credit when you share your video links below.</div>}
 
     {shareableLinks.length>0&&<>
+      <div style={{background:C.gold+"11",border:`2px solid ${C.gold}`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#92400e",lineHeight:1.5}}>YOUR JOB IS NOT TO EXPLAIN THE OPPORTUNITY.</div>
+        <div style={{fontSize:12,color:"#92400e",lineHeight:1.5,marginTop:4}}>Your job is to identify interest, send the appropriate video, and make sure the person completes the form. The video provides the overview. The form identifies their interest. From there, a follow-up conversation — or an interview for recruiting opportunities — determines the fit.</div>
+      </div>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:8}}>Your Shareable Video Links</div>
-      {shareableLinks.map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,refText)} data={data} onUpdate={onUpdate} personId={session.id}/>)}
+      {shareableLinks.map(link=><ShareableVideoLinkCard key={link.id} label={link.label||"Shareable Link"} url={buildPersonalShareLink(link.templateUrl,refText)} data={data} onUpdate={onUpdate} personId={session.id} sendTo={link.sendTo} messages={link.messages}/>)}
     </>}
 
     {(data.teamLinks||[]).length>0&&<div style={{marginBottom:16}}>
