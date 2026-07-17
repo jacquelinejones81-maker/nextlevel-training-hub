@@ -10374,14 +10374,6 @@ function DailyPlanner({ session, db }) {
   const today = localDate();
   const [selDate, setSelDate] = useState(today);
   const [blocks, setBlocks] = useState([]);
-  // Refs mirror the state above on every render so mutation functions (addBlock, saveEdit,
-  // deleteBlock) always build on the true latest data — never a stale closure from the
-  // render they were defined in. This is what prevents rapid back-to-back edits from
-  // silently overwriting each other.
-  const blocksRef = useRef([]);
-  const recurringBlocksRef = useRef([]);
-  useEffect(() => { blocksRef.current = blocks; }, [blocks]);
-  useEffect(() => { recurringBlocksRef.current = recurringBlocks; }, [recurringBlocks]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState("");
   const [newCat, setNewCat] = useState("work");
@@ -10400,6 +10392,14 @@ function DailyPlanner({ session, db }) {
 
   const [recurringBlocks, setRecurringBlocks] = useState([]);
   const [customCats, setCustomCats] = useState([]);
+  // Refs mirror the state above on every render so mutation functions (addBlock, saveEdit,
+  // deleteBlock) always build on the true latest data — never a stale closure from the
+  // render they were defined in. This is what prevents rapid back-to-back edits from
+  // silently overwriting each other.
+  const blocksRef = useRef([]);
+  const recurringBlocksRef = useRef([]);
+  useEffect(() => { blocksRef.current = blocks; }, [blocks]);
+  useEffect(() => { recurringBlocksRef.current = recurringBlocks; }, [recurringBlocks]);
   const [migrating, setMigrating] = useState(false);
 
   // Load recurring blocks + custom categories once
