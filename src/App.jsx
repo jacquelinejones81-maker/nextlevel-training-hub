@@ -5126,41 +5126,41 @@ function MyLeadLink({name,data,onUpdate,personId}) {
     });
   };
 
-  return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-      <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
-      <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px"}}>My Lead Link</div>
+  return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:14,padding:"18px 20px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:9,height:9,borderRadius:5,background:C.teal}}/>
+      <div style={{fontSize:16,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px"}}>My Lead Link</div>
     </div>
-    <div style={{fontSize:13,color:"rgba(255,255,255,0.6)",marginBottom:8,lineHeight:1.5}}>Share this personal link with prospects to start their MoneyMap conversation.</div>
-    {whyImportant&&<div style={{background:"rgba(212,160,23,0.1)",border:"1px solid rgba(212,160,23,0.3)",borderRadius:8,padding:"9px 11px",marginBottom:10}}>
-      <div style={{fontSize:10,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Why It's Important</div>
-      <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.5}}>{whyImportant}</div>
+    <div style={{fontSize:16,color:"rgba(255,255,255,0.75)",marginBottom:12,lineHeight:1.6}}>Share this personal link with prospects to start their MoneyMap conversation.</div>
+    {whyImportant&&<div style={{background:"rgba(212,160,23,0.12)",border:"1px solid rgba(212,160,23,0.35)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Why It's Important</div>
+      <div style={{fontSize:15,color:"rgba(255,255,255,0.9)",lineHeight:1.6}}>{whyImportant}</div>
     </div>}
-    {sendTo&&<div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
-      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>Who Should I Send This To?</div>
-      <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>{sendTo}</div>
+    {sendTo&&<div style={{background:"rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Who Should I Send This To?</div>
+      <div style={{fontSize:15,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>{sendTo}</div>
     </div>}
-    <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-      <div style={{flex:1,fontSize:13,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{link}</div>
+    <div style={{background:"rgba(255,255,255,0.08)",borderRadius:9,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+      <div style={{flex:1,fontSize:15,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{link}</div>
     </div>
     <div style={{display:"flex",gap:8}}>
-      <button onClick={copy} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:13,fontWeight:700,transition:"background 0.2s"}}>
+      <button onClick={copy} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:15,fontWeight:700,transition:"background 0.2s"}}>
         {copied?"Copied!":"Copy Link"}
       </button>
-      <button onClick={share} style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>
+      <button onClick={share} style={{flex:1,padding:"12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"white",cursor:"pointer",fontSize:15,fontWeight:600}}>
         Share
       </button>
     </div>
-    {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:8,padding:"8px",borderRadius:8,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:12,fontWeight:600}}>
+    {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:10,padding:"11px",borderRadius:9,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.8)",cursor:"pointer",fontSize:14,fontWeight:600}}>
       {shared?"✓ Logged!":"Mark as Shared"}
     </button>}
-    {msgList.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.12)"}}>
-      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Message to Send</div>
-      {msgList.length>1&&<select value={msgIdx} onChange={e=>setMsgIdx(Number(e.target.value))} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid rgba(255,255,255,0.2)",background:C.navyMid,color:"white",fontSize:12,marginBottom:8}}>
+    {msgList.length>0&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.12)"}}>
+      <div style={{fontSize:13,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:8}}>Message to Send</div>
+      {msgList.length>1&&<select value={msgIdx} onChange={e=>setMsgIdx(Number(e.target.value))} style={{width:"100%",padding:"9px 11px",borderRadius:8,border:"1px solid rgba(255,255,255,0.2)",background:C.navyMid,color:"white",fontSize:14,marginBottom:10}}>
         {msgList.map((m,i)=><option key={i} value={i} style={{background:C.navy}}>{m.label}</option>)}
       </select>}
-      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"9px 11px",marginBottom:8,fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:160,overflowY:"auto"}}>{(msgList[msgIdx]?.content||"").replace(/\[share MoneyMap link\]/gi,link)}</div>
-      <button onClick={copyMsg} style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:msgCopied?C.success:"rgba(255,255,255,0.1)",color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:9,padding:"12px 14px",marginBottom:10,fontSize:15,color:"rgba(255,255,255,0.9)",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:180,overflowY:"auto"}}>{(msgList[msgIdx]?.content||"").replace(/\[share MoneyMap link\]/gi,link)}</div>
+      <button onClick={copyMsg} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:msgCopied?C.success:"rgba(255,255,255,0.1)",color:"white",cursor:"pointer",fontSize:14,fontWeight:600}}>
         {msgCopied?"Copied!":"📋 Copy Message"}
       </button>
     </div>}
