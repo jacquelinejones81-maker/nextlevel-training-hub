@@ -2123,6 +2123,7 @@ function ManageTeamPage({data,onUpdate}) {
       announcements:localData.announcements,
       teamBrands:localData.teamBrands,
       repShareableLinks:localData.repShareableLinks,
+      moneyMapContent:localData.moneyMapContent,
       teamLinks:localData.teamLinks,
     });
     setHasChanges(false);setConfirm(null);}});
@@ -2280,6 +2281,41 @@ function ManageTeamPage({data,onUpdate}) {
         {localData[k]&&<div style={{fontSize:11,color:C.success,marginTop:2}}>✓ URL saved</div>}
       </div>)}
     </Card>
+
+    {/* MoneyMap Link — the first, built-in link every rep/trainer/admin already has */}
+    <div style={{border:`1px solid ${C.gold}44`,borderRadius:10,padding:12,marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>MoneyMap Link</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The built-in personal MoneyMap link everyone already has — this just adds guidance and message templates to it. No URL to set here, that's automatic per person.</div>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:3}}>Why It's Important</div>
+      <textarea placeholder="Why sending this matters..." value={localData.moneyMapContent?.whyImportant||""} onChange={e=>{
+        updateLocal({...localData,moneyMapContent:{...(localData.moneyMapContent||{}),whyImportant:e.target.value}});
+      }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",minHeight:44,resize:"vertical",fontFamily:"inherit",marginBottom:8}}/>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:3}}>Who Should I Send This To?</div>
+      <textarea placeholder="e.g. Anyone who's mentioned money stress, wanting to save more..." value={localData.moneyMapContent?.sendTo||""} onChange={e=>{
+        updateLocal({...localData,moneyMapContent:{...(localData.moneyMapContent||{}),sendTo:e.target.value}});
+      }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,boxSizing:"border-box",minHeight:44,resize:"vertical",fontFamily:"inherit",marginBottom:8}}/>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:4}}>Message Stages (shown as a dropdown if you add more than one — use <code style={{background:C.surface||"#f1f5f9",padding:"1px 4px",borderRadius:4}}>[share MoneyMap link]</code> where the link should go)</div>
+      {(localData.moneyMapContent?.messages||[]).map((msg,mi)=><div key={mi} style={{border:`1px solid ${C.border}`,borderRadius:7,padding:8,marginBottom:6,background:C.surface}}>
+        <div style={{display:"flex",gap:5,marginBottom:5}}>
+          <input placeholder="Stage label (e.g. Initial Approach A)" value={msg.label||""} onChange={e=>{
+            const updatedMsgs=(localData.moneyMapContent?.messages||[]).map((m,j)=>j===mi?{...m,label:e.target.value}:m);
+            updateLocal({...localData,moneyMapContent:{...(localData.moneyMapContent||{}),messages:updatedMsgs}});
+          }} style={{flex:1,padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
+          <button onClick={()=>{
+            const updatedMsgs=(localData.moneyMapContent?.messages||[]).filter((m,j)=>j!==mi);
+            updateLocal({...localData,moneyMapContent:{...(localData.moneyMapContent||{}),messages:updatedMsgs}});
+          }} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",fontSize:12}}>✕</button>
+        </div>
+        <textarea placeholder="Message text..." value={msg.content||""} onChange={e=>{
+          const updatedMsgs=(localData.moneyMapContent?.messages||[]).map((m,j)=>j===mi?{...m,content:e.target.value}:m);
+          updateLocal({...localData,moneyMapContent:{...(localData.moneyMapContent||{}),messages:updatedMsgs}});
+        }} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",minHeight:70,resize:"vertical",fontFamily:"inherit"}}/>
+      </div>)}
+      <button onClick={()=>{
+        const updatedMsgs=[...(localData.moneyMapContent?.messages||[]),{label:"",content:""}];
+        updateLocal({...localData,moneyMapContent:{...(localData.moneyMapContent||{}),messages:updatedMsgs}});
+      }} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>+ Add Message Stage</button>
+    </div>
 
     {/* Rep-Shareable Links (video + survey links every rep can personalize and share) */}
     <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:14}}>
@@ -5049,10 +5085,16 @@ function compressImage(file, callback, maxSize=400, quality=0.7) {
 function MyLeadLink({name,data,onUpdate,personId}) {
   const [copied,setCopied] = useState(false);
   const [shared,setShared] = useState(false);
+  const [msgIdx,setMsgIdx] = useState(0);
+  const [msgCopied,setMsgCopied] = useState(false);
   // Check if this admin has a custom link name set
   const adminRecord = (typeof data!=="undefined")&&(data.admins||[]).find(a=>a.name===name);
   const safeName = adminRecord?.linkName||(name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
   const link = "https://moneymap-app-two.vercel.app?rep="+safeName;
+  const mmContent = data?.moneyMapContent||{};
+  const sendTo = mmContent.sendTo||"";
+  const whyImportant = mmContent.whyImportant||"";
+  const msgList = mmContent.messages||[];
 
   const copy = () => {
     navigator.clipboard?.writeText(link).then(()=>{
@@ -5076,12 +5118,28 @@ function MyLeadLink({name,data,onUpdate,personId}) {
     setTimeout(()=>setShared(false),2000);
   };
 
+  const copyMsg = () => {
+    const text = (msgList[msgIdx]?.content||"").replace(/\[share MoneyMap link\]/gi,link);
+    navigator.clipboard?.writeText(text).then(()=>{
+      setMsgCopied(true);
+      setTimeout(()=>setMsgCopied(false),2500);
+    });
+  };
+
   return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
       <div style={{width:8,height:8,borderRadius:4,background:C.teal}}/>
       <div style={{fontSize:13,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px"}}>My Lead Link</div>
     </div>
     <div style={{fontSize:13,color:"rgba(255,255,255,0.6)",marginBottom:8,lineHeight:1.5}}>Share this personal link with prospects to start their MoneyMap conversation.</div>
+    {whyImportant&&<div style={{background:"rgba(212,160,23,0.1)",border:"1px solid rgba(212,160,23,0.3)",borderRadius:8,padding:"9px 11px",marginBottom:10}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Why It's Important</div>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.5}}>{whyImportant}</div>
+    </div>}
+    {sendTo&&<div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:3}}>Who Should I Send This To?</div>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>{sendTo}</div>
+    </div>}
     <div style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
       <div style={{flex:1,fontSize:13,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{link}</div>
     </div>
@@ -5096,6 +5154,16 @@ function MyLeadLink({name,data,onUpdate,personId}) {
     {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:8,padding:"8px",borderRadius:8,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:12,fontWeight:600}}>
       {shared?"✓ Logged!":"Mark as Shared"}
     </button>}
+    {msgList.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.12)"}}>
+      <div style={{fontSize:10,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Message to Send</div>
+      {msgList.length>1&&<select value={msgIdx} onChange={e=>setMsgIdx(Number(e.target.value))} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:"1px solid rgba(255,255,255,0.2)",background:C.navyMid,color:"white",fontSize:12,marginBottom:8}}>
+        {msgList.map((m,i)=><option key={i} value={i} style={{background:C.navy}}>{m.label}</option>)}
+      </select>}
+      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"9px 11px",marginBottom:8,fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:160,overflowY:"auto"}}>{(msgList[msgIdx]?.content||"").replace(/\[share MoneyMap link\]/gi,link)}</div>
+      <button onClick={copyMsg} style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:msgCopied?C.success:"rgba(255,255,255,0.1)",color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>
+        {msgCopied?"Copied!":"📋 Copy Message"}
+      </button>
+    </div>}
   </div>;
 }
 
