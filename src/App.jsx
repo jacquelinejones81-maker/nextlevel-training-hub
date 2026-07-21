@@ -16,6 +16,11 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const DATA_DOC = "appdata/main";
 
+// Toggles MoneyMap (My Lead Link, My Pipeline, Team Leads) on/off per deployment.
+// Defaults to ON so no change is needed for existing deployments.
+// Set VITE_ENABLE_MONEYMAP=false in Vercel for a team that shouldn't have it.
+const MONEYMAP_ENABLED = import.meta.env.VITE_ENABLE_MONEYMAP !== "false";
+
 
 // ── MONEYMAP FIREBASE ──
 const mmConfig = {
@@ -1300,7 +1305,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     ...(rep.track==="licensed"?[{k:"production",l:"Production"},{k:"myactivity",l:"My Activity Report"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
     {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
     {k:"scorecard",l:"Scorecard"},
-    {k:"leadlink",l:"My Lead Link"},
+    ...(MONEYMAP_ENABLED?[{k:"leadlink",l:"My Lead Link"}]:[]),
     {k:"scripts",l:"Scripts"},
     {k:"objectiontraining",l:"Objection Training"},
     {k:"prospecting",l:"Prospecting Training"},
@@ -9485,15 +9490,15 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
-    {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
-    {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
+    ...(MONEYMAP_ENABLED?[{k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"}]:[]),
+    ...(MONEYMAP_ENABLED?[{k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"}]:[]),
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
     {k:"objectiontraining",l:"Objection Training",d:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"},
     {k:"prospecting",l:"Prospecting",d:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
-    {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
+    ...(MONEYMAP_ENABLED?[{k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"}]:[]),
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
     {k:"advancement",l:"Advancement",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
@@ -11564,15 +11569,15 @@ export default function App() {
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
-    if(section==="leadlink") return <LeadLinkPage session={session} data={data} onUpdate={upd}/>;
-    if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="leadlink"&&MONEYMAP_ENABLED) return <LeadLinkPage session={session} data={data} onUpdate={upd}/>;
+    if(section==="mypipeline"&&MONEYMAP_ENABLED) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="accountability") return <AccountabilityDashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id}/>;
     // Admin trainer tools — only if alsoRecruits is enabled
     const adminRecord = (data.admins||[]).find(a=>a.id===session.id);
     const alsoRecruits = adminRecord?.alsoRecruits||session.role==="superadmin";
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
-    if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
-    if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
+    if(section==="mypipeline"&&alsoRecruits&&MONEYMAP_ENABLED) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="teamleads"&&MONEYMAP_ENABLED) return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
