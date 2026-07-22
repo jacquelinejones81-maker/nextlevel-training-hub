@@ -1170,13 +1170,13 @@ function EmailTemplatesPage({data,onUpdate,userRole,reps,trainers,admins}) {
         ):(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-              <div style={{fontSize:dv(13,15),fontWeight:700,color:C.text,flex:1,paddingRight:8}}>{t.subject}</div>
+              <div style={{fontSize:dv(16,18),fontWeight:800,color:C.text,flex:1,paddingRight:8}}>{t.subject}</div>
               {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
                 <button onClick={()=>{setEditing(t.id);setDraft({cat:t.cat,subject:t.subject,body:t.body});}} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
                 <button onClick={()=>del(t.id)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
               </div>}
             </div>
-            <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",fontSize:dv(11,13),color:C.textMid,lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:8}}>{t.body}</div>
+            <div style={{background:C.surface,borderRadius:9,padding:"12px 14px",fontSize:dv(15,17),fontWeight:600,color:C.text,lineHeight:1.7,whiteSpace:"pre-wrap",marginBottom:10}}>{t.body}</div>
             <div style={{display:"flex",gap:6}}>
               <button onClick={()=>copy(t.id+"_body",t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid,fontWeight:500}}>{copied===t.id+"_body"?"✓ Copied!":"Copy Body"}</button>
               <a href={"mailto:?subject="+encodeURIComponent(t.subject)+"&body="+encodeURIComponent(t.body)} style={{flex:1,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600,textDecoration:"none",textAlign:"center",display:"block"}}>✉ Email</a>
