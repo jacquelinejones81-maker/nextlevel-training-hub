@@ -16,11 +16,6 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const DATA_DOC = "appdata/main";
 
-// Toggles MoneyMap (My Lead Link, My Pipeline, Team Leads) on/off per deployment.
-// Defaults to ON so no change is needed for existing deployments.
-// Set VITE_ENABLE_MONEYMAP=false in Vercel for a team that shouldn't have it.
-const MONEYMAP_ENABLED = import.meta.env.VITE_ENABLE_MONEYMAP !== "false";
-
 
 // ── MONEYMAP FIREBASE ──
 const mmConfig = {
@@ -280,6 +275,50 @@ const SVP_CHECKLIST = [
   "Securities principal licensed (Series 26)",
   "Execute SVP Agreement",
 ];
+
+const CHECKLIST_DEFAULTS = {
+  fastStart: FAST_START,
+  regularStart: REGULAR_START,
+  licensedNowWhat: LICENSED_NOW_WHAT,
+  trainerChecklist: TRAINER_CHECKLIST,
+  rvpChecklist: RVP_CHECKLIST,
+  // SVP_CHECKLIST is historically a flat array of plain strings with index-based checked
+  // tracking (rep.svpChecked[i]). Normalized here to the same {id,cat,task} shape as every
+  // other checklist so it can use the same editor — id encodes the original index so
+  // existing checked progress (keyed by that index) keeps working without migration.
+  svpChecklist: SVP_CHECKLIST.map((task,i)=>({id:"svp"+i,cat:"Requirements",task})),
+};
+const CHECKLIST_LABELS = {
+  fastStart: "Fast Start",
+  regularStart: "Regular Start",
+  licensedNowWhat: "Licensed Now What",
+  trainerChecklist: "Trainer's Checklist",
+  rvpChecklist: "RVP Checklist",
+  svpChecklist: "SVP Checklist",
+};
+const TRACK_TO_CHECKLIST_KEY = { fast:"fastStart", regular:"regularStart", licensed:"licensedNowWhat" };
+function getChecklistItems(data, key) {
+  const custom = data?.checklists?.[key];
+  if (custom && Array.isArray(custom.items)) return custom.items;
+  return CHECKLIST_DEFAULTS[key] || [];
+}
+// Category order is always derived from first-appearance order in the items array itself
+// (same as how the original hardcoded checklists always worked) — reordering a category
+// means physically moving its block of items earlier/later in the array, so every existing
+// piece of rendering code that just groups items in array order keeps working unchanged.
+function getChecklistCategoryOrder(data, key) {
+  const items = getChecklistItems(data, key);
+  const seen = [];
+  items.forEach(i => { const c=i.cat||"Uncategorized"; if (!seen.includes(c)) seen.push(c); });
+  return seen;
+}
+function getGroupedChecklist(data, key) {
+  const items = getChecklistItems(data, key);
+  const order = getChecklistCategoryOrder(data, key);
+  const grouped = {};
+  items.forEach(i => { const c = i.cat||"Uncategorized"; if (!grouped[c]) grouped[c] = []; grouped[c].push(i); });
+  return order.map(cat => ({cat, items: grouped[cat]}));
+}
 
 const TRACK_INFO = {
   fast:{label:"Fast Start",color:C.teal,days:"7-14 days",checklist:FAST_START},
@@ -1290,7 +1329,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     return()=>window.removeEventListener('popstate',handler);
   },[tab]);
   const track=TRACK_INFO[rep.track];
-  const cl=track?.checklist||[];
+  const cl=TRACK_TO_CHECKLIST_KEY[rep.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[rep.track]):[];
   const checked=rep.checked||{};
   const done=cl.filter(i=>checked[i.id]).length;
   const pct=cl.length>0?Math.round((done/cl.length)*100):0;
@@ -1305,7 +1344,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     ...(rep.track==="licensed"?[{k:"production",l:"Production"},{k:"myactivity",l:"My Activity Report"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
     {k:"appointments",l:"Appts ("+((rep.appointments||[]).length)+")"},
     {k:"scorecard",l:"Scorecard"},
-    ...(MONEYMAP_ENABLED?[{k:"leadlink",l:"My Lead Link"}]:[]),
+    {k:"leadlink",l:"My Lead Link"},
     {k:"scripts",l:"Scripts"},
     {k:"objectiontraining",l:"Objection Training"},
     {k:"prospecting",l:"Prospecting Training"},
@@ -1418,7 +1457,11 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         </a>)}
       </div>}
       {/* Rewatch milestone videos — only for granted access levels */}
-      {((rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
+      {(((rep.track==="fast"||rep.track==="regular"||!rep.track)&&data.welcomeVideoUrl)||(rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
+        {(rep.track==="fast"||rep.track==="regular"||!rep.track)&&data.welcomeVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.welcomeVideoUrl,title:"Welcome!"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Welcome Video</span>
+        </button>}
         {rep.nextLevelGranted&&data.licensedVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.licensedVideoUrl,title:"Licensed — Now What?"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: Licensed Now What</span>
@@ -1692,8 +1735,8 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
   const [viewAsRep,setViewAsRep]=useState(false);
   const track=TRACK_INFO[rep.track];
   const tc=rep.trainerChecked||{};
-  const trDone=TRAINER_CHECKLIST.filter(i=>tc[i.id]).length;
-  const cl=track?.checklist||[];
+  const trDone=getChecklistItems(data,"trainerChecklist").filter(i=>tc[i.id]).length;
+  const cl=TRACK_TO_CHECKLIST_KEY[rep.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[rep.track]):[];
   const repDone=cl.filter(i=>(rep.checked||{})[i.id]).length;
   const [ciNote,setCiNote]=useState("");
   const [editContact,setEditContact]=useState(false);
@@ -1762,7 +1805,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
       </button>)}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-      <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/TRAINER_CHECKLIST.length)*100)}%</div><Bar pct={(trDone/TRAINER_CHECKLIST.length)*100}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{trDone}/{TRAINER_CHECKLIST.length}</div></Card>
+      <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Trainer</div><div style={{fontSize:18,fontWeight:700,color:C.teal}}>{Math.round((trDone/(getChecklistItems(data,"trainerChecklist").length||1))*100)}%</div><Bar pct={(trDone/(getChecklistItems(data,"trainerChecklist").length||1))*100}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{trDone}/{getChecklistItems(data,"trainerChecklist").length}</div></Card>
       <Card style={{padding:"10px 12px"}}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Rep</div><div style={{fontSize:18,fontWeight:700,color:track?.color||C.purple}}>{Math.round((repDone/(cl.length||1))*100)}%</div><Bar pct={(repDone/(cl.length||1))*100} color={track?.color||C.purple}/><div style={{fontSize:12,color:C.textLight,marginTop:3}}>{repDone}/{cl.length}</div></Card>
     </div>
     <Card style={{marginBottom:12,padding:"10px 14px"}}>
@@ -1778,7 +1821,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
       {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
     </div>
-    {tab==="trainer"&&<div>{Object.entries(TRAINER_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
+    {tab==="trainer"&&<div>{Object.entries(getChecklistItems(data,"trainerChecklist").reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
     {tab==="rep"&&<RepView rep={liveRepData} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={false}/>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} track={rep.track}/>}
     {tab==="refs"&&<AdminRefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
@@ -1790,7 +1833,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
     </div>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={onUpdateData||((u)=>{})} userRole="rep"/>}
-    {tab==="rvp"&&<div>{Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})}/>)}</div>)}</div>}
+    {tab==="rvp"&&<div>{Object.entries(getChecklistItems(data,"rvpChecklist").reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})}/>)}</div>)}</div>}
   </div>;
 }
 
@@ -2920,7 +2963,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
     {filtered.length===0&&filteredTrainers.length===0&&<div style={{textAlign:"center",padding:"24px",color:C.textLight,fontSize:13}}>No reps found</div>}
     {filtered.map(r=>{
       const track=TRACK_INFO[r.track];
-      const cl=track?.checklist||[];
+      const cl=TRACK_TO_CHECKLIST_KEY[r.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[r.track]):[];
       const done=cl.filter(i=>(r.checked||{})[i.id]).length;
       const pct=cl.length>0?Math.round((done/cl.length)*100):0;
       return <div key={r.id} style={{borderRadius:10,background:"white",border:`1px solid ${showInactive?C.danger+"33":C.border}`,marginBottom:7,overflow:"hidden"}}>
@@ -3224,7 +3267,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const filtered=reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
   const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
-  const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_INFO[r.track]?.checklist||[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
+  const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_TO_CHECKLIST_KEY[r.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[r.track]):[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
   const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
   return <div>
     {isAdmin&&<TeamNumbersCard data={data} userId={userId}/>}
@@ -3318,11 +3361,11 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     {filtered.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textLight}}>{reps.length===0?"No reps yet - add your first rep":"No results found"}</div>}
     {filtered.map(rep=>{
       const track=TRACK_INFO[rep.track];
-      const cl=track?.checklist||[];
+      const cl=TRACK_TO_CHECKLIST_KEY[rep.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[rep.track]):[];
       const done=cl.filter(i=>(rep.checked||{})[i.id]).length;
       const pct=cl.length>0?Math.round((done/cl.length)*100):0;
-      const trDone=TRAINER_CHECKLIST.filter(i=>(rep.trainerChecked||{})[i.id]).length;
-      const trPct=Math.round((trDone/TRAINER_CHECKLIST.length)*100);
+      const trDone=getChecklistItems(data,"trainerChecklist").filter(i=>(rep.trainerChecked||{})[i.id]).length;
+      const trPct=Math.round((trDone/(getChecklistItems(data,"trainerChecklist").length||1))*100);
       const lastCI=rep.checkIns?.length>0?new Date(rep.checkIns[rep.checkIns.length-1].date):null;
       const ds=lastCI?Math.floor((Date.now()-lastCI)/(86400000)):null;
       // Stalled = only if they have at least one check-in AND it's been 7+ days
@@ -4235,7 +4278,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
   if(session.role==="admin"||session.role==="superadmin"){
     const svpChecked = myData.svpChecked||{};
     const svpDone = Object.values(svpChecked).filter(Boolean).length;
-    const svpTotal = SVP_CHECKLIST.length;
+    const svpTotal = getChecklistItems(data,"svpChecklist").length;
     const toggleSvp = (i) => save({svpChecked:{...svpChecked,[i]:!svpChecked[i]}});
     const svpDaysLeft = myData.svpTargetDate ? Math.ceil((new Date(myData.svpTargetDate+"T12:00:00")-new Date())/(86400000)) : null;
     const svpCountdownMsg = svpDaysLeft===null?"Set your target promotion date":svpDaysLeft<=0?"Your target date has passed — keep pushing!":svpDaysLeft<=30?"You are almost there! Final push!":svpDaysLeft<=90?"You are in the home stretch!":svpDaysLeft<=180?"Great progress — stay consistent!":"Keep building every day!";
@@ -4308,9 +4351,9 @@ function TrainerCareerPath({data,onUpdate,session}) {
         </div>
         <Bar pct={svpTotal>0?(svpDone/svpTotal)*100:0} color={C.success} h={6}/>
         <div style={{marginTop:10}}>
-          {SVP_CHECKLIST.map((task,i)=><label key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"8px 0",borderTop:i>0?"1px solid "+C.border:"none",cursor:"pointer"}}>
-            <input type="checkbox" checked={!!svpChecked[i]} onChange={()=>toggleSvp(i)} style={{width:18,height:18,marginTop:1,accentColor:C.success,cursor:"pointer",flexShrink:0}}/>
-            <span style={{fontSize:13,color:C.text,lineHeight:1.5,textDecoration:svpChecked[i]?"line-through":"none",opacity:svpChecked[i]?0.6:1}}>{task}</span>
+          {getChecklistItems(data,"svpChecklist").map((item,i)=><label key={item.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"8px 0",borderTop:i>0?"1px solid "+C.border:"none",cursor:"pointer"}}>
+            <input type="checkbox" checked={!!(svpChecked[item.id]??svpChecked[i])} onChange={()=>toggleSvp(item.id)} style={{width:18,height:18,marginTop:1,accentColor:C.success,cursor:"pointer",flexShrink:0}}/>
+            <span style={{fontSize:13,color:C.text,lineHeight:1.5,textDecoration:(svpChecked[item.id]??svpChecked[i])?"line-through":"none",opacity:(svpChecked[item.id]??svpChecked[i])?0.6:1}}>{item.task}</span>
           </label>)}
         </div>
       </Card>
@@ -4329,7 +4372,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
 
   // RVP checklist progress
   const rvpDone = Object.values(myData.rvpChecked||{}).filter(Boolean).length;
-  const rvpTotal = RVP_CHECKLIST.length;
+  const rvpTotal = getChecklistItems(data,"rvpChecklist").length;
   const rvpPct = rvpTotal>0?Math.round((rvpDone/rvpTotal)*100):0;
 
   // Stages roadmap
@@ -4456,7 +4499,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
     {/* RVP Checklist */}
     {rvpGranted&&<div>
       <SecHead title={"RVP Checklist ("+rvpDone+"/"+rvpTotal+")"} color={C.gold}/>
-      {Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}>
+      {Object.entries(getChecklistItems(data,"rvpChecklist").reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}>
         <SecHead title={cat} color={C.gold}/>
         {items.map(item=><CheckItem key={item.id} item={item}
           checked={!!(myData.rvpChecked||{})[item.id]}
@@ -4468,7 +4511,7 @@ function TrainerCareerPath({data,onUpdate,session}) {
     {rvpGranted&&myReps.length>0&&<Card style={{marginTop:14}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>My Team</div>
       {myReps.map((r,i)=>{
-        const cl=TRACK_INFO[r.track]?.checklist||[];
+        const cl=TRACK_TO_CHECKLIST_KEY[r.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[r.track]):[];
         const done=cl.filter(item=>(r.checked||{})[item.id]).length;
         const pct=cl.length>0?Math.round((done/cl.length)*100):0;
         return <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,padding:"7px 0",borderBottom:i<myReps.length-1?"1px solid "+C.border:"none"}}>
@@ -7853,7 +7896,7 @@ function RecruitsTab({rep,data,myRecruits,onUpdate}) {
       <SecHead title={"In the System ("+myRecruits.length+")"} color={C.teal}/>
       {myRecruits.map((r,i)=>{
         const track=TRACK_INFO[r.track];
-        const cl=track?.checklist||[];
+        const cl=TRACK_TO_CHECKLIST_KEY[r.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[r.track]):[];
         const done=cl.filter(item=>(r.checked||{})[item.id]).length;
         const pct=cl.length>0?Math.round((done/cl.length)*100):0;
         return <div key={i} style={{borderRadius:8,border:"1px solid "+C.border,padding:"10px 12px",marginBottom:7,background:"white"}}>
@@ -9347,12 +9390,182 @@ function CareerPath({rep,data,onUpdate}) {
         <div style={{fontSize:14,fontWeight:700,color:C.success,marginBottom:4}}>RVP Path Unlocked!</div>
         <div style={{fontSize:13,color:C.textMid}}>You are on your way to Regional Vice President! Complete every item below.</div>
       </div>
-      {Object.entries(RVP_CHECKLIST.reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={false}/>)}</div>)}
+      {Object.entries(getChecklistItems(data,"rvpChecklist").reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={false}/>)}</div>)}
     </div>}
   </div>;
 }
 
 // ── SCRIPTS PAGE (editable by admins) ──
+// ── CHECKLIST EDITOR (admin only) — add/edit/delete/rename/reorder categories and items
+// across all 6 checklists. Deleting/renaming/reordering never touches anyone's already-
+// checked progress, since that's tracked by item id, not by position or category name.
+function moveItemInCategory(items,itemId,direction){
+  const item=items.find(i=>i.id===itemId);
+  if(!item) return items;
+  const cat=item.cat||"Uncategorized";
+  const catItems=items.filter(i=>(i.cat||"Uncategorized")===cat);
+  const idx=catItems.findIndex(i=>i.id===itemId);
+  const swapIdx=idx+direction;
+  if(swapIdx<0||swapIdx>=catItems.length) return items;
+  const other=catItems[swapIdx];
+  const newItems=[...items];
+  const i1=newItems.findIndex(i=>i.id===item.id);
+  const i2=newItems.findIndex(i=>i.id===other.id);
+  [newItems[i1],newItems[i2]]=[newItems[i2],newItems[i1]];
+  return newItems;
+}
+function moveCategoryBlock(items,catName,direction){
+  const order=[]; items.forEach(i=>{const c=i.cat||"Uncategorized"; if(!order.includes(c)) order.push(c);});
+  const idx=order.indexOf(catName);
+  const swapIdx=idx+direction;
+  if(swapIdx<0||swapIdx>=order.length) return items;
+  const newOrder=[...order];
+  [newOrder[idx],newOrder[swapIdx]]=[newOrder[swapIdx],newOrder[idx]];
+  const grouped={}; items.forEach(i=>{const c=i.cat||"Uncategorized"; if(!grouped[c])grouped[c]=[]; grouped[c].push(i);});
+  return newOrder.flatMap(c=>grouped[c]||[]);
+}
+
+function ChecklistEditor({data,onUpdate}) {
+  const [activeKey,setActiveKey]=useState("fastStart");
+  const [editingItem,setEditingItem]=useState(null); // {id, task, note, link, linkLabel}
+  const [renamingCat,setRenamingCat]=useState(null); // old category name being renamed
+  const [renameVal,setRenameVal]=useState("");
+  const [addingCatItem,setAddingCatItem]=useState(false);
+  const [newCatName,setNewCatName]=useState("");
+  const [addingToCat,setAddingToCat]=useState(null); // category name currently adding an item to
+  const [newItemDraft,setNewItemDraft]=useState({task:"",note:"",link:"",linkLabel:""});
+
+  const items=getChecklistItems(data,activeKey);
+  const grouped=getGroupedChecklist(data,activeKey);
+
+  const saveItems=(newItems)=>{
+    onUpdate({...data,checklists:{...(data.checklists||{}),[activeKey]:{items:newItems}}});
+  };
+
+  const startEdit=(item)=>{ setEditingItem({...item}); };
+  const saveEdit=()=>{
+    if(!editingItem.task?.trim()) return;
+    saveItems(items.map(i=>i.id===editingItem.id?{...editingItem,task:editingItem.task.trim()}:i));
+    setEditingItem(null);
+  };
+  const deleteItem=(id)=>{
+    if(!window.confirm("Delete this checkbox for everyone? This can't be undone.")) return;
+    saveItems(items.filter(i=>i.id!==id));
+  };
+  const addItemToCat=(cat)=>{
+    if(!newItemDraft.task.trim()) return;
+    const newItem={id:"custom_"+Date.now(),cat,task:newItemDraft.task.trim(),note:newItemDraft.note.trim()||undefined,link:newItemDraft.link.trim()||undefined,linkLabel:newItemDraft.linkLabel.trim()||undefined};
+    saveItems([...items,newItem]);
+    setNewItemDraft({task:"",note:"",link:"",linkLabel:""});
+    setAddingToCat(null);
+  };
+  const addCategory=()=>{
+    if(!newCatName.trim()) return;
+    const newItem={id:"custom_"+Date.now(),cat:newCatName.trim(),task:"New checkbox — tap Edit to customize"};
+    saveItems([...items,newItem]);
+    setNewCatName("");
+    setAddingCatItem(false);
+  };
+  const renameCategory=(oldName)=>{
+    if(!renameVal.trim()) return;
+    saveItems(items.map(i=>(i.cat||"Uncategorized")===oldName?{...i,cat:renameVal.trim()}:i));
+    setRenamingCat(null);
+    setRenameVal("");
+  };
+  const deleteCategory=(catName)=>{
+    if(!window.confirm(`Delete "${catName}"? Checkboxes inside it will move to Uncategorized, not be deleted.`)) return;
+    saveItems(items.map(i=>(i.cat||"Uncategorized")===catName?{...i,cat:"Uncategorized"}:i));
+  };
+
+  return <div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Checklist Editor</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Admins only. Renaming or reordering never affects reps' existing checked progress. Deleting a checkbox removes it for everyone going forward.</div>
+
+    <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+      {Object.keys(CHECKLIST_LABELS).map(key=><button key={key} onClick={()=>setActiveKey(key)} style={{fontSize:12,padding:"7px 12px",borderRadius:8,border:`1px solid ${activeKey===key?C.teal:C.border}`,background:activeKey===key?C.teal+"11":"white",color:activeKey===key?C.teal:C.textMid,cursor:"pointer",fontWeight:600}}>{CHECKLIST_LABELS[key]}</button>)}
+    </div>
+
+    {!addingCatItem?
+      <button onClick={()=>setAddingCatItem(true)} style={{width:"100%",padding:"9px",borderRadius:8,border:`2px dashed ${C.border}`,background:"white",color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:16}}>+ Add Category</button>
+      :
+      <div style={{border:`1px solid ${C.teal}44`,borderRadius:8,padding:10,marginBottom:16,display:"flex",gap:6}}>
+        <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} placeholder="New category name..." onKeyDown={e=>e.key==="Enter"&&addCategory()} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
+        <button onClick={addCategory} style={{padding:"6px 14px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+        <button onClick={()=>{setAddingCatItem(false);setNewCatName("");}} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:13}}>Cancel</button>
+      </div>
+    }
+
+    {grouped.map(({cat,items:catItems},ci)=><div key={cat} style={{border:`1px solid ${C.border}`,borderRadius:10,marginBottom:14,overflow:"hidden"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:C.surface,borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:"flex",flexDirection:"column",gap:1}}>
+          <button onClick={()=>saveItems(moveCategoryBlock(items,cat,-1))} disabled={ci===0} style={{width:20,height:16,border:`1px solid ${C.border}`,background:"white",color:C.textLight,fontSize:9,cursor:ci===0?"default":"pointer",borderRadius:3,opacity:ci===0?0.4:1}}>▲</button>
+          <button onClick={()=>saveItems(moveCategoryBlock(items,cat,1))} disabled={ci===grouped.length-1} style={{width:20,height:16,border:`1px solid ${C.border}`,background:"white",color:C.textLight,fontSize:9,cursor:ci===grouped.length-1?"default":"pointer",borderRadius:3,opacity:ci===grouped.length-1?0.4:1}}>▼</button>
+        </div>
+        {renamingCat===cat?
+          <div style={{flex:1,display:"flex",gap:5}}>
+            <input value={renameVal} onChange={e=>setRenameVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&renameCategory(cat)} style={{flex:1,padding:"4px 8px",borderRadius:6,border:`1px solid ${C.teal}`,fontSize:13}}/>
+            <button onClick={()=>renameCategory(cat)} style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer"}}>Save</button>
+            <button onClick={()=>setRenamingCat(null)} style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>Cancel</button>
+          </div>
+          :<>
+            <div style={{fontSize:14,fontWeight:700,color:C.text,flex:1}}>{cat}</div>
+            <button onClick={()=>{setRenamingCat(cat);setRenameVal(cat);}} style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>Rename</button>
+            <button onClick={()=>deleteCategory(cat)} style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:`1px solid ${C.danger}44`,background:C.danger+"11",color:C.danger,cursor:"pointer"}}>Delete Category</button>
+          </>}
+      </div>
+
+      {catItems.map((item,ii)=><div key={item.id}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:8,padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+          <div style={{display:"flex",flexDirection:"column",gap:1,marginTop:2}}>
+            <button onClick={()=>saveItems(moveItemInCategory(items,item.id,-1))} disabled={ii===0} style={{width:20,height:16,border:`1px solid ${C.border}`,background:"white",color:C.textLight,fontSize:9,cursor:ii===0?"default":"pointer",borderRadius:3,opacity:ii===0?0.4:1}}>▲</button>
+            <button onClick={()=>saveItems(moveItemInCategory(items,item.id,1))} disabled={ii===catItems.length-1} style={{width:20,height:16,border:`1px solid ${C.border}`,background:"white",color:C.textLight,fontSize:9,cursor:ii===catItems.length-1?"default":"pointer",borderRadius:3,opacity:ii===catItems.length-1?0.4:1}}>▼</button>
+          </div>
+          <div style={{width:16,height:16,borderRadius:4,border:`2px solid ${C.border}`,flexShrink:0,marginTop:2}}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text}}>{item.task}</div>
+            {item.note&&<div style={{fontSize:11,color:C.textLight,marginTop:2}}>{item.note}</div>}
+            {item.link&&<div style={{fontSize:11,color:C.teal,marginTop:2}}>🔗 {item.linkLabel||"Link"}</div>}
+          </div>
+          <div style={{display:"flex",gap:5,flexShrink:0}}>
+            <button onClick={()=>startEdit(item)} style={{width:26,height:26,borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,fontSize:11,cursor:"pointer"}}>Edit</button>
+            <button onClick={()=>deleteItem(item.id)} style={{width:26,height:26,borderRadius:6,border:`1px solid ${C.danger}44`,background:C.danger+"11",color:C.danger,fontSize:11,cursor:"pointer"}}>✕</button>
+          </div>
+        </div>
+        {editingItem?.id===item.id&&<div style={{background:C.surface,borderRadius:8,padding:"10px 12px",margin:"0 14px 10px",border:`1px solid ${C.teal}44`}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Task</div>
+          <input value={editingItem.task} onChange={e=>setEditingItem({...editingItem,task:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Note (optional)</div>
+          <input value={editingItem.note||""} onChange={e=>setEditingItem({...editingItem,note:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Link Label (optional)</div>
+          <input value={editingItem.linkLabel||""} onChange={e=>setEditingItem({...editingItem,linkLabel:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Link URL (optional)</div>
+          <input value={editingItem.link||""} onChange={e=>setEditingItem({...editingItem,link:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>setEditingItem(null)} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:12}}>Cancel</button>
+            <button onClick={saveEdit} style={{flex:2,padding:"6px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Changes</button>
+          </div>
+        </div>}
+      </div>)}
+
+      {addingToCat===cat?
+        <div style={{padding:"10px 14px",background:C.surface}}>
+          <input placeholder="Task" value={newItemDraft.task} onChange={e=>setNewItemDraft({...newItemDraft,task:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,boxSizing:"border-box"}}/>
+          <input placeholder="Note (optional)" value={newItemDraft.note} onChange={e=>setNewItemDraft({...newItemDraft,note:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,boxSizing:"border-box"}}/>
+          <input placeholder="Link Label (optional)" value={newItemDraft.linkLabel} onChange={e=>setNewItemDraft({...newItemDraft,linkLabel:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,boxSizing:"border-box"}}/>
+          <input placeholder="Link URL (optional)" value={newItemDraft.link} onChange={e=>setNewItemDraft({...newItemDraft,link:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>{setAddingToCat(null);setNewItemDraft({task:"",note:"",link:"",linkLabel:""});}} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:12}}>Cancel</button>
+            <button onClick={()=>addItemToCat(cat)} style={{flex:2,padding:"6px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Checkbox</button>
+          </div>
+        </div>
+        :<div style={{padding:"8px 14px",background:C.surface}}>
+          <button onClick={()=>setAddingToCat(cat)} style={{fontSize:12,color:C.teal,background:"none",border:"none",fontWeight:600,cursor:"pointer"}}>+ Add Checkbox to This Category</button>
+        </div>
+      }
+    </div>)}
+  </div>;
+}
+
 const SCRIPT_CATEGORIES = ["Cold Market","Warm Market","Objection Handling","Recruiting","Other"];
 
 // Read-only Scripts view for reps — same category grouping and link display as the
@@ -9490,15 +9703,15 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
-    ...(MONEYMAP_ENABLED?[{k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"}]:[]),
-    ...(MONEYMAP_ENABLED?[{k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"}]:[]),
+    {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
+    {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
     {k:"objectiontraining",l:"Objection Training",d:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"},
     {k:"prospecting",l:"Prospecting",d:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
-    ...(MONEYMAP_ENABLED?[{k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"}]:[]),
+    {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
     {k:"prospects",l:"My Prospects",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11ZM21 11L19 13L17 11M19 13V7"},
     {k:"resources",l:"Resources",d:"M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12"},
     {k:"advancement",l:"Advancement",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
@@ -9507,6 +9720,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11Z"},
     ...(role==="trainer"||role==="superadmin"||alsoRecruits?[{k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"}]:[]),
   ];
+  if(role==="admin"||role==="superadmin") nav.push({k:"checklisteditor",l:"Checklist Editor",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5M9 12L11 14L16 9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
     <div style={{padding:"18px 14px 14px",borderBottom:`1px solid ${C.borderLight}`,display:"flex",alignItems:"center",gap:9}}>
@@ -11566,18 +11780,19 @@ export default function App() {
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin"||session.role==="trainer")) return <MyActivityReport session={session} data={data} onUpdate={upd}/>;
+    if(section==="checklisteditor"&&(session.role==="admin"||session.role==="superadmin")) return <ChecklistEditor data={data} onUpdate={upd}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
-    if(section==="leadlink"&&MONEYMAP_ENABLED) return <LeadLinkPage session={session} data={data} onUpdate={upd}/>;
-    if(section==="mypipeline"&&MONEYMAP_ENABLED) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="leadlink") return <LeadLinkPage session={session} data={data} onUpdate={upd}/>;
+    if(section==="mypipeline") return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="accountability") return <AccountabilityDashboard data={data} onUpdate={upd} userRole={session.role} userId={session.id}/>;
     // Admin trainer tools — only if alsoRecruits is enabled
     const adminRecord = (data.admins||[]).find(a=>a.id===session.id);
     const alsoRecruits = adminRecord?.alsoRecruits||session.role==="superadmin";
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
-    if(section==="mypipeline"&&alsoRecruits&&MONEYMAP_ENABLED) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
-    if(section==="teamleads"&&MONEYMAP_ENABLED) return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
+    if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
+    if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
