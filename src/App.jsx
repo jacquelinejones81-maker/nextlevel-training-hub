@@ -9580,11 +9580,11 @@ function RepScriptsView({scripts}) {
   const catOrder=[...SCRIPT_CATEGORIES,"Uncategorized"].filter(c=>grouped[c]);
   return <div>
     {catOrder.map(cat=><div key={cat}>
-      <div style={{fontSize:12,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:"14px 0 8px"}}>{cat}</div>
+      <div style={{fontSize:13,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px",margin:"14px 0 10px"}}>{cat}</div>
       {grouped[cat].map(i=>{const s=scripts[i]; return <Card key={i} style={{marginBottom:10}}>
-        <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{s.title}</div>
-        <div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div>
-        {s.link&&<a href={s.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:8,fontSize:13,color:C.teal,fontWeight:600,textDecoration:"none",wordBreak:"break-all"}}>🔗 {s.link}</a>}
+        <div style={{fontSize:17,fontWeight:800,color:C.text,marginBottom:10}}>{s.title}</div>
+        <div style={{background:C.surface,borderRadius:9,padding:"14px 16px",fontSize:16,fontWeight:600,color:C.text,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{s.content}</div>
+        {s.link&&<a href={s.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:14,color:C.teal,fontWeight:700,textDecoration:"none",wordBreak:"break-all"}}>🔗 {s.link}</a>}
       </Card>;})}
     </div>)}
   </div>;
@@ -9655,7 +9655,7 @@ function ScriptsPage({data,onUpdate,userRole}) {
       </div>
     </Card>}
     {catOrder.map(cat=><div key={cat}>
-      <div style={{fontSize:12,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:"18px 0 8px"}}>{cat}</div>
+      <div style={{fontSize:13,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px",margin:"18px 0 10px"}}>{cat}</div>
       {grouped[cat].map(i=>{const s=scripts[i]; return <Card key={i} style={{marginBottom:10}}>
         {editing===i?(
           <div>
@@ -9677,15 +9677,15 @@ function ScriptsPage({data,onUpdate,userRole}) {
           </div>
         ):(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-              <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,flex:1}}>{s.title}</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+              <div style={{fontSize:dv(16,19),fontWeight:800,color:C.text,flex:1}}>{s.title}</div>
               {isAdmin&&<div style={{display:"flex",gap:5,marginLeft:8}}>
                 <button onClick={()=>{setEditing(i);setDraft({title:s.title,category:s.category||"",content:s.content,link:s.link||""});}} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
                 <button onClick={()=>deleteScript(i)} style={{fontSize:13,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
               </div>}
             </div>
-            <div style={{background:C.surface,borderRadius:8,padding:"12px 14px",fontSize:dv(12,15),color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{s.content}</div>
-            {s.link&&<a href={s.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:8,fontSize:13,color:C.teal,fontWeight:600,textDecoration:"none"}}>🔗 {s.link}</a>}
+            <div style={{background:C.surface,borderRadius:9,padding:"14px 16px",fontSize:dv(15,18),fontWeight:600,color:C.text,lineHeight:1.75,whiteSpace:"pre-wrap"}}>{s.content}</div>
+            {s.link&&<a href={s.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:14,color:C.teal,fontWeight:700,textDecoration:"none"}}>🔗 {s.link}</a>}
           </div>
         )}
       </Card>;})}
