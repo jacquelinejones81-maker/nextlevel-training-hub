@@ -3127,7 +3127,7 @@ function sumRepMetricsForRange(data,repId,startDate,endDate){
   result.lifeApps=lifeAppsArr.length;
   result.premium=lifeAppsArr.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
-  const investmentsArr=(myProd.investments||[]).filter(i=>i.date&&i.date>=startDate&&i.date<=endDate);
+  const investmentsArr=[...(myProd.investments||[]),...(person?.investments||[])].filter(i=>i.date&&i.date>=startDate&&i.date<=endDate);
   result.pacInvestment=investmentsArr.reduce((s,i)=>s+(Number(i.pac)||0),0);
   result.lumpInvestment=investmentsArr.reduce((s,i)=>s+parseLump(i.lumpSum),0);
   const realNames=new Set((data.reps||[]).filter(r=>r.trainerId===repId).map(r=>(r.name||"").trim().toLowerCase()));
@@ -3737,6 +3737,19 @@ const COMMITMENT_CATEGORIES = [
   {key:"testActivity",label:"Test Scheduled/Taken (Team)",icon:"🎓",manual:true},
   {key:"linksShared",label:"Links Shared",icon:"🔗",manual:false},
 ];
+// Admin-editable version of the list above — renaming (any category) and adding/deleting
+// (manual only; the 6 auto-calculated ones are protected from deletion since Team Numbers
+// and the Coaching Report are wired directly to those specific keys) all live here so every
+// place that reads categories automatically reflects admin changes.
+function getEffectiveCommitmentCategories(data){
+  const overrides=data?.commitmentCategoryOverrides||{};
+  const deleted=new Set(data?.deletedCommitmentCategories||[]);
+  const custom=data?.customCommitmentCategories||[];
+  const base=COMMITMENT_CATEGORIES.filter(c=>!(c.manual&&deleted.has(c.key)));
+  const withOverrides=base.map(c=>overrides[c.key]?{...c,label:overrides[c.key].label||c.label}:c);
+  const customActive=custom.filter(c=>!deleted.has(c.key));
+  return [...withOverrides,...customActive];
+}
 
 function findPersonRecord(data,userId){
   return (data.reps||[]).find(r=>r.id===userId) || (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || null;
@@ -3790,7 +3803,7 @@ function getAutoActuals(data,userId,dateStr){
   const myProd=(data.myProduction||{})[userId]||{};
   const person=findPersonRecord(data,userId);
   const lifeAppsArr=[...(myProd.lifeApps||[]),...(person?.selfPremium||[])];
-  const investmentsArr=myProd.investments||[];
+  const investmentsArr=[...(myProd.investments||[]),...(person?.investments||[])];
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
   const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr&&(!a.cod||a.codAccepted));
   const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
@@ -3817,7 +3830,7 @@ function getAutoActuals(data,userId,dateStr){
 }
 
 function getScorecardActual(data,userId,dateStr,catKey,dayEntry){
-  const cat=COMMITMENT_CATEGORIES.find(c=>c.key===catKey);
+  const cat=getEffectiveCommitmentCategories(data).find(c=>c.key===catKey);
   if(!cat) return 0;
   if(!cat.manual) return getAutoActuals(data,userId,dateStr)[catKey]||0;
   return (dayEntry?.actual||{})[catKey]||0;
@@ -3843,7 +3856,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
   const weeklyTotal=(key)=>{
     const dayList=Object.values(weekDays);
     if(dayList.length>0){
-      const cat=COMMITMENT_CATEGORIES.find(c=>c.key===key);
+      const cat=getEffectiveCommitmentCategories(data).find(c=>c.key===key);
       if(cat&&!cat.manual){
         return Object.keys(weekDays).reduce((s,d)=>s+(getAutoActuals(data,userId,d)[key]||0),0);
       }
@@ -3907,8 +3920,8 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     const mScores=(data.scorecards||{})[m.id]||{};
     const mWeek=mScores[weekKey]||{days:{}};
     const mToday=(mWeek.days||{})[todayStr]||{committed:{},actual:{}};
-    const committedTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+(Number(mToday.committed?.[c.key])||0),0);
-    const actualTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+getScorecardActual(data,m.id,todayStr,c.key,mToday),0);
+    const committedTotal=getEffectiveCommitmentCategories(data).reduce((s,c)=>s+(Number(mToday.committed?.[c.key])||0),0);
+    const actualTotal=getEffectiveCommitmentCategories(data).reduce((s,c)=>s+getScorecardActual(data,m.id,todayStr,c.key,mToday),0);
     const pct=committedTotal>0?Math.round((actualTotal/committedTotal)*100):(actualTotal>0?100:0);
     return {...m,committedTotal,actualTotal,pct};
   });
@@ -3933,7 +3946,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     {canCommit&&<Card style={{marginBottom:16}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>Today's Commitment</div>
       <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>Set what you're committing to this morning. Recruits, Life Apps, Premium, and Investment fill in automatically from your production — everything else, log as you go.</div>
-      {COMMITMENT_CATEGORIES.map(cat=>{
+      {getEffectiveCommitmentCategories(data).map(cat=>{
         const committed=Number(todayEntry.committed?.[cat.key])||0;
         const actual=getScorecardActual(data,userId,todayStr,cat.key,todayEntry);
         const hitGoal=committed>0&&actual>=committed;
@@ -5917,8 +5930,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 const dStr=localDateStr(d);
                 const dLabel=d.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
                 const entry=wkDays[dStr]||{committed:{},actual:{}};
-                const committedTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+(Number(entry.committed?.[c.key])||0),0);
-                const actualTotal=COMMITMENT_CATEGORIES.reduce((s,c)=>s+getScorecardActual(data,rep.id,dStr,c.key,entry),0);
+                const committedTotal=getEffectiveCommitmentCategories(data).reduce((s,c)=>s+(Number(entry.committed?.[c.key])||0),0);
+                const actualTotal=getEffectiveCommitmentCategories(data).reduce((s,c)=>s+getScorecardActual(data,rep.id,dStr,c.key,entry),0);
                 const isFuture=dStr>todayLocal;
                 return {dLabel,committedTotal,actualTotal,isFuture};
               });
@@ -5927,7 +5940,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               // to 5 calls and made 0" etc.
               const shortLabels=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
               const detailHeader="<th style='text-align:left;padding:6px'>Category</th>"+dayRows.map((dr,i)=>"<th style='text-align:center;padding:6px'>"+shortLabels[i]+"</th>").join("");
-              const detailRows=COMMITMENT_CATEGORIES.map(cat=>{
+              const detailRows=getEffectiveCommitmentCategories(data).map(cat=>{
                 const cells=dayRows.map((dr,i)=>{
                   if(dr.isFuture) return "<td style='text-align:center;padding:6px;color:#cbd5e1'>—</td>";
                   const d=new Date(wkStartDate); d.setDate(wkStartDate.getDate()+i);
@@ -9425,6 +9438,88 @@ function moveCategoryBlock(items,catName,direction){
   return newOrder.flatMap(c=>grouped[c]||[]);
 }
 
+// ── COMMITMENT CATEGORY EDITOR (admin only) — rename any category, add/delete manual ones.
+// Auto-calculated categories (Recruits, Life Apps, Premium, PAC/Lump Investment, Links
+// Shared) can be renamed but never deleted, since Team Numbers and the Coaching Report are
+// wired directly to those specific keys.
+const MANUAL_CAT_ICONS=["📱","📞","📅","✅","💰","🎯","📋","☎️","💬","🗓️"];
+function CommitmentCategoryEditor({data,onUpdate}) {
+  const cats=getEffectiveCommitmentCategories(data);
+  const [renamingKey,setRenamingKey]=useState(null);
+  const [renameVal,setRenameVal]=useState("");
+  const [showAdd,setShowAdd]=useState(false);
+  const [newCatName,setNewCatName]=useState("");
+
+  const startRename=(cat)=>{ setRenamingKey(cat.key); setRenameVal(cat.label); };
+  const saveRename=(key)=>{
+    if(!renameVal.trim()) return;
+    onUpdate({...data,commitmentCategoryOverrides:{...(data.commitmentCategoryOverrides||{}),[key]:{label:renameVal.trim()}}});
+    setRenamingKey(null);
+  };
+  const deleteCat=(cat)=>{
+    if(!cat.manual) return; // protected, button is disabled but double-guard here too
+    if(!window.confirm(`Delete "${cat.label}"? Reps will no longer see this in Today's Commitment.`)) return;
+    onUpdate({...data,deletedCommitmentCategories:[...(data.deletedCommitmentCategories||[]),cat.key]});
+  };
+  const addCat=()=>{
+    if(!newCatName.trim()) return;
+    const key="custom_"+newCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g,"_").slice(0,24)+"_"+Date.now();
+    const icon=MANUAL_CAT_ICONS[(data.customCommitmentCategories||[]).length%MANUAL_CAT_ICONS.length];
+    const newCat={key,label:newCatName.trim(),icon,manual:true};
+    onUpdate({...data,customCommitmentCategories:[...(data.customCommitmentCategories||[]),newCat]});
+    setNewCatName("");
+    setShowAdd(false);
+  };
+
+  const manualCats=cats.filter(c=>c.manual);
+  const autoCats=cats.filter(c=>!c.manual);
+
+  const renderRow=(cat)=><div key={cat.key} style={{display:"flex",alignItems:"center",gap:8,padding:"11px 14px",border:`1px solid ${C.border}`,borderRadius:9,marginBottom:8}}>
+    <span style={{fontSize:16}}>{cat.icon}</span>
+    <div style={{fontSize:14,fontWeight:700,color:C.text,flex:1}}>{cat.label}</div>
+    {!cat.manual&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:5,background:C.gold+"1f",color:C.gold}}>AUTO</span>}
+    <button onClick={()=>startRename(cat)} style={{fontSize:11,padding:"5px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>Rename</button>
+    <button onClick={()=>deleteCat(cat)} disabled={!cat.manual} style={{fontSize:11,padding:"5px 9px",borderRadius:6,border:`1px solid ${cat.manual?C.danger+"44":C.border}`,background:cat.manual?C.danger+"11":C.surface,color:cat.manual?C.danger:C.textLight,cursor:cat.manual?"pointer":"not-allowed",opacity:cat.manual?1:0.5}}>✕</button>
+  </div>;
+
+  return <div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Manage Commitment Categories</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Admins only. Renaming never affects anyone's already-logged numbers. Deleting a manual category removes it going forward.</div>
+
+    {!showAdd?
+      <button onClick={()=>setShowAdd(true)} style={{width:"100%",padding:"9px",borderRadius:8,border:`2px dashed ${C.border}`,background:"white",color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:16}}>+ Add Category</button>
+      :
+      <div style={{border:`1px solid ${C.teal}44`,borderRadius:8,padding:10,marginBottom:16,display:"flex",gap:6}}>
+        <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} placeholder="New category name..." onKeyDown={e=>e.key==="Enter"&&addCat()} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
+        <button onClick={addCat} style={{padding:"6px 14px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+        <button onClick={()=>{setShowAdd(false);setNewCatName("");}} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:13}}>Cancel</button>
+      </div>
+    }
+
+    <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:"16px 0 8px"}}>Manual (self-reported, rename or delete freely)</div>
+    {manualCats.map(cat=>renamingKey===cat.key?
+      <div key={cat.key} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",border:`1px solid ${C.teal}`,borderRadius:9,marginBottom:8,background:C.teal+"0d"}}>
+        <span style={{fontSize:16}}>{cat.icon}</span>
+        <input value={renameVal} onChange={e=>setRenameVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveRename(cat.key)} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
+        <button onClick={()=>saveRename(cat.key)} style={{padding:"6px 12px",borderRadius:6,border:"none",background:C.teal,color:"white",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
+        <button onClick={()=>setRenamingKey(null)} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,fontSize:12,cursor:"pointer"}}>Cancel</button>
+      </div>
+      :renderRow(cat)
+    )}
+
+    <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:"16px 0 8px"}}>Auto-Calculated (pulled from other data — rename label only)</div>
+    {autoCats.map(cat=>renamingKey===cat.key?
+      <div key={cat.key} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",border:`1px solid ${C.teal}`,borderRadius:9,marginBottom:8,background:C.teal+"0d"}}>
+        <span style={{fontSize:16}}>{cat.icon}</span>
+        <input value={renameVal} onChange={e=>setRenameVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveRename(cat.key)} style={{flex:1,padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
+        <button onClick={()=>saveRename(cat.key)} style={{padding:"6px 12px",borderRadius:6,border:"none",background:C.teal,color:"white",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
+        <button onClick={()=>setRenamingKey(null)} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,fontSize:12,cursor:"pointer"}}>Cancel</button>
+      </div>
+      :renderRow(cat)
+    )}
+  </div>;
+}
+
 function ChecklistEditor({data,onUpdate}) {
   const [activeKey,setActiveKey]=useState("fastStart");
   const [editingItem,setEditingItem]=useState(null); // {id, task, note, link, linkLabel}
@@ -9720,6 +9815,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11Z"},
     ...(role==="trainer"||role==="superadmin"||alsoRecruits?[{k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"}]:[]),
   ];
+  if(role==="admin"||role==="superadmin") nav.push({k:"commitmentcats",l:"Manage Categories",d:"M4 6H20M4 12H14M4 18H9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"checklisteditor",l:"Checklist Editor",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5M9 12L11 14L16 9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
   return <div style={{width:210,background:C.navy,height:"100%",display:"flex",flexDirection:"column",color:"white",flexShrink:0}}>
@@ -11780,6 +11876,7 @@ export default function App() {
     if(section==="scorecard") return <ScorecardPage data={data} onUpdate={upd} userId={session.id} userRole={session.role}/>;
     if(section==="wallfame") return <WallOfFame data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin"||session.role==="trainer")) return <MyActivityReport session={session} data={data} onUpdate={upd}/>;
+    if(section==="commitmentcats"&&(session.role==="admin"||session.role==="superadmin")) return <CommitmentCategoryEditor data={data} onUpdate={upd}/>;
     if(section==="checklisteditor"&&(session.role==="admin"||session.role==="superadmin")) return <ChecklistEditor data={data} onUpdate={upd}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
