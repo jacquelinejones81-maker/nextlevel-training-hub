@@ -3122,12 +3122,12 @@ function sumRepMetricsForRange(data,repId,startDate,endDate){
   }
   const myProd=(data.myProduction||{})[repId]||{};
   const person=findPersonRecord(data,repId);
-  const combinedLifeApps=[...(myProd.lifeApps||[]),...(person?.selfPremium||[])];
+  const combinedLifeApps=(myProd.lifeApps&&myProd.lifeApps.length>0)?myProd.lifeApps:(person?.selfPremium||[]);
   const lifeAppsArr=combinedLifeApps.filter(a=>a.date&&a.date>=startDate&&a.date<=endDate&&(!a.cod||a.codAccepted));
   result.lifeApps=lifeAppsArr.length;
   result.premium=lifeAppsArr.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
-  const investmentsArr=[...(myProd.investments||[]),...(person?.investments||[])].filter(i=>i.date&&i.date>=startDate&&i.date<=endDate);
+  const investmentsArr=((myProd.investments&&myProd.investments.length>0)?myProd.investments:(person?.investments||[])).filter(i=>i.date&&i.date>=startDate&&i.date<=endDate);
   result.pacInvestment=investmentsArr.reduce((s,i)=>s+(Number(i.pac)||0),0);
   result.lumpInvestment=investmentsArr.reduce((s,i)=>s+parseLump(i.lumpSum),0);
   const realNames=new Set((data.reps||[]).filter(r=>r.trainerId===repId).map(r=>(r.name||"").trim().toLowerCase()));
@@ -3802,8 +3802,8 @@ function countPeriodRecruits(data,personId,periodStart){
 function getAutoActuals(data,userId,dateStr){
   const myProd=(data.myProduction||{})[userId]||{};
   const person=findPersonRecord(data,userId);
-  const lifeAppsArr=[...(myProd.lifeApps||[]),...(person?.selfPremium||[])];
-  const investmentsArr=[...(myProd.investments||[]),...(person?.investments||[])];
+  const lifeAppsArr=(myProd.lifeApps&&myProd.lifeApps.length>0)?myProd.lifeApps:(person?.selfPremium||[]);
+  const investmentsArr=(myProd.investments&&myProd.investments.length>0)?myProd.investments:(person?.investments||[]);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
   const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr&&(!a.cod||a.codAccepted));
   const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
