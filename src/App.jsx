@@ -3946,14 +3946,19 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     {canCommit&&<Card style={{marginBottom:16}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>Today's Commitment</div>
       <div style={{fontSize:12,color:C.textMid,marginBottom:12}}>Set what you're committing to this morning. Recruits, Life Apps, Premium, and Investment fill in automatically from your production — everything else, log as you go.</div>
-      {getEffectiveCommitmentCategories(data).map(cat=>{
+      {[...getEffectiveCommitmentCategories(data)].sort((a,b)=>(a.manual===b.manual)?0:(a.manual?-1:1)).map((cat,idx,sorted)=>{
         const committed=Number(todayEntry.committed?.[cat.key])||0;
         const actual=getScorecardActual(data,userId,todayStr,cat.key,todayEntry);
         const hitGoal=committed>0&&actual>=committed;
-        return <div key={cat.key} style={{border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 11px",marginBottom:7}}>
+        const isCustom=(data.customCommitmentCategories||[]).some(c=>c.key===cat.key);
+        const sectionStart=idx===0||sorted[idx-1].manual!==cat.manual;
+        return <div key={cat.key}>
+          {sectionStart&&<div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.5px",margin:idx===0?"0 0 6px":"14px 0 6px"}}>{cat.manual?"Editable":"Auto-Calculated"}</div>}
+          <div style={{border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 11px",marginBottom:7}}>
           <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
             <span style={{fontSize:14}}>{cat.icon}</span>
             <span style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{cat.label}</span>
+            {isCustom&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:5,background:C.teal,color:"white"}}>NEW</span>}
             {hitGoal&&<span style={{fontSize:11,fontWeight:700,color:C.success}}>✓ Hit</span>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -3973,6 +3978,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
                 <div style={{padding:"6px 8px",borderRadius:6,background:C.surface||"#f1f5f9",fontSize:14,fontWeight:700,color:hitGoal?C.success:C.text,textAlign:"center"}}>{cat.isMoney?"$":""}{actual.toLocaleString()}</div>
               }
             </div>
+          </div>
           </div>
         </div>;
       })}
