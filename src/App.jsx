@@ -3410,6 +3410,36 @@ function LoginScreen({data,onLogin}) {
   const [rPinC,setRPinC]=useState("");
   const [step,setStep]=useState("find");
   const [err,setErr]=useState("");
+  // Preload both team logos before showing either — prevents one popping in ahead of the
+  // other, and correctly falls back to the emoji badge for any that fail to load (instead
+  // of silently leaving blank space) or take longer than 4s (slow/unreliable hosting, most
+  // often Google Drive links, shouldn't block the login screen indefinitely).
+  const teamBrandsForLogos=(data.teamBrands&&data.teamBrands.length>0)?data.teamBrands:[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}];
+  const [logoStatus,setLogoStatus]=useState({}); // {index: "loaded"|"failed"}
+  const [logosSettled,setLogosSettled]=useState(false);
+  useEffect(()=>{
+    const withLogos=teamBrandsForLogos.map((t,i)=>({...t,i})).filter(t=>t.logo);
+    if(withLogos.length===0){ setLogosSettled(true); return; }
+    let remaining=withLogos.length;
+    const results={};
+    const finishOne=(i,status)=>{
+      results[i]=status;
+      remaining--;
+      if(remaining<=0){ setLogoStatus(results); setLogosSettled(true); }
+    };
+    withLogos.forEach(t=>{
+      const img=new Image();
+      img.onload=()=>finishOne(t.i,"loaded");
+      img.onerror=()=>finishOne(t.i,"failed");
+      img.src=t.logo;
+    });
+    const timeout=setTimeout(()=>{
+      withLogos.forEach(t=>{ if(!(t.i in results)) results[t.i]="failed"; });
+      setLogoStatus({...results});
+      setLogosSettled(true);
+    },4000);
+    return ()=>clearTimeout(timeout);
+  }, [JSON.stringify(teamBrandsForLogos.map(t=>t.logo))]);
   const admins=data.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   const trainers=data.trainers||[];
   const reps=data.reps||[];
@@ -3431,18 +3461,15 @@ function LoginScreen({data,onLogin}) {
         </div>
         <div style={{color:"white",fontSize:22,fontWeight:800,letterSpacing:"0.5px",lineHeight:1.2}}>NextLevel</div>
         <div style={{color:C.teal,fontSize:14,fontWeight:600,letterSpacing:"3px",textTransform:"uppercase",marginBottom:14}}>Field Training Hub</div>
-        {/* Team logos / badges — dynamic */}
-        <div style={{display:"flex",gap:10,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
-          {((data.teamBrands&&data.teamBrands.length>0)?data.teamBrands:[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>
-            team.logo
+        {/* Team logos / badges — dynamic. Both wait to reveal together (or fall back to
+            the emoji badge) instead of popping in independently at different speeds. */}
+        <div style={{display:"flex",gap:10,justifyContent:"center",alignItems:"center",flexWrap:"wrap",minHeight:logosSettled?"auto":80}}>
+          {logosSettled&&teamBrandsForLogos.map((team,i)=>
+            (team.logo&&logoStatus[i]!=="failed")
               ?<img key={i} src={team.logo} alt={team.name}
                   style={{height:80,maxWidth:160,borderRadius:10,objectFit:"contain"}}
-                  onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="inline-block";}}
                 />
-              :null
-          )}
-          {((data.teamBrands&&data.teamBrands.length>0)?data.teamBrands:[{name:"Team PrimeTime",logo:"",emoji:"⚡"},{name:"Wealth Creators",logo:"",emoji:"🏆"}]).map((team,i)=>
-            <div key={"badge"+i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px",display:team.logo?"none":"inline-block"}}>{team.emoji||"⭐"} {team.name}</div>
+              :<div key={i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>{team.emoji||"⭐"} {team.name}</div>
           )}
         </div>
       </div>
