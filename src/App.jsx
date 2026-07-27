@@ -1617,7 +1617,13 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         <button onClick={()=>setShowAutoHomePopup(false)} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${C.teal},#0891b2)`,border:"none",color:"white",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it!</button>
       </div>
     </div>}
-    {tab==="checklist"&&<div>{rep.track!=="licensed"&&!rep.referencesNotRequired&&rep.createdAt&&(Date.now()-rep.createdAt)>=3*86400000&&(rep.references||[]).filter(r=>r&&r.name&&r.name.trim()).length<5&&isOwnView&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+    {tab==="checklist"&&<div>
+      {!rep.track&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"14px 16px",marginBottom:14,textAlign:"center"}}>
+        <div style={{fontSize:22,marginBottom:6}}>⏳</div>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>No Checklist Yet — Path Not Chosen</div>
+        <div style={{fontSize:12,color:C.textMid,lineHeight:1.5}}>{rep.name} hasn't picked Fast Start, Regular Start, or Licensed Now What yet. Each path has its own checklist, so there's nothing to show until a path is selected — this isn't a bug, just an empty state waiting on that choice.</div>
+      </div>}
+      {rep.track!=="licensed"&&!rep.referencesNotRequired&&rep.createdAt&&(Date.now()-rep.createdAt)>=3*86400000&&(rep.references||[]).filter(r=>r&&r.name&&r.name.trim()).length<5&&isOwnView&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
       <div style={{fontSize:13,color:"#92400e",fontWeight:600}}>📋 Don't forget to add your 5 references — they help us learn more about you and your goals.</div>
       <button onClick={()=>setTab("refs")} style={{fontSize:12,padding:"6px 12px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>Add References</button>
     </div>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
@@ -2826,7 +2832,7 @@ function InlineAddRecruit({person,onSave}) {
   </div>;
 }
 
-function MyRecruitsThisMonth({data,userId,userRole,onUpdate}) {
+function MyRecruitsThisMonth({data,userId,userRole,onUpdate,onSelectRep}) {
   const pm = getCurrentPrimerMonth(data.primerMonthEnds||[]);
   const [showList,setShowList] = useState(false);
   const [viewingLastMonth,setViewingLastMonth] = useState(false);
@@ -2848,7 +2854,7 @@ function MyRecruitsThisMonth({data,userId,userRole,onUpdate}) {
       if(!isMine(r)||!r.createdAt) return false;
       let d; try{ d=localDateStr(new Date(r.createdAt)); }catch(e){ return false; }
       return d>=periodStart && (!periodEnd||d<periodEnd);
-    }).map(r=>({name:r.name,phone:r.phone,date:localDateStr(new Date(r.createdAt)),type:"account"}));
+    }).map(r=>({id:r.id,name:r.name,phone:r.phone,date:localDateStr(new Date(r.createdAt)),type:"account"}));
     const person = findPersonRecord(data,userId);
     const realNames = new Set((data.reps||[]).filter(isMine).map(r=>(r.name||"").trim().toLowerCase()));
     const logged = ((person?.myRecruitLog)||[]).filter(r=>{
@@ -2886,7 +2892,7 @@ function MyRecruitsThisMonth({data,userId,userRole,onUpdate}) {
       displayList.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
         <div style={{width:26,height:26,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div>
+          <div onClick={()=>{if(r.type==="account"&&r.id&&onSelectRep)onSelectRep(r.id);}} style={{fontSize:13,fontWeight:600,color:(r.type==="account"&&onSelectRep)?C.teal:C.text,cursor:(r.type==="account"&&onSelectRep)?"pointer":"default",textDecoration:(r.type==="account"&&onSelectRep)?"underline":"none"}}>{r.name}</div>
           <div style={{fontSize:11,color:C.textLight}}>{r.phone||"No phone"} · {new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
         </div>
         <span style={{fontSize:10,fontWeight:700,color:r.type==="account"?C.success:C.gold,background:(r.type==="account"?C.success:C.gold)+"11",padding:"2px 7px",borderRadius:5}}>{r.type==="account"?"Account":"Logged"}</span>
@@ -2931,7 +2937,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   };
 
   return <div>
-    {(isAdmin||userRole==="trainer")&&!showInactive&&<MyRecruitsThisMonth data={data} userId={userId} userRole={userRole} onUpdate={onUpdate}/>}
+    {(isAdmin||userRole==="trainer")&&!showInactive&&<MyRecruitsThisMonth data={data} userId={userId} userRole={userRole} onUpdate={onUpdate} onSelectRep={onSelectRep}/>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:13,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
