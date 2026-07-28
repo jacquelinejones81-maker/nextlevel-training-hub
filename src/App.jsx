@@ -3324,7 +3324,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
     <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <StalledReferencesAlert data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
+    <StalledReferencesAlert data={data} onUpdate={onUpdate} userRole={userRole} userId={userId} onSelectRep={onSelectRep}/>
 
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<LinkSharingActivity data={data}/>}
@@ -7610,7 +7610,7 @@ function BirthdayAnniversaryWidget({data}) {
 
 
 // ── STALLED REFERENCES ALERT ──
-function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
+function StalledReferencesAlert({data,onUpdate,userRole,userId,onSelectRep}) {
   const [showAll,setShowAll]=useState(false);
   if(!(userRole==="admin"||userRole==="superadmin"||userRole==="trainer")) return null;
 
@@ -7624,7 +7624,7 @@ function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
     if(rep.referencesNotRequired) return;
     const namedRefs = (rep.references||[]).filter(r=>r&&r.name&&r.name.trim());
     if(rep.track!=="licensed"&&namedRefs.length===0&&rep.createdAt&&(now-rep.createdAt)>=THRESHOLD){
-      alerts.push({key:rep.id+"_norefs",repName:rep.name,refName:"—",msg:"No references entered yet",days:Math.floor((now-rep.createdAt)/86400000)});
+      alerts.push({key:rep.id+"_norefs",repId:rep.id,repName:rep.name,refName:"—",msg:"No references entered yet",days:Math.floor((now-rep.createdAt)/86400000)});
     }
     (rep.references||[]).forEach((r,i)=>{
       if(!r||!r.name) return;
@@ -7632,13 +7632,13 @@ function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
       const addedAt = r.addedAt || rep.createdAt || null; // fallback for refs added before timestamp tracking existed
       if(stagesDone.length===0){
         if(addedAt && (now-addedAt)>=THRESHOLD){
-          alerts.push({key:rep.id+"_ref"+i+"_none",repName:rep.name,refName:r.name,msg:"No outreach started",days:Math.floor((now-addedAt)/86400000)});
+          alerts.push({key:rep.id+"_ref"+i+"_none",repId:rep.id,repName:rep.name,refName:r.name,msg:"No outreach started",days:Math.floor((now-addedAt)/86400000)});
         }
       } else if(stagesDone.length<REF_STAGES.length){
         const refPoint = r.lastActivityAt || addedAt;
         if(refPoint && (now-refPoint)>=THRESHOLD){
           const latestStage = stagesDone[stagesDone.length-1];
-          alerts.push({key:rep.id+"_ref"+i+"_stuck",repName:rep.name,refName:r.name,msg:"Stuck at "+latestStage.l,days:Math.floor((now-refPoint)/86400000)});
+          alerts.push({key:rep.id+"_ref"+i+"_stuck",repId:rep.id,repName:rep.name,refName:r.name,msg:"Stuck at "+latestStage.l,days:Math.floor((now-refPoint)/86400000)});
         }
       }
     });
@@ -7660,7 +7660,7 @@ function StalledReferencesAlert({data,onUpdate,userRole,userId}) {
     {visible.map((a,i)=>(
       <div key={a.key} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<visible.length-1?`1px solid ${C.border}`:"none",flexWrap:"wrap"}}>
         <div style={{width:6,height:6,borderRadius:3,background:C.danger,flexShrink:0}}/>
-        <span style={{fontSize:13,fontWeight:600,color:C.text}}>{a.repName}</span>
+        <span onClick={()=>a.repId&&onSelectRep&&onSelectRep(a.repId)} style={{fontSize:13,fontWeight:600,color:(a.repId&&onSelectRep)?C.teal:C.text,cursor:(a.repId&&onSelectRep)?"pointer":"default",textDecoration:(a.repId&&onSelectRep)?"underline":"none"}}>{a.repName}</span>
         <span style={{fontSize:12,color:C.textMid,flex:1}}>{a.refName==="—"?a.msg:`Ref: ${a.refName} — ${a.msg}`}</span>
         <span style={{fontSize:11,fontWeight:700,color:C.danger,background:C.danger+"11",padding:"2px 8px",borderRadius:6,whiteSpace:"nowrap"}}>{a.days}d</span>
         <button onClick={()=>dismiss(a.key)} style={{fontSize:12,padding:"2px 6px",borderRadius:4,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid,flexShrink:0}}>Dismiss</button>
