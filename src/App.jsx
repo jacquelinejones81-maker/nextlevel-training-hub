@@ -1310,6 +1310,7 @@ function RefsEditor({rep,data,onUpdate}) {
         <span style={{fontSize:13,color:status[s.k]?C.success:C.textLight,fontWeight:status[s.k]?600:400}}>{s.l}</span>
       </div>)}
     </div>}
+    {r.notes&&r.notes.trim()&&<div style={{background:C.surface,borderRadius:7,padding:"7px 9px",marginTop:8,fontSize:12,color:C.text,lineHeight:1.5}}><span style={{fontWeight:700,color:C.textMid}}>Note from your trainer/admin: </span>{r.notes}</div>}
   </div>;})}</div>;
 }
 
@@ -1731,6 +1732,8 @@ function AdminRefsEditor({rep,data,onUpdate}) {
           <span style={{fontSize:13,color:status[s.k]?C.success:C.textMid,fontWeight:status[s.k]?600:400,textDecoration:status[s.k]?"line-through":"none"}}>{s.l}</span>
         </label>)}
       </div>
+      <div style={{fontSize:10,fontWeight:700,color:C.textLight,marginTop:9,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.5px"}}>Notes <span style={{textTransform:"none",fontWeight:400,color:C.textLight}}>(the rep can see these)</span></div>
+      <textarea placeholder="e.g. Left a voicemail, will try again Thursday..." value={r.notes||""} onChange={e=>updateField(i,"notes",e.target.value)} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,minHeight:50,resize:"vertical",boxSizing:"border-box",fontFamily:"inherit"}}/>
     </div>}
   </div>;})}</div>;
 }
