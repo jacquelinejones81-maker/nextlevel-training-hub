@@ -1547,8 +1547,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     </div>
     {/* ── WALL OF FAME BANNER ── */}
     <WallOfFameBanner data={data}/>
-    {!readOnly&&rep.track==="licensed"&&<DailyActivityLog rep={rep} data={data} onUpdate={(u)=>{if(onUpdateData)onUpdateData(u);}} isFirstTime={!(data.activityLogs||{})[rep.id]?.seenIntro}/>
-    }{(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{
+    {(rep.track==="licensed"||rep.fieldTrainerGranted)&&(()=>{
       const pm=getCurrentPrimerMonth(data?.primerMonthEnds||[]);
       const c=rep.commitments?.[pm.key];
       if(c) return <CommitmentCard rep={rep} primerMonth={pm} canUnlock={false} onUnlock={()=>{}} recruitsOverride={countPeriodRecruits(data,rep.id,pm.start)}/>;
@@ -3354,7 +3353,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
         </div>
       </Card>;
     })()}
-    {userRole==="trainer"&&<DailyActivityLog rep={{id:userId,name:""}} data={data} onUpdate={onUpdate} isFirstTime={!(data.activityLogs||{})[userId]?.seenIntro}/>}
 
     <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
       <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
@@ -5875,33 +5873,6 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <div class="card"><div class="big">${rep.loginsThisWeek}</div><div class="label">Logins This Week</div></div>
               <div class="card"><div class="big">${rep.loginsThisMonth}</div><div class="label">Logins This Month</div></div>
               <div class="card"><div class="big">${rep.lastLogin?new Date(rep.lastLogin).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"Never"}</div><div class="label">Last Login</div></div>
-            </div>
-
-            ${rep.isTrainer?(()=>{
-              const tLogs=(data.activityLogs||{})[rep.id]||{};
-              const tDates=Object.keys(tLogs).filter(k=>k.match(/^\d{4}-\d{2}-\d{2}$/)).sort().slice(-14);
-              if(tDates.length===0) return "<h2>ACTIVITY CONSISTENCY</h2><p class='note'>No daily activity logs submitted yet.</p>";
-              let tCells=tDates.map(d=>{const log=tLogs[d];const today2=new Date().toISOString().split('T')[0];return "<div class='day "+(log?.submittedAt?"submitted":"missed")+(d===today2?" today-border":"")+"'><div style='font-size:13px;font-weight:700'>"+(log?.talked||0)+"</div><div class='day-label'>"+d.slice(5)+"</div></div>";}).join("");
-              return "<h2>ACTIVITY CONSISTENCY (Last 14 Days)</h2><div class='cal'>"+tCells+"</div>";
-            })():""}
-            <h2>ACTIVITY CONSISTENCY</h2>
-            <p class="note">This section shows how consistently ${rep.name} is logging daily activity. Consistency is the foundation of results.</p>
-            <div class="cal">
-              ${rep.last7.map(day=>`<div class="day ${day.submitted?"submitted":"missed"}${day.isToday?" today-border":""}">
-                <div>${day.submitted?"✓":"·"}</div>
-                <div class="day-label">${weekDays[new Date(day.key).getDay()]}</div>
-              </div>`).join("")}
-            </div>
-            <p>Streak: <strong>${rep.streak} day${rep.streak!==1?"s":""}</strong> &nbsp;|&nbsp; Submitted ${rep.weekTotals.daysLogged} of 7 days this week</p>
-
-            <h2>WEEKLY ACTIVITY TOTALS</h2>
-            <p class="note">These are the numbers ${rep.name} reported doing this week. High activity with low results points to a skills gap, not an effort gap.</p>
-            <div class="grid2">
-              <div class="card"><div class="big">${rep.weekTotals.talked}</div><div class="label">People Talked To</div></div>
-              <div class="card"><div class="big">${rep.weekTotals.followup}</div><div class="label">Follow-up Calls</div></div>
-              <div class="card"><div class="big">${rep.weekTotals.apptSet}</div><div class="label">Appointments Set</div></div>
-              <div class="card"><div class="big">${rep.weekTotals.apptRan}</div><div class="label">Appointments Ran</div></div>
-              <div class="card"><div class="big">${rep.weekTotals.recruited}</div><div class="label">Recruits Prospected</div></div>
             </div>
 
             <h2>SCORECARD — WEEKLY PRODUCTION</h2>
