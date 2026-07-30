@@ -9533,9 +9533,14 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
   const [dismissedThisSession,setDismissedThisSession]=useState([]);
   const person=findPersonRecord(data,userId);
   const dismissed=new Set([...(person?.dismissedPopupAnnouncements||[]),...dismissedThisSession]);
+  const today=localDateStr();
+  // Daily announcements are dismissed per-day (id+date), so clicking it away only clears
+  // today — it comes back tomorrow. Regular announcements are dismissed once, permanently,
+  // for the id alone.
+  const dismissKeyFor=(a)=>a.repeatDaily?a.id+"_"+today:a.id;
 
   const queue=(data.popupAnnouncements||[])
-    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track)&&!dismissed.has(a.id))
+    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track)&&!dismissed.has(dismissKeyFor(a)))
     .sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));
 
   useEffect(()=>{
@@ -9545,11 +9550,12 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[queue.map(a=>a.id).join(","), person===undefined]);
 
-  const dismiss=(id)=>{
-    setDismissedThisSession(prev=>[...prev,id]);
+  const dismiss=(a)=>{
+    const key=dismissKeyFor(a);
+    setDismissedThisSession(prev=>[...prev,key]);
     setVisibleId(null);
     if(typeof onUpdate==="function"){
-      const updatedList=[...(person?.dismissedPopupAnnouncements||[]),id];
+      const updatedList=[...(person?.dismissedPopupAnnouncements||[]),key];
       onUpdate(updatedList);
     }
   };
@@ -9563,8 +9569,8 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
         <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:7}}>{ann.title}</div>
         <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:14,whiteSpace:"pre-wrap"}}>{ann.message}</div>
         {ann.link&&<a href={ann.link} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"9px",borderRadius:8,background:C.gold,color:"white",fontWeight:700,fontSize:13,textAlign:"center",textDecoration:"none",marginBottom:8,boxSizing:"border-box"}}>{ann.linkLabel||"Learn More"}</a>}
-        <button onClick={()=>dismiss(ann.id)} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Got It</button>
-        <button onClick={()=>dismiss(ann.id)} style={{width:"100%",padding:"7px",borderRadius:8,border:"none",background:"none",color:C.textLight,fontSize:12,cursor:"pointer"}}>Don't show this again</button>
+        <button onClick={()=>dismiss(ann)} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Got It</button>
+        <button onClick={()=>dismiss(ann)} style={{width:"100%",padding:"7px",borderRadius:8,border:"none",background:"none",color:C.textLight,fontSize:12,cursor:"pointer"}}>{ann.repeatDaily?"Dismiss for today":"Don't show this again"}</button>
       </div>
     </div>
   </div>;
@@ -9575,7 +9581,7 @@ function AnnouncementsEditor({data,onUpdate}) {
   const anns=data.popupAnnouncements||[];
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
-  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:""};
+  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:"",repeatDaily:false};
   const [draft,setDraft]=useState(blankDraft);
 
   const save=()=>{
@@ -9587,7 +9593,7 @@ function AnnouncementsEditor({data,onUpdate}) {
     }
     setDraft(blankDraft); setShowForm(false); setEditingId(null);
   };
-  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||""}); setEditingId(a.id); setShowForm(true); };
+  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||"",repeatDaily:!!a.repeatDaily}); setEditingId(a.id); setShowForm(true); };
   const toggleActive=(id)=>{ onUpdate({...data,popupAnnouncements:anns.map(a=>a.id===id?{...a,active:!a.active}:a)}); };
   const deleteAnn=(id)=>{ if(!window.confirm("Delete this announcement? This can't be undone.")) return; onUpdate({...data,popupAnnouncements:anns.filter(a=>a.id!==id)}); };
   const toggleAudience=(k)=>{ setDraft(d=>({...d,audience:d.audience.includes(k)?d.audience.filter(x=>x!==k):[...d.audience,k]})); };
@@ -9636,6 +9642,10 @@ function AnnouncementsEditor({data,onUpdate}) {
           <input type="date" value={draft.startDate} onChange={e=>setDraft({...draft,startDate:e.target.value})} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13}}/>
           <input type="date" value={draft.endDate} onChange={e=>setDraft({...draft,endDate:e.target.value})} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13}}/>
         </div>
+        <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",marginBottom:10}}>
+          <input type="checkbox" checked={draft.repeatDaily} onChange={e=>setDraft({...draft,repeatDaily:e.target.checked})} style={{width:16,height:16,accentColor:C.teal,cursor:"pointer"}}/>
+          <span style={{fontSize:13,color:C.text}}>Show daily — comes back every day it's active, even after being dismissed</span>
+        </label>
         <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Who Sees This</div>
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
           {ANNOUNCEMENT_AUDIENCES.map(a=><button key={a.key} onClick={()=>toggleAudience(a.key)} style={{fontSize:12,padding:"5px 11px",borderRadius:7,border:`1px solid ${draft.audience.includes(a.key)?C.teal:C.border}`,background:draft.audience.includes(a.key)?C.teal+"14":"white",color:draft.audience.includes(a.key)?C.teal:C.textMid,fontWeight:draft.audience.includes(a.key)?700:400,cursor:"pointer"}}>{a.label}</button>)}
@@ -9656,7 +9666,7 @@ function AnnouncementsEditor({data,onUpdate}) {
           <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:5,background:live?"rgba(22,163,74,0.12)":C.surface,color:live?C.success:C.textLight}}>{a.active?(live?"Active":"Scheduled/Expired"):"Off"}</span>
         </div>
         <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>{a.message}</div>
-        {(a.startDate||a.endDate)&&<div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Runs {a.startDate||"anytime"} &rarr; {a.endDate||"no end date"}</div>}
+        {(a.startDate||a.endDate)&&<div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Runs {a.startDate||"anytime"} &rarr; {a.endDate||"no end date"}{a.repeatDaily&&<span style={{marginLeft:6,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:5,background:C.gold+"1f",color:C.gold}}>DAILY</span>}</div>}
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
           {(a.audience||[]).length===0?<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.surface,color:C.textLight}}>Everyone</span>:
           (a.audience||[]).map(k=><span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.teal+"14",color:C.teal}}>{ANNOUNCEMENT_AUDIENCES.find(x=>x.key===k)?.label||k}</span>)}
