@@ -288,6 +288,31 @@ const CHECKLIST_DEFAULTS = {
   // existing checked progress (keyed by that index) keeps working without migration.
   svpChecklist: SVP_CHECKLIST.map((task,i)=>({id:"svp"+i,cat:"Requirements",task})),
 };
+const ANNOUNCEMENT_AUDIENCES = [
+  {key:"fast",label:"Fast Start"},
+  {key:"regular",label:"Regular Start"},
+  {key:"licensed",label:"Licensed"},
+  {key:"trainer",label:"Trainers"},
+  {key:"admin",label:"Admins"},
+];
+// An announcement is "live" if it's turned on AND today falls inside its date range
+// (no dates set on either end means no limit on that side).
+function isAnnouncementLive(a){
+  if(!a.active) return false;
+  const today=localDateStr();
+  if(a.startDate&&today<a.startDate) return false;
+  if(a.endDate&&today>a.endDate) return false;
+  return true;
+}
+// Does this announcement apply to this person, based on role/track?
+function announcementMatchesPerson(a,userRole,track){
+  const aud=a.audience||[];
+  if(aud.length===0) return true; // no audience picked = show to everyone, safe default
+  if(userRole==="admin"||userRole==="superadmin") return aud.includes("admin");
+  if(userRole==="trainer") return aud.includes("trainer");
+  return aud.includes(track); // rep — match by track (fast/regular/licensed)
+}
+
 const CHECKLIST_LABELS = {
   fastStart: "Fast Start",
   regularStart: "Regular Start",
@@ -9502,6 +9527,150 @@ function moveCategoryBlock(items,catName,direction){
 // Shared) can be renamed but never deleted, since Team Numbers and the Coaching Report are
 // wired directly to those specific keys.
 const MANUAL_CAT_ICONS=["📱","📞","📅","✅","💰","🎯","📋","☎️","💬","🗓️"];
+// ── ANNOUNCEMENT POPUP (shown to reps/trainers/admins, ~10s after opening the Hub) ──
+function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
+  const [visibleId,setVisibleId]=useState(null);
+  const [dismissedThisSession,setDismissedThisSession]=useState([]);
+  const person=findPersonRecord(data,userId);
+  const dismissed=new Set([...(person?.dismissedAnnouncements||[]),...dismissedThisSession]);
+
+  const queue=(data.announcements||[])
+    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track)&&!dismissed.has(a.id))
+    .sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));
+
+  useEffect(()=>{
+    if(queue.length===0){ setVisibleId(null); return; }
+    const t=setTimeout(()=>setVisibleId(queue[0].id),10000);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[queue.map(a=>a.id).join(","), person===undefined]);
+
+  const dismiss=(id)=>{
+    setDismissedThisSession(prev=>[...prev,id]);
+    setVisibleId(null);
+    if(typeof onUpdate==="function"){
+      const updatedList=[...(person?.dismissedAnnouncements||[]),id];
+      onUpdate(updatedList);
+    }
+  };
+
+  const ann=queue.find(a=>a.id===visibleId);
+  if(!ann) return null;
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:3600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{background:"white",borderRadius:14,overflow:"hidden",maxWidth:380,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+      {ann.imageUrl&&<img src={ann.imageUrl} alt="" style={{width:"100%",maxHeight:220,objectFit:"cover",display:"block"}}/>}
+      <div style={{padding:"16px 18px"}}>
+        <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:7}}>{ann.title}</div>
+        <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:14,whiteSpace:"pre-wrap"}}>{ann.message}</div>
+        {ann.link&&<a href={ann.link} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"9px",borderRadius:8,background:C.gold,color:"white",fontWeight:700,fontSize:13,textAlign:"center",textDecoration:"none",marginBottom:8,boxSizing:"border-box"}}>{ann.linkLabel||"Learn More"}</a>}
+        <button onClick={()=>dismiss(ann.id)} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Got It</button>
+        <button onClick={()=>dismiss(ann.id)} style={{width:"100%",padding:"7px",borderRadius:8,border:"none",background:"none",color:C.textLight,fontSize:12,cursor:"pointer"}}>Don't show this again</button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── ANNOUNCEMENTS EDITOR (admin only) ──
+function AnnouncementsEditor({data,onUpdate}) {
+  const anns=data.announcements||[];
+  const [showForm,setShowForm]=useState(false);
+  const [editingId,setEditingId]=useState(null);
+  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:""};
+  const [draft,setDraft]=useState(blankDraft);
+
+  const save=()=>{
+    if(!draft.title.trim()||!draft.message.trim()) return;
+    if(editingId){
+      onUpdate({...data,announcements:anns.map(a=>a.id===editingId?{...a,...draft}:a)});
+    } else {
+      onUpdate({...data,announcements:[...anns,{...draft,id:"ann_"+Date.now(),active:true,createdAt:new Date().toISOString()}]});
+    }
+    setDraft(blankDraft); setShowForm(false); setEditingId(null);
+  };
+  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||""}); setEditingId(a.id); setShowForm(true); };
+  const toggleActive=(id)=>{ onUpdate({...data,announcements:anns.map(a=>a.id===id?{...a,active:!a.active}:a)}); };
+  const deleteAnn=(id)=>{ if(!window.confirm("Delete this announcement? This can't be undone.")) return; onUpdate({...data,announcements:anns.filter(a=>a.id!==id)}); };
+  const toggleAudience=(k)=>{ setDraft(d=>({...d,audience:d.audience.includes(k)?d.audience.filter(x=>x!==k):[...d.audience,k]})); };
+
+  const handleImageUpload=(e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>10*1024*1024){alert("Image must be under 10MB");return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement("canvas");
+        const MAX=600; let w=img.width,h=img.height;
+        if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}} else {if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        setDraft(d=>({...d,imageUrl:canvas.toDataURL("image/jpeg",0.75)}));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return <div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Announcements</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Admins only. Shows as a popup about 10 seconds after someone opens the Hub. Once dismissed, it won't show again for that person.</div>
+
+    {!showForm?
+      <button onClick={()=>{setDraft(blankDraft);setEditingId(null);setShowForm(true);}} style={{width:"100%",padding:"9px",borderRadius:8,border:`2px dashed ${C.border}`,background:"white",color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:16}}>+ New Announcement</button>
+      :
+      <div style={{border:`1px solid ${C.teal}`,borderRadius:10,padding:14,marginBottom:16,background:C.teal+"08"}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:3}}>Title</div>
+        <input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})} placeholder="e.g. End of Month Push!" style={{width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:3}}>Message</div>
+        <textarea value={draft.message} onChange={e=>setDraft({...draft,message:e.target.value})} placeholder="What's happening and why it matters..." style={{width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,minHeight:60,resize:"vertical",marginBottom:8,boxSizing:"border-box",fontFamily:"inherit"}}/>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:3}}>Flyer / Image (optional)</div>
+        {draft.imageUrl?<div style={{marginBottom:8}}><img src={draft.imageUrl} alt="Flyer" style={{maxWidth:160,borderRadius:8,display:"block",marginBottom:5}}/><button onClick={()=>setDraft({...draft,imageUrl:""})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer"}}>Remove Image</button></div>
+        :<label style={{display:"inline-block",fontSize:12,padding:"6px 10px",borderRadius:6,border:`1px dashed ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",marginBottom:8}}>📎 Upload Flyer<input type="file" accept="image/*" style={{display:"none"}} onChange={handleImageUpload}/></label>}
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:3}}>Link (optional)</div>
+        <div style={{display:"flex",gap:6,marginBottom:8}}>
+          <input value={draft.linkLabel} onChange={e=>setDraft({...draft,linkLabel:e.target.value})} placeholder="Button text (e.g. RSVP)" style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box"}}/>
+          <input value={draft.link} onChange={e=>setDraft({...draft,link:e.target.value})} placeholder="https://..." style={{flex:2,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box"}}/>
+        </div>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:3}}>Runs From / Until <span style={{textTransform:"none",fontWeight:400}}>(leave either blank for no limit)</span></div>
+        <div style={{display:"flex",gap:6,marginBottom:8}}>
+          <input type="date" value={draft.startDate} onChange={e=>setDraft({...draft,startDate:e.target.value})} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13}}/>
+          <input type="date" value={draft.endDate} onChange={e=>setDraft({...draft,endDate:e.target.value})} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13}}/>
+        </div>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Who Sees This</div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
+          {ANNOUNCEMENT_AUDIENCES.map(a=><button key={a.key} onClick={()=>toggleAudience(a.key)} style={{fontSize:12,padding:"5px 11px",borderRadius:7,border:`1px solid ${draft.audience.includes(a.key)?C.teal:C.border}`,background:draft.audience.includes(a.key)?C.teal+"14":"white",color:draft.audience.includes(a.key)?C.teal:C.textMid,fontWeight:draft.audience.includes(a.key)?700:400,cursor:"pointer"}}>{a.label}</button>)}
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>{setShowForm(false);setEditingId(null);setDraft(blankDraft);}} style={{flex:1,padding:"8px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:13}}>Cancel</button>
+          <button onClick={save} style={{flex:2,padding:"8px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>{editingId?"Save Changes":"Create Announcement"}</button>
+        </div>
+      </div>
+    }
+
+    {anns.length===0&&!showForm&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"20px 0"}}>No announcements yet.</div>}
+    {anns.slice().reverse().map(a=>{
+      const live=isAnnouncementLive(a);
+      return <div key={a.id} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{a.title}</div>
+          <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:5,background:live?"rgba(22,163,74,0.12)":C.surface,color:live?C.success:C.textLight}}>{a.active?(live?"Active":"Scheduled/Expired"):"Off"}</span>
+        </div>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>{a.message}</div>
+        {(a.startDate||a.endDate)&&<div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Runs {a.startDate||"anytime"} &rarr; {a.endDate||"no end date"}</div>}
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
+          {(a.audience||[]).length===0?<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.surface,color:C.textLight}}>Everyone</span>:
+          (a.audience||[]).map(k=><span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.teal+"14",color:C.teal}}>{ANNOUNCEMENT_AUDIENCES.find(x=>x.key===k)?.label||k}</span>)}
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>startEdit(a)} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>Edit</button>
+          <button onClick={()=>toggleActive(a.id)} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>{a.active?"Turn Off":"Turn On"}</button>
+          <button onClick={()=>deleteAnn(a.id)} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.danger}44`,background:C.danger+"11",color:C.danger,cursor:"pointer"}}>Delete</button>
+        </div>
+      </div>;
+    })}
+  </div>;
+}
+
 function CommitmentCategoryEditor({data,onUpdate}) {
   const cats=getEffectiveCommitmentCategories(data);
   const [renamingKey,setRenamingKey]=useState(null);
@@ -9874,6 +10043,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"myprofile",l:"My Profile",d:"M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21M16 7C16 9.2 14.2 11 12 11C9.8 11 8 9.2 8 7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7C16 9.2 14.2 11 12 11Z"},
     ...(role==="trainer"||role==="superadmin"||alsoRecruits?[{k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"}]:[]),
   ];
+  if(role==="admin"||role==="superadmin") nav.push({k:"announcements",l:"Announcements",d:"M3 11L18 4V20L3 13V11ZM3 11H1M18 8C19.1 8 20 8.9 20 10V14C20 15.1 19.1 16 18 16"});
   if(role==="admin"||role==="superadmin") nav.push({k:"commitmentcats",l:"Manage Categories",d:"M4 6H20M4 12H14M4 18H9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"checklisteditor",l:"Checklist Editor",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5M9 12L11 14L16 9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
@@ -11937,6 +12107,7 @@ export default function App() {
     if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin"||session.role==="trainer")) return <MyActivityReport session={session} data={data} onUpdate={upd}/>;
     if(section==="commitmentcats"&&(session.role==="admin"||session.role==="superadmin")) return <CommitmentCategoryEditor data={data} onUpdate={upd}/>;
     if(section==="checklisteditor"&&(session.role==="admin"||session.role==="superadmin")) return <ChecklistEditor data={data} onUpdate={upd}/>;
+    if(section==="announcements"&&(session.role==="admin"||session.role==="superadmin")) return <AnnouncementsEditor data={data} onUpdate={upd}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
@@ -11976,6 +12147,11 @@ export default function App() {
       upd({...data,admins:updatedAdmins});
       setShowRvpPathVideo(false);
     }}/>}
+    <AnnouncementPopup data={data} userId={session.id} userRole={session.role} track={session.role==="rep"?(data.reps||[]).find(r=>r.id===session.id)?.track:undefined} onUpdate={(dismissedList)=>{
+      if(session.role==="rep") upd({...data,reps:(data.reps||[]).map(r=>r.id===session.id?{...r,dismissedAnnouncements:dismissedList}:r)});
+      else if(session.role==="trainer") upd({...data,trainers:(data.trainers||[]).map(t=>t.id===session.id?{...t,dismissedAnnouncements:dismissedList}:t)});
+      else upd({...data,admins:(data.admins||[]).map(a=>a.id===session.id?{...a,dismissedAnnouncements:dismissedList}:a)});
+    }}/>
     {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
     <div style={{display:"flex",flexShrink:0,width:winWidth>=768?(winWidth>=900?260:240):0,overflow:"hidden"}}>
       {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo}/>}
