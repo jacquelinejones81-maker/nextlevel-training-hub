@@ -9532,9 +9532,9 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
   const [visibleId,setVisibleId]=useState(null);
   const [dismissedThisSession,setDismissedThisSession]=useState([]);
   const person=findPersonRecord(data,userId);
-  const dismissed=new Set([...(person?.dismissedAnnouncements||[]),...dismissedThisSession]);
+  const dismissed=new Set([...(person?.dismissedPopupAnnouncements||[]),...dismissedThisSession]);
 
-  const queue=(data.announcements||[])
+  const queue=(data.popupAnnouncements||[])
     .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track)&&!dismissed.has(a.id))
     .sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));
 
@@ -9549,7 +9549,7 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
     setDismissedThisSession(prev=>[...prev,id]);
     setVisibleId(null);
     if(typeof onUpdate==="function"){
-      const updatedList=[...(person?.dismissedAnnouncements||[]),id];
+      const updatedList=[...(person?.dismissedPopupAnnouncements||[]),id];
       onUpdate(updatedList);
     }
   };
@@ -9572,7 +9572,7 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
 
 // ── ANNOUNCEMENTS EDITOR (admin only) ──
 function AnnouncementsEditor({data,onUpdate}) {
-  const anns=data.announcements||[];
+  const anns=data.popupAnnouncements||[];
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
   const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:""};
@@ -9581,15 +9581,15 @@ function AnnouncementsEditor({data,onUpdate}) {
   const save=()=>{
     if(!draft.title.trim()||!draft.message.trim()) return;
     if(editingId){
-      onUpdate({...data,announcements:anns.map(a=>a.id===editingId?{...a,...draft}:a)});
+      onUpdate({...data,popupAnnouncements:anns.map(a=>a.id===editingId?{...a,...draft}:a)});
     } else {
-      onUpdate({...data,announcements:[...anns,{...draft,id:"ann_"+Date.now(),active:true,createdAt:new Date().toISOString()}]});
+      onUpdate({...data,popupAnnouncements:[...anns,{...draft,id:"ann_"+Date.now(),active:true,createdAt:new Date().toISOString()}]});
     }
     setDraft(blankDraft); setShowForm(false); setEditingId(null);
   };
   const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||""}); setEditingId(a.id); setShowForm(true); };
-  const toggleActive=(id)=>{ onUpdate({...data,announcements:anns.map(a=>a.id===id?{...a,active:!a.active}:a)}); };
-  const deleteAnn=(id)=>{ if(!window.confirm("Delete this announcement? This can't be undone.")) return; onUpdate({...data,announcements:anns.filter(a=>a.id!==id)}); };
+  const toggleActive=(id)=>{ onUpdate({...data,popupAnnouncements:anns.map(a=>a.id===id?{...a,active:!a.active}:a)}); };
+  const deleteAnn=(id)=>{ if(!window.confirm("Delete this announcement? This can't be undone.")) return; onUpdate({...data,popupAnnouncements:anns.filter(a=>a.id!==id)}); };
   const toggleAudience=(k)=>{ setDraft(d=>({...d,audience:d.audience.includes(k)?d.audience.filter(x=>x!==k):[...d.audience,k]})); };
 
   const handleImageUpload=(e)=>{
@@ -12148,9 +12148,9 @@ export default function App() {
       setShowRvpPathVideo(false);
     }}/>}
     <AnnouncementPopup data={data} userId={session.id} userRole={session.role} track={session.role==="rep"?(data.reps||[]).find(r=>r.id===session.id)?.track:undefined} onUpdate={(dismissedList)=>{
-      if(session.role==="rep") upd({...data,reps:(data.reps||[]).map(r=>r.id===session.id?{...r,dismissedAnnouncements:dismissedList}:r)});
-      else if(session.role==="trainer") upd({...data,trainers:(data.trainers||[]).map(t=>t.id===session.id?{...t,dismissedAnnouncements:dismissedList}:t)});
-      else upd({...data,admins:(data.admins||[]).map(a=>a.id===session.id?{...a,dismissedAnnouncements:dismissedList}:a)});
+      if(session.role==="rep") upd({...data,reps:(data.reps||[]).map(r=>r.id===session.id?{...r,dismissedPopupAnnouncements:dismissedList}:r)});
+      else if(session.role==="trainer") upd({...data,trainers:(data.trainers||[]).map(t=>t.id===session.id?{...t,dismissedPopupAnnouncements:dismissedList}:t)});
+      else upd({...data,admins:(data.admins||[]).map(a=>a.id===session.id?{...a,dismissedPopupAnnouncements:dismissedList}:a)});
     }}/>
     {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
     <div style={{display:"flex",flexShrink:0,width:winWidth>=768?(winWidth>=900?260:240):0,overflow:"hidden"}}>
