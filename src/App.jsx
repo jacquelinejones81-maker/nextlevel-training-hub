@@ -12012,6 +12012,9 @@ export default function App() {
       {showTour&&<AppTour role="rep" onClose={()=>setShowTour(false)}/>}
       {showPhone&&<AddToPhoneModal onClose={()=>setShowPhone(false)}/>}
       {showNeedHelp&&<NeedHelpModal rep={rep} data={data} onUpdate={upd} onClose={()=>setShowNeedHelp(false)}/>}
+      <AnnouncementPopup data={data} userId={rep.id} userRole="rep" track={rep.track} onUpdate={(dismissedList)=>{
+        upd({...dataRef.current,reps:(dataRef.current.reps||[]).map(r=>r.id===rep.id?{...r,dismissedPopupAnnouncements:dismissedList}:r)});
+      }}/>
       {saveConflict&&<div style={{background:"#fef2f2",borderBottom:"2px solid #dc2626",padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexShrink:0}}>
         <div style={{fontSize:13,color:"#991b1b",fontWeight:600}}>⚠️ Someone else saved a change at the same time as you. Your last change was NOT saved — please refresh the page and try again.</div>
         <div style={{display:"flex",gap:8}}>
