@@ -1443,6 +1443,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       if((id==="f6b"||id==="r6b")&&newChecked[id]&&!checked[id]){
         setShowAutoHomePopup(true);
       }
+      // Congratulate the rep the first time they check off their own FNA
+      if((id==="f6"||id==="r6")&&newChecked[id]&&!checked[id]){
+        setShowFNACongrats(true);
+      }
       if(hitMilestone){
         setCelebrationPct(hitMilestone);
         setShowCelebration(true);
@@ -1458,6 +1462,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
   const [showBizCommitInfo,setShowBizCommitInfo]=useState(false);
   const [showFNAInfo,setShowFNAInfo]=useState(false);
+  const [showFNACongrats,setShowFNACongrats]=useState(false);
   const [repWinWidth,setRepWinWidth]=useState(typeof window!=="undefined"?window.innerWidth:768);
   useEffect(()=>{const h=()=>setRepWinWidth(window.innerWidth);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   const isDesktop=repWinWidth>=768;
@@ -1664,6 +1669,19 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       ]}
       why="You can't lead someone through a financial plan you haven't done yourself. Completing this early means you're speaking from real experience — not just repeating a script — and it protects your own family in the process."
     />}
+    {showFNACongrats&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:3500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"white",borderRadius:16,maxWidth:380,width:"100%",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{background:`linear-gradient(135deg,${C.gold},#f97316)`,padding:"28px 24px 22px",textAlign:"center"}}>
+          <div style={{fontSize:44,marginBottom:8}}>🎉</div>
+          <div style={{color:"white",fontSize:20,fontWeight:800,marginBottom:6}}>Congratulations!</div>
+          <div style={{color:"rgba(255,255,255,0.85)",fontSize:13,lineHeight:1.5}}>You just completed your own Financial Needs Analysis</div>
+        </div>
+        <div style={{padding:"20px 24px 24px"}}>
+          <div style={{fontSize:14,color:C.text,lineHeight:1.6,marginBottom:18,textAlign:"center"}}>You now have real experience with life insurance and a Roth IRA — the same process you'll walk your future clients through. That's a big step, and it makes everything from here more credible.</div>
+          <button onClick={()=>setShowFNACongrats(false)} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:14,cursor:"pointer"}}>Got It 🎉</button>
+        </div>
+      </div>
+    </div>}
     {showAutoHomePopup&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",borderRadius:18,padding:"28px 24px",maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{fontSize:48,marginBottom:10}}>🚗🏠</div>
