@@ -431,8 +431,29 @@ function MachoQ({value={},onChange}) {
   </div>;
 }
 
-function CheckItem({item,checked,onToggle,readOnly,onPopup}) {
-  return <div style={{display:"flex",gap:9,padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><button onClick={!readOnly?onToggle:undefined} style={{width:20,height:20,borderRadius:5,border:`2px solid ${checked?C.teal:C.border}`,background:checked?C.teal:"white",flexShrink:0,marginTop:1,cursor:readOnly?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{checked&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}</button><div style={{flex:1}}><div style={{fontSize:14,color:checked?C.textLight:C.text,textDecoration:checked?"line-through":"none",lineHeight:1.4}}>{item.task}</div>{item.note&&<div style={{fontSize:13,color:C.textLight,marginTop:1}}>{item.note}</div>}{item.link&&<a href={item.link} target="_blank" rel="noreferrer" style={{fontSize:13,color:C.teal,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:2,marginTop:2}}>{item.linkLabel||"Open"} &rarr;</a>}{onPopup&&<button onClick={onPopup} style={{marginTop:4,display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:5,background:C.teal+"11",border:`1px solid ${C.teal}33`,color:C.teal,fontSize:12,fontWeight:600,cursor:"pointer"}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch Video</button>}</div></div>;
+function CheckItem({item,checked,onToggle,readOnly,onPopup,popupLabel}) {
+  const isInfo=popupLabel&&popupLabel!=="Watch Video";
+  return <div style={{display:"flex",gap:9,padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><button onClick={!readOnly?onToggle:undefined} style={{width:20,height:20,borderRadius:5,border:`2px solid ${checked?C.teal:C.border}`,background:checked?C.teal:"white",flexShrink:0,marginTop:1,cursor:readOnly?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{checked&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>}</button><div style={{flex:1}}><div style={{fontSize:14,color:checked?C.textLight:C.text,textDecoration:checked?"line-through":"none",lineHeight:1.4}}>{item.task}</div>{item.note&&<div style={{fontSize:13,color:C.textLight,marginTop:1}}>{item.note}</div>}{item.link&&<a href={item.link} target="_blank" rel="noreferrer" style={{fontSize:13,color:C.teal,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:2,marginTop:2}}>{item.linkLabel||"Open"} &rarr;</a>}{onPopup&&<button onClick={onPopup} style={{marginTop:4,display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:5,background:C.teal+"11",border:`1px solid ${C.teal}33`,color:C.teal,fontSize:12,fontWeight:600,cursor:"pointer"}}>{isInfo?<span>ℹ️</span>:<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>}{popupLabel||"Watch Video"}</button>}</div></div>;
+}
+
+function WhyThisMattersModal({title,icon,sections,why,onClose}) {
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:3200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
+    <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:14,padding:"20px 22px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)",maxHeight:"85vh",overflowY:"auto"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontSize:16,fontWeight:800,color:C.text,display:"flex",alignItems:"center",gap:8}}>{icon} {title}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:C.textLight,cursor:"pointer",fontSize:20,lineHeight:1}}>×</button>
+      </div>
+      {sections.map((s,i)=><div key={i} style={{marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>{s.label}</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>{s.text}</div>
+      </div>)}
+      <div style={{background:C.teal+"0f",borderLeft:`3px solid ${C.teal}`,borderRadius:6,padding:"10px 12px",marginTop:12}}>
+        <div style={{fontSize:11,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Why It Matters</div>
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>{why}</div>
+      </div>
+      <button onClick={onClose} style={{width:"100%",marginTop:16,padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>Got It</button>
+    </div>
+  </div>;
 }
 
 // ── APP TOUR ──
@@ -1410,6 +1431,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const [rewatchVideo,setRewatchVideo]=useState(null);
   const [showOrientationVideo,setShowOrientationVideo]=useState(false);
   const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
+  const [showBizCommitInfo,setShowBizCommitInfo]=useState(false);
+  const [showFNAInfo,setShowFNAInfo]=useState(false);
   const [repWinWidth,setRepWinWidth]=useState(typeof window!=="undefined"?window.innerWidth:768);
   useEffect(()=>{const h=()=>setRepWinWidth(window.innerWidth);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   const isDesktop=repWinWidth>=768;
@@ -1603,6 +1626,19 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {rewatchVideo&&<RewatchVideoModal videoUrl={rewatchVideo.url} title={rewatchVideo.title} onClose={()=>setRewatchVideo(null)}/>}
     {showOrientationVideo&&data?.orientationVideoUrl&&<RewatchVideoModal videoUrl={data.orientationVideoUrl} title="Orientation Video" onClose={()=>setShowOrientationVideo(false)}/>}
     {showLicensedRewatch&&data?.licensedVideoUrl&&<RewatchVideoModal videoUrl={data.licensedVideoUrl} title="Licensed Now What Video" onClose={()=>setShowLicensedRewatch(false)}/>}
+    {showBizCommitInfo&&<WhyThisMattersModal title="Business Commitment" icon="💼" onClose={()=>setShowBizCommitInfo(false)}
+      sections={[
+        {label:"The $25/mo Piece",text:"This covers your Primerica software — study materials for licensing, your personal website, and it's what keeps you eligible for bonus money as you get started."},
+        {label:"The Personal Piece",text:"This commitment is also about deciding how much you can put toward your own life insurance and investments, plus setting up a separate business account for business-related purchases and expenses."},
+      ]}
+      why="Committing to your own financial plan — before asking anyone else to commit to theirs — is what makes you credible. Reps who've done this for themselves show up differently in front of clients."
+    />}
+    {showFNAInfo&&<WhyThisMattersModal title="Your Financial Needs Analysis" icon="📋" onClose={()=>setShowFNAInfo(false)}
+      sections={[
+        {label:"What This Is",text:"This is you going through the same process — life insurance and a Roth IRA — that you'll be walking clients through. Getting your own plan in place is part of the training, not a separate task."},
+      ]}
+      why="You can't lead someone through a financial plan you haven't done yourself. Completing this early means you're speaking from real experience — not just repeating a script — and it protects your own family in the process."
+    />}
     {showAutoHomePopup&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:3500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",borderRadius:18,padding:"28px 24px",maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{fontSize:48,marginBottom:10}}>🚗🏠</div>
@@ -1626,7 +1662,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       {rep.track!=="licensed"&&!rep.referencesNotRequired&&rep.createdAt&&(Date.now()-rep.createdAt)>=3*86400000&&(rep.references||[]).filter(r=>r&&r.name&&r.name.trim()).length<5&&isOwnView&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
       <div style={{fontSize:13,color:"#92400e",fontWeight:600}}>📋 Don't forget to add your 5 references — they help us learn more about you and your goals.</div>
       <button onClick={()=>setTab("refs")} style={{fontSize:12,padding:"6px 12px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>Add References</button>
-    </div>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?()=>setShowOrientationVideo(true):item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?()=>setShowLicensedRewatch(true):undefined}/>)}</div>;})}</div>}
+    </div>}{rep.track==="licensed"&&<GoalBoard data={data} onUpdate={()=>{}} userRole="rep"/>}<RepCounters rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>{Object.entries(cats).map(([cat,items])=>{const cd=items.filter(i=>checked[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=>{
+      const isBizCommit=item.id==="f5"||item.id==="r5";
+      const isFNA=item.id==="f6"||item.id==="r6";
+      const popup=(item.id==="f4"||item.id==="r4")&&data?.orientationVideoUrl&&!readOnly?{fn:()=>setShowOrientationVideo(true),label:"Watch Video"}
+        :item.id==="l0"&&data?.licensedVideoUrl&&!readOnly?{fn:()=>setShowLicensedRewatch(true),label:"Watch Video"}
+        :isBizCommit?{fn:()=>setShowBizCommitInfo(true),label:"Why This Matters"}
+        :isFNA?{fn:()=>setShowFNAInfo(true),label:"Why This Matters"}
+        :null;
+      return <CheckItem key={item.id} item={item} checked={!!checked[item.id]} onToggle={()=>tog(item.id)} readOnly={readOnly} onPopup={popup?.fn} popupLabel={popup?.label}/>;
+    })}</div>;})}</div>}
     {tab==="production"&&(rep.track==="licensed"||rep.fieldTrainerGranted)&&<RepProductionTab rep={rep} data={data} onUpdate={onUpdate} onUpdateData={onUpdateData} readOnly={readOnly}/>}
     {tab==="myactivity"&&rep.track==="licensed"&&onUpdateData&&<MyActivityReport session={{id:rep.id}} data={data} onUpdate={onUpdateData}/>}
     {tab==="myactivity"&&rep.track==="licensed"&&!onUpdateData&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"30px 0"}}>This report is only viewable from the rep's own login.</div>}
