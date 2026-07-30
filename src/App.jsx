@@ -752,14 +752,14 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
                   canvas.width=w;canvas.height=h;
                   canvas.getContext("2d").drawImage(img,0,0,w,h);
                   const compressed=canvas.toDataURL("image/jpeg",0.7);
-                  if(onUpdateData&&data){
-                    onUpdateData({...data,
-                      profilePhotos:{...(data.profilePhotos||{}),[rep.id]:compressed},
-                      reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,dgoPhoto:compressed}:r)
-                    });
-                  } else {
-                    try{localStorage.setItem("dgoPhoto_"+rep.id,compressed);}catch(ex){}
+                  // Always save through the rep record itself — this path is available in
+                  // every context (rep's own login, admin/trainer editing), unlike the
+                  // global save function which isn't always present. This guarantees the
+                  // photo lands in the shared database every time, not just local storage
+                  // on whichever device happened to upload it.
                   onUpdate({...rep,dgoPhoto:compressed});
+                  if(onUpdateData&&data){
+                    onUpdateData({...data,profilePhotos:{...(data.profilePhotos||{}),[rep.id]:compressed}});
                   }
                 };
                 img.src=ev.target.result;
@@ -5071,8 +5071,9 @@ function MyActivityReport({session,data,onUpdate}) {
 function MyProfilePage({session,data,onUpdate}) {
   const profilePhotos = data.profilePhotos||{};
   const photo = (()=>{
+    if(profilePhotos[session.id]) return profilePhotos[session.id];
     try{const ls=localStorage.getItem("profilePhoto_"+session.id);if(ls)return ls;}catch(e){}
-    return profilePhotos[session.id]||null;
+    return null;
   })();
   const [showLightbox,setShowLightbox] = useState(false);
 
