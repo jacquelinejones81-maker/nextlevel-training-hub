@@ -5557,6 +5557,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const [statusFilter,setStatusFilter] = useState("all");
   const [expandedRep,setExpandedRep] = useState(null);
   const [checkInNote,setCheckInNote] = useState("");
+  const [editingCheckIn,setEditingCheckIn] = useState(null); // {repId, isTrainerRec, idx}
+  const [editCheckInText,setEditCheckInText] = useState("");
   const [statusNote,setStatusNote] = useState({});
   const [showGuide,setShowGuide] = useState(false);
 
@@ -5688,6 +5690,30 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
       onUpdate({...data,reps:updated});
     }
     setCheckInNote("");
+  };
+
+  const updateCheckIn = (repId,isTrainerRec,idx,newText) => {
+    if(!newText.trim()) return;
+    if(isTrainerRec){
+      const updated=(data.trainers||[]).map(t=>t.id===repId?{...t,checkIns:(t.checkIns||[]).map((ci,i)=>i===idx?{...ci,text:newText.trim(),editedAt:new Date().toISOString()}:ci)}:t);
+      onUpdate({...data,trainers:updated});
+    } else {
+      const updated=(data.reps||[]).map(r=>r.id===repId?{...r,checkIns:(r.checkIns||[]).map((ci,i)=>i===idx?{...ci,text:newText.trim(),editedAt:new Date().toISOString()}:ci)}:r);
+      onUpdate({...data,reps:updated});
+    }
+    setEditingCheckIn(null);
+    setEditCheckInText("");
+  };
+
+  const deleteCheckIn = (repId,isTrainerRec,idx) => {
+    if(!window.confirm("Delete this coaching note? This can't be undone.")) return;
+    if(isTrainerRec){
+      const updated=(data.trainers||[]).map(t=>t.id===repId?{...t,checkIns:(t.checkIns||[]).filter((_,i)=>i!==idx)}:t);
+      onUpdate({...data,trainers:updated});
+    } else {
+      const updated=(data.reps||[]).map(r=>r.id===repId?{...r,checkIns:(r.checkIns||[]).filter((_,i)=>i!==idx)}:r);
+      onUpdate({...data,reps:updated});
+    }
   };
 
   const setRepStatus = (repId,status) => {
@@ -5908,10 +5934,29 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Coaching Notes</div>
             {(rep.checkIns||[]).length===0&&<div style={{fontSize:13,color:C.textLight,marginBottom:8}}>No coaching notes yet</div>}
-            {(rep.checkIns||[]).slice(-3).reverse().map((ci,ci_i)=><div key={ci_i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,marginBottom:6}}>
-              <div style={{fontSize:13,color:C.text}}>{ci.text}</div>
-              <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
-            </div>)}
+            {(rep.checkIns||[]).map((ci,i)=>({...ci,origIdx:i})).slice(-3).reverse().map((ci)=>{
+              const isEditing=editingCheckIn&&editingCheckIn.repId===rep.id&&editingCheckIn.idx===ci.origIdx;
+              return <div key={ci.origIdx} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,marginBottom:6}}>
+                {isEditing?
+                  <div>
+                    <input value={editCheckInText} onChange={e=>setEditCheckInText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&updateCheckIn(rep.id,rep.isTrainer,ci.origIdx,editCheckInText)} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.teal,fontSize:13,color:C.text,marginBottom:5,boxSizing:"border-box"}}/>
+                    <div style={{display:"flex",gap:6}}>
+                      <button onClick={()=>updateCheckIn(rep.id,rep.isTrainer,ci.origIdx,editCheckInText)} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>Save</button>
+                      <button onClick={()=>{setEditingCheckIn(null);setEditCheckInText("");}} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer"}}>Cancel</button>
+                    </div>
+                  </div>
+                  :<>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{fontSize:13,color:C.text,flex:1}}>{ci.text}</div>
+                      <div style={{display:"flex",gap:4,flexShrink:0}}>
+                        <button onClick={()=>{setEditingCheckIn({repId:rep.id,isTrainerRec:rep.isTrainer,idx:ci.origIdx});setEditCheckInText(ci.text);}} style={{fontSize:11,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer"}}>Edit</button>
+                        <button onClick={()=>deleteCheckIn(rep.id,rep.isTrainer,ci.origIdx)} style={{fontSize:11,padding:"2px 7px",borderRadius:5,border:"1px solid "+C.danger+"44",background:C.danger+"11",color:C.danger,cursor:"pointer"}}>Delete</button>
+                      </div>
+                    </div>
+                    <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{new Date(ci.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}{ci.editedAt&&" (edited)"}</div>
+                  </>}
+              </div>;
+            })}
             <div style={{display:"flex",gap:6,marginTop:6}}>
               <input placeholder="Add a coaching note..." value={checkInNote} onChange={e=>setCheckInNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCheckIn(rep.id,rep.isTrainer)} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
               <button onClick={()=>addCheckIn(rep.id,rep.isTrainer)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
