@@ -2777,7 +2777,7 @@ function TrainerProfilePage({trainer,data,onUpdate,onBack}) {
     {/* OVERVIEW TAB */}
     {tab==="overview"&&<div>
       {/* Commitment Card */}
-      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={countPeriodRecruits(data,trainer.id,pm.start)} premiumOverride={(data.myProduction||{})[trainer.id]?.lifeApps?.filter(a=>a.date&&a.date>=pm.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0} onUnlock={()=>{
+      {commitment?<CommitmentCard rep={trainer} primerMonth={pm} canUnlock={true} recruitsOverride={countPeriodRecruits(data,trainer.id,pm.start)} premiumOverride={(data.myProduction||{})[trainer.id]?.lifeApps?.filter(a=>effectiveAppDate(a)&&effectiveAppDate(a)>=pm.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0} onUnlock={()=>{
         const updated={...trainer,commitments:{...(trainer.commitments||{}),[pm.key]:undefined}};
         onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===trainer.id?updated:t)});
       }}/>:<Card style={{marginBottom:12,border:`1px solid ${C.gold}33`,background:C.gold+"06"}}>
@@ -3219,7 +3219,7 @@ function sumRepMetricsForRange(data,repId,startDate,endDate){
   const myProd=(data.myProduction||{})[repId]||{};
   const person=findPersonRecord(data,repId);
   const combinedLifeApps=(myProd.lifeApps&&myProd.lifeApps.length>0)?myProd.lifeApps:(person?.selfPremium||[]);
-  const lifeAppsArr=combinedLifeApps.filter(a=>a.date&&a.date>=startDate&&a.date<=endDate&&(!a.cod||a.codAccepted));
+  const lifeAppsArr=combinedLifeApps.filter(a=>effectiveAppDate(a)&&effectiveAppDate(a)>=startDate&&effectiveAppDate(a)<=endDate&&(!a.cod||a.codAccepted));
   result.lifeApps=lifeAppsArr.length;
   result.premium=lifeAppsArr.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
@@ -3429,7 +3429,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       const c3=trRec?.commitments?.[pm3.key];
       if(c3){
         const trRecruits=countPeriodRecruits(data,userId,pm3.start);
-        const trPremium=(data.myProduction||{})[userId]?.lifeApps?.filter(a=>a.date&&a.date>=pm3.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0;
+        const trPremium=(data.myProduction||{})[userId]?.lifeApps?.filter(a=>effectiveAppDate(a)&&effectiveAppDate(a)>=pm3.start&&(!a.cod||a.codAccepted)).reduce((s,a)=>s+(Number(a.premium)||0)*12,0)||0;
         return <CommitmentCard rep={trRec} primerMonth={pm3} canUnlock={false} onUnlock={()=>{}} recruitsOverride={trRecruits} premiumOverride={trPremium}/>;
       }
       // No commitment set — show reminder card
@@ -3927,7 +3927,7 @@ function getAutoActuals(data,userId,dateStr){
   const lifeAppsArr=(myProd.lifeApps&&myProd.lifeApps.length>0)?myProd.lifeApps:(person?.selfPremium||[]);
   const investmentsArr=(myProd.investments&&myProd.investments.length>0)?myProd.investments:(person?.investments||[]);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
-  const dayLifeApps=lifeAppsArr.filter(a=>a.date===dateStr&&(!a.cod||a.codAccepted));
+  const dayLifeApps=lifeAppsArr.filter(a=>effectiveAppDate(a)===dateStr&&(!a.cod||a.codAccepted));
   const dayInvestments=investmentsArr.filter(i=>i.date===dateStr);
   const dayRecruits=(data.reps||[]).filter(r=>{
     if(r.trainerId!==userId||!r.createdAt||r.excludeFromRecruitCount) return false;
@@ -3949,6 +3949,17 @@ function getAutoActuals(data,userId,dateStr){
     lumpInvestment:dayInvestments.reduce((s,i)=>s+parseLump(i.lumpSum),0),
     linksShared:linksSharedToday,
   };
+}
+
+// A COD app's "real" date for counting purposes is the day it was actually accepted, not
+// the day it was submitted — since acceptance can slip into a later Primerica month, and
+// it should count toward whichever month it actually landed in, not the one it was logged
+// in. Non-COD apps just use their normal date. A COD app that's still pending, or was
+// declined, has no effective date — it never counts toward any month.
+function effectiveAppDate(entry){
+  if(!entry.cod) return entry.date;
+  if(entry.codDeclined) return null;
+  return entry.codAccepted?(entry.codAcceptedDate||entry.date):null;
 }
 
 function getScorecardActual(data,userId,dateStr,catKey,dayEntry){
@@ -6043,7 +6054,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               if(!c2) return "<h2>MONTHLY COMMITMENT</h2><p class='note'>"+rep.name+" has not set a commitment for "+pm2.label+" yet.</p>";
               const mStart2=pm2.start;
               const recs2=countPeriodRecruits(data,rep.id,mStart2);
-              const prem2=(rep.selfPremium||[]).filter(e=>e.date&&e.date>=mStart2&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
+              const prem2=(rep.selfPremium||[]).filter(e=>effectiveAppDate(e)&&effectiveAppDate(e)>=mStart2&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
               const rPct2=c2.recruits>0?Math.min(100,Math.round((recs2/c2.recruits)*100)):0;
               const pPct2=c2.premium>0?Math.min(100,Math.round((prem2/c2.premium)*100)):0;
               const days2=getDaysRemaining(pm2.cutoff);
@@ -6058,11 +6069,12 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const ms=new Date(now2.getFullYear(),now2.getMonth(),1).toISOString().split("T")[0];
               const ents=rep.isTrainer?((data.myProduction||{})[rep.id]?.lifeApps||[]):(rep.selfPremium||[]);
               const me=ents.filter(e=>e.date>=ms);
-              const mEarned=me.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
+              const meForTotal=ents.filter(e=>effectiveAppDate(e)&&effectiveAppDate(e)>=ms);
+              const mEarned=meForTotal.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
               const goal2=Number(rep.monthlyIncomeGoal)||0;
               const gPct=goal2>0?Math.min(100,Math.round((mEarned/goal2)*100)):0;
               let rows="";
-              me.forEach(e=>{const c=calcC2(Number(e.premium)||0);const isCOD=!!e.cod;const isPending=isCOD&&!e.codAccepted;const statusCell=isCOD?"<td style='text-align:center;padding:6px'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(isPending?"#fef3c7":"#d1fae5")+";color:"+(isPending?"#d97706":"#059669")+"'>"+(isPending?"⏳ COD Pending":"✅ COD Accepted")+"</span></td>":"<td></td>";rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+(e.client||"")+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td>"+statusCell+"<td style='text-align:right;padding:6px;color:"+(isPending?"#999":"#10b981")+";font-weight:600'>"+(isPending?"—":"$"+c.up.toFixed(0))+"</td><td style='text-align:right;padding:6px'>"+(isPending?"—":"$"+c.ae.toFixed(0))+"</td><td style='text-align:right;padding:6px;font-weight:600'>"+(isPending?"—":"$"+c.tot.toFixed(0))+"</td></tr>";});
+              me.forEach(e=>{const c=calcC2(Number(e.premium)||0);const isCOD=!!e.cod;const isDeclined=isCOD&&!!e.codDeclined;const isPending=isCOD&&!e.codAccepted&&!isDeclined;const statusCell=isCOD?"<td style='text-align:center;padding:6px'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(isDeclined?"#fee2e2":isPending?"#fef3c7":"#d1fae5")+";color:"+(isDeclined?"#dc2626":isPending?"#d97706":"#059669")+"'>"+(isDeclined?"✕ Declined":isPending?"⏳ COD Pending":"✅ COD Accepted")+"</span></td>":"<td></td>";rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+(e.client||"")+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td>"+statusCell+"<td style='text-align:right;padding:6px;color:"+((isPending||isDeclined)?"#999":"#10b981")+";font-weight:600'>"+((isPending||isDeclined)?"—":"$"+c.up.toFixed(0))+"</td><td style='text-align:right;padding:6px'>"+((isPending||isDeclined)?"—":"$"+c.ae.toFixed(0))+"</td><td style='text-align:right;padding:6px;font-weight:600'>"+((isPending||isDeclined)?"—":"$"+c.tot.toFixed(0))+"</td></tr>";});
               const table=me.length>0?"<h2>THIS MONTH'S APPS</h2><table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:8px'><tr style='background:#f0f4f8'><th style='text-align:left;padding:6px'>Client</th><th style='text-align:right;padding:6px'>Mo. Premium</th><th style='text-align:center;padding:6px'>Status</th><th style='text-align:right;padding:6px'>Upfront</th><th style='text-align:right;padding:6px'>As Earned</th><th style='text-align:right;padding:6px'>Total 1yr</th></tr>"+rows+"</table>":"<p style='color:#999;font-size:12px'>No apps logged this month</p>";
               return "<h2>INCOME GOAL & COMMISSION</h2><p class='note'>Commission tracking for "+rep.name+". Based on promotion level and logged life apps.</p><div class='grid2'><div class='card'><div class='big'>"+promo.label+"</div><div class='label'>Promotion Level ("+promo.pct+"%)</div></div><div class='card'><div class='big'>$"+(goal2>0?goal2.toLocaleString():"Not set")+"</div><div class='label'>Monthly Income Goal</div></div><div class='card'><div class='big'>$"+mEarned.toFixed(0)+"</div><div class='label'>Earned This Month (upfront)</div></div><div class='card'><div class='big'>"+gPct+"%</div><div class='label'>Goal Progress</div></div></div>"+table;
             })():""}
@@ -7476,7 +7488,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
   const [calcPremium,setCalcPremium] = useState("");
   const entries = rep.selfPremium||[];
   const total = entries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>s+(Number(e.premium)||0),0);
-  const pendingCOD = entries.filter(e=>e.cod&&!e.codAccepted);
+  const pendingCOD = entries.filter(e=>e.cod&&!e.codAccepted&&!e.codDeclined);
 
   // Promotion level — reads from rep, defaults to rep 25%
   const PROMO_LEVELS=[
@@ -7520,7 +7532,12 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
     setShow(false);
   };
   const acceptCOD=(idx)=>{
-    const updated=entries.map((e,i)=>i===idx?{...e,codAccepted:true}:e);
+    const updated=entries.map((e,i)=>i===idx?{...e,codAccepted:true,codAcceptedDate:localDateStr()}:e);
+    onUpdate({...repRef.current,selfPremium:updated});
+  };
+  const declineCOD=(idx)=>{
+    if(!window.confirm("Decline this COD app? This can't be undone, and it will never count toward any month's totals or commission.")) return;
+    const updated=entries.map((e,i)=>i===idx?{...e,codDeclined:true,codDeclinedDate:localDateStr()}:e);
     onUpdate({...repRef.current,selfPremium:updated});
   };
 
@@ -7590,18 +7607,22 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
         const realIdx=entries.length-1-i;
         const c=calcCommission(e.premium);
         const isCOD=!!e.cod;
-        const isPending=isCOD&&!e.codAccepted;
-        return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:isPending?0.75:1}}>
+        const isDeclined=isCOD&&!!e.codDeclined;
+        const isPending=isCOD&&!e.codAccepted&&!isDeclined;
+        return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:(isPending||isDeclined)?0.75:1}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13}}>
             <div style={{flex:1}}>
-              <span style={{color:C.text,fontWeight:600}}>{e.client}</span>
-              {isCOD&&<span style={{marginLeft:6,fontSize:10,padding:"1px 5px",borderRadius:4,background:isPending?C.gold+"22":C.success+"22",color:isPending?C.gold:C.success,fontWeight:700}}>{isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
+              <span style={{color:C.text,fontWeight:600,textDecoration:isDeclined?"line-through":"none"}}>{e.client}</span>
+              {isCOD&&<span style={{marginLeft:6,fontSize:10,padding:"1px 5px",borderRadius:4,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success,fontWeight:700}}>{isDeclined?"✕ Declined":isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
             </div>
-            <span style={{color:isPending?C.textMid:C.teal,fontWeight:600,marginRight:8}}>${e.premium}/mo</span>
+            <span style={{color:(isPending||isDeclined)?C.textMid:C.teal,fontWeight:600,marginRight:8,textDecoration:isDeclined?"line-through":"none"}}>${e.premium}/mo</span>
             <button onClick={()=>onUpdate({...repRef.current,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
           </div>
-          {isPending&&<button onClick={()=>acceptCOD(realIdx)} style={{marginTop:4,width:"100%",padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:12,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted — Add to Totals</button>}
-          {c&&!isPending&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
+          {isPending&&<div style={{display:"flex",gap:6,marginTop:4}}>
+            <button onClick={()=>acceptCOD(realIdx)} style={{flex:1,padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:12,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted</button>
+            <button onClick={()=>declineCOD(realIdx)} style={{flex:1,padding:"3px 8px",borderRadius:5,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,fontSize:12,fontWeight:600,cursor:"pointer"}}>✕ Decline</button>
+          </div>}
+          {c&&!isPending&&!isDeclined&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
             <div style={{fontSize:10,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.upfront.toFixed(0)}</span></div>
             <div style={{fontSize:10,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
             <div style={{fontSize:10,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
@@ -11004,7 +11025,7 @@ function CommitmentCard({rep,primerMonth,onUnlock,canUnlock,recruitsOverride,pre
   const now=new Date();
   const monthStart=primerMonth.start;
   const recruits=recruitsOverride!==undefined?recruitsOverride:(rep.recruits||[]).filter(r=>r.date&&r.date>=monthStart).length;
-  const premium=premiumOverride!==undefined?premiumOverride:(rep.selfPremium||[]).filter(e=>e.date&&e.date>=monthStart&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
+  const premium=premiumOverride!==undefined?premiumOverride:(rep.selfPremium||[]).filter(e=>effectiveAppDate(e)&&effectiveAppDate(e)>=monthStart&&(!e.cod||e.codAccepted)).reduce((s,e)=>s+(Number(e.premium)||0)*12,0);
   const recruitPct=commitment.recruits>0?Math.min(100,Math.round((recruits/commitment.recruits)*100)):0;
   const premiumPct=commitment.premium>0?Math.min(100,Math.round((premium/commitment.premium)*100)):0;
 
