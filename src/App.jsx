@@ -4732,16 +4732,20 @@ function MyActivityReport({session,data,onUpdate}) {
   const isTrainerRole = (data.trainers||[]).some(t=>t.id===userId);
   const staffRecord = (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || (data.reps||[]).find(r=>r.id===userId) || {};
   const myProd = (data.myProduction||{})[userId] || {};
-  const lifeApps = myProd.lifeApps || [];
-  const investments = myProd.investments || [];
+  const lifeApps = (myProd.lifeApps&&myProd.lifeApps.length>0)?myProd.lifeApps:(staffRecord?.selfPremium||[]);
+  const investments = (myProd.investments&&myProd.investments.length>0)?myProd.investments:(staffRecord?.investments||[]);
   const parseLump = v => Number(String(v||"").replace(/[$,]/g,""))||0;
 
-  // ── This month boundaries ──
+  // ── This month boundaries — uses the real Primerica month, not the calendar month, so
+  // numbers don't reset early just because the calendar flipped to a new month before this
+  // Primerica month's cutoff date has actually passed. ──
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthStartStr = monthStart.toISOString().split("T")[0];
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const dayOfMonth = now.getDate();
+  const pmForReport = getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const monthStart = new Date(pmForReport.start+"T12:00:00");
+  const monthStartStr = pmForReport.start;
+  const cutoffDate = new Date(pmForReport.cutoff+"T12:00:00");
+  const daysInMonth = Math.round((cutoffDate-monthStart)/86400000)+1;
+  const dayOfMonth = Math.min(daysInMonth,Math.round((new Date(localDateStr()+"T12:00:00")-monthStart)/86400000)+1);
   const monthPct = Math.round((dayOfMonth/daysInMonth)*100);
 
   // ── Recruits this month ──
@@ -4780,7 +4784,7 @@ function MyActivityReport({session,data,onUpdate}) {
   const scorecardMonth = Object.entries(scorecardAll).reduce((s,[wk,d])=>{
     try {
       const wkDate = new Date(wk+"T12:00:00");
-      if(wkDate.getMonth()===now.getMonth() && wkDate.getFullYear()===now.getFullYear()){
+      if(wkDate>=monthStart && wkDate<=cutoffDate){
         s.contacts += legacyAwareWeekTotal(d,"contacts");
         s.apptSet += legacyAwareWeekTotal(d,"apptSet");
         s.apptDone += legacyAwareWeekTotal(d,"apptDone");
