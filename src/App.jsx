@@ -1529,6 +1529,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Rewatch: RVP Path</span>
         </button>}
       </div>}
+      <a href="https://primericaonline.com/" target="_blank" rel="noreferrer" style={{marginTop:6,display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer",textDecoration:"none"}}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Primerica Online (POL)</span>
+      </a>
     </div>
     {/* Nav items */}
     <div style={{flex:1,overflowY:"auto",padding:"8px 8px"}}>
@@ -10159,6 +10163,12 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
         <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:500}}>{rewatchVideo.label}</span>
       </button>
     </div>}
+    <div style={{padding:"6px 14px 0"}}>
+      <a href="https://primericaonline.com/" target="_blank" rel="noreferrer" style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"7px 9px",borderRadius:7,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer",textDecoration:"none",boxSizing:"border-box"}}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:500}}>Primerica Online (POL)</span>
+      </a>
+    </div>
     <nav style={{flex:1,padding:"10px 7px",overflowY:"auto"}}>
       {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
