@@ -1510,6 +1510,12 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>Meet with RVP — {rvp.name}</span>
         </a>)}
       </div>}
+      {bookingLink&&<div style={{marginTop:6}}>
+        <a href={bookingLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"6px 8px",borderRadius:6,background:"rgba(14,165,160,0.12)",border:"1px solid rgba(14,165,160,0.4)",textDecoration:"none"}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2"><path d="M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"/></svg>
+          <span style={{fontSize:12,color:C.teal,fontWeight:600}}>Schedule Training Appointment</span>
+        </a>
+      </div>}
       {/* Rewatch milestone videos — only for granted access levels */}
       {(((rep.track==="fast"||rep.track==="regular"||!rep.track)&&data.welcomeVideoUrl)||(rep.nextLevelGranted&&data.licensedVideoUrl)||(rep.fieldTrainerGranted&&data.fieldTrainerVideoUrl)||(rep.rvpPathGranted&&data.rvpPathVideoUrl))&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
         {(rep.track==="fast"||rep.track==="regular"||!rep.track)&&data.welcomeVideoUrl&&<button onClick={()=>setRewatchVideo({url:data.welcomeVideoUrl,title:"Welcome!"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,padding:"5px 8px",borderRadius:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",cursor:"pointer"}}>
