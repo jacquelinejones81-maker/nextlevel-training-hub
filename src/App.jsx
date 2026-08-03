@@ -1402,6 +1402,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
     {k:"fame",l:"Wall of Fame"},
     {k:"schedule",l:"Schedule"},
+    ...(rep.fieldTrainerGranted?[
+      {k:"ftdashboard",l:"Dashboard"},
+      {k:"ftreps",l:"My Reps"},
+      {k:"ftaccountability",l:"Accountability"},
+      {k:"ftteamleads",l:"Team Leads"},
+      {k:"fttasks",l:"My Tasks"},
+      {k:"ftemail",l:"Email Templates"},
+      {k:"ftquickmsg",l:"Quick Messages"},
+      {k:"ftprofile",l:"My Profile"},
+    ]:[]),
   ];
   const [celebrationPct,setCelebrationPct]=useState(100);
   const [showAutoHomePopup,setShowAutoHomePopup]=useState(false);
@@ -1460,6 +1470,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const [rewatchVideo,setRewatchVideo]=useState(null);
   const [showOrientationVideo,setShowOrientationVideo]=useState(false);
   const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
+  const [ftViewingRepId,setFtViewingRepId]=useState(null);
   const [showBizCommitInfo,setShowBizCommitInfo]=useState(false);
   const [showFNAInfo,setShowFNAInfo]=useState(false);
   const [showFNACongrats,setShowFNACongrats]=useState(false);
@@ -1728,6 +1739,22 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="production"&&(rep.track==="licensed"||rep.fieldTrainerGranted)&&<RepProductionTab rep={rep} data={data} onUpdate={onUpdate} onUpdateData={onUpdateData} readOnly={readOnly}/>}
     {tab==="myactivity"&&rep.track==="licensed"&&onUpdateData&&<MyActivityReport session={{id:rep.id}} data={data} onUpdate={onUpdateData}/>}
     {tab==="myactivity"&&rep.track==="licensed"&&!onUpdateData&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"30px 0"}}>This report is only viewable from the rep's own login.</div>}
+    {tab==="ftdashboard"&&rep.fieldTrainerGranted&&<Dashboard data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" userId={rep.id} onSelectRep={(id)=>setFtViewingRepId(id)}/>}
+    {tab==="ftreps"&&rep.fieldTrainerGranted&&!ftViewingRepId&&<MyRepsPage data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" userId={rep.id} onSelectRep={(id)=>setFtViewingRepId(id)}/>}
+    {tab==="ftreps"&&rep.fieldTrainerGranted&&ftViewingRepId&&(()=>{
+      const trainee=(data.reps||[]).find(r=>r.id===ftViewingRepId);
+      if(!trainee) return null;
+      return <div>
+        <button onClick={()=>setFtViewingRepId(null)} style={{marginBottom:10,fontSize:13,padding:"6px 12px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>&larr; Back to My Reps</button>
+        <RepView rep={trainee} data={data} onUpdate={(id,u)=>{if(onUpdateData)onUpdateData({...data,reps:(data.reps||[]).map(r=>r.id===id?u:r)});}} readOnly={!onUpdateData} isOwnView={false}/>
+      </div>;
+    })()}
+    {tab==="ftaccountability"&&rep.fieldTrainerGranted&&<AccountabilityDashboard data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" userId={rep.id}/>}
+    {tab==="ftteamleads"&&rep.fieldTrainerGranted&&<TeamLeads userRole="fieldtrainer"/>}
+    {tab==="fttasks"&&rep.fieldTrainerGranted&&<MyTasksPage session={{id:rep.id,name:rep.name,role:"rep"}} data={data} onUpdate={onUpdateData||(()=>{})}/>}
+    {tab==="ftemail"&&rep.fieldTrainerGranted&&<EmailTemplatesPage data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>}
+    {tab==="ftquickmsg"&&rep.fieldTrainerGranted&&<QuickMessages data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer"/>}
+    {tab==="ftprofile"&&rep.fieldTrainerGranted&&<MyProfilePage session={{id:rep.id,name:rep.name,role:"rep"}} data={data} onUpdate={onUpdateData||(()=>{})}/>}
     {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
     {tab==="leadlink"&&<div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
@@ -3013,9 +3040,10 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   const [myRepsOnly,setMyRepsOnly]=useState(false);
   const isAdmin=userRole==="admin"||userRole==="superadmin";
   const isSuperAdmin=userRole==="superadmin";
+  const isTrainerScoped=userRole==="trainer"||userRole==="fieldtrainer";
   const allReps=data.reps||[];
-  const activeR=allReps.filter(r=>!r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
-  const inactiveR=allReps.filter(r=>r.inactive&&(userRole==="trainer"?r.trainerId===userId:true));
+  const activeR=allReps.filter(r=>!r.inactive&&(isTrainerScoped?r.trainerId===userId:true));
+  const inactiveR=allReps.filter(r=>r.inactive&&(isTrainerScoped?r.trainerId===userId:true));
   const displayR=showInactive?inactiveR:activeR;
   const filtered=displayR.filter(r=>{
     if(myRepsOnly&&r.adminId!==userId) return false;
@@ -3037,7 +3065,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
   };
 
   return <div>
-    {(isAdmin||userRole==="trainer")&&!showInactive&&<MyRecruitsThisMonth data={data} userId={userId} userRole={userRole} onUpdate={onUpdate} onSelectRep={onSelectRep}/>}
+    {(isAdmin||isTrainerScoped)&&!showInactive&&<MyRecruitsThisMonth data={data} userId={userId} userRole={userRole} onUpdate={onUpdate} onSelectRep={onSelectRep}/>}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Reps {showInactive&&<span style={{fontSize:13,color:C.danger,fontWeight:400}}>(Inactive)</span>}</div>
       <div style={{display:"flex",gap:6}}>
@@ -3353,6 +3381,7 @@ function TeamNumbersCard({data,userId}) {
 
 function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const isAdmin=userRole==="admin"||userRole==="superadmin";
+  const isTrainerScoped=userRole==="trainer"||userRole==="fieldtrainer";
   const [showTrainerCommitment,setShowTrainerCommitment]=useState(false);
   const isTrainer=userRole==="trainer";
   const trainerRecord=isTrainer?(data.trainers||[]).find(t=>t.id===userId):null;
@@ -3369,7 +3398,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const [search,setSearch]=useState("");
   const [filter,setFilter]=useState("all");
   const [showAdd,setShowAdd]=useState(false);
-  const reps=(data.reps||[]).filter(r=>userRole==="trainer"?r.trainerId===userId:true);
+  const reps=(data.reps||[]).filter(r=>isTrainerScoped?r.trainerId===userId:true);
   const filtered=reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
   const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
