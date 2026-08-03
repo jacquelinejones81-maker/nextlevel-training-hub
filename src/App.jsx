@@ -5077,6 +5077,10 @@ function MyActivityReport({session,data,onUpdate}) {
           <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(totalPremiumMonth).toLocaleString()}/mo</div>
           <div style={{ fontSize:11, color:C.textMid }}>Premium Written</div>
         </div>
+        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(totalPremiumMonth*12).toLocaleString()}</div>
+          <div style={{ fontSize:11, color:C.textMid }}>Annual Premium Written</div>
+        </div>
         <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px" }}>
           <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>${Math.round(upfrontEarned).toLocaleString()}</div>
           <div style={{ fontSize:11, color:C.textMid }}>Earned This Month (Upfront)</div>
