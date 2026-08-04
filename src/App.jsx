@@ -326,6 +326,28 @@ const TRACK_TO_CHECKLIST_KEY = { fast:"fastStart", regular:"regularStart", licen
 // satisfied. An item counts as satisfied if it's checked, OR if it's marked gateOptional
 // (meant for inherently-ongoing items like "actively studying for securities license").
 // No items tagged for a gate at all = gate considered open (nothing to block on).
+// Goals (Income, PAC $, PAC count, Lump Sum) are stored per Primerica month instead of as
+// one flat value — so a new month always starts blank for re-entry, while last month's
+// number stays safely on record under its own key rather than being lost or carried over.
+function getMonthlyGoal(goalsField,monthKey){
+  if(goalsField&&typeof goalsField==="object") return goalsField[monthKey]||"";
+  return ""; // legacy flat value from before this change — treated as blank, needs re-entry once
+}
+function setMonthlyGoal(goalsField,monthKey,value){
+  const base=(goalsField&&typeof goalsField==="object")?goalsField:{};
+  return {...base,[monthKey]:value};
+}
+// Finds the start-date key of the Primerica month right before the current one, so goal
+// cards can offer a "View Last Month" toggle the same way Recruits and Team Numbers do.
+function getPreviousPrimerMonthStart(data,currentStart){
+  const sorted=[...(data.primerMonthEnds||[])].filter(m=>m.cutoff&&m.label).sort((a,b)=>a.cutoff.localeCompare(b.cutoff));
+  const idx=sorted.findIndex(m=>m.cutoff===currentStart||m.cutoff>currentStart);
+  // primerMonthEnds stores cutoffs, not starts — treat each entry's cutoff as the boundary
+  // and find the one immediately before the current month's start.
+  const before=sorted.filter(m=>m.cutoff<currentStart);
+  return before.length>0?before[before.length-1].cutoff:null;
+}
+
 function getGateStatus(data,checked,gateKey){
   const items=getChecklistItems(data,"licensedNowWhat").filter(i=>i.gateGroup===gateKey);
   if(items.length===0) return {items:[],complete:true,doneCount:0,total:0};
@@ -2007,7 +2029,10 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
 }
 
 // ── MY PRODUCTION ──
-function MyProd({myProd,onUpdate,investmentsOnly=false}) {
+function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
+  const pmForGoals = getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const prevMonthStart = getPreviousPrimerMonthStart(data,pmForGoals.start);
+  const [showLastMonthGoals,setShowLastMonthGoals] = useState(false);
   const [open,setOpen]=useState(true);
   const [tab,setTab]=useState(investmentsOnly?"investments":"lifeapps");
   const [na,setNa]=useState({clientName:"",premium:"",date:localDateStr()});
@@ -2054,55 +2079,69 @@ function MyProd({myProd,onUpdate,investmentsOnly=false}) {
       {tab==="investments"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[invs.filter(i=>Number(i.pac)>0).length,"PAC Accounts",C.purple],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}</div>
         {investmentsOnly&&<div style={{background:C.purple+"08",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.purple,marginBottom:8}}>Monthly Investment Goals</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.purple}}>Monthly Investment Goals</div>
+            {prevMonthStart&&<button onClick={()=>setShowLastMonthGoals(!showLastMonthGoals)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.purple}44`,background:showLastMonthGoals?C.purple:"white",color:showLastMonthGoals?"white":C.purple,cursor:"pointer",fontWeight:600}}>{showLastMonthGoals?"← Back to This Month":"View Last Month"}</button>}
+          </div>
+          {showLastMonthGoals?
+            <div>
+              <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>What you set last Primerica month:</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>{getMonthlyGoal(myProd.monthlyPACCountGoals,prevMonthStart)||"—"}</div><div style={{fontSize:9,color:C.textMid}}>PAC Accounts Goal</div></div>
+                <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.gold}}>{getMonthlyGoal(myProd.monthlyPACGoals,prevMonthStart)?"$"+Number(getMonthlyGoal(myProd.monthlyPACGoals,prevMonthStart)).toLocaleString()+"/mo":"—"}</div><div style={{fontSize:9,color:C.textMid}}>PAC $/mo Goal</div></div>
+                <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>{getMonthlyGoal(myProd.monthlyLumpGoals,prevMonthStart)?"$"+Number(getMonthlyGoal(myProd.monthlyLumpGoals,prevMonthStart)).toLocaleString():"—"}</div><div style={{fontSize:9,color:C.textMid}}>Lump Sum Goal</div></div>
+              </div>
+            </div>
+          :<>
           <div style={{marginBottom:10}}>
             <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>PAC Goal — # of Accounts</div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input type="number" placeholder="e.g. 10" value={myProd.monthlyPACCountGoal||""} onChange={e=>onUpdate({...myProd,monthlyPACCountGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+              <input type="number" placeholder="e.g. 10" value={getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start)} onChange={e=>onUpdate({...myProd,monthlyPACCountGoals:setMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
               <span style={{fontSize:13,color:C.textMid}}>PAC accounts</span>
             </div>
-            {myProd.monthlyPACCountGoal&&Number(myProd.monthlyPACCountGoal)>0&&<div style={{marginTop:6}}>
+            {getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start)&&Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start))>0&&<div style={{marginTop:6}}>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
                 <span>PAC Count Progress</span>
-                <span style={{fontWeight:700,color:C.purple}}>{invs.filter(i=>Number(i.pac)>0).length} / {Number(myProd.monthlyPACCountGoal)}</span>
+                <span style={{fontWeight:700,color:C.purple}}>{invs.filter(i=>Number(i.pac)>0).length} / {Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start))}</span>
               </div>
               <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((invs.filter(i=>Number(i.pac)>0).length/Number(myProd.monthlyPACCountGoal))*100))+"%"}}/>
+                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((invs.filter(i=>Number(i.pac)>0).length/Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start)))*100))+"%"}}/>
               </div>
             </div>}
           </div>
           <div style={{marginBottom:10}}>
             <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>PAC Goal — $/mo Total</div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input type="number" placeholder="e.g. 5000" value={myProd.monthlyPACGoal||""} onChange={e=>onUpdate({...myProd,monthlyPACGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+              <input type="number" placeholder="e.g. 5000" value={getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)} onChange={e=>onUpdate({...myProd,monthlyPACGoals:setMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
               <span style={{fontSize:13,color:C.textMid}}>/mo</span>
             </div>
-            {myProd.monthlyPACGoal&&Number(myProd.monthlyPACGoal)>0&&<div style={{marginTop:6}}>
+            {getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)&&Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start))>0&&<div style={{marginTop:6}}>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
                 <span>PAC Progress</span>
-                <span style={{fontWeight:700,color:C.gold}}>${Math.round(totPAC).toLocaleString()}/mo / ${Number(myProd.monthlyPACGoal).toLocaleString()}/mo</span>
+                <span style={{fontWeight:700,color:C.gold}}>${Math.round(totPAC).toLocaleString()}/mo / ${Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)).toLocaleString()}/mo</span>
               </div>
               <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:3,background:C.gold,width:Math.min(100,Math.round((totPAC/Number(myProd.monthlyPACGoal))*100))+"%"}}/>
+                <div style={{height:"100%",borderRadius:3,background:C.gold,width:Math.min(100,Math.round((totPAC/Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)))*100))+"%"}}/>
               </div>
             </div>}
           </div>
           <div>
             <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Lump Sum Goal ($ this month)</div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input type="number" placeholder="e.g. 250000" value={myProd.monthlyLumpGoal||""} onChange={e=>onUpdate({...myProd,monthlyLumpGoal:e.target.value})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
+              <input type="number" placeholder="e.g. 250000" value={getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)} onChange={e=>onUpdate({...myProd,monthlyLumpGoals:setMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
               <span style={{fontSize:13,color:C.textMid}}>this month</span>
             </div>
-            {myProd.monthlyLumpGoal&&Number(myProd.monthlyLumpGoal)>0&&<div style={{marginTop:6}}>
+            {getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)&&Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start))>0&&<div style={{marginTop:6}}>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
                 <span>Lump Sum Progress</span>
-                <span style={{fontWeight:700,color:C.purple}}>${Math.round(totLump).toLocaleString()} / ${Number(myProd.monthlyLumpGoal).toLocaleString()}</span>
+                <span style={{fontWeight:700,color:C.purple}}>${Math.round(totLump).toLocaleString()} / ${Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)).toLocaleString()}</span>
               </div>
               <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((totLump/Number(myProd.monthlyLumpGoal))*100))+"%"}}/>
+                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((totLump/Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)))*100))+"%"}}/>
               </div>
             </div>}
           </div>
+          </>}
         </div>}
         <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
           <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
@@ -2192,9 +2231,9 @@ function RepProductionTab({rep,data,onUpdate,onUpdateData,readOnly}) {
         </button>)}
       </div>
     </Card>
-    <LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly}/>
+    <LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly} data={data}/>
     {!readOnly&&<QuickRecruitLog person={rep} onSave={(log)=>onUpdate(rep.id,{...rep,myRecruitLog:log})}/>}
-    <MyProd myProd={myProd} onUpdate={updateMyProd} investmentsOnly={true}/>
+    <MyProd myProd={myProd} onUpdate={updateMyProd} investmentsOnly={true} data={data}/>
   </div>;
 }
 
@@ -4880,10 +4919,10 @@ function MyActivityReport({session,data,onUpdate}) {
   const yesterdayLabel = yesterdayDate.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
 
   // ── Goals ──
-  const incomeGoal = Number(staffRecord.monthlyIncomeGoal)||0;
-  const pacGoal = Number(myProd.monthlyPACGoal)||0;
-  const pacCountGoal = Number(myProd.monthlyPACCountGoal)||0;
-  const lumpGoal = Number(myProd.monthlyLumpGoal)||0;
+  const incomeGoal = Number(getMonthlyGoal(staffRecord.monthlyIncomeGoals,pmForReport.start))||0;
+  const pacGoal = Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForReport.start))||0;
+  const pacCountGoal = Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForReport.start))||0;
+  const lumpGoal = Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForReport.start))||0;
   const PROMO_LEVELS = [{key:"rep",pct:25},{key:"sr_rep",pct:35},{key:"dl",pct:50},{key:"divl",pct:60},{key:"rl",pct:70},{key:"srl",pct:80},{key:"rvp",pct:110}];
   const promo = PROMO_LEVELS.find(p=>p.key===(staffRecord.promotionLevel||"rep")) || PROMO_LEVELS[0];
   const annualEarned = ((totalPremiumMonth*12) - 65) * (promo.pct/100);
@@ -6154,7 +6193,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               const me=ents.filter(e=>e.date>=ms);
               const meForTotal=ents.filter(e=>effectiveAppDate(e)&&effectiveAppDate(e)>=ms);
               const mEarned=meForTotal.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{const c=calcC2(Number(e.premium)||0);return s+c.up;},0);
-              const goal2=Number(rep.monthlyIncomeGoal)||0;
+              const goal2=Number(getMonthlyGoal(rep.monthlyIncomeGoals,getCurrentPrimerMonth(data?.primerMonthEnds||[]).start))||0;
               const gPct=goal2>0?Math.min(100,Math.round((mEarned/goal2)*100)):0;
               let rows="";
               me.forEach(e=>{const c=calcC2(Number(e.premium)||0);const isCOD=!!e.cod;const isDeclined=isCOD&&!!e.codDeclined;const isPending=isCOD&&!e.codAccepted&&!isDeclined;const statusCell=isCOD?"<td style='text-align:center;padding:6px'><span style='font-size:10px;padding:2px 6px;border-radius:4px;background:"+(isDeclined?"#fee2e2":isPending?"#fef3c7":"#d1fae5")+";color:"+(isDeclined?"#dc2626":isPending?"#d97706":"#059669")+"'>"+(isDeclined?"✕ Declined":isPending?"⏳ COD Pending":"✅ COD Accepted")+"</span></td>":"<td></td>";rows+="<tr style='border-bottom:1px solid #eee'><td style='padding:6px'>"+(e.client||"")+"</td><td style='text-align:right;padding:6px'>$"+e.premium+"/mo</td>"+statusCell+"<td style='text-align:right;padding:6px;color:"+((isPending||isDeclined)?"#999":"#10b981")+";font-weight:600'>"+((isPending||isDeclined)?"—":"$"+c.up.toFixed(0))+"</td><td style='text-align:right;padding:6px'>"+((isPending||isDeclined)?"—":"$"+c.ae.toFixed(0))+"</td><td style='text-align:right;padding:6px;font-weight:600'>"+((isPending||isDeclined)?"—":"$"+c.tot.toFixed(0))+"</td></tr>";});
@@ -7561,11 +7600,14 @@ function InvestmentLog({data,onUpdate,userRole}) {
 
 
 // ── LICENSED PREMIUM ENTRY ──
-function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
+function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
+  const pmForGoals = getCurrentPrimerMonth(data.primerMonthEnds||[]);
+  const prevMonthStartLPE = getPreviousPrimerMonthStart(data,pmForGoals.start);
+  const [showLastMonthGoal,setShowLastMonthGoal] = useState(false);
   const repRef=useRef(rep);
   useEffect(()=>{repRef.current=rep;},[rep]);
-  const [goalInput,setGoalInput]=useState(rep.monthlyIncomeGoal||"");
-  useEffect(()=>{setGoalInput(rep.monthlyIncomeGoal||"");},[rep.monthlyIncomeGoal]);
+  const [goalInput,setGoalInput]=useState(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));
+  useEffect(()=>{setGoalInput(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));},[rep.monthlyIncomeGoals,pmForGoals.start]);
   const [form,setForm] = useState({client:"",premium:"",date:localDateStr(),cod:false});
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
@@ -7637,9 +7679,16 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
 
     {/* Monthly Income Goal */}
     <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{pmForGoals.label}</div>
+        {!readOnly&&prevMonthStartLPE&&<button onClick={()=>setShowLastMonthGoal(!showLastMonthGoal)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showLastMonthGoal?C.navy:"white",color:showLastMonthGoal?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showLastMonthGoal?"← Back":"View Last Month"}</button>}
+      </div>
+      {showLastMonthGoal?
+        <div style={{fontSize:13,color:C.textMid}}>Last month's income goal was <strong style={{color:C.text}}>{getMonthlyGoal(rep.monthlyIncomeGoals,prevMonthStartLPE)?"$"+Number(getMonthlyGoal(rep.monthlyIncomeGoals,prevMonthStartLPE)).toLocaleString():"not set"}</strong>.</div>
+      :<>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
         <div style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
-        {readOnly?<div style={{fontSize:13,fontWeight:700,color:C.text}}>${goal.toLocaleString()}</div>:<input type="number" placeholder="e.g. 2000" value={rep.monthlyIncomeGoal||""} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoal:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>}
+        {readOnly?<div style={{fontSize:13,fontWeight:700,color:C.text}}>${goal.toLocaleString()}</div>:<input type="number" placeholder="e.g. 2000" value={getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start)} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoals:setMonthlyGoal(repRef.current.monthlyIncomeGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>}
         {goal>0&&<div style={{fontSize:13,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
       </div>
       {goal>0&&<div>
@@ -7652,6 +7701,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly}) {
           {goalPct>=100&&<span style={{color:C.success,fontWeight:700}}>🎉 Goal reached!</span>}
         </div>
       </div>}
+      </>}
     </div>
 
     {/* Log App Form */}
@@ -12354,11 +12404,10 @@ export default function App() {
         id:session.id,
         selfPremium:(data.myProduction||{})[session.id]?.lifeApps||[],
         promotionLevel:staffRecord.promotionLevel||"rep",
-        monthlyIncomeGoal:staffRecord.monthlyIncomeGoal||"",
       };
       const updatePseudoRep=(updated)=>{
-        // Save promotionLevel and monthlyIncomeGoal to staff record
-        const updatedStaff={...staffRecord,promotionLevel:updated.promotionLevel,monthlyIncomeGoal:updated.monthlyIncomeGoal};
+        // Save promotionLevel and monthlyIncomeGoals to staff record
+        const updatedStaff={...staffRecord,promotionLevel:updated.promotionLevel,monthlyIncomeGoals:updated.monthlyIncomeGoals};
         const isTrainer=(data.trainers||[]).some(t=>t.id===session.id);
         const newData={...data,
           myProduction:{...(data.myProduction||{}),[session.id]:{...((data.myProduction||{})[session.id]||{}),lifeApps:updated.selfPremium||[]}},
@@ -12382,10 +12431,10 @@ export default function App() {
           </div>
         </Card>
         {/* Life Apps with commission tracking */}
-        <LicensedPremiumEntry rep={pseudoRep} onUpdate={updatePseudoRep}/>
+        <LicensedPremiumEntry rep={pseudoRep} onUpdate={updatePseudoRep} data={data}/>
         <QuickRecruitLog person={staffRecord} onSave={(log)=>saveStaff({...staffRecord,myRecruitLog:log})}/>
         {/* Investments */}
-        <MyProd myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
+        <MyProd data={data} myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
           const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
           const isAdminRole=session.role==="admin"||session.role==="superadmin";
           if(isAdminRole&&p.investments){
