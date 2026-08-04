@@ -322,6 +322,16 @@ const CHECKLIST_LABELS = {
   svpChecklist: "SVP Checklist",
 };
 const TRACK_TO_CHECKLIST_KEY = { fast:"fastStart", regular:"regularStart", licensed:"licensedNowWhat" };
+// Checks whether all requirement checkboxes for a request gate (fieldTrainer/rvp) are
+// satisfied. An item counts as satisfied if it's checked, OR if it's marked gateOptional
+// (meant for inherently-ongoing items like "actively studying for securities license").
+// No items tagged for a gate at all = gate considered open (nothing to block on).
+function getGateStatus(data,checked,gateKey){
+  const items=getChecklistItems(data,"licensedNowWhat").filter(i=>i.gateGroup===gateKey);
+  if(items.length===0) return {items:[],complete:true,doneCount:0,total:0};
+  const doneCount=items.filter(i=>i.gateOptional||checked[i.id]).length;
+  return {items,complete:doneCount===items.length,doneCount,total:items.length};
+}
 function getChecklistItems(data, key) {
   const custom = data?.checklists?.[key];
   if (custom && Array.isArray(custom.items)) return custom.items;
@@ -883,7 +893,7 @@ function RepCounters({rep,onUpdate,readOnly}) {
 }
 
 // ── CAREER JOURNEY BANNER (sticky, collapsible) ──
-function CareerJourneyBanner({rep,onUpdate}) {
+function CareerJourneyBanner({rep,data,onUpdate}) {
   const [expanded,setExpanded] = useState(false);
   const stages = [
     {key:"new",label:"New Rep",color:C.teal},
@@ -895,6 +905,10 @@ function CareerJourneyBanner({rep,onUpdate}) {
   const currentColor = stages[stageIndex]?.color||C.teal;
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
   const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
+  const ftGate = getGateStatus(data,rep.checked||{},"fieldTrainer");
+  const rvpGate = getGateStatus(data,rep.checked||{},"rvp");
+  const [showFtConfirm,setShowFtConfirm] = useState(false);
+  const [showRvpConfirm,setShowRvpConfirm] = useState(false);
 
   const nextGoal = currentStage==="new"?"Get Life Licensed":currentStage==="licensed"?"Become a Field Trainer":currentStage==="trainer"?"Become an RVP":"Regional Vice President";
 
@@ -930,38 +944,62 @@ function CareerJourneyBanner({rep,onUpdate}) {
       </div>}
       {currentStage==="licensed"&&<div>
         <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:10}}>You are licensed! Now build your skills, production, and team. When you meet the Field Trainer requirements, request your review below.</div>
-        {!ftRequested&&!rep.fieldTrainerDenied&&<button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
-          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-          Request Field Trainer Review
-        </button>}
+        {!ftRequested&&!rep.fieldTrainerDenied&&<>
+          <button onClick={()=>{if(!ftGate.complete)return;onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);setShowFtConfirm(true);}}
+            disabled={!ftGate.complete}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:ftGate.complete?"linear-gradient(135deg,"+C.purple+",#7c3aed)":C.surface,color:ftGate.complete?"white":C.textLight,border:ftGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:13,cursor:ftGate.complete?"pointer":"default"}}>
+            Request Field Trainer Review
+          </button>
+          {ftGate.total>0&&!ftGate.complete&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:5}}>Complete all Field Trainer Requirements above to unlock this request ({ftGate.doneCount}/{ftGate.total})</div>}
+        </>}
         {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified.</div>}
         {rep.fieldTrainerDenied&&!ftRequested&&<div>
           <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:13,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
-          <button onClick={()=>{onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);}}
-            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          <button onClick={()=>{if(!ftGate.complete)return;onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setExpanded(false);setShowFtConfirm(true);}}
+            disabled={!ftGate.complete}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:ftGate.complete?"linear-gradient(135deg,"+C.purple+",#7c3aed)":C.surface,color:ftGate.complete?"white":C.textLight,border:ftGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:13,cursor:ftGate.complete?"pointer":"default"}}>
             Request Again
           </button>
+          {ftGate.total>0&&!ftGate.complete&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:5}}>Complete all Field Trainer Requirements above to unlock this request ({ftGate.doneCount}/{ftGate.total})</div>}
         </div>}
       </div>}
       {currentStage==="trainer"&&<div>
         <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:10}}>You are a Field Trainer! Now focus on consistently producing and building your team. When you are ready, request access to the RVP Path.</div>
-        {!rvpRequested&&!rep.rvpPathDenied&&<button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
-          style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-          Request RVP Path Access
-        </button>}
+        {!rvpRequested&&!rep.rvpPathDenied&&<>
+          <button onClick={()=>{if(!rvpGate.complete)return;onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);setShowRvpConfirm(true);}}
+            disabled={!rvpGate.complete}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:rvpGate.complete?"linear-gradient(135deg,"+C.success+",#059669)":C.surface,color:rvpGate.complete?"white":C.textLight,border:rvpGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:13,cursor:rvpGate.complete?"pointer":"default"}}>
+            Request RVP Path Access
+          </button>
+          {rvpGate.total>0&&!rvpGate.complete&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:5}}>Complete all RVP Requirements above to unlock this request ({rvpGate.doneCount}/{rvpGate.total})</div>}
+        </>}
         {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review soon.</div>}
         {rep.rvpPathDenied&&!rvpRequested&&<div>
           <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"7px 12px",fontSize:13,color:C.danger,marginBottom:6,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
-          <button onClick={()=>{onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);}}
-            style={{width:"100%",padding:"9px",borderRadius:8,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          <button onClick={()=>{if(!rvpGate.complete)return;onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setExpanded(false);setShowRvpConfirm(true);}}
+            disabled={!rvpGate.complete}
+            style={{width:"100%",padding:"9px",borderRadius:8,background:rvpGate.complete?"linear-gradient(135deg,"+C.success+",#059669)":C.surface,color:rvpGate.complete?"white":C.textLight,border:rvpGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:13,cursor:rvpGate.complete?"pointer":"default"}}>
             Request Again
           </button>
+          {rvpGate.total>0&&!rvpGate.complete&&<div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:5}}>Complete all RVP Requirements above to unlock this request ({rvpGate.doneCount}/{rvpGate.total})</div>}
         </div>}
       </div>}
       {currentStage==="rvp"&&<div>
         <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:8}}>You have unlocked the RVP Path! Check the Career Path tab for your full RVP checklist.</div>
         <div style={{fontSize:13,color:C.success,fontWeight:600,textAlign:"center"}}>You are on your way to Regional Vice President!</div>
       </div>}
+    </div>}
+    {(showFtConfirm||showRvpConfirm)&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:3400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>{setShowFtConfirm(false);setShowRvpConfirm(false);}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:16,maxWidth:360,width:"100%",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{background:showFtConfirm?"linear-gradient(135deg,"+C.purple+",#7c3aed)":"linear-gradient(135deg,"+C.success+",#059669)",padding:"24px 20px",textAlign:"center"}}>
+          <div style={{fontSize:36,marginBottom:6}}>✅</div>
+          <div style={{color:"white",fontSize:17,fontWeight:800}}>Request Sent!</div>
+        </div>
+        <div style={{padding:"18px 20px"}}>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:14,textAlign:"center"}}>{showFtConfirm?"Your Field Trainer review request has been submitted. Your admin has been notified and will follow up with next steps.":"Your RVP Path review request has been submitted. Your admin has been notified and will follow up with next steps."}</div>
+          <button onClick={()=>{setShowFtConfirm(false);setShowRvpConfirm(false);}} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer"}}>Got It</button>
+        </div>
+      </div>
     </div>}
   </div>;
 }
@@ -1655,7 +1693,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       </div>
     </div>}
     {/* ── CAREER JOURNEY STICKY BANNER ── */}
-    {!readOnly&&<CareerJourneyBanner rep={rep} onUpdate={onUpdate}/>}
+    {!readOnly&&<CareerJourneyBanner rep={rep} data={data} onUpdate={onUpdate}/>}
 
     {showCelebration&&<Confetti name={rep.name} pct={celebrationPct} onClose={()=>setShowCelebration(false)}/>}
     {showProspectingReminder&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:3400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -9536,6 +9574,10 @@ function CareerPath({rep,data,onUpdate}) {
   const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
   const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
+  const ftGate = getGateStatus(data,rep.checked||{},"fieldTrainer");
+  const rvpGate = getGateStatus(data,rep.checked||{},"rvp");
+  const [showFtConfirm,setShowFtConfirm] = useState(false);
+  const [showRvpConfirm,setShowRvpConfirm] = useState(false);
 
   return <div>
     {/* Roadmap */}
@@ -9579,14 +9621,21 @@ function CareerPath({rep,data,onUpdate}) {
       <Card style={{border:"1px solid "+(ftRequested?C.gold+"44":C.purple+"33")}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Ready for Field Trainer Review?</div>
         <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>When you feel confident you meet all the requirements, request a review. Your RVP will be notified and will schedule time to go through everything with you.</div>
-        {!ftRequested&&!rep.fieldTrainerDenied&&<button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})}
-          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>
-          Request Field Trainer Review
-        </button>}
+        {!ftRequested&&!rep.fieldTrainerDenied&&<>
+          <button onClick={()=>{if(!ftGate.complete)return;onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setShowFtConfirm(true);}}
+            disabled={!ftGate.complete}
+            style={{width:"100%",padding:"10px",borderRadius:9,background:ftGate.complete?"linear-gradient(135deg,"+C.purple+",#7c3aed)":C.surface,color:ftGate.complete?"white":C.textLight,border:ftGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:14,cursor:ftGate.complete?"pointer":"default"}}>
+            Request Field Trainer Review
+          </button>
+          {ftGate.total>0&&!ftGate.complete&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",marginTop:6}}>Complete all Field Trainer Requirements above to unlock this request ({ftGate.doneCount}/{ftGate.total})</div>}
+        </>}
         {ftRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>Review requested! Your RVP has been notified. Keep pushing forward!</div>}
         {rep.fieldTrainerDenied&&!ftRequested&&<div>
           <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:13,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
-          <button onClick={()=>onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.purple+",#7c3aed)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Request Again</button>
+          <button onClick={()=>{if(!ftGate.complete)return;onUpdate(rep.id,{...rep,fieldTrainerRequested:true,fieldTrainerDenied:false,fieldTrainerRequestedAt:new Date().toISOString()});setShowFtConfirm(true);}}
+            disabled={!ftGate.complete}
+            style={{width:"100%",padding:"10px",borderRadius:9,background:ftGate.complete?"linear-gradient(135deg,"+C.purple+",#7c3aed)":C.surface,color:ftGate.complete?"white":C.textLight,border:ftGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:14,cursor:ftGate.complete?"pointer":"default"}}>Request Again</button>
+          {ftGate.total>0&&!ftGate.complete&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",marginTop:6}}>Complete all Field Trainer Requirements above to unlock this request ({ftGate.doneCount}/{ftGate.total})</div>}
         </div>}
       </Card>
     </div>}
@@ -9600,14 +9649,21 @@ function CareerPath({rep,data,onUpdate}) {
       <Card style={{marginBottom:14,border:"1px solid "+(rvpRequested?C.gold+"44":C.success+"33")}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Ready for the RVP Path?</div>
         <div style={{fontSize:13,color:C.textMid,marginBottom:10,lineHeight:1.5}}>The RVP Path is the final stage of your career journey. When you are consistently producing as a Field Trainer and ready to build a region, request access to the full RVP checklist.</div>
-        {!rvpRequested&&!rep.rvpPathDenied&&<button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})}
-          style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>
-          Request RVP Path Access
-        </button>}
+        {!rvpRequested&&!rep.rvpPathDenied&&<>
+          <button onClick={()=>{if(!rvpGate.complete)return;onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setShowRvpConfirm(true);}}
+            disabled={!rvpGate.complete}
+            style={{width:"100%",padding:"10px",borderRadius:9,background:rvpGate.complete?"linear-gradient(135deg,"+C.success+",#059669)":C.surface,color:rvpGate.complete?"white":C.textLight,border:rvpGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:14,cursor:rvpGate.complete?"pointer":"default"}}>
+            Request RVP Path Access
+          </button>
+          {rvpGate.total>0&&!rvpGate.complete&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",marginTop:6}}>Complete all RVP Requirements above to unlock this request ({rvpGate.doneCount}/{rvpGate.total})</div>}
+        </>}
         {rvpRequested&&<div style={{background:C.gold+"11",border:"1px solid "+C.gold+"33",borderRadius:8,padding:"10px 12px",textAlign:"center",fontSize:13,color:C.gold,fontWeight:600}}>RVP Path request sent! Your admin will review and grant access when ready.</div>}
         {rep.rvpPathDenied&&!rvpRequested&&<div>
           <div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"8px 12px",fontSize:13,color:C.danger,marginBottom:8,textAlign:"center"}}>Request was not approved — speak with your trainer for next steps</div>
-          <button onClick={()=>onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()})} style={{width:"100%",padding:"10px",borderRadius:9,background:"linear-gradient(135deg,"+C.success+",#059669)",color:"white",border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Request Again</button>
+          <button onClick={()=>{if(!rvpGate.complete)return;onUpdate(rep.id,{...rep,rvpPathRequested:true,rvpPathDenied:false,rvpPathRequestedAt:new Date().toISOString()});setShowRvpConfirm(true);}}
+            disabled={!rvpGate.complete}
+            style={{width:"100%",padding:"10px",borderRadius:9,background:rvpGate.complete?"linear-gradient(135deg,"+C.success+",#059669)":C.surface,color:rvpGate.complete?"white":C.textLight,border:rvpGate.complete?"none":"1px solid "+C.border,fontWeight:700,fontSize:14,cursor:rvpGate.complete?"pointer":"default"}}>Request Again</button>
+          {rvpGate.total>0&&!rvpGate.complete&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",marginTop:6}}>Complete all RVP Requirements above to unlock this request ({rvpGate.doneCount}/{rvpGate.total})</div>}
         </div>}
       </Card>
     </div>}
@@ -9619,6 +9675,18 @@ function CareerPath({rep,data,onUpdate}) {
         <div style={{fontSize:13,color:C.textMid}}>You are on your way to Regional Vice President! Complete every item below.</div>
       </div>
       {Object.entries(getChecklistItems(data,"rvpChecklist").reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=><div key={cat}><SecHead title={cat} color={C.gold}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!(rep.rvpChecked||{})[item.id]} onToggle={()=>onUpdate(rep.id,{...rep,rvpChecked:{...(rep.rvpChecked||{}),[item.id]:!(rep.rvpChecked||{})[item.id]}})} readOnly={false}/>)}</div>)}
+    </div>}
+    {(showFtConfirm||showRvpConfirm)&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:3400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>{setShowFtConfirm(false);setShowRvpConfirm(false);}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:16,maxWidth:360,width:"100%",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{background:showFtConfirm?"linear-gradient(135deg,"+C.purple+",#7c3aed)":"linear-gradient(135deg,"+C.success+",#059669)",padding:"24px 20px",textAlign:"center"}}>
+          <div style={{fontSize:36,marginBottom:6}}>✅</div>
+          <div style={{color:"white",fontSize:17,fontWeight:800}}>Request Sent!</div>
+        </div>
+        <div style={{padding:"18px 20px"}}>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:14,textAlign:"center"}}>{showFtConfirm?"Your Field Trainer review request has been submitted. Your admin has been notified and will follow up with next steps.":"Your RVP Path review request has been submitted. Your admin has been notified and will follow up with next steps."}</div>
+          <button onClick={()=>{setShowFtConfirm(false);setShowRvpConfirm(false);}} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer"}}>Got It</button>
+        </div>
+      </div>
     </div>}
   </div>;
 }
@@ -9897,7 +9965,7 @@ function ChecklistEditor({data,onUpdate}) {
   const [addingCatItem,setAddingCatItem]=useState(false);
   const [newCatName,setNewCatName]=useState("");
   const [addingToCat,setAddingToCat]=useState(null); // category name currently adding an item to
-  const [newItemDraft,setNewItemDraft]=useState({task:"",note:"",link:"",linkLabel:""});
+  const [newItemDraft,setNewItemDraft]=useState({task:"",note:"",link:"",linkLabel:"",gateGroup:"none",gateOptional:false});
 
   const items=getChecklistItems(data,activeKey);
   const grouped=getGroupedChecklist(data,activeKey);
@@ -9906,7 +9974,7 @@ function ChecklistEditor({data,onUpdate}) {
     onUpdate({...data,checklists:{...(data.checklists||{}),[activeKey]:{items:newItems}}});
   };
 
-  const startEdit=(item)=>{ setEditingItem({...item}); };
+  const startEdit=(item)=>{ setEditingItem({...item,gateGroup:item.gateGroup||"none",gateOptional:!!item.gateOptional}); };
   const saveEdit=()=>{
     if(!editingItem.task?.trim()) return;
     saveItems(items.map(i=>i.id===editingItem.id?{...editingItem,task:editingItem.task.trim()}:i));
@@ -9918,9 +9986,9 @@ function ChecklistEditor({data,onUpdate}) {
   };
   const addItemToCat=(cat)=>{
     if(!newItemDraft.task.trim()) return;
-    const newItem={id:"custom_"+Date.now(),cat,task:newItemDraft.task.trim(),note:newItemDraft.note.trim()||undefined,link:newItemDraft.link.trim()||undefined,linkLabel:newItemDraft.linkLabel.trim()||undefined};
+    const newItem={id:"custom_"+Date.now(),cat,task:newItemDraft.task.trim(),note:newItemDraft.note.trim()||undefined,link:newItemDraft.link.trim()||undefined,linkLabel:newItemDraft.linkLabel.trim()||undefined,gateGroup:newItemDraft.gateGroup!=="none"?newItemDraft.gateGroup:undefined,gateOptional:newItemDraft.gateOptional||undefined};
     saveItems([...items,newItem]);
-    setNewItemDraft({task:"",note:"",link:"",linkLabel:""});
+    setNewItemDraft({task:"",note:"",link:"",linkLabel:"",gateGroup:"none",gateOptional:false});
     setAddingToCat(null);
   };
   const addCategory=()=>{
@@ -10004,6 +10072,18 @@ function ChecklistEditor({data,onUpdate}) {
           <input value={editingItem.linkLabel||""} onChange={e=>setEditingItem({...editingItem,linkLabel:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
           <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Link URL (optional)</div>
           <input value={editingItem.link||""} onChange={e=>setEditingItem({...editingItem,link:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          {activeKey==="licensedNowWhat"&&<div style={{background:C.surface,borderRadius:6,padding:8,marginBottom:8}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Counts Toward Request Gate</div>
+            <select value={editingItem.gateGroup||"none"} onChange={e=>setEditingItem({...editingItem,gateGroup:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,background:"white"}}>
+              <option value="none">None</option>
+              <option value="fieldTrainer">Field Trainer Request</option>
+              <option value="rvp">RVP Request</option>
+            </select>
+            {editingItem.gateGroup==="fieldTrainer"&&<label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <input type="checkbox" checked={!!editingItem.gateOptional} onChange={e=>setEditingItem({...editingItem,gateOptional:e.target.checked})} style={{width:14,height:14,accentColor:C.teal,cursor:"pointer"}}/>
+              <span style={{fontSize:11,color:C.text}}>Counts even if not checked (e.g. "actively studying")</span>
+            </label>}
+          </div>}
           <div style={{display:"flex",gap:6}}>
             <button onClick={()=>setEditingItem(null)} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:12}}>Cancel</button>
             <button onClick={saveEdit} style={{flex:2,padding:"6px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Changes</button>
@@ -10017,8 +10097,20 @@ function ChecklistEditor({data,onUpdate}) {
           <input placeholder="Note (optional)" value={newItemDraft.note} onChange={e=>setNewItemDraft({...newItemDraft,note:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,boxSizing:"border-box"}}/>
           <input placeholder="Link Label (optional)" value={newItemDraft.linkLabel} onChange={e=>setNewItemDraft({...newItemDraft,linkLabel:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,boxSizing:"border-box"}}/>
           <input placeholder="Link URL (optional)" value={newItemDraft.link} onChange={e=>setNewItemDraft({...newItemDraft,link:e.target.value})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:8,boxSizing:"border-box"}}/>
+          {activeKey==="licensedNowWhat"&&<div style={{background:"white",borderRadius:6,padding:8,marginBottom:8,border:`1px solid ${C.border}`}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.textMid,marginBottom:3}}>Counts Toward Request Gate</div>
+            <select value={newItemDraft.gateGroup} onChange={e=>setNewItemDraft({...newItemDraft,gateGroup:e.target.value})} style={{width:"100%",padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,marginBottom:6,background:"white"}}>
+              <option value="none">None</option>
+              <option value="fieldTrainer">Field Trainer Request</option>
+              <option value="rvp">RVP Request</option>
+            </select>
+            {newItemDraft.gateGroup==="fieldTrainer"&&<label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <input type="checkbox" checked={newItemDraft.gateOptional} onChange={e=>setNewItemDraft({...newItemDraft,gateOptional:e.target.checked})} style={{width:14,height:14,accentColor:C.teal,cursor:"pointer"}}/>
+              <span style={{fontSize:11,color:C.text}}>Counts even if not checked (e.g. "actively studying")</span>
+            </label>}
+          </div>}
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{setAddingToCat(null);setNewItemDraft({task:"",note:"",link:"",linkLabel:""});}} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:12}}>Cancel</button>
+            <button onClick={()=>{setAddingToCat(null);setNewItemDraft({task:"",note:"",link:"",linkLabel:"",gateGroup:"none",gateOptional:false});}} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:12}}>Cancel</button>
             <button onClick={()=>addItemToCat(cat)} style={{flex:2,padding:"6px",borderRadius:6,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save Checkbox</button>
           </div>
         </div>
