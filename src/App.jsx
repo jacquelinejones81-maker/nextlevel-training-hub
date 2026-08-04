@@ -1444,7 +1444,6 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       {k:"ftdashboard",l:"Dashboard"},
       {k:"ftreps",l:"My Reps"},
       {k:"ftaccountability",l:"Accountability"},
-      {k:"ftteamleads",l:"Team Leads"},
       {k:"fttasks",l:"My Tasks"},
       {k:"ftemail",l:"Email Templates"},
       {k:"ftquickmsg",l:"Quick Messages"},
@@ -1788,7 +1787,6 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       </div>;
     })()}
     {tab==="ftaccountability"&&rep.fieldTrainerGranted&&<AccountabilityDashboard data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" userId={rep.id}/>}
-    {tab==="ftteamleads"&&rep.fieldTrainerGranted&&<TeamLeads userRole="fieldtrainer"/>}
     {tab==="fttasks"&&rep.fieldTrainerGranted&&<MyTasksPage session={{id:rep.id,name:rep.name,role:"rep"}} data={data} onUpdate={onUpdateData||(()=>{})}/>}
     {tab==="ftemail"&&rep.fieldTrainerGranted&&<EmailTemplatesPage data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>}
     {tab==="ftquickmsg"&&rep.fieldTrainerGranted&&<QuickMessages data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer"/>}
@@ -8511,21 +8509,31 @@ function LeadLinkPage({session,data,onUpdate}) {
 
 
 // ── TEAM LEADS ──
-function TeamLeads({userRole}) {
+function TeamLeads({data,userId}) {
   const [leads,setLeads] = useState([]);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState(null);
   const [search,setSearch] = useState("");
   const [filter,setFilter] = useState("all");
   const [showArchived,setShowArchived] = useState(false);
-  const isAdmin = userRole==="admin"||userRole==="superadmin";
+  const isAdmin = true; // this component is only ever reached by admins now
+
+  // Only reps who report to this admin — same "my downline" scoping used everywhere
+  // else tonight (Team Numbers, Dashboard, My Reps). Matches each lead's referredBy
+  // (a rep's MoneyMap link slug) against the safe-name of every rep assigned to this
+  // admin, so a second team's admin using this same Hub would only ever see leads tied
+  // to their own reps — never another team's.
+  const mySafeNames = new Set(
+    (data.reps||[]).filter(r=>r.adminId===userId).map(r=>(r.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,""))
+  );
 
   const fetchLeads = async () => {
     try {
       const q = query(collection(mmDb,"leads"), orderBy("submittedAt","desc"));
       const snap = await getDocs(q);
-      const data = snap.docs.map(d=>({...d.data(),docId:d.id}));
-      setLeads(data);
+      const all = snap.docs.map(d=>({...d.data(),docId:d.id}));
+      const mine = all.filter(l=>mySafeNames.has((l.referredBy||"").toLowerCase()));
+      setLeads(mine);
     } catch(e) {
       setError("Could not load leads. Check Firestore rules on MoneyMap Firebase.");
       console.error(e);
@@ -8553,6 +8561,19 @@ function TeamLeads({userRole}) {
       setLeads(prev=>prev.map(l=>l.docId===docId?{...l,archived:false}:l));
     } catch(e) {
       alert("Could not restore lead.");
+    }
+  };
+
+  const clearAllLeads = async () => {
+    const activeCount = leads.filter(l=>!l.archived).length;
+    if(activeCount===0) return;
+    if(!window.confirm(`Archive all ${activeCount} of your team's active leads? This clears the list — each one can still be restored individually from Archived if needed.`)) return;
+    try {
+      const {doc:fsDoc,updateDoc} = await import("firebase/firestore");
+      await Promise.all(leads.filter(l=>!l.archived).map(l=>updateDoc(fsDoc(mmDb,"leads",l.docId),{archived:true})));
+      setLeads(prev=>prev.map(l=>({...l,archived:true})));
+    } catch(e) {
+      alert("Could not clear all leads. Check MoneyMap Firestore write rules.");
     }
   };
 
@@ -8599,7 +8620,7 @@ function TeamLeads({userRole}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Team Leads</div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>All leads submitted through MoneyMap links.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Leads submitted through your team's MoneyMap links only.</div>
 
     {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.textMid}}>Loading leads...</div>}
     {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"12px",color:C.danger,fontSize:13,marginBottom:14}}>{error}</div>}
@@ -8623,6 +8644,7 @@ function TeamLeads({userRole}) {
         <div style={{fontSize:13,color:C.textMid}}>{showArchived?"Showing archived leads":"Showing active leads"} ({filtered.length})</div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           {archivedLeads.length>0&&<button onClick={()=>{setShowArchived(!showArchived);setFilter("all");}} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer"}}>{showArchived?"View Active":"View Archived ("+archivedLeads.length+")"}</button>}
+          {!showArchived&&activeLeads.length>0&&<button onClick={clearAllLeads} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.danger+"44",background:C.danger+"11",color:C.danger,cursor:"pointer",fontWeight:600}}>Clear All</button>}
           <button onClick={fetchLeads} style={{fontSize:12,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Refresh</button>
         </div>
       </div>
@@ -8873,7 +8895,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
 }
 
 // ── ADMIN PIPELINE VIEW ──
-function AdminPipeline({data,onUpdate}) {
+function AdminPipeline({data,onUpdate,userId}) {
   const [expandedRep,setExpandedRep] = useState(null);
   const [allLeads,setAllLeads] = useState([]);
   const [loading,setLoading] = useState(true);
@@ -8891,10 +8913,11 @@ function AdminPipeline({data,onUpdate}) {
     fetch();
   },[]);
 
+  // Only this admin's own reps and trainers — same downline scoping as Team Leads above,
+  // so a second team's admin never sees another team's rep pipelines.
   const allUsers = [
-    ...(data.reps||[]).filter(r=>r.track==="licensed").map(r=>({...r,userRole:"rep"})),
-    ...(data.trainers||[]).map(t=>({...t,userRole:"trainer"})),
-    ...(data.admins||[]).map(a=>({...a,userRole:"admin"})),
+    ...(data.reps||[]).filter(r=>r.track==="licensed"&&r.adminId===userId).map(r=>({...r,userRole:"rep"})),
+    ...(data.trainers||[]).filter(t=>t.adminId===userId).map(t=>({...t,userRole:"trainer"})),
   ];
 
   const repsWithLeads = allUsers.map(rep=>{
@@ -10259,7 +10282,6 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
     {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
-    {k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"},
     {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
     {k:"scorecard",l:"Scorecard",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"},
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
@@ -10277,6 +10299,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     ...(role==="trainer"||role==="superadmin"||alsoRecruits?[{k:"careerpath",l:"My Career Path",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"}]:[]),
   ];
   if(role==="admin"||role==="superadmin") nav.push({k:"announcements",l:"Announcements",d:"M3 11L18 4V20L3 13V11ZM3 11H1M18 8C19.1 8 20 8.9 20 10V14C20 15.1 19.1 16 18 16"});
+  if(role==="admin"||role==="superadmin") nav.push({k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"});
   if(role==="admin"||role==="superadmin") nav.push({k:"commitmentcats",l:"Manage Categories",d:"M4 6H20M4 12H14M4 18H9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"checklisteditor",l:"Checklist Editor",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5M9 12L11 14L16 9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
@@ -12361,7 +12384,7 @@ export default function App() {
     const alsoRecruits = adminRecord?.alsoRecruits||session.role==="superadmin";
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
-    if(section==="teamleads") return <div><TeamLeads userRole={session.role}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd}/></div></div>;
+    if(section==="teamleads"&&(session.role==="admin"||session.role==="superadmin")) return <div><TeamLeads data={data} userId={session.id}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd} userId={session.id}/></div></div>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
