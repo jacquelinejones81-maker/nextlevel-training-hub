@@ -2033,6 +2033,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
   const pmForGoals = getCurrentPrimerMonth(data.primerMonthEnds||[]);
   const prevMonthStart = getPreviousPrimerMonthStart(data,pmForGoals.start);
   const [showLastMonthGoals,setShowLastMonthGoals] = useState(false);
+  const [showAllInvHistory,setShowAllInvHistory] = useState(false);
   const [open,setOpen]=useState(true);
   const [tab,setTab]=useState(investmentsOnly?"investments":"lifeapps");
   const [na,setNa]=useState({clientName:"",premium:"",date:localDateStr()});
@@ -2040,6 +2041,11 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
   const [addPrem,setAddPrem]=useState("");
   const apps=myProd.lifeApps||[];
   const invs=myProd.investments||[];
+  // Same pattern as Life Apps — list defaults to this month only, running totals above
+  // stay all-time.
+  const thisMonthInvs = invs.filter(inv=>inv.date&&inv.date>=pmForGoals.start);
+  const olderInvsCount = invs.length-thisMonthInvs.length;
+  const displayInvs = showAllInvHistory?invs:thisMonthInvs;
   const totPrem=apps.reduce((s,a)=>s+(Number(a.premium)||0),0);
   const totPAC=invs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
@@ -2153,7 +2159,11 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
           </div>
           <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:localDateStr()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
         </div>
-        {invs.map((inv,i)=><div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>)}
+        {invs.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:2}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{showAllInvHistory?"All Time":pmForGoals.label}</div>
+          {olderInvsCount>0&&<button onClick={()=>setShowAllInvHistory(!showAllInvHistory)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showAllInvHistory?C.navy:"white",color:showAllInvHistory?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showAllInvHistory?"← Just This Month":"View Full History ("+olderInvsCount+")"}</button>}
+        </div>}
+        {displayInvs.map((inv)=>{const i=invs.indexOf(inv);return <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>;})}
       </div>}
     </div>}
   </Card>;
@@ -7604,6 +7614,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   const pmForGoals = getCurrentPrimerMonth(data.primerMonthEnds||[]);
   const prevMonthStartLPE = getPreviousPrimerMonthStart(data,pmForGoals.start);
   const [showLastMonthGoal,setShowLastMonthGoal] = useState(false);
+  const [showAllHistory,setShowAllHistory] = useState(false);
   const repRef=useRef(rep);
   useEffect(()=>{repRef.current=rep;},[rep]);
   const [goalInput,setGoalInput]=useState(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));
@@ -7614,6 +7625,15 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   const entries = rep.selfPremium||[];
   const total = entries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>s+(Number(e.premium)||0),0);
   const pendingCOD = entries.filter(e=>e.cod&&!e.codAccepted&&!e.codDeclined);
+  // The list below shows just this Primerica month by default — pending COD apps always
+  // stay visible regardless of when they were submitted, since those still need action.
+  // Running totals above stay all-time, this only affects which individual names show.
+  const visibleMonthEntries = entries.filter(e=>{
+    const eDate=effectiveAppDate(e)||e.date;
+    return (eDate&&eDate>=pmForGoals.start) || (e.cod&&!e.codAccepted&&!e.codDeclined);
+  });
+  const olderEntriesCount = entries.length-visibleMonthEntries.length;
+  const displayEntries = showAllHistory?entries:visibleMonthEntries;
 
   // Promotion level — reads from rep, defaults to rep 25%
   const PROMO_LEVELS=[
@@ -7636,18 +7656,21 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     return {commissionable, total1yr, upfront, asEarned};
   };
 
-  // Monthly earnings from all logged apps
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const thisMonthEntries = entries.filter(e=>e.date>=monthStart);
-  const thisMonthEarned = thisMonthEntries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>{
+  // Monthly earnings from all logged apps — uses the real Primerica month boundary,
+  // and each COD app's acceptance date rather than its submission date, matching how
+  // every other "this month" total in the app already works.
+  const thisMonthEntriesForEarned = entries.filter(e=>{
+    const eDate=effectiveAppDate(e);
+    return eDate&&eDate>=pmForGoals.start;
+  });
+  const thisMonthEarned = thisMonthEntriesForEarned.reduce((s,e)=>{
     const c = calcCommission(e.premium);
     return s + (c ? c.upfront : 0);
   }, 0);
 
   const goal = Number(goalInput)||0;
   const goalPct = goal>0 ? Math.min(100, Math.round((thisMonthEarned/goal)*100)) : 0;
-  const avgUpfront = entries.length>0 ? thisMonthEarned/Math.max(thisMonthEntries.length,1) : 0;
+  const avgUpfront = entries.length>0 ? thisMonthEarned/Math.max(thisMonthEntriesForEarned.length,1) : 0;
   const appsNeeded = goal>0 && avgUpfront>0 ? Math.ceil((goal-thisMonthEarned)/avgUpfront) : null;
 
   const save = () => {
@@ -7735,14 +7758,18 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
       <div style={{color:C.textMid}}>These are not counted in your totals or commission until accepted.</div>
     </div>}
     {/* App entries with commission breakdown */}
+    {entries.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:4}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{showAllHistory?"All Time":pmForGoals.label}</div>
+      {olderEntriesCount>0&&<button onClick={()=>setShowAllHistory(!showAllHistory)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showAllHistory?C.navy:"white",color:showAllHistory?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showAllHistory?"← Just This Month":"View Full History ("+olderEntriesCount+")"}</button>}
+    </div>}
     {entries.length>0&&<div style={{maxHeight:240,overflowY:"auto",marginTop:6}}>
-      {entries.slice().reverse().map((e,i)=>{
-        const realIdx=entries.length-1-i;
+      {displayEntries.slice().reverse().map((e,i)=>{
+        const realIdx=entries.indexOf(e);
         const c=calcCommission(e.premium);
         const isCOD=!!e.cod;
         const isDeclined=isCOD&&!!e.codDeclined;
         const isPending=isCOD&&!e.codAccepted&&!isDeclined;
-        return <div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:(isPending||isDeclined)?0.75:1}}>
+        return <div key={realIdx} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:(isPending||isDeclined)?0.75:1}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13}}>
             <div style={{flex:1}}>
               <span style={{color:C.text,fontWeight:600,textDecoration:isDeclined?"line-through":"none"}}>{e.client}</span>
