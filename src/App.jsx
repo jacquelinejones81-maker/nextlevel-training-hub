@@ -8781,6 +8781,7 @@ const PIPELINE_STAGES = [
 function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const [activeStage,setActiveStage] = useState("all");
   const [search,setSearch] = useState("");
+  const [showArchived,setShowArchived] = useState(false);
   const pipelineData = data.leadPipeline||{};
   const repPipeline = pipelineData[rep.id]||{};
 
@@ -8807,6 +8808,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     stage: (repPipeline[l.docId]||{}).stage||(l.wantsReview?"wantsReview":"new"),
     stageUpdatedAt: (repPipeline[l.docId]||{}).stageUpdatedAt||l.submittedAt,
     notes: (repPipeline[l.docId]||{}).notes||"",
+    repArchived: !!(repPipeline[l.docId]||{}).repArchived,
   }));
 
   const updateStage = (docId,stage) => {
@@ -8824,12 +8826,34 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     onUpdate({...data,leadPipeline:updated});
   };
 
+  // Archiving here is personal to this rep only — it just hides the lead from their own
+  // pipeline view and can be pulled back up any time from "View Archived." It never
+  // touches the shared MoneyMap lead itself, so it has nothing to do with an admin's
+  // org-wide Clear All in Team Leads — those are two completely separate things.
+  const setRepArchived = (docId,archived) => {
+    const updated = {
+      ...pipelineData,
+      [rep.id]:{
+        ...repPipeline,
+        [docId]:{
+          ...(repPipeline[docId]||{}),
+          repArchived:archived,
+        }
+      }
+    };
+    onUpdate({...data,leadPipeline:updated});
+  };
+
+  const activeLeadsOnly = leads.filter(l=>!l.repArchived);
+  const archivedLeadsOnly = leads.filter(l=>l.repArchived);
+
   const stageCounts = PIPELINE_STAGES.reduce((acc,s)=>{
-    acc[s.key]=leads.filter(l=>l.stage===s.key).length;
+    acc[s.key]=activeLeadsOnly.filter(l=>l.stage===s.key).length;
     return acc;
   },{});
 
-  const filtered = leads.filter(l=>{
+  const baseList = showArchived?archivedLeadsOnly:activeLeadsOnly;
+  const filtered = baseList.filter(l=>{
     const matchStage = activeStage==="all"||l.stage===activeStage;
     const matchSearch = !search||(l.name||"").toLowerCase().includes(search.toLowerCase())||(l.phone||"").includes(search);
     return matchStage&&matchSearch;
@@ -8850,15 +8874,19 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
         <div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
       </div>
     </div>}
+    {/* Archived toggle */}
+    {archivedLeadsOnly.length>0&&<div style={{marginBottom:10}}>
+      <button onClick={()=>{setShowArchived(!showArchived);setActiveStage("all");}} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showArchived?"← Back to Active Leads":"View Archived ("+archivedLeadsOnly.length+")"}</button>
+    </div>}
     {/* Stage selector */}
-    <div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:6,marginBottom:12,WebkitOverflowScrolling:"touch"}}>
+    {!showArchived&&<div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:6,marginBottom:12,WebkitOverflowScrolling:"touch"}}>
       <button onClick={()=>setActiveStage("all")} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage==="all"?700:400,background:activeStage==="all"?C.navy:C.surface,color:activeStage==="all"?"white":C.textMid,fontSize:13}}>
-        All ({leads.length})
+        All ({baseList.length})
       </button>
       {PIPELINE_STAGES.map(s=><button key={s.key} onClick={()=>setActiveStage(s.key)} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage===s.key?700:400,background:activeStage===s.key?s.color:C.surface,color:activeStage===s.key?"white":C.textMid,fontSize:13,whiteSpace:"nowrap"}}>
         {s.label} {stageCounts[s.key]>0&&<span style={{background:"rgba(255,255,255,0.3)",borderRadius:10,padding:"1px 5px"}}>{stageCounts[s.key]}</span>}
       </button>)}
-    </div>
+    </div>}
 
     {/* Search */}
     {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
@@ -8886,9 +8914,13 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
           </div>
         </div>
         {/* Stage update */}
-        {!isAdmin&&<select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
-          {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
-        </select>}
+        {!isAdmin&&!showArchived&&<div style={{display:"flex",gap:6}}>
+          <select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
+            {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
+          <button onClick={()=>setRepArchived(lead.docId,true)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,fontSize:13,cursor:"pointer",flexShrink:0}}>Archive</button>
+        </div>}
+        {!isAdmin&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal+"44",background:C.teal+"08",color:C.teal,fontSize:13,cursor:"pointer",fontWeight:600}}>↩ Restore to Active</button>}
       </div>;
     })}
   </div>;
