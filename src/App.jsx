@@ -5256,6 +5256,8 @@ function MyActivityReport({session,data,onUpdate}) {
 
 function MyProfilePage({session,data,onUpdate}) {
   const profilePhotos = data.profilePhotos||{};
+  const profilePhones = data.profilePhones||{};
+  const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   const photo = (()=>{
     if(profilePhotos[session.id]) return profilePhotos[session.id];
     try{const ls=localStorage.getItem("profilePhoto_"+session.id);if(ls)return ls;}catch(e){}
@@ -5331,6 +5333,11 @@ function MyProfilePage({session,data,onUpdate}) {
           </div>
         </div>
       </div>
+    </Card>
+
+    <Card style={{marginBottom:14}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>Phone Number</div>
+      <input type="tel" placeholder="e.g. 816-555-0132" value={profilePhones[session.id]||""} onChange={e=>onUpdate({...data,profilePhones:{...profilePhones,[session.id]:fmtPhone(e.target.value)}})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
     </Card>
 
     <ProfileRepIdCard session={session} data={data} onUpdate={onUpdate}/>
