@@ -2726,13 +2726,13 @@ function ManageTeam({data,onUpdate,onClose}) {
             <input placeholder="PIN" maxLength={6} value={a.pin} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,pin:e.target.value.replace(/\D/,"")}:ad);updateLocal({...localData,admins:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
             {!a.isSuperAdmin&&<button onClick={()=>updateLocal({...localData,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
           </div>
+          <input placeholder="Phone (for rep call/text button, shown to MoneyMap as Your Financial Rep)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginTop:4}}/>
           <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
             <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
             <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
             {a.alsoRecruits&&<span style={{fontSize:12,background:C.purple+"22",color:C.purple,padding:"1px 6px",borderRadius:4,fontWeight:600}}>Active</span>}
           </label>
           {a.alsoRecruits&&<div style={{marginTop:4,display:"flex",flexDirection:"column",gap:4}}>
-            <input placeholder="Phone (for rep call/text button)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
             <input placeholder="MoneyMap link name (e.g. jackie)" value={a.linkName||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,linkName:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
             <input placeholder="Calendar/booking link (optional)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
           </div>}
@@ -5257,7 +5257,22 @@ function MyActivityReport({session,data,onUpdate}) {
 function MyProfilePage({session,data,onUpdate}) {
   const profilePhotos = data.profilePhotos||{};
   const profilePhones = data.profilePhones||{};
+  const isAdminSession = session.role==="admin"||session.role==="superadmin";
   const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
+  // Admins save their phone directly onto their own record in the admins[] array (not a
+  // separate lookup table), since that's the exact field MoneyMap reads from to show
+  // "Your Financial Rep" — keeping this the single source of truth for admin phone numbers.
+  const currentPhone = isAdminSession
+    ? ((data.admins||[]).find(a=>a.id===session.id)?.phone||"")
+    : (profilePhones[session.id]||"");
+  const savePhone = (val)=>{
+    const formatted = fmtPhone(val);
+    if(isAdminSession){
+      onUpdate({...data,admins:(data.admins||[]).map(a=>a.id===session.id?{...a,phone:formatted}:a)});
+    } else {
+      onUpdate({...data,profilePhones:{...profilePhones,[session.id]:formatted}});
+    }
+  };
   const photo = (()=>{
     if(profilePhotos[session.id]) return profilePhotos[session.id];
     try{const ls=localStorage.getItem("profilePhoto_"+session.id);if(ls)return ls;}catch(e){}
@@ -5337,7 +5352,8 @@ function MyProfilePage({session,data,onUpdate}) {
 
     <Card style={{marginBottom:14}}>
       <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>Phone Number</div>
-      <input type="tel" placeholder="e.g. 816-555-0132" value={profilePhones[session.id]||""} onChange={e=>onUpdate({...data,profilePhones:{...profilePhones,[session.id]:fmtPhone(e.target.value)}})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+      <input type="tel" placeholder="e.g. 816-555-0132" value={currentPhone} onChange={e=>savePhone(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+      {isAdminSession&&<div style={{fontSize:11,color:C.textLight,marginTop:5}}>Shown to your reps in MoneyMap as "Your Financial Rep."</div>}
     </Card>
 
     <ProfileRepIdCard session={session} data={data} onUpdate={onUpdate}/>
