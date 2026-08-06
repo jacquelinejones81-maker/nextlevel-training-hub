@@ -2464,6 +2464,7 @@ function ManageTeamPage({data,onUpdate}) {
           {!a.isSuperAdmin&&<button onClick={()=>updateLocal({...localData,admins:admins.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>}
         </div>
         <input placeholder="Booking link (shows in Appts tab for your assigned reps)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
+        <input placeholder="Phone (shown to MoneyMap as Your Financial Rep)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
           <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
           <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
