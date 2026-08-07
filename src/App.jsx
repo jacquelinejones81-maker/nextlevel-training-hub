@@ -4917,6 +4917,32 @@ function MyActivityReport({session,data,onUpdate}) {
     } catch(e){}
     return s;
   },{contacts:0,apptSet:0,apptDone:0});
+
+  // ── 30-Day Averages (rolling trailing window, not tied to the Primerica month) ──
+  const thirtyDaysAgoStr = localDateStr(new Date(new Date().valueOf()-29*86400000));
+  const thirtyDaySums = Object.values(scorecardAll).reduce((s,weekData)=>{
+    const dayList = Object.entries((weekData&&weekData.days)||{});
+    dayList.forEach(([dateStr,d])=>{
+      if(dateStr>=thirtyDaysAgoStr){
+        s.calls += Number(d.actual?.calls)||0;
+        s.contacts += Number(d.actual?.contacts)||0;
+        s.apptSet += Number(d.actual?.apptSet)||0;
+        s.apptDone += Number(d.actual?.apptDone)||0;
+      }
+    });
+    return s;
+  },{calls:0,contacts:0,apptSet:0,apptDone:0});
+  const lifeApps30 = lifeApps.filter(a=>a.date&&a.date>=thirtyDaysAgoStr).length;
+  const recruits30 = myRecruits.filter(r=>r.createdAt&&localDateStr(new Date(r.createdAt))>=thirtyDaysAgoStr).length;
+  const avg30 = {
+    calls: (thirtyDaySums.calls/30).toFixed(1),
+    contacts: (thirtyDaySums.contacts/30).toFixed(1),
+    apptSet: (thirtyDaySums.apptSet/30).toFixed(1),
+    apptDone: (thirtyDaySums.apptDone/30).toFixed(1),
+    lifeApps: (lifeApps30/30).toFixed(2),
+    recruits: (recruits30/30).toFixed(2),
+  };
+
   // ── Yesterday ──
   const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate()-1);
   const yesterdayStr = localDateStr(yesterdayDate);
@@ -5150,6 +5176,38 @@ function MyActivityReport({session,data,onUpdate}) {
       <div style={{ fontSize:13, fontWeight:700, color:"#b45309" }}>⏳ No Goals Set Yet</div>
       <div style={{ fontSize:12, color:C.textMid, marginTop:4 }}>Set a Monthly Income Goal and Monthly Investment Goal in your Production tab to unlock personalized coaching here.</div>
     </Card>}
+
+    {/* 30-Day Averages */}
+    <Card style={{ marginBottom:12 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>📊 30-Day Averages</div>
+      <div style={{ fontSize:11, color:C.textLight, marginBottom:8 }}>Rolling daily average over the last 30 days — not tied to the Primerica month.</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.calls}</div>
+          <div style={{ fontSize:10, color:C.textMid }}>Calls / day</div>
+        </div>
+        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.contacts}</div>
+          <div style={{ fontSize:10, color:C.textMid }}>Contacts / day</div>
+        </div>
+        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.apptSet}</div>
+          <div style={{ fontSize:10, color:C.textMid }}>Appts Set / day</div>
+        </div>
+        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.apptDone}</div>
+          <div style={{ fontSize:10, color:C.textMid }}>Appts Done / day</div>
+        </div>
+        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>{avg30.lifeApps}</div>
+          <div style={{ fontSize:10, color:C.textMid }}>Life Apps / day</div>
+        </div>
+        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>{avg30.recruits}</div>
+          <div style={{ fontSize:10, color:C.textMid }}>Recruits / day</div>
+        </div>
+      </div>
+    </Card>
 
     {/* Income */}
     <Card style={{ marginBottom:12 }}>
@@ -11222,8 +11280,10 @@ function getCurrentPrimerMonth(primerMonthEnds=[]) {
   // Find the current month — the one whose cutoff is in the future (or today)
   for(let i=0;i<sorted.length;i++){
     if(sorted[i].cutoff>=today){
-      // Previous cutoff is the start of this period
-      const start=i>0?sorted[i-1].cutoff:"2020-01-01";
+      // The previous cutoff is the LAST inclusive day of the prior period (it's the date
+      // apps must be received "by"), so this period actually starts the day after that —
+      // never on the cutoff date itself, or that one day would count toward both months.
+      const start=i>0?localDateStr(new Date(new Date(sorted[i-1].cutoff+"T12:00:00").valueOf()+86400000)):"2020-01-01";
       return {label:sorted[i].label,cutoff:sorted[i].cutoff,start,key:sorted[i].label.replace(/\s+/g,"_")};
     }
   }
