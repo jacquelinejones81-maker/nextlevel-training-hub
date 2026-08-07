@@ -2169,49 +2169,6 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
   </Card>;
 }
 
-
-// ── QUICK RECRUIT LOG (reusable in Production tabs) ──
-// Feeds directly into the Recruits auto-actual on Scorecard/Coaching Report.
-function QuickRecruitLog({person,onSave}) {
-  const [showForm,setShowForm]=useState(false);
-  const [form,setForm]=useState({name:"",phone:"",date:localDateStr()});
-  const log=person?.myRecruitLog||[];
-  const addRecruit=()=>{
-    if(!form.name.trim()) return;
-    const updated=[...log,{...form,id:Date.now(),addedAt:new Date().toISOString()}];
-    onSave(updated);
-    setForm({name:"",phone:"",date:localDateStr()});
-    setShowForm(false);
-  };
-  const removeRecruit=(id)=>onSave(log.filter(r=>r.id!==id));
-  const recentLog=[...log].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
-  return <Card style={{marginBottom:12}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div>
-        <div style={{fontSize:13,fontWeight:700,color:C.text}}>Log a Recruit</div>
-        <div style={{fontSize:12,color:C.textMid}}>{log.length} logged total — feeds your daily commitment automatically</div>
-      </div>
-      <button onClick={()=>setShowForm(!showForm)} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>{showForm?"Cancel":"+ Add"}</button>
-    </div>
-    {showForm&&<div style={{border:`1px solid ${C.border}`,borderRadius:8,padding:10,marginBottom:8}}>
-      <input placeholder="Recruit's name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box"}}/>
-      <div style={{fontSize:11,color:C.textLight,marginBottom:6,marginTop:3}}>Use their exact name — if you add them as a full rep later, spell it the same way (e.g. "Mike" here and "Michael" later won't match).</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-        <input placeholder="Phone (optional)" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={{padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
-        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 9px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13}}/>
-      </div>
-      <button onClick={addRecruit} style={{width:"100%",padding:"7px",borderRadius:7,border:"none",background:C.gold,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Recruit</button>
-    </div>}
-    {recentLog.map(r=><div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:`1px solid ${C.border}`}}>
-      <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.text}}>{r.name}</div>
-        <div style={{fontSize:11,color:C.textLight}}>{r.date&&new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
-      </div>
-      <button onClick={()=>removeRecruit(r.id)} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button>
-    </div>)}
-  </Card>;
-}
-
 // ── REP PRODUCTION TAB (licensed reps / field-trainer-granted) ──
 // Mirrors the field trainer/admin "Production" page exactly: promotion level, life apps
 // with income goal, and investments with PAC/Lump goal tracking.
@@ -2242,7 +2199,6 @@ function RepProductionTab({rep,data,onUpdate,onUpdateData,readOnly}) {
       </div>
     </Card>
     <LicensedPremiumEntry rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} readOnly={readOnly} data={data}/>
-    {!readOnly&&<QuickRecruitLog person={rep} onSave={(log)=>onUpdate(rep.id,{...rep,myRecruitLog:log})}/>}
     <MyProd myProd={myProd} onUpdate={updateMyProd} investmentsOnly={true} data={data}/>
   </div>;
 }
@@ -12529,7 +12485,6 @@ export default function App() {
         </Card>
         {/* Life Apps with commission tracking */}
         <LicensedPremiumEntry rep={pseudoRep} onUpdate={updatePseudoRep} data={data}/>
-        <QuickRecruitLog person={staffRecord} onSave={(log)=>saveStaff({...staffRecord,myRecruitLog:log})}/>
         {/* Investments */}
         <MyProd data={data} myProd={(data.myProduction||{})[session.id]||{}} onUpdate={p=>{
           const newData={...data,myProduction:{...(data.myProduction||{}),[session.id]:p}};
