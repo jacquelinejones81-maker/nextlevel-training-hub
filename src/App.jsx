@@ -922,7 +922,7 @@ function CareerJourneyBanner({rep,data,onUpdate}) {
     {key:"licensed",label:"Licensed",color:C.gold},
     {key:"trainer",label:"Trainer",color:C.purple},
   ];
-  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const stageIndex = stages.findIndex(s=>s.key===currentStage);
   const currentColor = stages[stageIndex]?.color||C.teal;
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
@@ -7844,6 +7844,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:14,fontWeight:800,color:C.gold}}>${calcResult.total1yr.toFixed(2)}</div></div>
         </div>
         <div style={{fontSize:10,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
+        <div style={{background:C.surface,borderLeft:`3px solid ${C.textLight}`,borderRadius:6,padding:"8px 10px",fontSize:11,color:C.textMid,lineHeight:1.5,marginTop:8}}>This is an estimate only; confirm exact figures through Primerica Online.</div>
       </div>}
     </div>
   </Card>;
@@ -9727,7 +9728,7 @@ function CareerPath({rep,data,onUpdate}) {
     {key:"licensed",label:"Licensed Agent",color:C.gold},
     {key:"trainer",label:"Field Trainer",color:C.purple},
   ];
-  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
   const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
   const ftGate = getGateStatus(data,rep.checked||{},"fieldTrainer");
