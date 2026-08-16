@@ -7832,6 +7832,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
       <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
+      <div style={{background:C.surface,borderLeft:`3px solid ${C.textLight}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:C.textMid,lineHeight:1.5,marginBottom:8}}>This is an estimate only; confirm exact figures through Primerica Online.</div>
       <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
         <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
         {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
@@ -7844,7 +7845,6 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
           <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:14,fontWeight:800,color:C.gold}}>${calcResult.total1yr.toFixed(2)}</div></div>
         </div>
         <div style={{fontSize:10,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
-        <div style={{background:C.surface,borderLeft:`3px solid ${C.textLight}`,borderRadius:6,padding:"8px 10px",fontSize:11,color:C.textMid,lineHeight:1.5,marginTop:8}}>This is an estimate only; confirm exact figures through Primerica Online.</div>
       </div>}
     </div>
   </Card>;
