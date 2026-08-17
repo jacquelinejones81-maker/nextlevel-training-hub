@@ -8902,6 +8902,7 @@ const PIPELINE_STAGES = [
 
 function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const [activeStage,setActiveStage] = useState("all");
+  const [interestFilter,setInterestFilter] = useState(null);
   const [search,setSearch] = useState("");
   const [showArchived,setShowArchived] = useState(false);
   const pipelineData = data.leadPipeline||{};
@@ -8978,7 +8979,8 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const filtered = baseList.filter(l=>{
     const matchStage = activeStage==="all"||l.stage===activeStage;
     const matchSearch = !search||(l.name||"").toLowerCase().includes(search.toLowerCase())||(l.phone||"").includes(search);
-    return matchStage&&matchSearch;
+    const matchInterest = !interestFilter||l[interestFilter]===true||(l.contactRequests||[]).some(cr=>cr.label&&interestFilter.includes(cr.label.toLowerCase().replace(/[^a-z]/g,"")));
+    return matchStage&&matchSearch&&matchInterest;
   });
 
   const getDaysInStage = (stageUpdatedAt) => {
@@ -9002,7 +9004,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
       return CONTACT_TYPES.map(ct=>{
         const matching=leads.filter(l=>l[ct.key]&&!l.reviewCalled&&!l.archived);
         if(matching.length===0) return null;
-        return <div key={ct.key} style={{background:`linear-gradient(${ct.grad})`,borderRadius:10,padding:"10px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setFilter(ct.key)}>
+        return <div key={ct.key} style={{background:`linear-gradient(${ct.grad})`,borderRadius:10,padding:"10px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setInterestFilter(interestFilter===ct.key?null:ct.key)}>
           <span style={{fontSize:18}}>{ct.icon}</span>
           <div style={{flex:1}}>
             <div style={{fontSize:13,fontWeight:700,color:"white"}}>{matching.length} lead{matching.length!==1?"s":""} want{matching.length===1?"s":""} help with {ct.label}</div>
@@ -9026,6 +9028,12 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
       </button>)}
     </div>}
 
+    {/* Active interest filter chip */}
+    {interestFilter&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+      <span style={{fontSize:13,color:C.textMid}}>Filtering by:</span>
+      <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,background:C.teal+"22",color:C.teal}}>{interestFilter.replace("interest_","").replace(/_/g," ")}</span>
+      <button onClick={()=>setInterestFilter(null)} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>✕ Clear</button>
+    </div>}
     {/* Search */}
     {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
 
