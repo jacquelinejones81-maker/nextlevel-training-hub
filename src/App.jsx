@@ -8979,7 +8979,9 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const filtered = baseList.filter(l=>{
     const matchStage = activeStage==="all"||l.stage===activeStage;
     const matchSearch = !search||(l.name||"").toLowerCase().includes(search.toLowerCase())||(l.phone||"").includes(search);
-    const matchInterest = !interestFilter||l[interestFilter]===true||(l.contactRequests||[]).some(cr=>cr.label&&interestFilter.includes(cr.label.toLowerCase().replace(/[^a-z]/g,"")));
+    const INTEREST_TOPICS={"interest_wealth_1":"Wealth Building","interest_life_ins_1":"Life Insurance","interest_debt_1":"Debt Help","interest_savings_1":"Savings","interest_budget_1":"Budgeting","interest_identity_1":"Identity Protection","interest_legal_1":"Legal Protection","interest_mortgage_1":"Mortgage"};
+    const filterTopic=INTEREST_TOPICS[interestFilter]||"";
+    const matchInterest = !interestFilter||l[interestFilter]===true||(l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(filterTopic.toLowerCase()))||(l.lastInterestTopic||"").toLowerCase()===filterTopic.toLowerCase();
     return matchStage&&matchSearch&&matchInterest;
   });
 
@@ -8993,22 +8995,29 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     {/* Specific per-interest contact request banners */}
     {(()=>{
       const CONTACT_TYPES=[
-        {key:"interest_wealth_1",    icon:"📈", label:"Wealth Building",   color:"#4338ca", grad:"135deg,#4338ca,#6366f1"},
-        {key:"interest_life_ins_1",  icon:"🛡️", label:"Life Insurance",    color:"#0d9488", grad:"135deg,#0ea5a0,#0d9488"},
-        {key:"interest_debt_1",      icon:"📉", label:"Debt Help",         color:"#ef4444", grad:"135deg,#ef4444,#dc2626"},
-        {key:"interest_savings_1",   icon:"🐷", label:"Savings",           color:"#10b981", grad:"135deg,#10b981,#059669"},
-        {key:"interest_budget_1",    icon:"💡", label:"Budgeting",         color:"#d97706", grad:"135deg,#d97706,#b45309"},
-        {key:"interest_identity_1",  icon:"🔒", label:"Identity Protection",color:"#7c3aed", grad:"135deg,#7c3aed,#6d28d9"},
-        {key:"interest_mortgage_1",  icon:"🏠", label:"Mortgage",          color:"#b45309", grad:"135deg,#b45309,#92400e"},
+        {key:"interest_wealth_1",    topic:"Wealth Building",      icon:"📈", label:"Wealth Building",    color:"#4338ca", grad:"135deg,#4338ca,#6366f1"},
+        {key:"interest_life_ins_1",  topic:"Life Insurance",        icon:"🛡️", label:"Life Insurance",     color:"#0d9488", grad:"135deg,#0ea5a0,#0d9488"},
+        {key:"interest_debt_1",      topic:"Debt Help",             icon:"📉", label:"Debt Help",          color:"#ef4444", grad:"135deg,#ef4444,#dc2626"},
+        {key:"interest_savings_1",   topic:"Savings",               icon:"🐷", label:"Savings",            color:"#10b981", grad:"135deg,#10b981,#059669"},
+        {key:"interest_budget_1",    topic:"Budgeting",             icon:"💡", label:"Budgeting",          color:"#d97706", grad:"135deg,#d97706,#b45309"},
+        {key:"interest_identity_1",  topic:"Identity Protection",   icon:"🔒", label:"Identity Protection",color:"#7c3aed", grad:"135deg,#7c3aed,#6d28d9"},
+        {key:"interest_legal_1",     topic:"Legal Protection",      icon:"⚖️", label:"Legal Protection",  color:"#7c3aed", grad:"135deg,#7c3aed,#6d28d9"},
+        {key:"interest_mortgage_1",  topic:"Mortgage",              icon:"🏠", label:"Mortgage",           color:"#b45309", grad:"135deg,#b45309,#92400e"},
       ];
       return CONTACT_TYPES.map(ct=>{
-        const matching=leads.filter(l=>l[ct.key]&&!l.reviewCalled&&!l.archived);
+        // Match on interest_ boolean field OR contactRequests array OR lastInterestTopic
+        const matching=leads.filter(l=>{
+          if(l[ct.key]===true) return true;
+          if((l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(ct.label.toLowerCase()))) return true;
+          if((l.lastInterestTopic||"").toLowerCase()===ct.label.toLowerCase()) return true;
+          return false;
+        });
         if(matching.length===0) return null;
         return <div key={ct.key} style={{background:`linear-gradient(${ct.grad})`,borderRadius:10,padding:"10px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setInterestFilter(interestFilter===ct.key?null:ct.key)}>
           <span style={{fontSize:18}}>{ct.icon}</span>
           <div style={{flex:1}}>
             <div style={{fontSize:13,fontWeight:700,color:"white"}}>{matching.length} lead{matching.length!==1?"s":""} want{matching.length===1?"s":""} help with {ct.label}</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>Tap to filter · reach out before they go cold</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>Tap to see leads</div>
           </div>
           <span style={{color:"rgba(255,255,255,0.6)",fontSize:18}}>›</span>
         </div>;
