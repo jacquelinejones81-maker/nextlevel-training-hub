@@ -10568,6 +10568,17 @@ const PROSPECTING_CARDS = [
     purpose:"Most people have already been conditioned to reject this opportunity before they understand it. This approach meets their skepticism head on without getting defensive. By making it about what most people experience rather than what they personally are doing, you keep the conversation open and let them draw their own conclusions. Curiosity does the work — not pressure.",
     tip:"You don't have to deliver all five points perfectly. The goal is to get them curious enough to say yes to a meeting — not to close them on the phone. If they're engaged after point two or three, go straight to the close."
   },
+  {
+    id:"p10",
+    emoji:"👫",
+    situation:"Qualifying the Decision-Maker",
+    context:"Ask this early in the appointment, before you get deep into the presentation — it surfaces whether someone else needs to be involved before it ever becomes a stall at the close.",
+    opening:"\"Before we go further, is there anyone you'd need to consult with on something like this, or do you make these kinds of decisions on your own?\"",
+    ifYes:"\"Great — let's make sure we get them in on this conversation too, so nobody's left explaining it secondhand. When works for all of us?\"",
+    ifNo:"Proceed straight into the presentation — no detour needed.",
+    purpose:"This surfaces the \"I need to talk to my spouse\" objection before it ever comes up at the close, so it's handled early and honestly instead of becoming a stall tactic later.",
+    tip:"Ask this early and casually — before pitching, not after."
+  },
 ];
 
 function ProspectingPage({data,onUpdate,userRole}) {
