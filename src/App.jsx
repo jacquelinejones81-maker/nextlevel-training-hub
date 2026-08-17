@@ -8967,6 +8967,29 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     onUpdate({...data,leadPipeline:updated});
   };
 
+  const deleteContactRequest = async (docId) => {
+    if(!window.confirm("Delete this lead request? It will disappear until they request contact again.")) return;
+    try{
+      const {deleteField} = await import("firebase/firestore");
+      const ref = fsDoc(mmDb,"leads",docId);
+      await updateDoc(ref,{
+        lastInterestTopic: deleteField(),
+        lastInterestAt: deleteField(),
+        contactRequests: deleteField(),
+        interest_wealth_1: deleteField(),
+        interest_life_ins_1: deleteField(),
+        interest_debt_1: deleteField(),
+        interest_savings_1: deleteField(),
+        interest_budget_1: deleteField(),
+        interest_identity_1: deleteField(),
+        interest_legal_1: deleteField(),
+        interest_mortgage_1: deleteField(),
+        wantsReview: false,
+      });
+      setRepArchived(docId,false);
+    }catch(e){console.error("Delete contact request error:",e);}
+  };
+
   const activeLeadsOnly = leads.filter(l=>!l.repArchived);
   const archivedLeadsOnly = leads.filter(l=>l.repArchived);
 
@@ -8980,8 +9003,11 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     const matchStage = activeStage==="all"||l.stage===activeStage;
     const matchSearch = !search||(l.name||"").toLowerCase().includes(search.toLowerCase())||(l.phone||"").includes(search);
     const INTEREST_TOPICS={"interest_wealth_1":"Wealth Building","interest_life_ins_1":"Life Insurance","interest_debt_1":"Debt Help","interest_savings_1":"Savings","interest_budget_1":"Budgeting","interest_identity_1":"Identity Protection","interest_legal_1":"Legal Protection","interest_mortgage_1":"Mortgage"};
-    const filterTopic=INTEREST_TOPICS[interestFilter]||"";
-    const matchInterest = !interestFilter||l[interestFilter]===true||(l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(filterTopic.toLowerCase()))||(l.lastInterestTopic||"").toLowerCase()===filterTopic.toLowerCase();
+    const filterTopic=(INTEREST_TOPICS[interestFilter]||"").toLowerCase();
+    const lastTopic=(l.lastInterestTopic||"").toLowerCase();
+    const crMatch=(l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(filterTopic));
+    const topicMatch=filterTopic&&(lastTopic===filterTopic||lastTopic.includes(filterTopic)||filterTopic.includes(lastTopic));
+    const matchInterest = !interestFilter||l[interestFilter]===true||crMatch||topicMatch;
     return matchStage&&matchSearch&&matchInterest;
   });
 
@@ -9007,6 +9033,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
       return CONTACT_TYPES.map(ct=>{
         // Match on interest_ boolean field OR contactRequests array OR lastInterestTopic
         const matching=leads.filter(l=>{
+          if(l.repArchived) return false;
           if(l[ct.key]===true) return true;
           if((l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(ct.label.toLowerCase()))) return true;
           if((l.lastInterestTopic||"").toLowerCase()===ct.label.toLowerCase()) return true;
@@ -9040,7 +9067,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     {/* Active interest filter chip */}
     {interestFilter&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
       <span style={{fontSize:13,color:C.textMid}}>Filtering by:</span>
-      <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,background:C.teal+"22",color:C.teal}}>{interestFilter.replace("interest_","").replace(/_/g," ")}</span>
+      <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,background:C.teal+"22",color:C.teal}}>{({"interest_wealth_1":"Wealth Building","interest_life_ins_1":"Life Insurance","interest_debt_1":"Debt Help","interest_savings_1":"Savings","interest_budget_1":"Budgeting","interest_identity_1":"Identity Protection","interest_legal_1":"Legal Protection","interest_mortgage_1":"Mortgage"})[interestFilter]||interestFilter}</span>
       <button onClick={()=>setInterestFilter(null)} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>✕ Clear</button>
     </div>}
     {/* Search */}
@@ -9093,6 +9120,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
             {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
           <button onClick={()=>setRepArchived(lead.docId,true)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,fontSize:13,cursor:"pointer",flexShrink:0}}>Archive</button>
+          <button onClick={()=>deleteContactRequest(lead.docId)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.06)",color:"#ef4444",fontSize:13,cursor:"pointer",flexShrink:0}}>Delete request</button>
         </div>}
         {!isAdmin&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal+"44",background:C.teal+"08",color:C.teal,fontSize:13,cursor:"pointer",fontWeight:600}}>↩ Restore to Active</button>}
       </div>;
