@@ -8970,7 +8970,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const deleteContactRequest = async (docId) => {
     if(!window.confirm("Delete this lead request? It will disappear until they request contact again.")) return;
     try{
-      const {deleteField} = await import("firebase/firestore");
+      const {doc:fsDoc,updateDoc,deleteField} = await import("firebase/firestore");
       const ref = fsDoc(mmDb,"leads",docId);
       await updateDoc(ref,{
         lastInterestTopic: deleteField(),
