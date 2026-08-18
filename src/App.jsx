@@ -9122,114 +9122,29 @@ function MyPipelinePage({session,data,onUpdate}) {
 
 
 // ── MY TASKS ──
-const TASK_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const TASK_CATEGORIES = ["Activity","Recruiting","Personal","Prospecting","Production","End of Day","Business","Custom"];
 const TASK_PRIORITIES = ["High","Medium","Low"];
 const PRIORITY_COLORS = {High:C.danger,Medium:C.gold,Low:C.success};
-
-// Preset items for the RVP Daily Success Checklist (admin/superadmin only) — loads as
-// recurring My Tasks items (Mon–Fri) using the same completedDays tracking every other
-// recurring task already uses, so no new data model or page was needed for this.
-const DAILY_SUCCESS_CHECKLIST_ITEMS = [
-  {key:"personal_time_with_god",title:"Time with God",category:"Personal"},
-  {key:"personal_workout",title:"Workout complete",category:"Personal"},
-  {key:"personal_read",title:"Read 10–20 minutes",category:"Personal"},
-  {key:"personal_review_goals",title:"Review goals",category:"Personal"},
-  {key:"prospecting_contact",title:"Contact 20–30 people",category:"Prospecting"},
-  {key:"prospecting_book_appts",title:"Book 5+ appointments",category:"Prospecting"},
-  {key:"prospecting_conduct_appts",title:"Conduct 3+ appointments",category:"Prospecting"},
-  {key:"prospecting_referrals",title:"Ask every client for referrals",category:"Prospecting"},
-  {key:"prospecting_recruit",title:"Recruit at least 1 prospective agent",category:"Prospecting"},
-  {key:"production_investment",title:"Investment appointments completed",category:"Production"},
-  {key:"production_mortgage",title:"Mortgage appointments completed",category:"Production"},
-  {key:"production_life",title:"Life insurance presentations completed",category:"Production"},
-  {key:"production_followup",title:"Follow up on pending business",category:"Production"},
-  {key:"production_submit",title:"Submit all available business today",category:"Production"},
-  {key:"eod_recorded",title:"Daily production recorded",category:"End of Day"},
-  {key:"eod_revenue",title:"Revenue updated",category:"End of Day"},
-  {key:"eod_plan_tomorrow",title:"Tomorrow planned before bed",category:"End of Day"},
-];
-
-// Money / business / work-ethic scripture for the Income Goal Campaign — King James Version
-// (public domain, no translation licensing to worry about). Picks a new one each calendar day.
-const MONEY_SCRIPTURES = [
-  {ref:"Proverbs 22:29",text:"Seest thou a man diligent in his business? he shall stand before kings; he shall not stand before mean men."},
-  {ref:"Proverbs 13:11",text:"Wealth gotten by vanity shall be diminished: but he that gathereth by labour shall increase."},
-  {ref:"Proverbs 14:23",text:"In all labour there is profit: but the talk of the lips tendeth only to penury."},
-  {ref:"Colossians 3:23",text:"And whatsoever ye do, do it heartily, as to the Lord, and not unto men."},
-  {ref:"Proverbs 21:5",text:"The thoughts of the diligent tend only to plenteousness; but of every one that is hasty only to want."},
-  {ref:"Proverbs 10:4",text:"He becometh poor that dealeth with a slack hand: but the hand of the diligent maketh rich."},
-  {ref:"Proverbs 16:3",text:"Commit thy works unto the LORD, and thy thoughts shall be established."},
-  {ref:"Ecclesiastes 9:10",text:"Whatsoever thy hand findeth to do, do it with thy might."},
-  {ref:"Proverbs 27:23",text:"Be thou diligent to know the state of thy flocks, and look well to thy herds."},
-  {ref:"Philippians 4:13",text:"I can do all things through Christ which strengtheneth me."},
-  {ref:"Proverbs 24:27",text:"Prepare thy work without, and make it fit for thyself in the field; and afterwards build thine house."},
-  {ref:"Proverbs 6:6",text:"Go to the ant, thou sluggard; consider her ways, and be wise."},
-  {ref:"Proverbs 12:24",text:"The hand of the diligent shall bear rule: but the slothful shall be under tribute."},
-  {ref:"Deuteronomy 8:18",text:"Thou shalt remember the LORD thy God: for it is he that giveth thee power to get wealth."},
-  {ref:"Proverbs 3:9",text:"Honour the LORD with thy substance, and with the firstfruits of all thine increase."},
-  {ref:"2 Corinthians 9:6",text:"He which soweth sparingly shall reap also sparingly; and he which soweth bountifully shall reap also bountifully."},
-  {ref:"Proverbs 16:9",text:"A man's heart deviseth his way: but the LORD directeth his steps."},
-  {ref:"Proverbs 31:17",text:"She girdeth her loins with strength, and strengtheneth her arms."},
-  {ref:"Galatians 6:9",text:"And let us not be weary in well doing: for in due season we shall reap, if we faint not."},
-  {ref:"Proverbs 22:6",text:"Train up a child in the way he should go: and when he is old, he will not depart from it."},
-  {ref:"Matthew 25:21",text:"Well done, thou good and faithful servant: thou hast been faithful over a few things, I will make thee ruler over many things."},
-  {ref:"Proverbs 11:25",text:"The liberal soul shall be made fat: and he that watereth shall be watered also himself."},
-  {ref:"Luke 16:10",text:"He that is faithful in that which is least is faithful also in much."},
-  {ref:"Proverbs 28:20",text:"A faithful man shall abound with blessings: but he that maketh haste to be rich shall not be innocent."},
-  {ref:"Jeremiah 29:11",text:"For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end."},
-  {ref:"Malachi 3:10",text:"Bring ye all the tithes into the storehouse, that there may be meat in mine house, and prove me now herewith, saith the LORD of hosts, if I will not open you the windows of heaven, and pour you out a blessing, that there shall not be room enough to receive it."},
-  {ref:"Proverbs 3:10",text:"So shall thy barns be filled with plenty, and thy presses shall burst out with new wine."},
-  {ref:"Leviticus 27:30",text:"And all the tithe of the land, whether of the seed of the land, or of the fruit of the tree, is the LORD's: it is holy unto the LORD."},
-  {ref:"2 Corinthians 9:7",text:"Every man according as he purposeth in his heart, so let him give; not grudgingly, or of necessity: for God loveth a cheerful giver."},
-  {ref:"Luke 6:38",text:"Give, and it shall be given unto you; good measure, pressed down, and shaken together, and running over, shall men give into your bosom."},
-  {ref:"Romans 12:11",text:"Not slothful in business; fervent in spirit; serving the Lord."},
-  {ref:"Proverbs 16:8",text:"Better is a little with righteousness than great revenues without right."},
-  {ref:"Ecclesiastes 5:19",text:"Every man also to whom God hath given riches and wealth, and hath given him power to eat thereof, and to take his portion, and to rejoice in his labour; this is the gift of God."},
-  {ref:"1 Timothy 6:10",text:"For the love of money is the root of all evil: which while some coveted after, they have erred from the faith, and pierced themselves through with many sorrows."},
-  {ref:"Proverbs 11:1",text:"A false balance is abomination to the LORD: but a just weight is his delight."},
-  {ref:"James 1:5",text:"If any of you lack wisdom, let him ask of God, that giveth to all men liberally, and upbraideth not; and it shall be given him."},
-  {ref:"Psalm 37:4",text:"Delight thyself also in the LORD; and he shall give thee the desires of thine heart."},
-  {ref:"Proverbs 15:22",text:"Without counsel purposes are disappointed: but in the multitude of counsellors they are established."},
-  {ref:"Habakkuk 2:2",text:"Write the vision, and make it plain upon tables, that he may run that readeth it."},
-  {ref:"Joshua 1:9",text:"Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest."},
-];
-const getTodaysScripture = () => {
-  const start = new Date(new Date().getFullYear(),0,0);
-  const diff = new Date() - start;
-  const dayOfYear = Math.floor(diff/86400000);
-  return MONEY_SCRIPTURES[dayOfYear % MONEY_SCRIPTURES.length];
-};
 
 function MyTasksPage({session,data,onUpdate}) {
   const userId = session.id;
   const myTasks = (data.myTasks||{})[userId]||[];
   const [showForm,setShowForm] = useState(false);
   const [editId,setEditId] = useState(null);
-  const [form,setForm] = useState({
-    title:"",description:"",startDate:new Date().toISOString().split("T")[0],
-    dueDate:"",recurring:false,days:[0,1,2,3,4,5,6],
-    priority:"Medium",category:"Activity",subtasks:[],newSubtask:""
-  });
-  const today = new Date().toISOString().split("T")[0];
+  const blankForm = {title:"",description:"",dueDate:"",priority:"Medium"};
+  const [form,setForm] = useState(blankForm);
 
-  const resetForm = () => setForm({
-    title:"",description:"",startDate:new Date().toISOString().split("T")[0],
-    dueDate:"",recurring:false,days:[0,1,2,3,4,5,6],
-    priority:"Medium",category:"Activity",subtasks:[],newSubtask:""
-  });
+  const resetForm = () => setForm(blankForm);
 
   const saveTask = () => {
     if(!form.title.trim()) return;
     const task = {
       id:editId||Date.now(),
-      title:form.title,description:form.description,
-      startDate:form.startDate,dueDate:form.dueDate,
-      recurring:form.recurring,days:form.days,
-      priority:form.priority,category:form.category,
-      subtasks:form.subtasks,
-      createdAt:new Date().toISOString(),
-      completedDays:{},
+      title:form.title,
+      description:form.description,
+      dueDate:form.dueDate,
+      priority:form.priority,
+      createdAt:editId?(myTasks.find(t=>t.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+      completed:editId?(myTasks.find(t=>t.id===editId)?.completed||false):false,
     };
     const updated = editId
       ? myTasks.map(t=>t.id===editId?{...t,...task}:t)
@@ -9238,12 +9153,8 @@ function MyTasksPage({session,data,onUpdate}) {
     setShowForm(false);setEditId(null);resetForm();
   };
 
-  const toggleDayComplete = (taskId,day) => {
-    const updated = myTasks.map(t=>{
-      if(t.id!==taskId) return t;
-      const cd = t.completedDays||{};
-      return {...t,completedDays:{...cd,[day]:!cd[day]}};
-    });
+  const toggleComplete = (taskId) => {
+    const updated = myTasks.map(t=>t.id===taskId?{...t,completed:!t.completed}:t);
     onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
   };
 
@@ -9253,14 +9164,9 @@ function MyTasksPage({session,data,onUpdate}) {
   };
 
   const editTask = (task) => {
-    setForm({...task,newSubtask:""});
+    setForm({title:task.title,description:task.description||"",dueDate:task.dueDate||"",priority:task.priority||"Medium"});
     setEditId(task.id);
     setShowForm(true);
-  };
-
-  const addSubtask = () => {
-    if(!form.newSubtask.trim()) return;
-    setForm(f=>({...f,subtasks:[...f.subtasks,{id:Date.now(),text:f.newSubtask.trim()}],newSubtask:""}));
   };
 
   const getDaysLeft = (dueDate) => {
@@ -9268,334 +9174,14 @@ function MyTasksPage({session,data,onUpdate}) {
     return Math.ceil((new Date(dueDate+"T12:00:00")-new Date())/86400000);
   };
 
-  const getStreak = (task) => {
-    const cd = task.completedDays||{};
-    let streak=0;
-    const d=new Date();
-    while(true){
-      const key=d.toISOString().split("T")[0];
-      if(cd[key]) streak++;
-      else break;
-      d.setDate(d.getDate()-1);
-      if(streak>365) break;
-    }
-    return streak;
-  };
-
-  const isTodayActive = (task) => {
-    if(!task.recurring) return true;
-    const dayOfWeek = new Date().getDay();
-    return (task.days||[]).includes(dayOfWeek);
-  };
-
-  // ── INCOME GOAL CAMPAIGN (admin/superadmin, fully editable, reusable for future campaigns) ──
-  const campaign = (data.incomeCampaign||{})[userId] || null;
-  const updateCampaign = (patch) => {
-    onUpdate({...data,incomeCampaign:{...(data.incomeCampaign||{}),[userId]:{...campaign,...patch}}});
-  };
-  const loadIncomeCampaign = () => {
-    if(campaign){ return; }
-    const defaultCampaign = {
-      deadline:"2026-08-07",
-      targetIncome:53956,
-      weeklyGoal:10792,
-      dailyGoal:1459,
-      totalDays:37,
-      dailyFocus:"Highest-income activity first",
-      dailyQuestion:"What is the highest-income activity I can complete before the day ends?",
-      targets:[
-        {id:1,category:"Jackie's Investment Override",goalValue:"Approx. $4,900",done:false},
-        {id:2,category:"Securities Production",goalValue:"$900,000 AUM = approx. $27,000",done:false},
-        {id:3,category:"Mortgage Closing",goalValue:"$268,500 close = approx. $2,660",done:false},
-        {id:4,category:"Life Insurance",goalValue:"25 applications at $84/month average premium",done:false},
-      ],
-      weeks:[1,2,3,4,5].map(n=>({id:n,weekNum:n,revenueTarget:10792,revenueDone:false,lifeAppsTarget:5,lifeAppsDone:false,securitiesTarget:180000,securitiesDone:false,mortgageTarget:53700,mortgageDone:false,notes:n===1?"Investment override progress":""})),
-      finishLine:[
-        {id:1,label:"$53,956 income achieved",done:false},
-        {id:2,label:"$900,000 securities submitted/closed",done:false},
-        {id:3,label:"$268,500 mortgage closed",done:false},
-        {id:4,label:"25 life insurance applications submitted",done:false},
-        {id:5,label:"$4,900 Jackie investment override",done:false},
-      ],
-    };
-    onUpdate({...data,incomeCampaign:{...(data.incomeCampaign||{}),[userId]:defaultCampaign}});
-  };
-  const deleteCampaign = () => {
-    if(!window.confirm("Delete this Income Goal Campaign? This removes all targets, weekly scorecard, and finish line progress — permanently, with no copy saved.")) return;
-    const {[userId]:_omit,...restCampaigns} = data.incomeCampaign||{};
-    onUpdate({...data,incomeCampaign:restCampaigns});
-  };
-  const campaignArchive = ((data.incomeCampaignArchive||{})[userId])||[];
-  const [showArchive,setShowArchive]=useState(false);
-  const archiveCampaign = () => {
-    if(!window.confirm("Archive this campaign and start a new one?\n\nA snapshot of everything (targets, weekly scorecard, finish line) will be saved so you can look back on it later, then this campaign will be cleared so you can start fresh.")) return;
-    const snapshot = {...campaign,archivedAt:Date.now(),id:Date.now()};
-    const updatedArchive = [snapshot,...campaignArchive];
-    const {[userId]:_omit,...restCampaigns} = data.incomeCampaign||{};
-    onUpdate({
-      ...data,
-      incomeCampaign:restCampaigns,
-      incomeCampaignArchive:{...(data.incomeCampaignArchive||{}),[userId]:updatedArchive},
-    });
-  };
-  const deleteArchivedCampaign = (id) => {
-    if(!window.confirm("Permanently delete this archived campaign? This cannot be undone.")) return;
-    onUpdate({...data,incomeCampaignArchive:{...(data.incomeCampaignArchive||{}),[userId]:campaignArchive.filter(c=>c.id!==id)}});
-  };
-  const updateTarget=(id,patch)=>updateCampaign({targets:campaign.targets.map(t=>t.id===id?{...t,...patch}:t)});
-  const addTarget=()=>updateCampaign({targets:[...campaign.targets,{id:Date.now(),category:"New Category",goalValue:"",done:false}]});
-  const removeTarget=(id)=>updateCampaign({targets:campaign.targets.filter(t=>t.id!==id)});
-  const updateWeek=(id,patch)=>updateCampaign({weeks:campaign.weeks.map(w=>w.id===id?{...w,...patch}:w)});
-  const addWeek=()=>{
-    const nextNum=(campaign.weeks[campaign.weeks.length-1]?.weekNum||0)+1;
-    updateCampaign({weeks:[...campaign.weeks,{id:Date.now(),weekNum:nextNum,revenueTarget:campaign.weeklyGoal||0,revenueDone:false,lifeAppsTarget:0,lifeAppsDone:false,securitiesTarget:0,securitiesDone:false,mortgageTarget:0,mortgageDone:false,notes:""}]});
-  };
-  const removeWeek=(id)=>updateCampaign({weeks:campaign.weeks.filter(w=>w.id!==id)});
-  const updateFinish=(id,patch)=>updateCampaign({finishLine:campaign.finishLine.map(f=>f.id===id?{...f,...patch}:f)});
-  const addFinish=()=>updateCampaign({finishLine:[...campaign.finishLine,{id:Date.now(),label:"New goal",done:false}]});
-  const removeFinish=(id)=>updateCampaign({finishLine:campaign.finishLine.filter(f=>f.id!==id)});
-
-  const loadDailyChecklist = () => {
-    const existingKeys = new Set(myTasks.filter(t=>t.dailyChecklist).map(t=>t.checklistKey));
-    const newOnes = DAILY_SUCCESS_CHECKLIST_ITEMS.filter(i=>!existingKeys.has(i.key)).map((i,idx)=>({
-      id:Date.now()+idx,
-      title:i.title,
-      description:"",
-      startDate:new Date().toISOString().split("T")[0],
-      dueDate:"",
-      recurring:true,
-      days:[1,2,3,4,5],
-      priority:"Medium",
-      category:i.category,
-      subtasks:[],
-      createdAt:new Date().toISOString(),
-      completedDays:{},
-      dailyChecklist:true,
-      checklistKey:i.key,
-    }));
-    if(newOnes.length===0){ alert("Your Daily Success Checklist is already loaded — check below for all your items."); return; }
-    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:[...myTasks,...newOnes]}});
-  };
-
-  // ── Weekly grid view for the Daily Success Checklist (admin/superadmin) ──
-  const [weekOffset,setWeekOffset]=useState(0);
-  const [editingItemId,setEditingItemId]=useState(null);
-  const [editingItemDraft,setEditingItemDraft]=useState("");
-  const startEditItem=(t)=>{ setEditingItemId(t.id); setEditingItemDraft(t.title); };
-  const saveEditItem=()=>{
-    if(!editingItemDraft.trim()){ setEditingItemId(null); return; }
-    const updated=myTasks.map(t=>t.id===editingItemId?{...t,title:editingItemDraft.trim(),dailyChecklist:true}:t);
-    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
-    setEditingItemId(null);
-  };
-  const checklistTitleSet = new Set(DAILY_SUCCESS_CHECKLIST_ITEMS.map(i=>i.title));
-  const checklistTasks = myTasks.filter(t=>t.dailyChecklist||checklistTitleSet.has(t.title));
-  const otherTasks = myTasks.filter(t=>!(t.dailyChecklist||checklistTitleSet.has(t.title)));
-  const weekDates = (()=>{
-    const now=new Date();
-    const dow=now.getDay();
-    const diffToMonday=dow===0?-6:1-dow;
-    const monday=new Date(now);
-    monday.setDate(now.getDate()+diffToMonday+weekOffset*7);
-    monday.setHours(0,0,0,0);
-    return [0,1,2,3,4].map(i=>{
-      const d=new Date(monday);
-      d.setDate(monday.getDate()+i);
-      return {label:["Mon","Tue","Wed","Thu","Fri"][i],dateStr:d.toISOString().split("T")[0],dateObj:d};
-    });
-  })();
-  const weekLabel = `${weekDates[0].dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${weekDates[4].dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"})}`;
-  const CHECKLIST_CATEGORY_ORDER=["Personal","Prospecting","Production","End of Day"];
-  const groupedChecklist={};
-  checklistTasks.forEach(t=>{ (groupedChecklist[t.category]=groupedChecklist[t.category]||[]).push(t); });
+  const sortedTasks = [...myTasks].sort((a,b)=>new Date(b.createdAt||0) - new Date(a.createdAt||0));
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:8}}>
-      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks & Goals</div>
-      <div style={{display:"flex",gap:8}}>
-        {(session.role==="admin"||session.role==="superadmin")&&!campaign&&<button onClick={loadIncomeCampaign} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Load Income Goal Campaign</button>}
-        {(session.role==="admin"||session.role==="superadmin")&&<button onClick={loadDailyChecklist} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:`1px solid ${C.gold}`,background:C.gold+"11",color:C.gold,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Load Daily Success Checklist</button>}
-        <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>+ New Task</button>
-      </div>
+      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks</div>
+      <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>+ New Task</button>
     </div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
-
-    {(session.role==="admin"||session.role==="superadmin")&&(()=>{ const s=getTodaysScripture(); return <div style={{background:C.teal+"0d",border:`1px solid ${C.teal}33`,borderRadius:10,padding:"10px 13px",marginBottom:16}}>
-      <div style={{fontSize:13,color:C.text,fontStyle:"italic",lineHeight:1.5,marginBottom:3}}>"{s.text}"</div>
-      <div style={{fontSize:11,color:C.teal,fontWeight:700}}>{s.ref}</div>
-    </div>; })()}
-
-    {/* Income Goal Campaign */}
-    {(session.role==="admin"||session.role==="superadmin")&&campaign&&<div style={{marginBottom:24}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.text}}>Income Goal Campaign</div>
-        <div style={{display:"flex",gap:6}}>
-          <button onClick={archiveCampaign} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Archive & Start New</button>
-          <button onClick={deleteCampaign} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Delete (no copy saved)</button>
-        </div>
-      </div>
-
-      <div style={{background:C.gold+"11",border:`1px solid ${C.gold}44`,borderRadius:10,padding:"9px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:15,flexShrink:0}}>🎯</span>
-        <input value={campaign.dailyQuestion||""} onChange={e=>updateCampaign({dailyQuestion:e.target.value})} style={{flex:1,background:"transparent",border:"none",fontSize:13,fontWeight:600,color:"#92400e",outline:"none"}}/>
-      </div>
-
-      <div style={{border:`1px solid ${C.border}`,borderRadius:10,padding:12,background:"white",marginBottom:10}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:10}}>
-          <div>
-            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Deadline</div>
-            <input type="date" value={campaign.deadline} onChange={e=>updateCampaign({deadline:e.target.value})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Target Income ($)</div>
-            <input type="number" value={campaign.targetIncome} onChange={e=>updateCampaign({targetIncome:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Weekly Goal ($/wk)</div>
-            <input type="number" value={campaign.weeklyGoal} onChange={e=>updateCampaign({weeklyGoal:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Daily Goal ($/day)</div>
-            <input type="number" value={campaign.dailyGoal} onChange={e=>updateCampaign({dailyGoal:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Total Days</div>
-            <input type="number" value={campaign.totalDays} onChange={e=>updateCampaign({totalDays:Number(e.target.value)})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
-          </div>
-        </div>
-        <div>
-          <div style={{fontSize:11,color:C.textMid,fontWeight:600,marginBottom:3}}>Daily Focus</div>
-          <input value={campaign.dailyFocus} onChange={e=>updateCampaign({dailyFocus:e.target.value})} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text,width:"100%"}}/>
-        </div>
-      </div>
-
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Income Targets</div>
-      <div style={{border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden",background:"white",marginBottom:6}}>
-        {campaign.targets.map((t,i)=><div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
-          <input type="checkbox" checked={t.done} onChange={e=>updateTarget(t.id,{done:e.target.checked})} style={{width:17,height:17,cursor:"pointer",flexShrink:0}}/>
-          <input value={t.category} onChange={e=>updateTarget(t.id,{category:e.target.value})} placeholder="Category" style={{flex:"1 1 160px",padding:"4px 7px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12,color:C.text,fontWeight:600}}/>
-          <input value={t.goalValue} onChange={e=>updateTarget(t.id,{goalValue:e.target.value})} placeholder="Goal / Value" style={{flex:"2 1 220px",padding:"4px 7px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12,color:C.textMid}}/>
-          <button onClick={()=>removeTarget(t.id)} style={{fontSize:14,color:C.textLight,background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
-        </div>)}
-      </div>
-      <button onClick={addTarget} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginBottom:18}}>+ Add Target</button>
-
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Weekly Scorecard — Complete Every Friday</div>
-      <div style={{overflowX:"auto",border:`1px solid ${C.border}`,borderRadius:10,background:"white",marginBottom:6}}>
-        <table style={{width:"100%",borderCollapse:"collapse",minWidth:640}}>
-          <thead>
-            <tr style={{background:C.navy}}>
-              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700,textAlign:"left"}}>Week</th>
-              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Revenue</th>
-              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Life Apps</th>
-              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Securities</th>
-              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700}}>Mortgage</th>
-              <th style={{padding:"7px 8px",fontSize:11,color:"white",fontWeight:700,textAlign:"left"}}>Notes</th>
-              <th style={{padding:"7px 4px"}}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {campaign.weeks.map((w,i)=><tr key={w.id} style={{borderTop:i>0?`1px solid ${C.border}`:"none"}}>
-              <td style={{padding:"6px 8px",fontSize:12,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>Week {w.weekNum}</td>
-              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.revenueDone} onChange={e=>updateWeek(w.id,{revenueDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.revenueTarget} onChange={e=>updateWeek(w.id,{revenueTarget:Number(e.target.value)})} style={{width:64,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
-              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.lifeAppsDone} onChange={e=>updateWeek(w.id,{lifeAppsDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.lifeAppsTarget} onChange={e=>updateWeek(w.id,{lifeAppsTarget:Number(e.target.value)})} style={{width:44,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
-              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.securitiesDone} onChange={e=>updateWeek(w.id,{securitiesDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.securitiesTarget} onChange={e=>updateWeek(w.id,{securitiesTarget:Number(e.target.value)})} style={{width:72,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
-              <td style={{padding:"6px 6px"}}><div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}><input type="checkbox" checked={w.mortgageDone} onChange={e=>updateWeek(w.id,{mortgageDone:e.target.checked})} style={{width:15,height:15,cursor:"pointer"}}/><input type="number" value={w.mortgageTarget} onChange={e=>updateWeek(w.id,{mortgageTarget:Number(e.target.value)})} style={{width:64,padding:"3px 5px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></div></td>
-              <td style={{padding:"6px 6px"}}><input value={w.notes} onChange={e=>updateWeek(w.id,{notes:e.target.value})} placeholder="Notes" style={{width:"100%",padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12}}/></td>
-              <td style={{padding:"6px 4px",textAlign:"center"}}><button onClick={()=>removeWeek(w.id)} style={{fontSize:13,color:C.textLight,background:"none",border:"none",cursor:"pointer"}}>✕</button></td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-      <button onClick={addWeek} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginBottom:18}}>+ Add Week</button>
-
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Finish Line</div>
-      <div style={{border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden",background:"white"}}>
-        {campaign.finishLine.map((f,i)=><div key={f.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderTop:i>0?`1px solid ${C.border}`:"none"}}>
-          <input type="checkbox" checked={f.done} onChange={e=>updateFinish(f.id,{done:e.target.checked})} style={{width:17,height:17,cursor:"pointer",flexShrink:0}}/>
-          <input value={f.label} onChange={e=>updateFinish(f.id,{label:e.target.value})} style={{flex:1,padding:"4px 7px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:12,color:C.text}}/>
-          <button onClick={()=>removeFinish(f.id)} style={{fontSize:14,color:C.textLight,background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
-        </div>)}
-      </div>
-      <button onClick={addFinish} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginTop:6}}>+ Add Goal</button>
-    </div>}
-
-    {/* Archived Campaigns — visible any time, even with no active campaign */}
-    {(session.role==="admin"||session.role==="superadmin")&&campaignArchive.length>0&&<div style={{marginBottom:24}}>
-      <button onClick={()=>setShowArchive(!showArchive)} style={{fontSize:13,fontWeight:700,color:C.text,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6,marginBottom:showArchive?10:0}}>
-        <span style={{transform:showArchive?"rotate(90deg)":"none",display:"inline-block",fontSize:11}}>▶</span>
-        Archived Campaigns ({campaignArchive.length})
-      </button>
-      {showArchive&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {campaignArchive.map(c=>{
-          const targetsMet=(c.targets||[]).filter(t=>t.done).length;
-          const weeksMet=(c.weeks||[]).filter(w=>w.revenueDone).length;
-          const finishMet=(c.finishLine||[]).filter(f=>f.done).length;
-          return <div key={c.id} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",background:C.surface||"#f8fafc"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:C.text}}>Target: ${Number(c.targetIncome||0).toLocaleString()} by {c.deadline}</div>
-                <div style={{fontSize:11,color:C.textMid,marginTop:2}}>Archived {new Date(c.archivedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
-                <div style={{fontSize:11,color:C.textMid,marginTop:4}}>{targetsMet}/{(c.targets||[]).length} targets hit · {weeksMet}/{(c.weeks||[]).length} weeks on pace · {finishMet}/{(c.finishLine||[]).length} finish line goals met</div>
-              </div>
-              <button onClick={()=>deleteArchivedCampaign(c.id)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",flexShrink:0}}>Delete</button>
-            </div>
-          </div>;
-        })}
-      </div>}
-    </div>}
-
-    {/* Daily Success Checklist — weekly grid */}
-    {(session.role==="admin"||session.role==="superadmin")&&checklistTasks.length>0&&<div style={{marginBottom:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.text}}>Daily Success Checklist</div>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <button onClick={()=>setWeekOffset(w=>w-1)} style={{padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid}}>‹</button>
-          <span style={{fontSize:12,color:C.textMid,whiteSpace:"nowrap",fontWeight:600}}>{weekLabel}</span>
-          <button onClick={()=>setWeekOffset(w=>w+1)} style={{padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid}}>›</button>
-          {weekOffset!==0&&<button onClick={()=>setWeekOffset(0)} style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:"none",background:C.teal+"15",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>This Week</button>}
-        </div>
-      </div>
-      <div style={{overflowX:"auto",border:`1px solid ${C.border}`,borderRadius:10,background:"white"}}>
-        <table style={{width:"100%",borderCollapse:"collapse",minWidth:460}}>
-          <thead>
-            <tr style={{background:C.navy}}>
-              <th style={{textAlign:"left",padding:"8px 10px",fontSize:12,color:"white",fontWeight:700,minWidth:160}}>Action</th>
-              {weekDates.map(wd=><th key={wd.dateStr} style={{padding:"8px 4px",fontSize:11,color:"white",fontWeight:700,textAlign:"center",minWidth:46}}>{wd.label}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {CHECKLIST_CATEGORY_ORDER.filter(cat=>groupedChecklist[cat]?.length).map(cat=>
-              <Fragment key={cat}>
-                <tr><td colSpan={weekDates.length+1} style={{padding:"5px 10px",fontSize:12,fontWeight:700,color:C.teal,background:C.teal+"0d"}}>{cat}</td></tr>
-                {groupedChecklist[cat].map(t=><tr key={t.id} style={{borderTop:`1px solid ${C.border}`}}>
-                  <td style={{padding:"6px 10px",fontSize:13,color:C.text}}>
-                    {editingItemId===t.id?
-                      <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                        <input autoFocus value={editingItemDraft} onChange={e=>setEditingItemDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveEditItem();if(e.key==="Escape")setEditingItemId(null);}} style={{flex:1,padding:"3px 6px",borderRadius:5,border:`1px solid ${C.teal}`,fontSize:13,color:C.text,minWidth:120}}/>
-                        <button onClick={saveEditItem} style={{fontSize:11,padding:"3px 7px",borderRadius:5,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>Save</button>
-                      </div>
-                      :
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span>{t.title}</span>
-                        <button onClick={()=>startEditItem(t)} title="Edit" style={{fontSize:11,padding:"1px 5px",borderRadius:4,border:"none",background:"transparent",color:C.textLight,cursor:"pointer"}}>✎</button>
-                      </div>
-                    }
-                  </td>
-                  {weekDates.map(wd=>{
-                    const isScheduled=(t.days||[]).includes(wd.dateObj.getDay());
-                    const done=!!(t.completedDays||{})[wd.dateStr];
-                    return <td key={wd.dateStr} style={{textAlign:"center",padding:"6px 4px"}}>
-                      {isScheduled?<input type="checkbox" checked={done} onChange={()=>toggleDayComplete(t.id,wd.dateStr)} style={{width:17,height:17,cursor:"pointer"}}/>:<span style={{color:C.textLight,fontSize:12}}>—</span>}
-                    </td>;
-                  })}
-                </tr>)}
-              </Fragment>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>}
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks — private to you.</div>
 
     {/* Task Form */}
     {showForm&&<div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"44",padding:"16px",marginBottom:14}}>
@@ -9605,62 +9191,17 @@ function MyTasksPage({session,data,onUpdate}) {
 
       <textarea placeholder="Description or notes (optional)..." value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:8}}/>
 
-      {/* Sub-tasks */}
-      <div style={{marginBottom:8}}>
-        <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Sub-tasks (optional)</div>
-        {form.subtasks.map((s,i)=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-          <span style={{fontSize:13,color:C.text,flex:1,background:C.surface,padding:"4px 8px",borderRadius:6}}>• {s.text}</span>
-          <button onClick={()=>setForm(f=>({...f,subtasks:f.subtasks.filter((_,j)=>j!==i)}))} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
-        </div>)}
-        <div style={{display:"flex",gap:6}}>
-          <input placeholder="Add sub-task..." value={form.newSubtask} onChange={e=>setForm(f=>({...f,newSubtask:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addSubtask()} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
-          <button onClick={addSubtask} style={{padding:"6px 10px",borderRadius:7,border:"none",background:C.teal+"22",color:C.teal,cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
-        </div>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
         <div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Start Date</div>
-          <input type="date" value={form.startDate} onChange={e=>setForm(f=>({...f,startDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
-        </div>
-        <div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>End Date (optional)</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Due Date (optional)</div>
           <input type="date" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
         <div>
           <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Priority</div>
           <select value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
             {TASK_PRIORITIES.map(p=><option key={p}>{p}</option>)}
           </select>
         </div>
-        <div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Category</div>
-          <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
-            {TASK_CATEGORIES.map(c=><option key={c}>{c}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Recurring */}
-      <div style={{marginBottom:10}}>
-        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
-          <input type="checkbox" checked={form.recurring} onChange={e=>setForm(f=>({...f,recurring:e.target.checked}))} style={{width:16,height:16}}/>
-          <span style={{fontSize:13,color:C.text,fontWeight:600}}>Recurring task</span>
-        </label>
-        {form.recurring&&<div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:4}}>Repeat on these days:</div>
-          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            {TASK_DAYS.map((d,i)=><button key={i} onClick={()=>setForm(f=>({...f,days:f.days.includes(i)?f.days.filter(x=>x!==i):[...f.days,i]}))} style={{padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:form.days.includes(i)?700:400,background:form.days.includes(i)?C.teal:C.surface,color:form.days.includes(i)?"white":C.textMid,fontSize:13}}>{d}</button>)}
-          </div>
-          <div style={{display:"flex",gap:6,marginTop:6}}>
-            <button onClick={()=>setForm(f=>({...f,days:[1,2,3,4,5]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekdays</button>
-            <button onClick={()=>setForm(f=>({...f,days:[0,1,2,3,4,5,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Every Day</button>
-            <button onClick={()=>setForm(f=>({...f,days:[0,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekends</button>
-          </div>
-        </div>}
       </div>
 
       <div style={{display:"flex",gap:8}}>
@@ -9669,68 +9210,38 @@ function MyTasksPage({session,data,onUpdate}) {
       </div>
     </div>}
 
-    {/* Task List — everything besides the Daily Success Checklist items shown in the grid above */}
-    {otherTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
+    {/* Task List */}
+    {sortedTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
       <div style={{fontSize:28,marginBottom:8}}>✓</div>
-      <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>No other tasks yet</div>
-      <div style={{fontSize:13}}>Add your first task or recurring goal above</div>
+      <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>No tasks yet</div>
+      <div style={{fontSize:13}}>Add your first task above</div>
     </div>}
 
-    {[...otherTasks].sort((a,b)=>{
-      return new Date(b.createdAt||0) - new Date(a.createdAt||0);
-    }).map((task,i)=>{
+    {sortedTasks.map(task=>{
       const daysLeft = getDaysLeft(task.dueDate);
-      const streak = getStreak(task);
-      const todayActive = isTodayActive(task);
-      const completedToday = !!(task.completedDays||{})[today];
-      const totalDays = task.dueDate&&task.startDate?Math.ceil((new Date(task.dueDate+"T12:00:00")-new Date(task.startDate+"T12:00:00"))/86400000):null;
-      const daysCompleted = Object.values(task.completedDays||{}).filter(Boolean).length;
-      const pct = totalDays?Math.min(Math.round((daysCompleted/totalDays)*100),100):null;
-
       return <div key={task.id} style={{borderRadius:12,border:"2px solid "+(PRIORITY_COLORS[task.priority]||C.gold)+"33",background:"white",marginBottom:10,overflow:"hidden"}}>
-        {/* Header */}
-        <div style={{padding:"10px 14px",borderBottom:"1px solid "+C.border}}>
+        <div style={{padding:"10px 14px",borderBottom:task.description?"1px solid "+C.border:"none"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
-                <span style={{fontSize:14,fontWeight:700,color:C.text}}>{task.title}</span>
+                <span style={{fontSize:14,fontWeight:700,color:task.completed?C.textLight:C.text,textDecoration:task.completed?"line-through":"none"}}>{task.title}</span>
                 <Badge color={PRIORITY_COLORS[task.priority]||C.gold} small>{task.priority}</Badge>
-                <Badge color={C.teal} small>{task.category}</Badge>
-                {task.recurring&&<Badge color={C.purple} small>Recurring</Badge>}
               </div>
-              {task.description&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:4}}>{task.description}</div>}
-              {task.recurring&&task.days&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-                {TASK_DAYS.map((d,di)=><span key={di} style={{fontSize:10,padding:"1px 5px",borderRadius:4,background:task.days.includes(di)?C.teal+"22":C.surface,color:task.days.includes(di)?C.teal:C.textLight,fontWeight:task.days.includes(di)?600:400}}>{d}</span>)}
-              </div>}
+              {task.description&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.5}}>{task.description}</div>}
+              {daysLeft!==null&&<div style={{fontSize:12,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight,marginTop:4}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</div>}
             </div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
               <button onClick={()=>editTask(task)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
               <button onClick={()=>deleteTask(task.id)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
             </div>
           </div>
-          <div style={{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}}>
-            {daysLeft!==null&&<span style={{fontSize:12,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</span>}
-            {streak>0&&<span style={{fontSize:12,color:C.gold,fontWeight:600}}>🔥 {streak} day streak</span>}
-            {pct!==null&&<span style={{fontSize:12,color:C.teal}}>{daysCompleted}/{totalDays} days done ({pct}%)</span>}
-          </div>
-          {pct!==null&&<Bar pct={pct} color={pct>=100?C.success:C.teal} h={4} style={{marginTop:4}}/>}
         </div>
-
-        {/* Sub-tasks */}
-        {task.subtasks&&task.subtasks.length>0&&<div style={{padding:"8px 14px",borderBottom:"1px solid "+C.border}}>
-          {task.subtasks.map((s,si)=><div key={s.id} style={{fontSize:13,color:C.textMid,padding:"3px 0"}}>• {s.text}</div>)}
-        </div>}
-
-        {/* Today's completion */}
-        {todayActive&&<div style={{padding:"10px 14px",background:completedToday?C.success+"08":C.surface}}>
+        <div style={{padding:"10px 14px",background:task.completed?C.success+"08":C.surface}}>
           <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-            <input type="checkbox" checked={completedToday} onChange={()=>toggleDayComplete(task.id,today)} style={{width:18,height:18,cursor:"pointer"}}/>
-            <span style={{fontSize:13,fontWeight:600,color:completedToday?C.success:C.text}}>{completedToday?"Completed today!":"Mark today as done"}</span>
+            <input type="checkbox" checked={task.completed} onChange={()=>toggleComplete(task.id)} style={{width:18,height:18,cursor:"pointer"}}/>
+            <span style={{fontSize:13,fontWeight:600,color:task.completed?C.success:C.text}}>{task.completed?"Completed!":"Mark as done"}</span>
           </label>
-        </div>}
-        {!todayActive&&<div style={{padding:"8px 14px",background:C.surface}}>
-          <span style={{fontSize:13,color:C.textLight}}>Not scheduled for today</span>
-        </div>}
+        </div>
       </div>;
     })}
   </div>;
