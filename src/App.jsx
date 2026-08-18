@@ -1442,6 +1442,34 @@ function RefsEditor({rep,data,onUpdate}) {
 function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpenCommitment}) {
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
+  // Lightweight check for the sidebar's "new lead" dot — same MoneyMap leads collection
+  // My Pipeline reads from, just filtered down to "is there at least one still at New Lead
+  // stage" rather than loading full lead details.
+  const [hasNewLead,setHasNewLead]=useState(false);
+  useEffect(()=>{
+    let cancelled=false;
+    const safeName=(rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+    if(!safeName) return;
+    (async()=>{
+      try{
+        const q=query(collection(mmDb,"leads"),orderBy("submittedAt","desc"));
+        const snap=await getDocs(q);
+        if(cancelled) return;
+        const pipelineData=(data.leadPipeline||{})[rep.id]||{};
+        const anyNew=snap.docs.some(d=>{
+          const l=d.data();
+          if((l.referredBy||"").toLowerCase()!==safeName) return false;
+          if(l.archived) return false;
+          const repEntry=pipelineData[d.id]||{};
+          if(repEntry.repArchived) return false;
+          const stage=repEntry.stage||(l.wantsReview?"wantsReview":"new");
+          return stage==="new";
+        });
+        setHasNewLead(anyNew);
+      }catch(e){ /* fails silently — the dot just won't show */ }
+    })();
+    return ()=>{cancelled=true;};
+  },[rep.id,rep.name]);
 
   // Phone back button — go back to checklist tab if on another tab
   useEffect(()=>{
@@ -1638,6 +1666,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         </svg>
         <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400,flex:1}}>{t.l}</span>
         {t.k==="fttasks"&&hasUnattendedTasksToday(data,rep.id)&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+        {t.k==="pipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
       </button>)}
     </div>
     {/* Footer */}
@@ -10085,7 +10114,7 @@ function ScriptsPage({data,onUpdate,userRole}) {
 }
 
 // ── SIDEBAR ──
-function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null,hasUnattendedTasks=false}) {
+function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null,hasUnattendedTasks=false,hasNewLead=false}) {
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
@@ -10140,6 +10169,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
         <span style={{fontSize:13,fontWeight:section===item.k?600:400,flex:1}}>{item.l}</span>
         {item.k==="mytasks"&&hasUnattendedTasks&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+        {item.k==="mypipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
         {section===item.k&&<div style={{width:3,height:3,borderRadius:2,background:C.teal,flexShrink:0,marginLeft:6}}/>}
       </button>)}
       <div style={{borderTop:`1px solid ${C.borderLight}`,marginTop:8,paddingTop:8}}>
@@ -11764,6 +11794,35 @@ export default function App() {
   const [mobileOpen,setMobileOpen]=useState(false);
   const [winWidth,setWinWidth]=useState(window.innerWidth);
   const isDesktopView=winWidth>=900;
+  const [hasNewLeadAdmin,setHasNewLeadAdmin]=useState(false);
+  useEffect(()=>{
+    if(!session||!(session.role==="admin"||session.role==="superadmin"||session.role==="trainer")) return;
+    let cancelled=false;
+    const adminRecord=(data.admins||[]).find(a=>a.id===session.id);
+    const trainerRecord=(data.trainers||[]).find(t=>t.id===session.id);
+    const linkName=adminRecord?.linkName||trainerRecord?.linkName||null;
+    const safeName=(linkName||session.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+    if(!safeName) return;
+    (async()=>{
+      try{
+        const q=query(collection(mmDb,"leads"),orderBy("submittedAt","desc"));
+        const snap=await getDocs(q);
+        if(cancelled) return;
+        const pipelineData=(data.leadPipeline||{})[session.id]||{};
+        const anyNew=snap.docs.some(d=>{
+          const l=d.data();
+          if((l.referredBy||"").toLowerCase()!==safeName) return false;
+          if(l.archived) return false;
+          const repEntry=pipelineData[d.id]||{};
+          if(repEntry.repArchived) return false;
+          const stage=repEntry.stage||(l.wantsReview?"wantsReview":"new");
+          return stage==="new";
+        });
+        setHasNewLeadAdmin(anyNew);
+      }catch(e){ /* fails silently — the dot just won't show */ }
+    })();
+    return ()=>{cancelled=true;};
+  },[session?.id,session?.role,session?.name]);
   useEffect(()=>{
     const handle=()=>{setWinWidth(window.innerWidth);if(window.innerWidth>=768)setMobileOpen(false);};
     window.addEventListener("resize",handle);
@@ -12243,11 +12302,11 @@ export default function App() {
     }}/>
     {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
     <div style={{display:"flex",flexShrink:0,width:winWidth>=768?(winWidth>=900?260:240):0,overflow:"hidden"}}>
-      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo} hasUnattendedTasks={hasUnattendedTasksToday(data,session.id)}/>}
+      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo} hasUnattendedTasks={hasUnattendedTasksToday(data,session.id)} hasNewLead={hasNewLeadAdmin}/>}
     </div>
     {/* Mobile sidebar overlay */}
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo} hasUnattendedTasks={hasUnattendedTasksToday(data,session.id)}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo} hasUnattendedTasks={hasUnattendedTasksToday(data,session.id)} hasNewLead={hasNewLeadAdmin}/>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
