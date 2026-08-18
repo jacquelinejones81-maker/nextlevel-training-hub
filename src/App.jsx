@@ -922,7 +922,7 @@ function CareerJourneyBanner({rep,data,onUpdate}) {
     {key:"licensed",label:"Licensed",color:C.gold},
     {key:"trainer",label:"Trainer",color:C.purple},
   ];
-  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const stageIndex = stages.findIndex(s=>s.key===currentStage);
   const currentColor = stages[stageIndex]?.color||C.teal;
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
@@ -1458,7 +1458,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"planner",l:"Daily Planner"},
     {k:"prospects",l:"Prospects"},
     {k:"recruits",l:"Recruits ("+myRecruits.length+")"},
-    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"},{k:"pipeline",l:"My Pipeline"}]:[]),
+    ...(rep.track==="licensed"?[{k:"career",l:"Career Path"}]:[]),
+    {k:"pipeline",l:"My Pipeline"},
     {k:"resources",l:"Resources"},{k:"advancement",l:"Advancement"},
     {k:"fame",l:"Wall of Fame"},
     {k:"schedule",l:"Schedule"},
@@ -1933,6 +1934,13 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
   const [editContact,setEditContact]=useState(false);
   const [contactForm,setContactForm]=useState({phone:rep.phone||"",email:rep.email||""});
   const saveContact=()=>{onUpdate(rep.id,{...rep,phone:contactForm.phone,email:contactForm.email});setEditContact(false);};
+  const [editName,setEditName]=useState(false);
+  const [nameForm,setNameForm]=useState(rep.name||"");
+  const saveName=()=>{
+    if(!nameForm.trim()) return;
+    onUpdate(rep.id,{...rep,name:nameForm.trim()});
+    setEditName(false);
+  };
   const liveRepData=(data.reps||[]).find(r=>r.id===rep.id)||rep;
   const tabs=[{k:"trainer",l:"Trainer"},{k:"rep",l:track?.label||"Rep"},{k:"appointments",l:`Appts (${(rep.appointments||[]).length})`},{k:"refs",l:"Refs"},{k:"milestones",l:"Milestones"},{k:"checkins",l:"Check-ins"},{k:"career",l:"Career Path"},{k:"schedule",l:"Schedule"}];
   const togT=(id)=>{const lr=(data.reps||[]).find(r=>r.id===rep.id)||rep;const tc2=lr.trainerChecked||{};onUpdate(rep.id,{...lr,trainerChecked:{...tc2,[id]:!tc2[id]}});};
@@ -1958,7 +1966,15 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button onClick={onBack} style={{background:C.surface,border:"none",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:13,color:C.textMid}}>&larr; Back</button>
       <div style={{flex:1}}>
-        <div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div>
+        {!editName?<div style={{display:"flex",alignItems:"center",gap:6}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>{rep.name}</div>
+          <button onClick={()=>{setNameForm(rep.name||"");setEditName(true);}} style={{fontSize:11,padding:"1px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
+        </div>
+        :<div style={{display:"flex",gap:5,alignItems:"center",marginBottom:2}}>
+          <input value={nameForm} onChange={e=>setNameForm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()} style={{padding:"3px 6px",borderRadius:5,border:`1px solid ${C.border}`,fontSize:15,fontWeight:700,color:C.text}}/>
+          <button onClick={saveName} style={{padding:"3px 8px",borderRadius:5,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:12,fontWeight:600}}>Save</button>
+          <button onClick={()=>setEditName(false)} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:12,color:C.textMid}}>Cancel</button>
+        </div>}
         {!editContact&&<div style={{fontSize:13,color:C.textMid,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
           <PhoneLink phone={rep.phone}/>
           {rep.email&&<a href={"mailto:"+rep.email} style={{fontSize:13,color:C.teal,textDecoration:"none"}}>✉ {rep.email}</a>}
@@ -7832,6 +7848,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
       <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
+      <div style={{background:C.surface,borderLeft:`3px solid ${C.textLight}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:C.textMid,lineHeight:1.5,marginBottom:8}}>This is an estimate only; confirm exact figures through Primerica Online.</div>
       <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
         <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
         {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
@@ -8688,10 +8705,7 @@ function TeamLeads({data,userId}) {
       (l.phone||"").includes(search) ||
       (l.email||"").toLowerCase().includes(search.toLowerCase()) ||
       (l.referredBy||"").toLowerCase().includes(search.toLowerCase());
-    if(filter==="interest_wealth_1") return matchSearch && l.interest_wealth_1;
-    if(filter==="interest_life_ins_1") return matchSearch && l.interest_life_ins_1;
-    if(filter==="interest_debt_1") return matchSearch && l.interest_debt_1;
-    if(filter==="interest_savings_1") return matchSearch && l.interest_savings_1;
+    if(filter==="wantsReview") return matchSearch && l.wantsReview;
     if(filter==="reviewCalled") return matchSearch && l.reviewCalled;
     if(filter==="bookSent") return matchSearch && l.bookSent;
     if(filter==="new") return matchSearch && !l.reviewCalled && !l.bookSent;
@@ -8718,7 +8732,6 @@ function TeamLeads({data,userId}) {
     {keys:["interest_budget_1","interest_budget_2"],label:"💡 Budgeting",color:"#d97706"},
     {keys:["interest_subscriptions_1","interest_subscriptions_2"],label:"💸 Subscriptions",color:"#6366f1"},
     {keys:["interest_mortgage_1","interest_mortgage_2"],label:"🏠 Mortgage",color:"#b45309"},
-    {keys:["interest_wealth_1"],label:"📈 Wealth Building",color:"#4338ca"},
   ];
 
   const getInterests = (lead) => INTEREST_MAP.filter(item=>item.keys.some(k=>lead[k]===true));
@@ -8757,7 +8770,7 @@ function TeamLeads({data,userId}) {
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
         <input placeholder="Search by name, phone, or email..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
         <div style={{display:"flex",gap:4}}>
-          {[["all","All"],["new","New"],["interest_wealth_1","📈 Wealth"],["interest_life_ins_1","🛡️ Life Ins"],["interest_debt_1","📉 Debt"],["interest_savings_1","🐷 Savings"],["reviewCalled","Called"],["bookSent","Book Sent"]].map(([k,l])=>(
+          {[["all","All"],["new","New"],["wantsReview","Wants Review"],["reviewCalled","Called"],["bookSent","Book Sent"]].map(([k,l])=>(
             <button key={k} onClick={()=>setFilter(k)} style={{fontSize:12,padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:filter===k?600:400,background:filter===k?C.navy:C.surface,color:filter===k?"white":C.textMid,whiteSpace:"nowrap"}}>{l}</button>
           ))}
         </div>
@@ -8775,24 +8788,7 @@ function TeamLeads({data,userId}) {
             </div>
             {lead.referredBy&&<div style={{fontSize:13,color:C.purple,fontWeight:600,marginBottom:2}}>Rep: {lead.referredBy}</div>}
             <div style={{fontSize:12,color:C.textLight,marginBottom:6}}>{lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No date"}</div>
-            {/* Specific contact requests */}
-            {lead.contactRequests&&lead.contactRequests.length>0&&<div style={{marginTop:8}}>
-              <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:C.textLight,marginBottom:4}}>Requested contact for:</div>
-              <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                {lead.contactRequests.map((cr,i)=>{
-                  const CONTACT_COLORS={"interest_wealth_1":"#4338ca","interest_life_ins_1":"#0d9488","interest_debt_1":"#ef4444","interest_savings_1":"#10b981","interest_budget_1":"#d97706","interest_identity_1":"#7c3aed","interest_mortgage_1":"#b45309"};
-                  const color="#6b7280";
-                  return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 9px",borderRadius:7,background:"rgba(0,0,0,0.03)",border:"1px solid rgba(0,0,0,0.07)"}}>
-                    <span style={{fontSize:13,flexShrink:0}}>{cr.icon||"💬"}</span>
-                    <span style={{fontSize:12,fontWeight:600,color:"#111",flex:1}}>{cr.label}</span>
-                    {cr.requestedAt&&<span style={{fontSize:10,color:C.textLight,whiteSpace:"nowrap"}}>{new Date(cr.requestedAt).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</span>}
-                    {!lead.reviewCalled&&<span style={{background:"#dc2626",color:"#fff",fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:8,flexShrink:0}}>NEW</span>}
-                  </div>;
-                })}
-              </div>
-            </div>}
-            {/* Fallback for older leads without contactRequests */}
-            {(!lead.contactRequests||lead.contactRequests.length===0)&&(()=>{
+            {(()=>{
               const interests=getInterests(lead);
               return interests.length>0?<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
                 {interests.map(item=><span key={item.label} style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:item.color+"18",color:item.color,fontWeight:600,border:`1px solid ${item.color}33`}}>{item.label}</span>)}
@@ -8800,6 +8796,7 @@ function TeamLeads({data,userId}) {
             })()}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",flexShrink:0}}>
+            {lead.wantsReview&&<Badge color={C.gold} small>Wants Review</Badge>}
             {lead.reviewCalled&&<Badge color={C.purple} small>Review Called</Badge>}
             {lead.bookSent&&<Badge color={C.success} small>Book Sent</Badge>}
             {!lead.reviewCalled&&!lead.bookSent&&!lead.archived&&<Badge color={C.teal} small>New</Badge>}
@@ -8851,7 +8848,6 @@ function MyLeads({repName}) {
     {keys:["interest_budget_1","interest_budget_2"],label:"💡 Budget",color:"#d97706"},
     {keys:["interest_subscriptions_1","interest_subscriptions_2"],label:"💸 Subs",color:"#6366f1"},
     {keys:["interest_mortgage_1","interest_mortgage_2"],label:"🏠 Mortgage",color:"#b45309"},
-    {keys:["interest_wealth_1"],label:"📈 Wealth",color:"#4338ca"},
   ];
 
   if(loading) return null;
@@ -8902,7 +8898,6 @@ const PIPELINE_STAGES = [
 
 function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const [activeStage,setActiveStage] = useState("all");
-  const [interestFilter,setInterestFilter] = useState(null);
   const [search,setSearch] = useState("");
   const [showArchived,setShowArchived] = useState(false);
   const pipelineData = data.leadPipeline||{};
@@ -8913,16 +8908,16 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const safeName = rep.linkName||(rep.name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
 
   useEffect(()=>{
-    // Use onSnapshot for real-time updates so new interest flags appear without refresh
-    try{
-      const q = query(collection(mmDb,"leads"),orderBy("submittedAt","desc"));
-      const unsub = onSnapshot(q,snap=>{
+    const fetchLeads = async()=>{
+      try{
+        const q = query(collection(mmDb,"leads"),orderBy("submittedAt","desc"));
+        const snap = await getDocs(q);
         const all = snap.docs.map(d=>({...d.data(),docId:d.id}));
         const mine = all.filter(l=>!l.archived&&(l.referredBy||"").toLowerCase()===safeName);
         setMmLeads(mine);
-      },e=>console.error(e));
-      return ()=>unsub();
-    }catch(e){console.error(e);}
+      }catch(e){console.error(e);}
+    };
+    fetchLeads();
   },[safeName]);
 
   // Merge MoneyMap leads with pipeline stage from NextLevel Firebase
@@ -8967,29 +8962,6 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
     onUpdate({...data,leadPipeline:updated});
   };
 
-  const deleteContactRequest = async (docId) => {
-    if(!window.confirm("Delete this lead request? It will disappear until they request contact again.")) return;
-    try{
-      const {doc:fsDoc,updateDoc,deleteField} = await import("firebase/firestore");
-      const ref = fsDoc(mmDb,"leads",docId);
-      await updateDoc(ref,{
-        lastInterestTopic: deleteField(),
-        lastInterestAt: deleteField(),
-        contactRequests: deleteField(),
-        interest_wealth_1: deleteField(),
-        interest_life_ins_1: deleteField(),
-        interest_debt_1: deleteField(),
-        interest_savings_1: deleteField(),
-        interest_budget_1: deleteField(),
-        interest_identity_1: deleteField(),
-        interest_legal_1: deleteField(),
-        interest_mortgage_1: deleteField(),
-        wantsReview: false,
-      });
-      setRepArchived(docId,false);
-    }catch(e){console.error("Delete contact request error:",e);}
-  };
-
   const activeLeadsOnly = leads.filter(l=>!l.repArchived);
   const archivedLeadsOnly = leads.filter(l=>l.repArchived);
 
@@ -9002,13 +8974,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   const filtered = baseList.filter(l=>{
     const matchStage = activeStage==="all"||l.stage===activeStage;
     const matchSearch = !search||(l.name||"").toLowerCase().includes(search.toLowerCase())||(l.phone||"").includes(search);
-    const INTEREST_TOPICS={"interest_wealth_1":"Wealth Building","interest_life_ins_1":"Life Insurance","interest_debt_1":"Debt Help","interest_savings_1":"Savings","interest_budget_1":"Budgeting","interest_identity_1":"Identity Protection","interest_legal_1":"Legal Protection","interest_mortgage_1":"Mortgage"};
-    const filterTopic=(INTEREST_TOPICS[interestFilter]||"").toLowerCase();
-    const lastTopic=(l.lastInterestTopic||"").toLowerCase();
-    const crMatch=(l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(filterTopic));
-    const topicMatch=filterTopic&&(lastTopic===filterTopic||lastTopic.includes(filterTopic)||filterTopic.includes(lastTopic));
-    const matchInterest = !interestFilter||l[interestFilter]===true||crMatch||topicMatch;
-    return matchStage&&matchSearch&&matchInterest;
+    return matchStage&&matchSearch;
   });
 
   const getDaysInStage = (stageUpdatedAt) => {
@@ -9018,38 +8984,14 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:13}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
 
   return <div>
-    {/* Specific per-interest contact request banners */}
-    {(()=>{
-      const CONTACT_TYPES=[
-        {key:"interest_wealth_1",    topic:"Wealth Building",      icon:"📈", label:"Wealth Building",    color:"#4338ca", grad:"135deg,#4338ca,#6366f1"},
-        {key:"interest_life_ins_1",  topic:"Life Insurance",        icon:"🛡️", label:"Life Insurance",     color:"#0d9488", grad:"135deg,#0ea5a0,#0d9488"},
-        {key:"interest_debt_1",      topic:"Debt Help",             icon:"📉", label:"Debt Help",          color:"#ef4444", grad:"135deg,#ef4444,#dc2626"},
-        {key:"interest_savings_1",   topic:"Savings",               icon:"🐷", label:"Savings",            color:"#10b981", grad:"135deg,#10b981,#059669"},
-        {key:"interest_budget_1",    topic:"Budgeting",             icon:"💡", label:"Budgeting",          color:"#d97706", grad:"135deg,#d97706,#b45309"},
-        {key:"interest_identity_1",  topic:"Identity Protection",   icon:"🔒", label:"Identity Protection",color:"#7c3aed", grad:"135deg,#7c3aed,#6d28d9"},
-        {key:"interest_legal_1",     topic:"Legal Protection",      icon:"⚖️", label:"Legal Protection",  color:"#7c3aed", grad:"135deg,#7c3aed,#6d28d9"},
-        {key:"interest_mortgage_1",  topic:"Mortgage",              icon:"🏠", label:"Mortgage",           color:"#b45309", grad:"135deg,#b45309,#92400e"},
-      ];
-      return CONTACT_TYPES.map(ct=>{
-        // Match on interest_ boolean field OR contactRequests array OR lastInterestTopic
-        const matching=leads.filter(l=>{
-          if(l.repArchived) return false;
-          if(l[ct.key]===true) return true;
-          if((l.contactRequests||[]).some(cr=>(cr.label||"").toLowerCase().includes(ct.label.toLowerCase()))) return true;
-          if((l.lastInterestTopic||"").toLowerCase()===ct.label.toLowerCase()) return true;
-          return false;
-        });
-        if(matching.length===0) return null;
-        return <div key={ct.key} style={{background:`linear-gradient(${ct.grad})`,borderRadius:10,padding:"10px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setInterestFilter(interestFilter===ct.key?null:ct.key)}>
-          <span style={{fontSize:18}}>{ct.icon}</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:700,color:"white"}}>{matching.length} lead{matching.length!==1?"s":""} want{matching.length===1?"s":""} help with {ct.label}</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>Tap to see leads</div>
-          </div>
-          <span style={{color:"rgba(255,255,255,0.6)",fontSize:18}}>›</span>
-        </div>;
-      });
-    })()}
+    {/* Wants Review notification banner */}
+    {leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length>0&&<div style={{background:"linear-gradient(135deg,#f97316,#ea580c)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:16}}>🔔</span>
+      <div style={{flex:1}}>
+        <div style={{fontSize:14,fontWeight:700,color:"white"}}>{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length} lead{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length!==1?"s":""} requesting a review!</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
+      </div>
+    </div>}
     {/* Archived toggle */}
     {archivedLeadsOnly.length>0&&<div style={{marginBottom:10}}>
       <button onClick={()=>{setShowArchived(!showArchived);setActiveStage("all");}} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showArchived?"← Back to Active Leads":"View Archived ("+archivedLeadsOnly.length+")"}</button>
@@ -9064,12 +9006,6 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
       </button>)}
     </div>}
 
-    {/* Active interest filter chip */}
-    {interestFilter&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-      <span style={{fontSize:13,color:C.textMid}}>Filtering by:</span>
-      <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,background:C.teal+"22",color:C.teal}}>{({"interest_wealth_1":"Wealth Building","interest_life_ins_1":"Life Insurance","interest_debt_1":"Debt Help","interest_savings_1":"Savings","interest_budget_1":"Budgeting","interest_identity_1":"Identity Protection","interest_legal_1":"Legal Protection","interest_mortgage_1":"Mortgage"})[interestFilter]||interestFilter}</span>
-      <button onClick={()=>setInterestFilter(null)} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>✕ Clear</button>
-    </div>}
     {/* Search */}
     {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
 
@@ -9095,32 +9031,12 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
             </div>
           </div>
         </div>
-        {/* Contact requests — specific interest badges */}
-        {lead.contactRequests&&lead.contactRequests.length>0&&<div style={{marginBottom:8}}>
-          <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:C.textLight,marginBottom:4}}>Requested contact for:</div>
-          {lead.contactRequests.map((cr,ci)=><div key={ci} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 8px",borderRadius:6,background:"rgba(0,0,0,0.03)",border:"1px solid rgba(0,0,0,0.07)",marginBottom:3}}>
-            <span style={{fontSize:13}}>{cr.icon||"💬"}</span>
-            <span style={{fontSize:12,fontWeight:600,color:C.text,flex:1}}>{cr.label}</span>
-            {cr.requestedAt&&<span style={{fontSize:10,color:C.textLight}}>{new Date(cr.requestedAt).toLocaleDateString()}</span>}
-          </div>)}
-        </div>}
-        {/* Fallback interest badges for older leads */}
-        {(!lead.contactRequests||lead.contactRequests.length===0)&&(()=>{
-          const IMAP={"savings_1":"🐷 Savings","savings_2":"🐷 Savings","life_ins_1":"🛡️ Life Insurance","life_ins_2":"🛡️ Life Insurance","debt_1":"📉 Debt Help","debt_2":"📉 Debt Help","wealth_1":"📈 Wealth Building","budget_1":"💡 Budgeting","identity_1":"🔒 Identity Protection","legal_1":"⚖️ Legal Protection","mortgage_1":"🏠 Mortgage"};
-          const badges=Object.keys(lead).filter(k=>k.startsWith("interest_")&&lead[k]===true).map(k=>IMAP[k.replace("interest_","")]).filter(Boolean);
-          if(badges.length===0) return null;
-          return <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
-            {badges.map(b=><span key={b} style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:C.teal+"18",color:C.teal,fontWeight:600,border:"1px solid "+C.teal+"33"}}>{b}</span>)}
-          </div>;
-        })()}
-        {lead.lastInterestTopic&&!lead.contactRequests?.length&&<div style={{fontSize:12,color:C.teal,fontWeight:600,marginBottom:6}}>Interested in: {lead.lastInterestTopic}</div>}
         {/* Stage update */}
         {!isAdmin&&!showArchived&&<div style={{display:"flex",gap:6}}>
           <select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
             {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
           <button onClick={()=>setRepArchived(lead.docId,true)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,fontSize:13,cursor:"pointer",flexShrink:0}}>Archive</button>
-          <button onClick={()=>deleteContactRequest(lead.docId)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.06)",color:"#ef4444",fontSize:13,cursor:"pointer",flexShrink:0}}>Delete request</button>
         </div>}
         {!isAdmin&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal+"44",background:C.teal+"08",color:C.teal,fontSize:13,cursor:"pointer",fontWeight:600}}>↩ Restore to Active</button>}
       </div>;
@@ -9828,7 +9744,7 @@ function CareerPath({rep,data,onUpdate}) {
     {key:"licensed",label:"Licensed Agent",color:C.gold},
     {key:"trainer",label:"Field Trainer",color:C.purple},
   ];
-  const currentStage = rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
+  const currentStage = rep.rvpPathGranted?"rvp":rep.fieldTrainerGranted?"trainer":rep.track==="licensed"?"licensed":"new";
   const ftRequested = rep.fieldTrainerRequested&&!rep.fieldTrainerGranted;
   const rvpRequested = rep.rvpPathRequested&&!rep.rvpPathGranted;
   const ftGate = getGateStatus(data,rep.checked||{},"fieldTrainer");
@@ -10667,6 +10583,17 @@ const PROSPECTING_CARDS = [
     ifNo:"That's actually the most common reaction — and it's exactly why I want to sit down with you. Because what I'm going to show you looks very different from what you're picturing right now.",
     purpose:"Most people have already been conditioned to reject this opportunity before they understand it. This approach meets their skepticism head on without getting defensive. By making it about what most people experience rather than what they personally are doing, you keep the conversation open and let them draw their own conclusions. Curiosity does the work — not pressure.",
     tip:"You don't have to deliver all five points perfectly. The goal is to get them curious enough to say yes to a meeting — not to close them on the phone. If they're engaged after point two or three, go straight to the close."
+  },
+  {
+    id:"p10",
+    emoji:"👫",
+    situation:"Qualifying the Decision-Maker",
+    context:"Ask this early in the appointment, before you get deep into the presentation — it surfaces whether someone else needs to be involved before it ever becomes a stall at the close.",
+    opening:"\"Before we go further, is there anyone you'd need to consult with on something like this, or do you make these kinds of decisions on your own?\"",
+    ifYes:"\"Great — let's make sure we get them in on this conversation too, so nobody's left explaining it secondhand. When works for all of us?\"",
+    ifNo:"Proceed straight into the presentation — no detour needed.",
+    purpose:"This surfaces the \"I need to talk to my spouse\" objection before it ever comes up at the close, so it's handled early and honestly instead of becoming a stall tactic later.",
+    tip:"Ask this early and casually — before pitching, not after."
   },
 ];
 
