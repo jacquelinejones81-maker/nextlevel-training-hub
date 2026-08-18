@@ -9677,8 +9677,7 @@ function MyTasksPage({session,data,onUpdate}) {
     </div>}
 
     {[...otherTasks].sort((a,b)=>{
-      const po={High:0,Medium:1,Low:2};
-      return (po[a.priority]||1)-(po[b.priority]||1);
+      return new Date(b.createdAt||0) - new Date(a.createdAt||0);
     }).map((task,i)=>{
       const daysLeft = getDaysLeft(task.dueDate);
       const streak = getStreak(task);
