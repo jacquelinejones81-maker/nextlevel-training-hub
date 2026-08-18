@@ -348,6 +348,25 @@ function getPreviousPrimerMonthStart(data,currentStart){
   return before.length>0?before[before.length-1].cutoff:null;
 }
 
+// Checks if a person has any task needing attention today — due today or overdue and not
+// completed, or a recurring task scheduled for today that hasn't been checked off yet.
+// Powers the small notification dot next to the My Tasks nav item.
+function hasUnattendedTasksToday(data,userId){
+  const myTasks = (data.myTasks||{})[userId]||[];
+  const today = localDateStr();
+  return myTasks.some(t=>{
+    if(t.recurring){
+      const dayOfWeek = new Date().getDay();
+      const scheduledToday = (t.days||[]).includes(dayOfWeek);
+      if(!scheduledToday) return false;
+      return !((t.completedDays||{})[today]);
+    }
+    if(t.completed) return false;
+    if(!t.dueDate) return false;
+    return t.dueDate<=today;
+  });
+}
+
 function getGateStatus(data,checked,gateKey){
   const items=getChecklistItems(data,"licensedNowWhat").filter(i=>i.gateGroup===gateKey);
   if(items.length===0) return {items:[],complete:true,doneCount:0,total:0};
@@ -1617,7 +1636,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={tab===t.k?C.teal:"rgba(255,255,255,0.4)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d={tabIcons[t.k]||tabIcons.resources}/>
         </svg>
-        <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400}}>{t.l}</span>
+        <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400,flex:1}}>{t.l}</span>
+        {t.k==="fttasks"&&hasUnattendedTasksToday(data,rep.id)&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
       </button>)}
     </div>
     {/* Footer */}
@@ -10065,7 +10085,7 @@ function ScriptsPage({data,onUpdate,userRole}) {
 }
 
 // ── SIDEBAR ──
-function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null}) {
+function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null,hasUnattendedTasks=false}) {
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
@@ -10118,8 +10138,9 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     <nav style={{flex:1,padding:"10px 7px",overflowY:"auto"}}>
       {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
-        <span style={{fontSize:13,fontWeight:section===item.k?600:400}}>{item.l}</span>
-        {section===item.k&&<div style={{marginLeft:"auto",width:3,height:3,borderRadius:2,background:C.teal}}/>}
+        <span style={{fontSize:13,fontWeight:section===item.k?600:400,flex:1}}>{item.l}</span>
+        {item.k==="mytasks"&&hasUnattendedTasks&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+        {section===item.k&&<div style={{width:3,height:3,borderRadius:2,background:C.teal,flexShrink:0,marginLeft:6}}/>}
       </button>)}
       <div style={{borderTop:`1px solid ${C.borderLight}`,marginTop:8,paddingTop:8}}>
         {[{l:"App Tour",fn:onShowTour},{l:"Add to Phone",fn:onShowPhone}].map(btn=><button key={btn.l} onClick={()=>{btn.fn();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"7px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:"rgba(255,255,255,0.45)",fontSize:13}}>{btn.l}</button>)}
@@ -12222,11 +12243,11 @@ export default function App() {
     }}/>
     {/* Desktop sidebar — hidden on mobile via media query workaround using window width */}
     <div style={{display:"flex",flexShrink:0,width:winWidth>=768?(winWidth>=900?260:240):0,overflow:"hidden"}}>
-      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo}/>}
+      {winWidth>=768&&<Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onShowPhone={()=>setShowPhone(true)} onShowTour={()=>setShowTour(true)} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo} hasUnattendedTasks={hasUnattendedTasksToday(data,session.id)}/>}
     </div>
     {/* Mobile sidebar overlay */}
     {mobileOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo}/>
+      <Sidebar section={section} onNav={navTo} role={session.role} name={session.name} onSignOut={signOut} onClose={()=>setMobileOpen(false)} onShowPhone={()=>{setShowPhone(true);setMobileOpen(false);}} onShowTour={()=>{setShowTour(true);setMobileOpen(false);}} alsoRecruits={((data.admins||[]).find(a=>a.id===session.id)||{}).alsoRecruits||session.role==="superadmin"} rewatchVideo={rewatchVideo} hasUnattendedTasks={hasUnattendedTasksToday(data,session.id)}/>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={()=>setMobileOpen(false)}/>
     </div>}
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
