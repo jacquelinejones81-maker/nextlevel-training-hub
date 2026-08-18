@@ -9122,6 +9122,7 @@ function MyPipelinePage({session,data,onUpdate}) {
 
 
 // ── MY TASKS ──
+const TASK_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const TASK_PRIORITIES = ["High","Medium","Low"];
 const PRIORITY_COLORS = {High:C.danger,Medium:C.gold,Low:C.success};
 
@@ -9130,8 +9131,13 @@ function MyTasksPage({session,data,onUpdate}) {
   const myTasks = (data.myTasks||{})[userId]||[];
   const [showForm,setShowForm] = useState(false);
   const [editId,setEditId] = useState(null);
-  const blankForm = {title:"",description:"",dueDate:"",priority:"Medium"};
+  const blankForm = {
+    title:"",description:"",startDate:new Date().toISOString().split("T")[0],
+    dueDate:"",recurring:false,days:[0,1,2,3,4,5,6],
+    priority:"Medium",subtasks:[],newSubtask:""
+  };
   const [form,setForm] = useState(blankForm);
+  const today = new Date().toISOString().split("T")[0];
 
   const resetForm = () => setForm(blankForm);
 
@@ -9139,12 +9145,14 @@ function MyTasksPage({session,data,onUpdate}) {
     if(!form.title.trim()) return;
     const task = {
       id:editId||Date.now(),
-      title:form.title,
-      description:form.description,
-      dueDate:form.dueDate,
+      title:form.title,description:form.description,
+      startDate:form.startDate,dueDate:form.dueDate,
+      recurring:form.recurring,days:form.days,
       priority:form.priority,
+      subtasks:form.subtasks,
       createdAt:editId?(myTasks.find(t=>t.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
       completed:editId?(myTasks.find(t=>t.id===editId)?.completed||false):false,
+      completedDays:editId?(myTasks.find(t=>t.id===editId)?.completedDays||{}):{},
     };
     const updated = editId
       ? myTasks.map(t=>t.id===editId?{...t,...task}:t)
@@ -9158,20 +9166,68 @@ function MyTasksPage({session,data,onUpdate}) {
     onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
   };
 
+  const toggleDayComplete = (taskId,day) => {
+    const updated = myTasks.map(t=>{
+      if(t.id!==taskId) return t;
+      const cd = t.completedDays||{};
+      return {...t,completedDays:{...cd,[day]:!cd[day]}};
+    });
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
+  };
+
+  const toggleSubtask = (taskId,subtaskId) => {
+    const updated = myTasks.map(t=>{
+      if(t.id!==taskId) return t;
+      return {...t,subtasks:(t.subtasks||[]).map(s=>s.id===subtaskId?{...s,done:!s.done}:s)};
+    });
+    onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
+  };
+
   const deleteTask = (taskId) => {
     if(!window.confirm("Delete this task?")) return;
     onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:myTasks.filter(t=>t.id!==taskId)}});
   };
 
   const editTask = (task) => {
-    setForm({title:task.title,description:task.description||"",dueDate:task.dueDate||"",priority:task.priority||"Medium"});
+    setForm({
+      title:task.title,description:task.description||"",
+      startDate:task.startDate||new Date().toISOString().split("T")[0],
+      dueDate:task.dueDate||"",recurring:!!task.recurring,days:task.days||[0,1,2,3,4,5,6],
+      priority:task.priority||"Medium",
+      subtasks:task.subtasks||[],newSubtask:""
+    });
     setEditId(task.id);
     setShowForm(true);
+  };
+
+  const addSubtask = () => {
+    if(!form.newSubtask.trim()) return;
+    setForm(f=>({...f,subtasks:[...f.subtasks,{id:Date.now(),text:f.newSubtask.trim(),done:false}],newSubtask:""}));
   };
 
   const getDaysLeft = (dueDate) => {
     if(!dueDate) return null;
     return Math.ceil((new Date(dueDate+"T12:00:00")-new Date())/86400000);
+  };
+
+  const getStreak = (task) => {
+    const cd = task.completedDays||{};
+    let streak=0;
+    const d=new Date();
+    while(true){
+      const key=d.toISOString().split("T")[0];
+      if(cd[key]) streak++;
+      else break;
+      d.setDate(d.getDate()-1);
+      if(streak>365) break;
+    }
+    return streak;
+  };
+
+  const isTodayActive = (task) => {
+    if(!task.recurring) return true;
+    const dayOfWeek = new Date().getDay();
+    return (task.days||[]).includes(dayOfWeek);
   };
 
   const sortedTasks = [...myTasks].sort((a,b)=>new Date(b.createdAt||0) - new Date(a.createdAt||0));
@@ -9181,7 +9237,7 @@ function MyTasksPage({session,data,onUpdate}) {
       <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>My Tasks</div>
       <button onClick={()=>{setShowForm(!showForm);setEditId(null);resetForm();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>+ New Task</button>
     </div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks — private to you.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Personal tasks and recurring goals — private to you.</div>
 
     {/* Task Form */}
     {showForm&&<div style={{background:"white",borderRadius:12,border:"1px solid "+C.teal+"44",padding:"16px",marginBottom:14}}>
@@ -9191,17 +9247,54 @@ function MyTasksPage({session,data,onUpdate}) {
 
       <textarea placeholder="Description or notes (optional)..." value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,resize:"vertical",minHeight:60,boxSizing:"border-box",lineHeight:1.5,marginBottom:8}}/>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+      {/* Sub-tasks */}
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Sub-tasks (optional)</div>
+        {form.subtasks.map((s,i)=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+          <span style={{fontSize:13,color:C.text,flex:1,background:C.surface,padding:"4px 8px",borderRadius:6}}>• {s.text}</span>
+          <button onClick={()=>setForm(f=>({...f,subtasks:f.subtasks.filter((_,j)=>j!==i)}))} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
+        </div>)}
+        <div style={{display:"flex",gap:6}}>
+          <input placeholder="Add sub-task..." value={form.newSubtask} onChange={e=>setForm(f=>({...f,newSubtask:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addSubtask()} style={{flex:1,padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+          <button onClick={addSubtask} style={{padding:"6px 10px",borderRadius:7,border:"none",background:C.teal+"22",color:C.teal,cursor:"pointer",fontSize:13,fontWeight:600}}>Add</button>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
         <div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Due Date (optional)</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Start Date</div>
+          <input type="date" value={form.startDate} onChange={e=>setForm(f=>({...f,startDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>End Date (optional)</div>
           <input type="date" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
         </div>
-        <div>
-          <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Priority</div>
-          <select value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
-            {TASK_PRIORITIES.map(p=><option key={p}>{p}</option>)}
-          </select>
-        </div>
+      </div>
+
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:12,color:C.textMid,marginBottom:3}}>Priority</div>
+        <select value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
+          {TASK_PRIORITIES.map(p=><option key={p}>{p}</option>)}
+        </select>
+      </div>
+
+      {/* Recurring */}
+      <div style={{marginBottom:10}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
+          <input type="checkbox" checked={form.recurring} onChange={e=>setForm(f=>({...f,recurring:e.target.checked}))} style={{width:16,height:16}}/>
+          <span style={{fontSize:13,color:C.text,fontWeight:600}}>Recurring task</span>
+        </label>
+        {form.recurring&&<div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:4}}>Repeat on these days:</div>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {TASK_DAYS.map((d,i)=><button key={i} onClick={()=>setForm(f=>({...f,days:f.days.includes(i)?f.days.filter(x=>x!==i):[...f.days,i]}))} style={{padding:"5px 9px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:form.days.includes(i)?700:400,background:form.days.includes(i)?C.teal:C.surface,color:form.days.includes(i)?"white":C.textMid,fontSize:13}}>{d}</button>)}
+          </div>
+          <div style={{display:"flex",gap:6,marginTop:6}}>
+            <button onClick={()=>setForm(f=>({...f,days:[1,2,3,4,5]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekdays</button>
+            <button onClick={()=>setForm(f=>({...f,days:[0,1,2,3,4,5,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Every Day</button>
+            <button onClick={()=>setForm(f=>({...f,days:[0,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Weekends</button>
+          </div>
+        </div>}
       </div>
 
       <div style={{display:"flex",gap:8}}>
@@ -9214,34 +9307,73 @@ function MyTasksPage({session,data,onUpdate}) {
     {sortedTasks.length===0&&!showForm&&<div style={{textAlign:"center",padding:"40px 0",color:C.textLight}}>
       <div style={{fontSize:28,marginBottom:8}}>✓</div>
       <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>No tasks yet</div>
-      <div style={{fontSize:13}}>Add your first task above</div>
+      <div style={{fontSize:13}}>Add your first task or recurring goal above</div>
     </div>}
 
     {sortedTasks.map(task=>{
       const daysLeft = getDaysLeft(task.dueDate);
+      const streak = getStreak(task);
+      const todayActive = isTodayActive(task);
+      const completedToday = !!(task.completedDays||{})[today];
+      const subtasks = task.subtasks||[];
+      const subtasksDone = subtasks.filter(s=>s.done).length;
+
       return <div key={task.id} style={{borderRadius:12,border:"2px solid "+(PRIORITY_COLORS[task.priority]||C.gold)+"33",background:"white",marginBottom:10,overflow:"hidden"}}>
-        <div style={{padding:"10px 14px",borderBottom:task.description?"1px solid "+C.border:"none"}}>
+        {/* Header */}
+        <div style={{padding:"10px 14px",borderBottom:"1px solid "+C.border}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
-                <span style={{fontSize:14,fontWeight:700,color:task.completed?C.textLight:C.text,textDecoration:task.completed?"line-through":"none"}}>{task.title}</span>
+                <span style={{fontSize:14,fontWeight:700,color:(task.completed&&!task.recurring)?C.textLight:C.text,textDecoration:(task.completed&&!task.recurring)?"line-through":"none"}}>{task.title}</span>
                 <Badge color={PRIORITY_COLORS[task.priority]||C.gold} small>{task.priority}</Badge>
+                {task.recurring&&<Badge color={C.purple} small>Recurring</Badge>}
               </div>
-              {task.description&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.5}}>{task.description}</div>}
-              {daysLeft!==null&&<div style={{fontSize:12,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight,marginTop:4}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</div>}
+              {task.description&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:4}}>{task.description}</div>}
+              {task.recurring&&task.days&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                {TASK_DAYS.map((d,di)=><span key={di} style={{fontSize:10,padding:"1px 5px",borderRadius:4,background:task.days.includes(di)?C.teal+"22":C.surface,color:task.days.includes(di)?C.teal:C.textLight,fontWeight:task.days.includes(di)?600:400}}>{d}</span>)}
+              </div>}
             </div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
               <button onClick={()=>editTask(task)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.border,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
               <button onClick={()=>deleteTask(task.id)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger}}>Delete</button>
             </div>
           </div>
+          <div style={{display:"flex",gap:10,marginTop:6,flexWrap:"wrap"}}>
+            {daysLeft!==null&&<span style={{fontSize:12,color:daysLeft<=3?C.danger:daysLeft<=7?C.gold:C.textLight}}>{daysLeft<=0?"Ended":daysLeft+"d left"}</span>}
+            {task.recurring&&streak>0&&<span style={{fontSize:12,color:C.gold,fontWeight:600}}>🔥 {streak} day streak</span>}
+            {subtasks.length>0&&<span style={{fontSize:12,color:C.teal}}>{subtasksDone}/{subtasks.length} sub-tasks done</span>}
+          </div>
         </div>
-        <div style={{padding:"10px 14px",background:task.completed?C.success+"08":C.surface}}>
-          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-            <input type="checkbox" checked={task.completed} onChange={()=>toggleComplete(task.id)} style={{width:18,height:18,cursor:"pointer"}}/>
-            <span style={{fontSize:13,fontWeight:600,color:task.completed?C.success:C.text}}>{task.completed?"Completed!":"Mark as done"}</span>
-          </label>
-        </div>
+
+        {/* Sub-tasks */}
+        {subtasks.length>0&&<div style={{padding:"8px 14px",borderBottom:"1px solid "+C.border}}>
+          {subtasks.map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",cursor:"pointer"}}>
+            <input type="checkbox" checked={!!s.done} onChange={()=>toggleSubtask(task.id,s.id)} style={{width:15,height:15,cursor:"pointer"}}/>
+            <span style={{fontSize:13,color:s.done?C.textLight:C.textMid,textDecoration:s.done?"line-through":"none"}}>{s.text}</span>
+          </label>)}
+        </div>}
+
+        {/* Completion */}
+        {task.recurring?
+          <>
+            {todayActive&&<div style={{padding:"10px 14px",background:completedToday?C.success+"08":C.surface}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                <input type="checkbox" checked={completedToday} onChange={()=>toggleDayComplete(task.id,today)} style={{width:18,height:18,cursor:"pointer"}}/>
+                <span style={{fontSize:13,fontWeight:600,color:completedToday?C.success:C.text}}>{completedToday?"Completed today!":"Mark today as done"}</span>
+              </label>
+            </div>}
+            {!todayActive&&<div style={{padding:"8px 14px",background:C.surface}}>
+              <span style={{fontSize:13,color:C.textLight}}>Not scheduled for today</span>
+            </div>}
+          </>
+        :
+          <div style={{padding:"10px 14px",background:task.completed?C.success+"08":C.surface}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+              <input type="checkbox" checked={task.completed} onChange={()=>toggleComplete(task.id)} style={{width:18,height:18,cursor:"pointer"}}/>
+              <span style={{fontSize:13,fontWeight:600,color:task.completed?C.success:C.text}}>{task.completed?"Completed!":"Mark as done"}</span>
+            </label>
+          </div>
+        }
       </div>;
     })}
   </div>;
