@@ -9236,6 +9236,7 @@ function MyTasksPage({session,data,onUpdate}) {
       createdAt:editId?(myTasks.find(t=>t.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
       completed:editId?(myTasks.find(t=>t.id===editId)?.completed||false):false,
       completedDays:editId?(myTasks.find(t=>t.id===editId)?.completedDays||{}):{},
+      subtaskCompletedDays:editId?(myTasks.find(t=>t.id===editId)?.subtaskCompletedDays||{}):{},
     };
     const updated = editId
       ? myTasks.map(t=>t.id===editId?{...t,...task}:t)
@@ -9261,6 +9262,13 @@ function MyTasksPage({session,data,onUpdate}) {
   const toggleSubtask = (taskId,subtaskId) => {
     const updated = myTasks.map(t=>{
       if(t.id!==taskId) return t;
+      if(t.recurring){
+        // Per-day completion — today's check doesn't touch yesterday's history, and
+        // tomorrow starts fresh automatically since it's just a new date key.
+        const scd = t.subtaskCompletedDays||{};
+        const todayMap = scd[today]||{};
+        return {...t,subtaskCompletedDays:{...scd,[today]:{...todayMap,[subtaskId]:!todayMap[subtaskId]}}};
+      }
       return {...t,subtasks:(t.subtasks||[]).map(s=>s.id===subtaskId?{...s,done:!s.done}:s)};
     });
     onUpdate({...data,myTasks:{...(data.myTasks||{}),[userId]:updated}});
@@ -9399,7 +9407,9 @@ function MyTasksPage({session,data,onUpdate}) {
       const todayActive = isTodayActive(task);
       const completedToday = !!(task.completedDays||{})[today];
       const subtasks = task.subtasks||[];
-      const subtasksDone = subtasks.filter(s=>s.done).length;
+      const todaySubtaskMap = task.recurring?((task.subtaskCompletedDays||{})[today]||{}):{};
+      const isSubtaskDone = (s) => task.recurring ? !!todaySubtaskMap[s.id] : !!s.done;
+      const subtasksDone = subtasks.filter(isSubtaskDone).length;
 
       return <div key={task.id} style={{borderRadius:12,border:"2px solid "+(PRIORITY_COLORS[task.priority]||C.gold)+"33",background:"white",marginBottom:10,overflow:"hidden"}}>
         {/* Header */}
@@ -9430,10 +9440,14 @@ function MyTasksPage({session,data,onUpdate}) {
 
         {/* Sub-tasks */}
         {subtasks.length>0&&<div style={{padding:"8px 14px",borderBottom:"1px solid "+C.border}}>
-          {subtasks.map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",cursor:"pointer"}}>
-            <input type="checkbox" checked={!!s.done} onChange={()=>toggleSubtask(task.id,s.id)} style={{width:15,height:15,cursor:"pointer"}}/>
-            <span style={{fontSize:13,color:s.done?C.textLight:C.textMid,textDecoration:s.done?"line-through":"none"}}>{s.text}</span>
-          </label>)}
+          {task.recurring&&<div style={{fontSize:11,color:C.textLight,marginBottom:4}}>Resets fresh each scheduled day</div>}
+          {subtasks.map(s=>{
+            const done = isSubtaskDone(s);
+            return <label key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",cursor:"pointer"}}>
+              <input type="checkbox" checked={done} onChange={()=>toggleSubtask(task.id,s.id)} style={{width:15,height:15,cursor:"pointer"}}/>
+              <span style={{fontSize:13,color:done?C.textLight:C.textMid,textDecoration:done?"line-through":"none"}}>{s.text}</span>
+            </label>;
+          })}
         </div>}
 
         {/* Completion */}
