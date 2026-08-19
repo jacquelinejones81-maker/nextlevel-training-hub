@@ -1463,7 +1463,10 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           const repEntry=pipelineData[d.id]||{};
           if(repEntry.repArchived) return false;
           const stage=repEntry.stage||(l.wantsReview?"wantsReview":"new");
-          return stage==="new";
+          if(stage==="new") return true;
+          const stageUpdatedAt=repEntry.stageUpdatedAt||l.submittedAt;
+          const latestInterestAt=[...(l.contactRequests||[])].sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0))[0]?.requestedAt;
+          return !!(latestInterestAt&&stageUpdatedAt&&new Date(latestInterestAt)>new Date(stageUpdatedAt));
         });
         setHasNewLead(anyNew);
       }catch(e){ /* fails silently — the dot just won't show */ }
@@ -8970,13 +8973,27 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   },[safeName]);
 
   // Merge MoneyMap leads with pipeline stage from NextLevel Firebase
-  const leads = mmLeads.map(l=>({
-    ...l,
-    stage: (repPipeline[l.docId]||{}).stage||(l.wantsReview?"wantsReview":"new"),
-    stageUpdatedAt: (repPipeline[l.docId]||{}).stageUpdatedAt||l.submittedAt,
-    notes: (repPipeline[l.docId]||{}).notes||"",
-    repArchived: !!(repPipeline[l.docId]||{}).repArchived,
-  }));
+  const leads = mmLeads.map(l=>{
+    const pipelineEntry = repPipeline[l.docId]||{};
+    const stage = pipelineEntry.stage||(l.wantsReview?"wantsReview":"new");
+    const stageUpdatedAt = pipelineEntry.stageUpdatedAt||l.submittedAt;
+    const contactRequests = [...(l.contactRequests||[])].sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
+    const latestInterestAt = contactRequests[0]?.requestedAt||null;
+    // A lead already past "New" flags again if they've clicked something new since the
+    // rep last touched its stage — same spirit as a brand-new lead, without losing the
+    // rep's prior progress on it.
+    const hasRenewedInterest = stage!=="new" && latestInterestAt && stageUpdatedAt && new Date(latestInterestAt)>new Date(stageUpdatedAt);
+    return {
+      ...l,
+      stage,
+      stageUpdatedAt,
+      notes: pipelineEntry.notes||"",
+      repArchived: !!pipelineEntry.repArchived,
+      contactRequests,
+      latestInterestAt,
+      hasRenewedInterest,
+    };
+  });
 
   const updateStage = (docId,stage) => {
     const updated = {
@@ -9064,7 +9081,8 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
       const stage = PIPELINE_STAGES.find(s=>s.key===lead.stage)||PIPELINE_STAGES[0];
       const daysInStage = getDaysInStage(lead.stageUpdatedAt);
       const isStale = daysInStage>=7&&lead.stage!=="closedClient"&&lead.stage!=="closedNo";
-      return <div key={i} style={{borderRadius:10,border:"2px solid "+stage.color+"33",padding:"10px 12px",marginBottom:8,background:"white"}}>
+      return <div key={i} style={{borderRadius:10,border:lead.hasRenewedInterest?`2px solid ${C.gold}`:"2px solid "+stage.color+"33",padding:"10px 12px",marginBottom:8,background:"white"}}>
+        {lead.hasRenewedInterest&&<div style={{background:C.gold+"18",border:`1px solid ${C.gold}55`,borderRadius:7,padding:"6px 9px",fontSize:12,fontWeight:600,color:"#92400e",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>🔔 New activity since you last updated this lead</div>}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:14,fontWeight:700,color:C.text}}>{lead.name||"Unknown"}</div>
@@ -9080,6 +9098,22 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
             </div>
           </div>
         </div>
+        {/* Interested In — full click history from MoneyMap, most recent first */}
+        {lead.contactRequests&&lead.contactRequests.length>0&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:8,marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Interested In ({lead.contactRequests.length})</div>
+          {lead.contactRequests.map((cr,ci)=>{
+            const isLatest = ci===0;
+            const crDate = cr.requestedAt?new Date(cr.requestedAt):null;
+            const afterStageUpdate = crDate&&lead.stageUpdatedAt&&crDate>new Date(lead.stageUpdatedAt);
+            return <div key={ci} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
+              <span style={{fontSize:15,width:20,textAlign:"center",flexShrink:0}}>{cr.icon||"📌"}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.text}}>{cr.label||cr.source||"Interest"}{isLatest&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:4,background:C.gold+"22",color:C.gold,marginLeft:6}}>LATEST</span>}</div>
+                <div style={{fontSize:11,color:afterStageUpdate?C.gold:C.textLight,fontWeight:afterStageUpdate?700:400}}>{crDate?crDate.toLocaleDateString("en-US",{month:"short",day:"numeric"})+", "+crDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):""}{afterStageUpdate?" — after you updated this lead":""}</div>
+              </div>
+            </div>;
+          })}
+        </div>}
         {/* Stage update */}
         {!isAdmin&&!showArchived&&<div style={{display:"flex",gap:6}}>
           <select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
@@ -11816,7 +11850,10 @@ export default function App() {
           const repEntry=pipelineData[d.id]||{};
           if(repEntry.repArchived) return false;
           const stage=repEntry.stage||(l.wantsReview?"wantsReview":"new");
-          return stage==="new";
+          if(stage==="new") return true;
+          const stageUpdatedAt=repEntry.stageUpdatedAt||l.submittedAt;
+          const latestInterestAt=[...(l.contactRequests||[])].sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0))[0]?.requestedAt;
+          return !!(latestInterestAt&&stageUpdatedAt&&new Date(latestInterestAt)>new Date(stageUpdatedAt));
         });
         setHasNewLeadAdmin(anyNew);
       }catch(e){ /* fails silently — the dot just won't show */ }
