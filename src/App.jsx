@@ -9754,8 +9754,8 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
   const ann=queue.find(a=>a.id===visibleId);
   if(!ann) return null;
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:3600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-    <div style={{background:"white",borderRadius:14,overflow:"hidden",maxWidth:380,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
-      {ann.imageUrl&&<img src={ann.imageUrl} alt="" style={{width:"100%",maxHeight:220,objectFit:"cover",display:"block"}}/>}
+    <div style={{background:"white",borderRadius:14,overflow:"hidden",maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+      {ann.imageUrl&&<img src={ann.imageUrl} alt="" style={{width:"100%",maxHeight:"50vh",objectFit:"contain",background:C.surface,display:"block"}}/>}
       <div style={{padding:"16px 18px"}}>
         <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:7}}>{ann.title}</div>
         <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:14,whiteSpace:"pre-wrap"}}>{ann.message}</div>
