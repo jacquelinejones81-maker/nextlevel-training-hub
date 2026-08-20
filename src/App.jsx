@@ -9189,6 +9189,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
               <span style={{fontSize:15,width:20,textAlign:"center",flexShrink:0}}>{cr.icon||"📌"}</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:13,fontWeight:600,color:C.text}}>{cr.label||cr.source||"Interest"}{isLatest&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:4,background:C.gold+"22",color:C.gold,marginLeft:6}}>LATEST</span>}</div>
+                {cr.detail&&<div style={{fontSize:12,color:C.text,fontWeight:600,marginTop:1}}>{cr.detail}</div>}
                 <div style={{fontSize:11,color:afterStageUpdate?C.gold:C.textLight,fontWeight:afterStageUpdate?700:400}}>{crDate?crDate.toLocaleDateString("en-US",{month:"short",day:"numeric"})+", "+crDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):""}{afterStageUpdate?" — after you updated this lead":""}</div>
               </div>
             </div>;
