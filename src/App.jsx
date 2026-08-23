@@ -377,6 +377,203 @@ function hasUnattendedTasksToday(data,userId){
   });
 }
 
+// ── DATA EXPORT ──
+// Loads SheetJS (the library that actually builds multi-tab .xlsx files) from a CDN at
+// runtime, so this works without needing any build-config or package.json change.
+let _xlsxLoadPromise = null;
+function loadXLSXLibrary(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(_xlsxLoadPromise) return _xlsxLoadPromise;
+  _xlsxLoadPromise = new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    script.onload=()=>resolve(window.XLSX);
+    script.onerror=()=>reject(new Error("Could not load the spreadsheet library. Check your internet connection and try again."));
+    document.head.appendChild(script);
+  });
+  return _xlsxLoadPromise;
+}
+
+// Every export row is tagged with the rep's name so a whole-team export stays sortable/
+// filterable by person, and a single-rep export just naturally has one name throughout.
+function buildExportSheets(data,repIds){
+  const allPeople = [
+    ...(data.reps||[]).map(r=>({...r,_role:"Rep"})),
+    ...(data.trainers||[]).map(t=>({...t,_role:"Trainer"})),
+    ...(data.admins||[]).map(a=>({...a,_role:"Admin"})),
+  ];
+  const people = repIds ? allPeople.filter(p=>repIds.includes(p.id)) : allPeople;
+  const nameFor = (id) => allPeople.find(p=>p.id===id)?.name||"Unknown";
+
+  const roster = people.map(p=>({
+    Name:p.name||"",Role:p._role,Phone:p.phone||"",Track:p.track||"",
+    Trainer:p.trainerId?nameFor(p.trainerId):"",Admin:p.adminId?nameFor(p.adminId):"",
+    StartDate:p.startDate||"",Licensed:p.track==="licensed"?"Yes":"No",
+    FieldTrainer:p.fieldTrainerGranted?"Yes":"No",RVP:p.rvpPathGranted?"Yes":"No",
+  }));
+
+  const lifeApps = [];
+  people.forEach(p=>{
+    const entries=(p.selfPremium||[]);
+    const myProdEntries=((data.myProduction||{})[p.id]||{}).lifeApps||[];
+    const merged = entries.length>0?entries:myProdEntries;
+    merged.forEach(e=>{
+      lifeApps.push({
+        RepName:p.name||"",Client:e.client||"",MonthlyPremium:e.premium||"",Date:e.date||"",
+        COD:e.cod?"Yes":"No",CODAccepted:e.cod?(e.codAccepted?"Yes":"No"):"",CODDeclined:e.cod?(e.codDeclined?"Yes":"No"):"",
+      });
+    });
+  });
+
+  const investments = [];
+  people.forEach(p=>{
+    (((data.myProduction||{})[p.id]||{}).investments||[]).forEach(inv=>{
+      investments.push({RepName:p.name||"",Client:inv.clientName||"",Type:inv.type||"",PACPerMonth:inv.pac||"",LumpSum:inv.lumpSum||"",Date:inv.date||""});
+    });
+  });
+
+  const appointments = [];
+  people.forEach(p=>{
+    (p.appointments||[]).forEach((a,i)=>{
+      if(!a.name) return;
+      appointments.push({RepName:p.name||"",ApptNum:i+1,Name:a.name||"",Phone:a.phone||"",Email:a.email||"",Date:a.date||"",Status:a.status||"",Notes:a.notes||""});
+    });
+  });
+
+  const recruits = [];
+  (data.reps||[]).forEach(r=>{
+    if(!r.recruitedBy) return;
+    const recruiter=allPeople.find(p=>p.id===r.recruitedBy);
+    if(repIds&&!repIds.includes(r.recruitedBy)) return;
+    recruits.push({RecruiterName:recruiter?.name||"Unknown",RecruitName:r.name||"",StartDate:r.startDate||"",Track:r.track||""});
+  });
+
+  const scorecardHistory = [];
+  people.forEach(p=>{
+    const weeks=(data.scorecards||{})[p.id]||{};
+    Object.entries(weeks).forEach(([wk,d])=>{
+      Object.entries(d.days||{}).forEach(([dateStr,day])=>{
+        const c=day.committed||{}, a=day.actual||{};
+        if(!c.contacts&&!c.calls&&!c.apptSet&&!c.apptDone&&!a.contacts&&!a.calls&&!a.apptSet&&!a.apptDone) return;
+        scorecardHistory.push({
+          RepName:p.name||"",Date:dateStr,
+          ContactsCommitted:c.contacts||0,ContactsActual:a.contacts||0,
+          CallsCommitted:c.calls||0,CallsActual:a.calls||0,
+          ApptsSetCommitted:c.apptSet||0,ApptsSetActual:a.apptSet||0,
+          ApptsDoneCommitted:c.apptDone||0,ApptsDoneActual:a.apptDone||0,
+        });
+      });
+    });
+  });
+
+  const coachingNotes = [];
+  people.forEach(p=>{
+    (p.checkIns||[]).forEach(ci=>{
+      coachingNotes.push({RepName:p.name||"",Date:ci.date||"",Note:ci.text||""});
+    });
+  });
+
+  const checklistProgress = people.filter(p=>p._role==="Rep").map(p=>{
+    const checked=p.checked||{};
+    const doneCount=Object.values(checked).filter(Boolean).length;
+    return {RepName:p.name||"",Track:p.track||"",ItemsChecked:doneCount};
+  });
+
+  const referencesSheet = [];
+  people.filter(p=>p._role==="Rep").forEach(p=>{
+    (p.references||[]).forEach(ref=>{
+      if(!ref?.name) return;
+      const stagesDone=REF_STAGES.filter(s=>(ref.status||{})[s.k]).map(s=>s.l).join(", ");
+      referencesSheet.push({RepName:p.name||"",ReferenceName:ref.name||"",Phone:ref.phone||"",StagesComplete:stagesDone||"None yet"});
+    });
+  });
+
+  return {roster,lifeApps,investments,appointments,recruits,scorecardHistory,coachingNotes,checklistProgress,referencesSheet};
+}
+
+async function downloadExport(data,repIds,filenamePrefix){
+  const XLSX = await loadXLSXLibrary();
+  const sheets = buildExportSheets(data,repIds);
+  const wb = XLSX.utils.book_new();
+  const add=(name,rows)=>{
+    if(rows.length===0) rows=[{Note:"No data"}];
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name);
+  };
+  if(!repIds) add("Roster",sheets.roster); // roster only makes sense for a whole-team export
+  add("Life Apps",sheets.lifeApps);
+  add("Investments",sheets.investments);
+  add("Appointments",sheets.appointments);
+  add("Recruits",sheets.recruits);
+  add("Scorecard History",sheets.scorecardHistory);
+  add("Coaching Notes",sheets.coachingNotes);
+  add("Checklist Progress",sheets.checklistProgress);
+  add("References",sheets.referencesSheet);
+  const dateStr=localDateStr();
+  XLSX.writeFile(wb,`${filenamePrefix}_${dateStr}.xlsx`);
+}
+
+function DataExportPage({data}) {
+  const [mode,setMode]=useState("team"); // "team" | "rep"
+  const [search,setSearch]=useState("");
+  const [selectedId,setSelectedId]=useState(null);
+  const [exporting,setExporting]=useState(false);
+  const [error,setError]=useState("");
+
+  const allPeople = [
+    ...(data.reps||[]).map(r=>({...r,_role:"Rep"})),
+    ...(data.trainers||[]).map(t=>({...t,_role:"Trainer"})),
+    ...(data.admins||[]).map(a=>({...a,_role:"Admin"})),
+  ];
+  const filtered = search.trim()
+    ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(search.toLowerCase()))
+    : allPeople.slice(0,8);
+  const selected = allPeople.find(p=>p.id===selectedId);
+
+  const runExport = async () => {
+    setError(""); setExporting(true);
+    try {
+      if(mode==="team"){
+        await downloadExport(data,null,"NextLevel_Team_Export");
+      } else {
+        if(!selected){ setError("Pick a person first."); setExporting(false); return; }
+        const safe=(selected.name||"rep").replace(/[^a-zA-Z0-9]/g,"_");
+        await downloadExport(data,[selected.id],`NextLevel_${safe}_Export`);
+      }
+    } catch(e) {
+      setError(e.message||"Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return <div>
+    <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Data Export</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Download a spreadsheet with a tab for each category — Life Apps, Investments, Appointments, Recruits, Scorecard History, Coaching Notes, Checklist Progress, and References. Nothing here is deleted or changed — this is a read-only snapshot for backup or review.</div>
+
+    <div style={{display:"flex",gap:8,marginBottom:16}}>
+      <button onClick={()=>{setMode("team");setError("");}} style={{flex:1,padding:"10px",borderRadius:9,border:mode==="team"?"none":"1px solid "+C.border,background:mode==="team"?C.teal:"white",color:mode==="team"?"white":C.textMid,cursor:"pointer",fontSize:13,fontWeight:700}}>Whole Team</button>
+      <button onClick={()=>{setMode("rep");setError("");}} style={{flex:1,padding:"10px",borderRadius:9,border:mode==="rep"?"none":"1px solid "+C.border,background:mode==="rep"?C.teal:"white",color:mode==="rep"?"white":C.textMid,cursor:"pointer",fontSize:13,fontWeight:700}}>Specific Person</button>
+    </div>
+
+    {mode==="rep"&&<div style={{marginBottom:16}}>
+      <input placeholder="Search by name..." value={search} onChange={e=>{setSearch(e.target.value);setSelectedId(null);}} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
+      <div style={{maxHeight:220,overflowY:"auto"}}>
+        {filtered.map(p=><div key={p.id} onClick={()=>setSelectedId(p.id)} style={{padding:"9px 12px",borderRadius:8,cursor:"pointer",background:selectedId===p.id?C.teal+"14":C.surface,border:selectedId===p.id?"1px solid "+C.teal:"1px solid transparent",marginBottom:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:14,fontWeight:600,color:C.text}}>{p.name}</span>
+          <span style={{fontSize:11,color:C.textLight}}>{p._role}{p.track?" · "+p.track:""}</span>
+        </div>)}
+        {filtered.length===0&&<div style={{fontSize:13,color:C.textLight,padding:"10px 0"}}>No one matches that search.</div>}
+      </div>
+    </div>}
+
+    {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"9px 12px",fontSize:13,color:C.danger,marginBottom:12}}>{error}</div>}
+
+    <button onClick={runExport} disabled={exporting||(mode==="rep"&&!selected)} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:(exporting||(mode==="rep"&&!selected))?C.border:C.teal,color:(exporting||(mode==="rep"&&!selected))?C.textLight:"white",cursor:(exporting||(mode==="rep"&&!selected))?"default":"pointer",fontSize:14,fontWeight:700}}>
+      {exporting?"Building spreadsheet...":mode==="team"?"Export Whole Team":selected?`Export ${selected.name}'s Data`:"Pick a person first"}
+    </button>
+  </div>;
+}
+
 function getGateStatus(data,checked,gateKey){
   const items=getChecklistItems(data,"licensedNowWhat").filter(i=>i.gateGroup===gateKey);
   if(items.length===0) return {items:[],complete:true,doneCount:0,total:0};
@@ -10302,6 +10499,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
   ];
   if(role==="admin"||role==="superadmin") nav.push({k:"announcements",l:"Announcements",d:"M3 11L18 4V20L3 13V11ZM3 11H1M18 8C19.1 8 20 8.9 20 10V14C20 15.1 19.1 16 18 16"});
   if(role==="admin"||role==="superadmin") nav.push({k:"teamleads",l:"Team Leads",d:"M17 20H7C5.9 20 5 19.1 5 18V6C5 4.9 5.9 4 7 4H17C18.1 4 19 4.9 19 6V18C19 19.1 18.1 20 17 20ZM9 8H15M9 12H15M9 16H12"});
+  if(role==="admin"||role==="superadmin") nav.push({k:"dataexport",l:"Data Export",d:"M12 3V15M12 15L8 11M12 15L16 11M4 17V19C4 20.1 4.9 21 6 21H18C19.1 21 20 20.1 20 19V17"});
   if(role==="admin"||role==="superadmin") nav.push({k:"commitmentcats",l:"Manage Categories",d:"M4 6H20M4 12H14M4 18H9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"checklisteditor",l:"Checklist Editor",d:"M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15M9 5C9 5.6 9.4 6 10 6H14C14.6 6 15 5.6 15 5M9 5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5M9 12L11 14L16 9"});
   if(role==="admin"||role==="superadmin") nav.push({k:"team",l:"Team Mgmt",d:"M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"});
@@ -12432,6 +12630,7 @@ export default function App() {
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads"&&(session.role==="admin"||session.role==="superadmin")) return <div><TeamLeads data={data} userId={session.id}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd} userId={session.id}/></div></div>;
+    if(section==="dataexport"&&(session.role==="admin"||session.role==="superadmin")) return <DataExportPage data={data}/>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
