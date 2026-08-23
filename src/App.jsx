@@ -6005,7 +6005,7 @@ function MyRule72LeadLink({name,data,onUpdate,personId}) {
   const [msgCopied,setMsgCopied] = useState(false);
   const adminRecord = (typeof data!=="undefined")&&(data.admins||[]).find(a=>a.name===name);
   const safeName = adminRecord?.linkName||(name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
-  const link = "https://REPLACE-WITH-YOUR-RULE72-VERCEL-URL.vercel.app?rep="+safeName;
+  const link = "https://rule72-calculator.vercel.app?rep="+safeName;
   const message = `Hey! Quick question — do you know how often your money is expected to double? There's a 30-second calculator that shows you using the Rule of 72: ${link}`;
 
   const copy = () => {
