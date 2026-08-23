@@ -419,7 +419,7 @@ function buildExportSheets(data,repIds){
     const merged = entries.length>0?entries:myProdEntries;
     merged.forEach(e=>{
       lifeApps.push({
-        RepName:p.name||"",Client:e.client||"",MonthlyPremium:e.premium||"",Date:e.date||"",
+        RepName:p.name||"",Client:e.client||"",MonthlyPremium:Number(e.premium)||"",Date:e.date||"",
         COD:e.cod?"Yes":"No",CODAccepted:e.cod?(e.codAccepted?"Yes":"No"):"",CODDeclined:e.cod?(e.codDeclined?"Yes":"No"):"",
       });
     });
@@ -428,7 +428,7 @@ function buildExportSheets(data,repIds){
   const investments = [];
   people.forEach(p=>{
     (((data.myProduction||{})[p.id]||{}).investments||[]).forEach(inv=>{
-      investments.push({RepName:p.name||"",Client:inv.clientName||"",Type:inv.type||"",PACPerMonth:inv.pac||"",LumpSum:inv.lumpSum||"",Date:inv.date||""});
+      investments.push({RepName:p.name||"",Client:inv.clientName||"",Type:inv.type||"",PACPerMonth:Number(inv.pac)||"",LumpSum:Number(inv.lumpSum)||"",Date:inv.date||""});
     });
   });
 
@@ -505,13 +505,34 @@ async function downloadExport(data,repIds,filenamePrefix,includeRoster){
   const XLSX = await loadXLSXLibrary();
   const sheets = buildExportSheets(data,repIds);
   const wb = XLSX.utils.book_new();
-  const add=(name,rows)=>{
-    if(rows.length===0) rows=[{Note:"No data"}];
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name);
+  // sumKeys names which columns (by their header key) get a real =SUM() formula in a
+  // TOTAL row at the bottom — a formula, not a hardcoded number, so it stays correct if
+  // rows are edited or deleted later in Excel.
+  const add=(name,rows,sumKeys=[])=>{
+    if(rows.length===0){
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Note:"No data"}]),name);
+      return;
+    }
+    const ws=XLSX.utils.json_to_sheet(rows);
+    if(sumKeys.length>0){
+      const headers=Object.keys(rows[0]);
+      const totalRowIdx=rows.length+1; // 0-indexed: row 0 = header, rows 1..N = data, N+1 = total
+      ws[XLSX.utils.encode_cell({r:totalRowIdx,c:0})]={t:"s",v:"TOTAL"};
+      headers.forEach((h,i)=>{
+        if(sumKeys.includes(h)){
+          const colLetter=XLSX.utils.encode_col(i);
+          ws[XLSX.utils.encode_cell({r:totalRowIdx,c:i})]={t:"n",f:`SUM(${colLetter}2:${colLetter}${rows.length+1})`};
+        }
+      });
+      const range=XLSX.utils.decode_range(ws["!ref"]);
+      range.e.r=totalRowIdx;
+      ws["!ref"]=XLSX.utils.encode_range(range);
+    }
+    XLSX.utils.book_append_sheet(wb,ws,name);
   };
   if(includeRoster) add("Roster",sheets.roster); // roster makes sense for any team-level export, not a single person
-  add("Life Apps",sheets.lifeApps);
-  add("Investments",sheets.investments);
+  add("Life Apps",sheets.lifeApps,["MonthlyPremium"]);
+  add("Investments",sheets.investments,["PACPerMonth","LumpSum"]);
   add("Investment Observations",sheets.investmentObservations);
   add("Appointments",sheets.appointments);
   add("Recruits",sheets.recruits);
