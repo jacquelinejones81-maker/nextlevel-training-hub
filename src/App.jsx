@@ -432,6 +432,16 @@ function buildExportSheets(data,repIds){
     });
   });
 
+  // Investment Observation Log — prospect names a not-yet-securities-licensed rep logged
+  // during training (separate from the actual Investments tab above, which is real
+  // written business). Lives on the rep record itself as investmentObservations.
+  const investmentObservations = [];
+  people.forEach(p=>{
+    (p.investmentObservations||[]).forEach(obs=>{
+      investmentObservations.push({RepName:p.name||"",ProspectName:obs.name||"",DateObserved:obs.date||""});
+    });
+  });
+
   const appointments = [];
   people.forEach(p=>{
     (p.appointments||[]).forEach((a,i)=>{
@@ -488,10 +498,10 @@ function buildExportSheets(data,repIds){
     });
   });
 
-  return {roster,lifeApps,investments,appointments,recruits,scorecardHistory,coachingNotes,checklistProgress,referencesSheet};
+  return {roster,lifeApps,investments,investmentObservations,appointments,recruits,scorecardHistory,coachingNotes,checklistProgress,referencesSheet};
 }
 
-async function downloadExport(data,repIds,filenamePrefix){
+async function downloadExport(data,repIds,filenamePrefix,includeRoster){
   const XLSX = await loadXLSXLibrary();
   const sheets = buildExportSheets(data,repIds);
   const wb = XLSX.utils.book_new();
@@ -499,9 +509,10 @@ async function downloadExport(data,repIds,filenamePrefix){
     if(rows.length===0) rows=[{Note:"No data"}];
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name);
   };
-  if(!repIds) add("Roster",sheets.roster); // roster only makes sense for a whole-team export
+  if(includeRoster) add("Roster",sheets.roster); // roster makes sense for any team-level export, not a single person
   add("Life Apps",sheets.lifeApps);
   add("Investments",sheets.investments);
+  add("Investment Observations",sheets.investmentObservations);
   add("Appointments",sheets.appointments);
   add("Recruits",sheets.recruits);
   add("Scorecard History",sheets.scorecardHistory);
@@ -512,8 +523,9 @@ async function downloadExport(data,repIds,filenamePrefix){
   XLSX.writeFile(wb,`${filenamePrefix}_${dateStr}.xlsx`);
 }
 
-function DataExportPage({data}) {
+function DataExportPage({data,session}) {
   const [mode,setMode]=useState("team"); // "team" | "rep"
+  const [teamAdminId,setTeamAdminId]=useState("all"); // "all" or a specific admin's id
   const [search,setSearch]=useState("");
   const [selectedId,setSelectedId]=useState(null);
   const [exporting,setExporting]=useState(false);
@@ -524,20 +536,30 @@ function DataExportPage({data}) {
     ...(data.trainers||[]).map(t=>({...t,_role:"Trainer"})),
     ...(data.admins||[]).map(a=>({...a,_role:"Admin"})),
   ];
+  const adminOptions = (data.admins||[]).map(a=>({id:a.id,name:a.name}));
   const filtered = search.trim()
     ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(search.toLowerCase()))
     : allPeople.slice(0,8);
   const selected = allPeople.find(p=>p.id===selectedId);
+  const selectedTeamAdmin = adminOptions.find(a=>a.id===teamAdminId);
 
   const runExport = async () => {
     setError(""); setExporting(true);
     try {
       if(mode==="team"){
-        await downloadExport(data,null,"NextLevel_Team_Export");
+        if(teamAdminId==="all"){
+          await downloadExport(data,null,"NextLevel_Team_Export",true);
+        } else {
+          // Scope to just this admin's downline (their reps + trainers) plus the admin
+          // themselves — same "my downline" definition used everywhere else in the Hub.
+          const teamIds=allPeople.filter(p=>p.id===teamAdminId||p.adminId===teamAdminId).map(p=>p.id);
+          const safe=(selectedTeamAdmin?.name||"team").replace(/[^a-zA-Z0-9]/g,"_");
+          await downloadExport(data,teamIds,`NextLevel_${safe}_Team_Export`,true);
+        }
       } else {
         if(!selected){ setError("Pick a person first."); setExporting(false); return; }
         const safe=(selected.name||"rep").replace(/[^a-zA-Z0-9]/g,"_");
-        await downloadExport(data,[selected.id],`NextLevel_${safe}_Export`);
+        await downloadExport(data,[selected.id],`NextLevel_${safe}_Export`,false);
       }
     } catch(e) {
       setError(e.message||"Export failed. Please try again.");
@@ -548,12 +570,20 @@ function DataExportPage({data}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Data Export</div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Download a spreadsheet with a tab for each category — Life Apps, Investments, Appointments, Recruits, Scorecard History, Coaching Notes, Checklist Progress, and References. Nothing here is deleted or changed — this is a read-only snapshot for backup or review.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Download a spreadsheet with a tab for each category — Life Apps, Investments, Investment Observations, Appointments, Recruits, Scorecard History, Coaching Notes, Checklist Progress, and References. Nothing here is deleted or changed — this is a read-only snapshot for backup or review.</div>
 
     <div style={{display:"flex",gap:8,marginBottom:16}}>
       <button onClick={()=>{setMode("team");setError("");}} style={{flex:1,padding:"10px",borderRadius:9,border:mode==="team"?"none":"1px solid "+C.border,background:mode==="team"?C.teal:"white",color:mode==="team"?"white":C.textMid,cursor:"pointer",fontSize:13,fontWeight:700}}>Whole Team</button>
       <button onClick={()=>{setMode("rep");setError("");}} style={{flex:1,padding:"10px",borderRadius:9,border:mode==="rep"?"none":"1px solid "+C.border,background:mode==="rep"?C.teal:"white",color:mode==="rep"?"white":C.textMid,cursor:"pointer",fontSize:13,fontWeight:700}}>Specific Person</button>
     </div>
+
+    {mode==="team"&&adminOptions.length>1&&<div style={{marginBottom:16}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Which Team</div>
+      <select value={teamAdminId} onChange={e=>setTeamAdminId(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1px solid "+C.border,fontSize:14,color:C.text,background:"white"}}>
+        <option value="all">All Teams (everyone)</option>
+        {adminOptions.map(a=><option key={a.id} value={a.id}>{a.name}'s Team{a.id===session?.id?" (you)":""}</option>)}
+      </select>
+    </div>}
 
     {mode==="rep"&&<div style={{marginBottom:16}}>
       <input placeholder="Search by name..." value={search} onChange={e=>{setSearch(e.target.value);setSelectedId(null);}} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1px solid "+C.border,fontSize:14,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
@@ -569,7 +599,7 @@ function DataExportPage({data}) {
     {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"9px 12px",fontSize:13,color:C.danger,marginBottom:12}}>{error}</div>}
 
     <button onClick={runExport} disabled={exporting||(mode==="rep"&&!selected)} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:(exporting||(mode==="rep"&&!selected))?C.border:C.teal,color:(exporting||(mode==="rep"&&!selected))?C.textLight:"white",cursor:(exporting||(mode==="rep"&&!selected))?"default":"pointer",fontSize:14,fontWeight:700}}>
-      {exporting?"Building spreadsheet...":mode==="team"?"Export Whole Team":selected?`Export ${selected.name}'s Data`:"Pick a person first"}
+      {exporting?"Building spreadsheet...":mode==="team"?(teamAdminId==="all"?"Export All Teams":`Export ${selectedTeamAdmin?.name||"Team"}'s Team`):selected?`Export ${selected.name}'s Data`:"Pick a person first"}
     </button>
   </div>;
 }
@@ -12630,7 +12660,7 @@ export default function App() {
     if(section==="careerpath"&&alsoRecruits) return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
     if(section==="mypipeline"&&alsoRecruits) return <MyPipelinePage session={session} data={data} onUpdate={upd}/>;
     if(section==="teamleads"&&(session.role==="admin"||session.role==="superadmin")) return <div><TeamLeads data={data} userId={session.id}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd} userId={session.id}/></div></div>;
-    if(section==="dataexport"&&(session.role==="admin"||session.role==="superadmin")) return <DataExportPage data={data}/>;
+    if(section==="dataexport"&&(session.role==="admin"||session.role==="superadmin")) return <DataExportPage data={data} session={session}/>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
