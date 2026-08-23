@@ -295,13 +295,17 @@ const ANNOUNCEMENT_AUDIENCES = [
   {key:"trainer",label:"Trainers"},
   {key:"admin",label:"Admins"},
 ];
-// An announcement is "live" if it's turned on AND today falls inside its date range
-// (no dates set on either end means no limit on that side).
+// An announcement is "live" if it's turned on, today falls inside its date range
+// (no dates set on either end means no limit on that side), and today's day of week is
+// one of its active days (no days picked = every day, the safe default).
 function isAnnouncementLive(a){
   if(!a.active) return false;
   const today=localDateStr();
   if(a.startDate&&today<a.startDate) return false;
   if(a.endDate&&today>a.endDate) return false;
+  if(a.activeDays&&a.activeDays.length>0&&a.activeDays.length<7){
+    if(!a.activeDays.includes(new Date().getDay())) return false;
+  }
   return true;
 }
 // Does this announcement apply to this person, based on role/track, and — if the
@@ -9779,7 +9783,7 @@ function AnnouncementsEditor({data,onUpdate,session}) {
   const anns=data.popupAnnouncements||[];
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
-  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:"",repeatDaily:false,restrictToAdminId:""};
+  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:"",repeatDaily:false,restrictToAdminId:"",activeDays:[0,1,2,3,4,5,6]};
   const [draft,setDraft]=useState(blankDraft);
   // Admins available to restrict an announcement to — so a multi-admin Hub can target
   // just one admin's own downline instead of every admin's reps seeing it.
@@ -9794,7 +9798,8 @@ function AnnouncementsEditor({data,onUpdate,session}) {
     }
     setDraft(blankDraft); setShowForm(false); setEditingId(null);
   };
-  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||"",repeatDaily:!!a.repeatDaily,restrictToAdminId:a.restrictToAdminId||""}); setEditingId(a.id); setShowForm(true); };
+  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||"",repeatDaily:!!a.repeatDaily,restrictToAdminId:a.restrictToAdminId||"",activeDays:a.activeDays&&a.activeDays.length>0?a.activeDays:[0,1,2,3,4,5,6]}); setEditingId(a.id); setShowForm(true); };
+  const toggleActiveDay=(dayIdx)=>{ setDraft(d=>({...d,activeDays:d.activeDays.includes(dayIdx)?d.activeDays.filter(x=>x!==dayIdx):[...d.activeDays,dayIdx]})); };
   const toggleActive=(id)=>{ onUpdate({...data,popupAnnouncements:anns.map(a=>a.id===id?{...a,active:!a.active}:a)}); };
   const deleteAnn=(id)=>{ if(!window.confirm("Delete this announcement? This can't be undone.")) return; onUpdate({...data,popupAnnouncements:anns.filter(a=>a.id!==id)}); };
   const toggleAudience=(k)=>{ setDraft(d=>({...d,audience:d.audience.includes(k)?d.audience.filter(x=>x!==k):[...d.audience,k]})); };
@@ -9843,6 +9848,15 @@ function AnnouncementsEditor({data,onUpdate,session}) {
           <input type="date" value={draft.startDate} onChange={e=>setDraft({...draft,startDate:e.target.value})} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13}}/>
           <input type="date" value={draft.endDate} onChange={e=>setDraft({...draft,endDate:e.target.value})} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13}}/>
         </div>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Days It's Active <span style={{textTransform:"none",fontWeight:400}}>(within the date range above)</span></div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
+          {TASK_DAYS.map((d,i)=><button key={i} onClick={()=>toggleActiveDay(i)} style={{padding:"5px 10px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:draft.activeDays.includes(i)?700:400,background:draft.activeDays.includes(i)?C.teal:C.surface,color:draft.activeDays.includes(i)?"white":C.textMid,fontSize:13}}>{d}</button>)}
+        </div>
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          <button onClick={()=>setDraft(d=>({...d,activeDays:[0,1,2,3,4,5,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Every Day</button>
+          <button onClick={()=>setDraft(d=>({...d,activeDays:[1,2,3,4,5]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Weekdays</button>
+          <button onClick={()=>setDraft(d=>({...d,activeDays:[0,6]}))} style={{fontSize:12,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Weekends</button>
+        </div>
         <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",marginBottom:10}}>
           <input type="checkbox" checked={draft.repeatDaily} onChange={e=>setDraft({...draft,repeatDaily:e.target.checked})} style={{width:16,height:16,accentColor:C.teal,cursor:"pointer"}}/>
           <span style={{fontSize:13,color:C.text}}>Show daily — comes back every day it's active, even after being dismissed</span>
@@ -9875,6 +9889,7 @@ function AnnouncementsEditor({data,onUpdate,session}) {
         </div>
         <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>{a.message}</div>
         {(a.startDate||a.endDate)&&<div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Runs {a.startDate||"anytime"} &rarr; {a.endDate||"no end date"}{a.repeatDaily&&<span style={{marginLeft:6,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:5,background:C.gold+"1f",color:C.gold}}>DAILY</span>}</div>}
+        {a.activeDays&&a.activeDays.length>0&&a.activeDays.length<7&&<div style={{fontSize:11,color:C.textLight,marginBottom:6}}>Active: {a.activeDays.slice().sort().map(i=>TASK_DAYS[i]).join(", ")}</div>}
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
           {(a.audience||[]).length===0?<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.surface,color:C.textLight}}>Everyone</span>:
           (a.audience||[]).map(k=><span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.teal+"14",color:C.teal}}>{ANNOUNCEMENT_AUDIENCES.find(x=>x.key===k)?.label||k}</span>)}
