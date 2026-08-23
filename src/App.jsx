@@ -396,7 +396,16 @@ function loadXLSXLibrary(){
 
 // Every export row is tagged with the rep's name so a whole-team export stays sortable/
 // filterable by person, and a single-rep export just naturally has one name throughout.
-function buildExportSheets(data,repIds){
+function buildExportSheets(data,repIds,dateRange){
+  // dateRange is optional — {start,end} as YYYY-MM-DD strings, either side can be blank.
+  // Left null/undefined, every category still pulls full history, exactly as before.
+  const inRange = (dateStr) => {
+    if(!dateRange||(!dateRange.start&&!dateRange.end)) return true;
+    if(!dateStr) return false; // an entry with no date can't be placed inside a range
+    if(dateRange.start&&dateStr<dateRange.start) return false;
+    if(dateRange.end&&dateStr>dateRange.end) return false;
+    return true;
+  };
   const allPeople = [
     ...(data.reps||[]).map(r=>({...r,_role:"Rep"})),
     ...(data.trainers||[]).map(t=>({...t,_role:"Trainer"})),
@@ -405,6 +414,8 @@ function buildExportSheets(data,repIds){
   const people = repIds ? allPeople.filter(p=>repIds.includes(p.id)) : allPeople;
   const nameFor = (id) => allPeople.find(p=>p.id===id)?.name||"Unknown";
 
+  // Roster is a current-status snapshot, not a log of dated events, so it's intentionally
+  // never affected by the date range.
   const roster = people.map(p=>({
     Name:p.name||"",Role:p._role,Phone:p.phone||"",Track:p.track||"",
     Trainer:p.trainerId?nameFor(p.trainerId):"",Admin:p.adminId?nameFor(p.adminId):"",
@@ -418,6 +429,7 @@ function buildExportSheets(data,repIds){
     const myProdEntries=((data.myProduction||{})[p.id]||{}).lifeApps||[];
     const merged = entries.length>0?entries:myProdEntries;
     merged.forEach(e=>{
+      if(!inRange(e.date)) return;
       lifeApps.push({
         RepName:p.name||"",Client:e.client||"",MonthlyPremium:Number(e.premium)||"",Date:e.date||"",
         COD:e.cod?"Yes":"No",CODAccepted:e.cod?(e.codAccepted?"Yes":"No"):"",CODDeclined:e.cod?(e.codDeclined?"Yes":"No"):"",
@@ -428,6 +440,7 @@ function buildExportSheets(data,repIds){
   const investments = [];
   people.forEach(p=>{
     (((data.myProduction||{})[p.id]||{}).investments||[]).forEach(inv=>{
+      if(!inRange(inv.date)) return;
       investments.push({RepName:p.name||"",Client:inv.clientName||"",Type:inv.type||"",PACPerMonth:Number(inv.pac)||"",LumpSum:Number(inv.lumpSum)||"",Date:inv.date||""});
     });
   });
@@ -438,6 +451,7 @@ function buildExportSheets(data,repIds){
   const investmentObservations = [];
   people.forEach(p=>{
     (p.investmentObservations||[]).forEach(obs=>{
+      if(!inRange(obs.date)) return;
       investmentObservations.push({RepName:p.name||"",ProspectName:obs.name||"",DateObserved:obs.date||""});
     });
   });
@@ -446,6 +460,7 @@ function buildExportSheets(data,repIds){
   people.forEach(p=>{
     (p.appointments||[]).forEach((a,i)=>{
       if(!a.name) return;
+      if(!inRange(a.date)) return;
       appointments.push({RepName:p.name||"",ApptNum:i+1,Name:a.name||"",Phone:a.phone||"",Email:a.email||"",Date:a.date||"",Status:a.status||"",Notes:a.notes||""});
     });
   });
@@ -455,6 +470,7 @@ function buildExportSheets(data,repIds){
     if(!r.recruitedBy) return;
     const recruiter=allPeople.find(p=>p.id===r.recruitedBy);
     if(repIds&&!repIds.includes(r.recruitedBy)) return;
+    if(!inRange(r.startDate)) return;
     recruits.push({RecruiterName:recruiter?.name||"Unknown",RecruitName:r.name||"",StartDate:r.startDate||"",Track:r.track||""});
   });
 
@@ -465,6 +481,7 @@ function buildExportSheets(data,repIds){
       Object.entries(d.days||{}).forEach(([dateStr,day])=>{
         const c=day.committed||{}, a=day.actual||{};
         if(!c.contacts&&!c.calls&&!c.apptSet&&!c.apptDone&&!a.contacts&&!a.calls&&!a.apptSet&&!a.apptDone) return;
+        if(!inRange(dateStr)) return;
         scorecardHistory.push({
           RepName:p.name||"",Date:dateStr,
           ContactsCommitted:c.contacts||0,ContactsActual:a.contacts||0,
@@ -479,10 +496,13 @@ function buildExportSheets(data,repIds){
   const coachingNotes = [];
   people.forEach(p=>{
     (p.checkIns||[]).forEach(ci=>{
+      if(!inRange(ci.date)) return;
       coachingNotes.push({RepName:p.name||"",Date:ci.date||"",Note:ci.text||""});
     });
   });
 
+  // Checklist Progress and References are current-status snapshots too — like Roster,
+  // they're never affected by the date range.
   const checklistProgress = people.filter(p=>p._role==="Rep").map(p=>{
     const checked=p.checked||{};
     const doneCount=Object.values(checked).filter(Boolean).length;
@@ -501,9 +521,9 @@ function buildExportSheets(data,repIds){
   return {roster,lifeApps,investments,investmentObservations,appointments,recruits,scorecardHistory,coachingNotes,checklistProgress,referencesSheet};
 }
 
-async function downloadExport(data,repIds,filenamePrefix,includeRoster){
+async function downloadExport(data,repIds,filenamePrefix,includeRoster,dateRange){
   const XLSX = await loadXLSXLibrary();
-  const sheets = buildExportSheets(data,repIds);
+  const sheets = buildExportSheets(data,repIds,dateRange);
   const wb = XLSX.utils.book_new();
   // sumKeys names which columns (by their header key) get a real =SUM() formula in a
   // TOTAL row at the bottom — a formula, not a hardcoded number, so it stays correct if
@@ -551,6 +571,8 @@ function DataExportPage({data,session}) {
   const [selectedId,setSelectedId]=useState(null);
   const [exporting,setExporting]=useState(false);
   const [error,setError]=useState("");
+  const [rangeStart,setRangeStart]=useState("");
+  const [rangeEnd,setRangeEnd]=useState("");
 
   const allPeople = [
     ...(data.reps||[]).map(r=>({...r,_role:"Rep"})),
@@ -563,24 +585,27 @@ function DataExportPage({data,session}) {
     : allPeople.slice(0,8);
   const selected = allPeople.find(p=>p.id===selectedId);
   const selectedTeamAdmin = adminOptions.find(a=>a.id===teamAdminId);
+  // Left both blank, this stays undefined — buildExportSheets treats that as "full history,"
+  // exactly as before. Only kicks in once at least one side is actually set.
+  const dateRange = (rangeStart||rangeEnd) ? {start:rangeStart||"",end:rangeEnd||""} : undefined;
 
   const runExport = async () => {
     setError(""); setExporting(true);
     try {
       if(mode==="team"){
         if(teamAdminId==="all"){
-          await downloadExport(data,null,"NextLevel_Team_Export",true);
+          await downloadExport(data,null,"NextLevel_Team_Export",true,dateRange);
         } else {
           // Scope to just this admin's downline (their reps + trainers) plus the admin
           // themselves — same "my downline" definition used everywhere else in the Hub.
           const teamIds=allPeople.filter(p=>p.id===teamAdminId||p.adminId===teamAdminId).map(p=>p.id);
           const safe=(selectedTeamAdmin?.name||"team").replace(/[^a-zA-Z0-9]/g,"_");
-          await downloadExport(data,teamIds,`NextLevel_${safe}_Team_Export`,true);
+          await downloadExport(data,teamIds,`NextLevel_${safe}_Team_Export`,true,dateRange);
         }
       } else {
         if(!selected){ setError("Pick a person first."); setExporting(false); return; }
         const safe=(selected.name||"rep").replace(/[^a-zA-Z0-9]/g,"_");
-        await downloadExport(data,[selected.id],`NextLevel_${safe}_Export`,false);
+        await downloadExport(data,[selected.id],`NextLevel_${safe}_Export`,false,dateRange);
       }
     } catch(e) {
       setError(e.message||"Export failed. Please try again.");
@@ -616,6 +641,15 @@ function DataExportPage({data,session}) {
         {filtered.length===0&&<div style={{fontSize:13,color:C.textLight,padding:"10px 0"}}>No one matches that search.</div>}
       </div>
     </div>}
+
+    <div style={{marginBottom:16}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Date Range <span style={{textTransform:"none",fontWeight:400}}>(optional — leave both blank to pull full history)</span></div>
+      <div style={{display:"flex",gap:6}}>
+        <input type="date" value={rangeStart} onChange={e=>setRangeStart(e.target.value)} style={{flex:1,padding:"9px 10px",borderRadius:9,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+        <input type="date" value={rangeEnd} onChange={e=>setRangeEnd(e.target.value)} style={{flex:1,padding:"9px 10px",borderRadius:9,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
+      </div>
+      {dateRange&&<div style={{fontSize:11,color:C.textLight,marginTop:5}}>Only Roster, Checklist Progress, and References ignore this — those reflect current status, not a dated event.</div>}
+    </div>
 
     {error&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"9px 12px",fontSize:13,color:C.danger,marginBottom:12}}>{error}</div>}
 
