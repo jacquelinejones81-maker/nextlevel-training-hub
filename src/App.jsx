@@ -304,13 +304,19 @@ function isAnnouncementLive(a){
   if(a.endDate&&today>a.endDate) return false;
   return true;
 }
-// Does this announcement apply to this person, based on role/track?
-function announcementMatchesPerson(a,userRole,track){
+// Does this announcement apply to this person, based on role/track, and — if the
+// announcement is restricted to one admin's downline — whether this person actually
+// reports to that admin (or is that admin themselves).
+function announcementMatchesPerson(a,userRole,track,personAdminId,userId){
   const aud=a.audience||[];
-  if(aud.length===0) return true; // no audience picked = show to everyone, safe default
-  if(userRole==="admin"||userRole==="superadmin") return aud.includes("admin");
-  if(userRole==="trainer") return aud.includes("trainer");
-  return aud.includes(track); // rep — match by track (fast/regular/licensed)
+  const audienceOk = aud.length===0 // no audience picked = show to everyone, safe default
+    || (userRole==="admin"||userRole==="superadmin" ? aud.includes("admin")
+    : userRole==="trainer" ? aud.includes("trainer")
+    : aud.includes(track)); // rep — match by track (fast/regular/licensed)
+  if(!audienceOk) return false;
+  if(!a.restrictToAdminId) return true; // no team restriction = visible to whole matched audience
+  if(userRole==="admin"||userRole==="superadmin") return userId===a.restrictToAdminId;
+  return personAdminId===a.restrictToAdminId;
 }
 
 const CHECKLIST_LABELS = {
@@ -9732,7 +9738,7 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
   const dismissKeyFor=(a)=>a.repeatDaily?a.id+"_"+today:a.id;
 
   const queue=(data.popupAnnouncements||[])
-    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track)&&!dismissed.has(dismissKeyFor(a)))
+    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track,person?.adminId,userId)&&!dismissed.has(dismissKeyFor(a)))
     .sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));
 
   useEffect(()=>{
@@ -9769,12 +9775,15 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
 }
 
 // ── ANNOUNCEMENTS EDITOR (admin only) ──
-function AnnouncementsEditor({data,onUpdate}) {
+function AnnouncementsEditor({data,onUpdate,session}) {
   const anns=data.popupAnnouncements||[];
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
-  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:"",repeatDaily:false};
+  const blankDraft={title:"",message:"",imageUrl:"",link:"",linkLabel:"",audience:[],startDate:"",endDate:"",repeatDaily:false,restrictToAdminId:""};
   const [draft,setDraft]=useState(blankDraft);
+  // Admins available to restrict an announcement to — so a multi-admin Hub can target
+  // just one admin's own downline instead of every admin's reps seeing it.
+  const adminOptions = (data.admins||[]).map(a=>({id:a.id,name:a.name}));
 
   const save=()=>{
     if(!draft.title.trim()||!draft.message.trim()) return;
@@ -9785,7 +9794,7 @@ function AnnouncementsEditor({data,onUpdate}) {
     }
     setDraft(blankDraft); setShowForm(false); setEditingId(null);
   };
-  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||"",repeatDaily:!!a.repeatDaily}); setEditingId(a.id); setShowForm(true); };
+  const startEdit=(a)=>{ setDraft({title:a.title,message:a.message,imageUrl:a.imageUrl||"",link:a.link||"",linkLabel:a.linkLabel||"",audience:a.audience||[],startDate:a.startDate||"",endDate:a.endDate||"",repeatDaily:!!a.repeatDaily,restrictToAdminId:a.restrictToAdminId||""}); setEditingId(a.id); setShowForm(true); };
   const toggleActive=(id)=>{ onUpdate({...data,popupAnnouncements:anns.map(a=>a.id===id?{...a,active:!a.active}:a)}); };
   const deleteAnn=(id)=>{ if(!window.confirm("Delete this announcement? This can't be undone.")) return; onUpdate({...data,popupAnnouncements:anns.filter(a=>a.id!==id)}); };
   const toggleAudience=(k)=>{ setDraft(d=>({...d,audience:d.audience.includes(k)?d.audience.filter(x=>x!==k):[...d.audience,k]})); };
@@ -9842,6 +9851,13 @@ function AnnouncementsEditor({data,onUpdate}) {
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
           {ANNOUNCEMENT_AUDIENCES.map(a=><button key={a.key} onClick={()=>toggleAudience(a.key)} style={{fontSize:12,padding:"5px 11px",borderRadius:7,border:`1px solid ${draft.audience.includes(a.key)?C.teal:C.border}`,background:draft.audience.includes(a.key)?C.teal+"14":"white",color:draft.audience.includes(a.key)?C.teal:C.textMid,fontWeight:draft.audience.includes(a.key)?700:400,cursor:"pointer"}}>{a.label}</button>)}
         </div>
+        {adminOptions.length>1&&<div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Limit To One Team <span style={{textTransform:"none",fontWeight:400}}>(optional — narrows the audience above to just one admin's own downline)</span></div>
+          <select value={draft.restrictToAdminId} onChange={e=>setDraft({...draft,restrictToAdminId:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,background:"white"}}>
+            <option value="">Everyone in the audience above</option>
+            {adminOptions.map(a=><option key={a.id} value={a.id}>Only {a.name}'s team{a.id===session?.id?" (you)":""}</option>)}
+          </select>
+        </div>}
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>{setShowForm(false);setEditingId(null);setDraft(blankDraft);}} style={{flex:1,padding:"8px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",fontSize:13}}>Cancel</button>
           <button onClick={save} style={{flex:2,padding:"8px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:700}}>{editingId?"Save Changes":"Create Announcement"}</button>
@@ -9862,6 +9878,7 @@ function AnnouncementsEditor({data,onUpdate}) {
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
           {(a.audience||[]).length===0?<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.surface,color:C.textLight}}>Everyone</span>:
           (a.audience||[]).map(k=><span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.teal+"14",color:C.teal}}>{ANNOUNCEMENT_AUDIENCES.find(x=>x.key===k)?.label||k}</span>)}
+          {a.restrictToAdminId&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:C.purple+"14",color:C.purple}}>Only {adminOptions.find(x=>x.id===a.restrictToAdminId)?.name||"that admin"}'s team</span>}
         </div>
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>startEdit(a)} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer"}}>Edit</button>
@@ -12387,7 +12404,7 @@ export default function App() {
     if(section==="myactivity"&&(session.role==="admin"||session.role==="superadmin"||session.role==="trainer")) return <MyActivityReport session={session} data={data} onUpdate={upd}/>;
     if(section==="commitmentcats"&&(session.role==="admin"||session.role==="superadmin")) return <CommitmentCategoryEditor data={data} onUpdate={upd}/>;
     if(section==="checklisteditor"&&(session.role==="admin"||session.role==="superadmin")) return <ChecklistEditor data={data} onUpdate={upd}/>;
-    if(section==="announcements"&&(session.role==="admin"||session.role==="superadmin")) return <AnnouncementsEditor data={data} onUpdate={upd}/>;
+    if(section==="announcements"&&(session.role==="admin"||session.role==="superadmin")) return <AnnouncementsEditor data={data} onUpdate={upd} session={session}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
