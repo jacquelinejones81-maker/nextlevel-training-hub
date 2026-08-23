@@ -2163,6 +2163,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
       <MyLeadLink name={rep.name} data={data} onUpdate={onUpdate} personId={rep.id}/>
       <MyDimeLeadLink name={rep.name} data={data} onUpdate={onUpdate} personId={rep.id}/>
+      <MyRule72LeadLink name={rep.name} data={data} onUpdate={onUpdate} personId={rep.id}/>
       {(data.repShareableLinks||[]).length>0&&<div style={{marginTop:16}}>
         <div style={{background:C.gold+"11",border:`2px solid ${C.gold}`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
           <div style={{fontSize:13,fontWeight:800,color:"#92400e",lineHeight:1.5}}>YOUR JOB IS NOT TO EXPLAIN THE OPPORTUNITY.</div>
@@ -5997,6 +5998,83 @@ function MyDimeLeadLink({name,data,onUpdate,personId}) {
   </div>;
 }
 
+// ── MY RULE OF 72 LEAD LINK ──
+function MyRule72LeadLink({name,data,onUpdate,personId}) {
+  const [copied,setCopied] = useState(false);
+  const [shared,setShared] = useState(false);
+  const [msgCopied,setMsgCopied] = useState(false);
+  const adminRecord = (typeof data!=="undefined")&&(data.admins||[]).find(a=>a.name===name);
+  const safeName = adminRecord?.linkName||(name||"").trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g,"");
+  const link = "https://REPLACE-WITH-YOUR-RULE72-VERCEL-URL.vercel.app?rep="+safeName;
+  const message = `Hey! Quick question — do you know how often your money is expected to double? There's a 30-second calculator that shows you using the Rule of 72: ${link}`;
+
+  const copy = () => {
+    navigator.clipboard?.writeText(link).then(()=>{
+      setCopied(true);
+      setTimeout(()=>setCopied(false),2500);
+    });
+  };
+
+  const share = () => {
+    if(navigator.share){
+      navigator.share({title:"Do you know how often your money doubles?",text:"Check out this quick Rule of 72 calculator!",url:link});
+    } else {
+      copy();
+    }
+  };
+
+  const markShared = () => {
+    if(typeof onUpdate!=="function"||!personId) return;
+    logLinkShare(data,onUpdate,personId,"My Rule of 72 Lead Link");
+    setShared(true);
+    setTimeout(()=>setShared(false),2000);
+  };
+
+  const copyMsg = () => {
+    navigator.clipboard?.writeText(message).then(()=>{
+      setMsgCopied(true);
+      setTimeout(()=>setMsgCopied(false),2500);
+    });
+  };
+
+  return <div style={{background:"linear-gradient(135deg,"+C.navy+","+C.navyMid+")",borderRadius:14,padding:"18px 20px",marginBottom:14,border:"1px solid "+C.teal+"33"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <div style={{width:9,height:9,borderRadius:5,background:C.teal}}/>
+      <div style={{fontSize:16,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.7px"}}>My Rule of 72 Lead Link</div>
+    </div>
+    <div style={{fontSize:16,color:"rgba(255,255,255,0.75)",marginBottom:12,lineHeight:1.6}}>Share this personal link with prospects to show them how often their money is expected to double.</div>
+    <div style={{background:"rgba(212,160,23,0.12)",border:"1px solid rgba(212,160,23,0.35)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Why It's Important</div>
+      <div style={{fontSize:15,color:"rgba(255,255,255,0.9)",lineHeight:1.6}}>Most people have no idea how much rate of return actually matters over time. This tool shows the real gap between a savings account and investing in under a minute — it's a conversation starter, not a sales pitch.</div>
+    </div>
+    <div style={{background:"rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Who Should I Send This To?</div>
+      <div style={{fontSize:15,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>Anyone who's ever mentioned savings, a 401k, wanting to invest, or feeling behind on retirement. They don't need to be a "prospect" yet.</div>
+    </div>
+    <div style={{background:"rgba(255,255,255,0.08)",borderRadius:9,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+      <div style={{flex:1,fontSize:15,color:"white",wordBreak:"break-all",fontFamily:"monospace"}}>{link}</div>
+    </div>
+    <div style={{display:"flex",gap:8}}>
+      <button onClick={copy} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:copied?C.success:"linear-gradient(135deg,"+C.teal+",#0891b2)",color:"white",cursor:"pointer",fontSize:15,fontWeight:700,transition:"background 0.2s"}}>
+        {copied?"Copied!":"Copy Link"}
+      </button>
+      <button onClick={share} style={{flex:1,padding:"12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"white",cursor:"pointer",fontSize:15,fontWeight:600}}>
+        Share
+      </button>
+    </div>
+    {onUpdate&&personId&&<button onClick={markShared} style={{width:"100%",marginTop:10,padding:"11px",borderRadius:9,border:shared?"1px solid "+C.success:"1px solid rgba(255,255,255,0.2)",background:shared?"rgba(22,163,74,0.15)":"rgba(255,255,255,0.05)",color:shared?C.success:"rgba(255,255,255,0.8)",cursor:"pointer",fontSize:14,fontWeight:600}}>
+      {shared?"✓ Logged!":"Mark as Shared"}
+    </button>}
+    <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.12)"}}>
+      <div style={{fontSize:13,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:8}}>Message to Send</div>
+      <div style={{background:"rgba(255,255,255,0.07)",borderRadius:9,padding:"12px 14px",marginBottom:10,fontSize:15,color:"rgba(255,255,255,0.9)",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{message}</div>
+      <button onClick={copyMsg} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:msgCopied?C.success:"rgba(255,255,255,0.1)",color:"white",cursor:"pointer",fontSize:14,fontWeight:600}}>
+        {msgCopied?"Copied!":"📋 Copy Message"}
+      </button>
+    </div>
+  </div>;
+}
+
 
 // ══════════════════════════════════════════════════
 // PROMPT 4 — LEAD TASK CHECKLIST
@@ -9013,6 +9091,7 @@ function LeadLinkPage({session,data,onUpdate}) {
     <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
     <MyLeadLink name={session.name} data={data} onUpdate={onUpdate} personId={session.id}/>
     <MyDimeLeadLink name={session.name} data={data} onUpdate={onUpdate} personId={session.id}/>
+    <MyRule72LeadLink name={session.name} data={data} onUpdate={onUpdate} personId={session.id}/>
 
     {!savedRepId&&<div style={{border:`1px solid ${C.danger}`,borderRadius:10,padding:"10px 13px",marginBottom:16,background:C.danger+"0a",fontSize:13,color:C.text,lineHeight:1.5}}>⚠️ You haven't entered your Primerica Rep ID yet — head to <b>My Profile</b> to add it so you get credit when you share your video links below.</div>}
 
