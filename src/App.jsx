@@ -9794,7 +9794,7 @@ function MyTasksPage({session,data,onUpdate}) {
       <div style={{marginBottom:8}}>
         <div style={{fontSize:13,color:C.textMid,marginBottom:4}}>Sub-tasks (optional)</div>
         {form.subtasks.map((s,i)=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-          <span style={{fontSize:13,color:C.text,flex:1,background:C.surface,padding:"4px 8px",borderRadius:6}}>• {s.text}</span>
+          <input value={s.text} onChange={e=>setForm(f=>({...f,subtasks:f.subtasks.map((st,j)=>j===i?{...st,text:e.target.value}:st)}))} style={{flex:1,padding:"4px 8px",borderRadius:6,border:"1px solid "+C.border,background:C.surface,fontSize:13,color:C.text}}/>
           <button onClick={()=>setForm(f=>({...f,subtasks:f.subtasks.filter((_,j)=>j!==i)}))} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
         </div>)}
         <div style={{display:"flex",gap:6}}>
