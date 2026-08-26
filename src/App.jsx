@@ -2342,11 +2342,16 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
         </div>}
       </div>
       <button onClick={()=>setViewAsRep(true)} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.teal+"11",border:`1px solid ${C.teal}44`,color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>View as Rep</button>
+      <button onClick={()=>{
+        if(!rep.locked&&!window.confirm(`Lock ${rep.name} out of the Hub?\n\nThey won't be able to log in, but nothing about their data — checklist, appointments, life apps, anything — is touched or deleted. You can unlock them any time.`)) return;
+        onUpdate(rep.id,{...rep,locked:!rep.locked});
+      }} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:rep.locked?"1px solid "+C.success+"44":"1px solid "+C.danger+"44",background:rep.locked?C.success+"11":C.danger+"11",color:rep.locked?C.success:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>{rep.locked?"🔓 Unlock Access":"🔒 Lock Access"}</button>
       <ReassignTrainer rep={rep} data={data} onUpdate={onUpdate} />
       <RecruitedByEditor rep={rep} data={data} onUpdate={onUpdate}/>
       <ResetPinButton person={rep} personType="rep" data={data} onUpdate={onUpdate||upd}/>
       <button onClick={()=>{if(window.confirm(`Remove ${rep.name} from the app? This cannot be undone.`))onDelete(rep.id);}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Remove Rep</button>
     </div>
+    {rep.locked&&<div style={{background:C.danger+"11",border:"1px solid "+C.danger+"33",borderRadius:8,padding:"9px 12px",marginBottom:14,fontSize:13,color:C.danger,fontWeight:600}}>🔒 This account is locked — {rep.name} cannot log in until you unlock it. All of their data is safe and untouched.</div>}
     {/* Assign RVP/Admin */}
     <div style={{marginBottom:10,padding:"10px 12px",background:C.gold+"08",borderRadius:8,border:`1px solid ${C.gold}33`}}>
       <div style={{fontSize:13,fontWeight:600,color:"#b45309",marginBottom:8}}>Assigned RVP / Admin</div>
@@ -2787,6 +2792,10 @@ function ManageTeamPage({data,onUpdate}) {
           <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
           <span style={{fontSize:13,color:C.textMid}}>Also actively recruits and trains</span>
         </label>
+        {!a.isSuperAdmin&&<label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:6}}>
+          <input type="checkbox" checked={!!a.locked} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,locked:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
+          <span style={{fontSize:13,color:a.locked?C.danger:C.textMid,fontWeight:a.locked?600:400}}>{a.locked?"🔒 Locked — can't log in":"Lock this account's access"}</span>
+        </label>}
       </div>)}
       <div style={{display:"flex",gap:6,marginTop:6}}>
         <input placeholder="Name" value={na.name} onChange={e=>setNa({...na,name:e.target.value})} style={{flex:1,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
@@ -2805,7 +2814,11 @@ function ManageTeamPage({data,onUpdate}) {
           <input placeholder="PIN" maxLength={6} value={t.pin||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,pin:e.target.value.replace(/\D/,"")}:tr);updateLocal({...localData,trainers:u});}} style={{width:65,padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,textAlign:"center",letterSpacing:"2px",color:C.text}}/>
           <button onClick={()=>updateLocal({...localData,trainers:trainers.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button>
         </div>
-        <input placeholder="Booking link (optional)" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
+        <input placeholder="Booking link (optional)" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
+        <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+          <input type="checkbox" checked={!!t.locked} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,locked:e.target.checked}:tr);updateLocal({...localData,trainers:u});}}/>
+          <span style={{fontSize:13,color:t.locked?C.danger:C.textMid,fontWeight:t.locked?600:400}}>{t.locked?"🔒 Locked — can't log in":"Lock this account's access"}</span>
+        </label>
       </div>)}
       <div style={{display:"flex",gap:6,marginTop:6}}>
         <input placeholder="Name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} style={{flex:1,padding:"5px 8px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
@@ -3508,7 +3521,7 @@ function MyRepsPage({data,onUpdate,userRole,userId,onSelectRep}) {
         <div onClick={()=>!showInactive&&onSelectRep(r.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:showInactive?"default":"pointer"}}>
           <div style={{width:32,height:32,borderRadius:8,background:(track?.color||C.teal)+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:track?.color||C.teal,flexShrink:0}}>{r.name?.charAt(0)?.toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+            <div style={{fontSize:dv(13,16),fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}>{r.name}{r.locked&&<span style={{fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:4,background:C.danger+"18",color:C.danger,flexShrink:0}}>🔒 LOCKED</span>}</div>
             <div style={{fontSize:12,color:C.textMid}}>{track?.label||r.track}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:1}}>
               <span style={{fontSize:12,color:C.textMid}}>Trainer: <strong style={{color:([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?C.teal:C.textLight}}>{([...(data.trainers||[]),...(data.admins||[])]).find(t=>t.id===r.trainerId)?.name||"Not assigned"}</strong></span>
@@ -3981,11 +3994,15 @@ function LoginScreen({data,onLogin}) {
   const admins=data.admins||[{id:"superadmin",name:"Jacqueline Jones",pin:"1234",isSuperAdmin:true,alsoRecruits:true}];
   const trainers=data.trainers||[];
   const reps=data.reps||[];
-  const doAdminLogin=()=>{const f=admins.find(a=>a.pin===pin);if(f){setErr("");onLogin("admin",f.id,f);}else setErr("Incorrect PIN");};
-  const doTrainerLogin=()=>{const f=trainers.find(t=>t.pin===pin);if(f){setErr("");onLogin("trainer",f.id,f);}else setErr("Incorrect PIN");};
+  const doAdminLogin=()=>{const f=admins.find(a=>a.pin===pin);if(f){if(f.locked){setErr("This account's access has been paused. Contact another admin.");return;}setErr("");onLogin("admin",f.id,f);}else setErr("Incorrect PIN");};
+  const doTrainerLogin=()=>{const f=trainers.find(t=>t.pin===pin);if(f){if(f.locked){setErr("This account's access has been paused. Contact your admin.");return;}setErr("");onLogin("trainer",f.id,f);}else setErr("Incorrect PIN");};
   const doRepLogin=()=>{
     if(step==="create"){if(rPin.length!==4){setErr("PIN must be 4 digits");return;}if(rPin!==rPinC){setErr("PINs do not match");return;}onLogin("rep",selRep.id,selRep,rPin);}
-    else{if(rPin===selRep.repPin){setErr("");onLogin("rep",selRep.id,selRep);}else{setErr("Incorrect PIN");setRPin("");}}
+    else{
+      if(rPin!==selRep.repPin){setErr("Incorrect PIN");setRPin("");return;}
+      if(selRep.locked){setErr("This account's access has been paused. Contact your admin or trainer.");return;}
+      setErr("");onLogin("rep",selRep.id,selRep);
+    }
   };
   const filtReps=search.length>0?reps.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())):[];
   const inp={width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid rgba(0,0,0,0.12)`,fontSize:14,outline:"none",background:"white",boxSizing:"border-box",color:C.text};
