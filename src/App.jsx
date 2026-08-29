@@ -2714,6 +2714,8 @@ function ManageTeamPage({data,onUpdate}) {
       rvpBookingLinks:localData.rvpBookingLinks,
       announcements:localData.announcements,
       teamBrands:localData.teamBrands,
+      hubLogoUrl:localData.hubLogoUrl,
+      showTeamLogos:localData.showTeamLogos,
       repShareableLinks:localData.repShareableLinks,
       moneyMapContent:localData.moneyMapContent,
       teamLinks:localData.teamLinks,
@@ -2737,6 +2739,22 @@ function ManageTeamPage({data,onUpdate}) {
     {/* Team Branding */}
     <Card style={{marginBottom:14}}>
       <div style={{fontSize:13,fontWeight:700,color:C.textMid,marginBottom:4}}>Login Screen Branding</div>
+
+      <div style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:14,background:C.surface}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:3}}>Hub Logo (optional)</div>
+        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>If set, this image replaces the "Welcome to the Team / NextLevel / Field Training Hub" text on the login screen. Leave blank and that text keeps showing exactly as it does today.</div>
+        <input placeholder="Logo image URL (paste public image URL)" value={localData.hubLogoUrl||""} onChange={e=>updateLocal({...localData,hubLogoUrl:e.target.value.trim()})} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:8}}/>
+        {localData.hubLogoUrl&&<img src={localData.hubLogoUrl} alt="Hub logo preview" style={{maxHeight:70,borderRadius:6,display:"block"}} onError={e=>e.target.style.display="none"}/>}
+      </div>
+
+      <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:14,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`}}>
+        <input type="checkbox" checked={!!localData.showTeamLogos} onChange={e=>updateLocal({...localData,showTeamLogos:e.target.checked})}/>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>Show Team Logos on Login Screen</div>
+          <div style={{fontSize:11,color:C.textLight}}>Off by default. When on, shows a "Teams" label and the logos below, underneath your Hub Logo (or the text header if no Hub Logo is set).</div>
+        </div>
+      </label>
+
       <div style={{fontSize:11,color:C.textLight,marginBottom:10}}>Add team names and logos shown on the login screen. As you promote more RVPs, just add a new team here.</div>
       <div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"10px 12px",marginBottom:12,fontSize:11,color:C.text,lineHeight:1.7}}>
         <div style={{fontWeight:700,color:C.teal,marginBottom:6}}>📸 How to add a team logo — step by step:</div>
@@ -4010,23 +4028,33 @@ function LoginScreen({data,onLogin}) {
     <div style={{width:"100%",maxWidth:420}}>
       <div style={{textAlign:"center",marginBottom:28}}>
 
-        {/* Welcome banner */}
-        <div style={{background:"linear-gradient(90deg,rgba(245,158,11,0.15),rgba(14,165,160,0.15),rgba(245,158,11,0.15))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:30,padding:"6px 20px",display:"inline-block",marginBottom:12}}>
-          <span style={{fontSize:13,fontWeight:700,color:"#f59e0b",letterSpacing:"2px",textTransform:"uppercase"}}>✦ Welcome to the Team ✦</span>
-        </div>
-        <div style={{color:"white",fontSize:22,fontWeight:800,letterSpacing:"0.5px",lineHeight:1.2}}>NextLevel</div>
-        <div style={{color:C.teal,fontSize:14,fontWeight:600,letterSpacing:"3px",textTransform:"uppercase",marginBottom:14}}>Field Training Hub</div>
-        {/* Team logos / badges — dynamic. Both wait to reveal together (or fall back to
-            the emoji badge) instead of popping in independently at different speeds. */}
-        <div style={{display:"flex",gap:10,justifyContent:"center",alignItems:"center",flexWrap:"wrap",minHeight:logosSettled?"auto":80}}>
-          {logosSettled&&teamBrandsForLogos.map((team,i)=>
-            (team.logo&&logoStatus[i]!=="failed")
-              ?<img key={i} src={team.logo} alt={team.name}
-                  style={{height:80,maxWidth:160,borderRadius:10,objectFit:"contain"}}
-                />
-              :<div key={i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>{team.emoji||"⭐"} {team.name}</div>
-          )}
-        </div>
+        {/* Header — a Hub Logo (if the admin has set one) replaces the text entirely;
+            otherwise the original text header shows exactly as it always has. */}
+        {data.hubLogoUrl?
+          <img src={data.hubLogoUrl} alt="NextLevel" style={{maxWidth:260,maxHeight:140,objectFit:"contain",marginBottom:14}}/>
+        :<>
+          <div style={{background:"linear-gradient(90deg,rgba(245,158,11,0.15),rgba(14,165,160,0.15),rgba(245,158,11,0.15))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:30,padding:"6px 20px",display:"inline-block",marginBottom:12}}>
+            <span style={{fontSize:13,fontWeight:700,color:"#f59e0b",letterSpacing:"2px",textTransform:"uppercase"}}>✦ Welcome to the Team ✦</span>
+          </div>
+          <div style={{color:"white",fontSize:22,fontWeight:800,letterSpacing:"0.5px",lineHeight:1.2}}>NextLevel</div>
+          <div style={{color:C.teal,fontSize:14,fontWeight:600,letterSpacing:"3px",textTransform:"uppercase",marginBottom:14}}>Field Training Hub</div>
+        </>}
+        {/* Teams — off by default, only shows if an admin explicitly turns it on in Team
+            Management. Independent of the Hub Logo above it either way. */}
+        {data.showTeamLogos&&<>
+          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.6)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:10}}>✦ Teams ✦</div>
+          {/* Team logos / badges — dynamic. Both wait to reveal together (or fall back to
+              the emoji badge) instead of popping in independently at different speeds. */}
+          <div style={{display:"flex",gap:10,justifyContent:"center",alignItems:"center",flexWrap:"wrap",minHeight:logosSettled?"auto":80}}>
+            {logosSettled&&teamBrandsForLogos.map((team,i)=>
+              (team.logo&&logoStatus[i]!=="failed")
+                ?<img key={i} src={team.logo} alt={team.name}
+                    style={{height:80,maxWidth:160,borderRadius:10,objectFit:"contain"}}
+                  />
+                :<div key={i} style={{padding:"5px 16px",borderRadius:20,background:"rgba(14,165,160,0.15)",border:"1px solid rgba(14,165,160,0.5)",fontSize:13,fontWeight:700,color:C.teal,letterSpacing:"0.5px"}}>{team.emoji||"⭐"} {team.name}</div>
+            )}
+          </div>
+        </>}
       </div>
       <div style={{background:"white",borderRadius:16,padding:24,boxShadow:"0 20px 50px rgba(0,0,0,0.3)"}}>
         {mode==="select"&&<div>
