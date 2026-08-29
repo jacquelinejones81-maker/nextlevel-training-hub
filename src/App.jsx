@@ -10120,7 +10120,7 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
   const dismissKeyFor=(a)=>a.repeatDaily?a.id+"_"+today:a.id;
 
   const queue=(data.popupAnnouncements||[])
-    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track,person?.adminId,userId)&&!dismissed.has(dismissKeyFor(a)))
+    .filter(a=>isAnnouncementLive(a)&&announcementMatchesPerson(a,userRole,track,person?.adminId,userId)&&!dismissed.has(dismissKeyFor(a))&&!dismissed.has(a.id))
     .sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));
 
   useEffect(()=>{
@@ -10130,8 +10130,11 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[queue.map(a=>a.id).join(","), person===undefined]);
 
-  const dismiss=(a)=>{
-    const key=dismissKeyFor(a);
+  const dismiss=(a,permanent)=>{
+    // "Got It" on a daily announcement only clears today's key, so it comes back
+    // tomorrow. "Don't show this again" always uses the plain id — a true forever
+    // opt-out, even overriding a daily repeat.
+    const key=permanent?a.id:dismissKeyFor(a);
     setDismissedThisSession(prev=>[...prev,key]);
     setVisibleId(null);
     if(typeof onUpdate==="function"){
@@ -10142,15 +10145,20 @@ function AnnouncementPopup({data,userId,userRole,track,onUpdate}) {
 
   const ann=queue.find(a=>a.id===visibleId);
   if(!ann) return null;
+  const position=queue.findIndex(a=>a.id===visibleId);
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:3600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-    <div style={{background:"white",borderRadius:14,overflow:"hidden",maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+    <div style={{background:"white",borderRadius:14,overflow:"hidden",maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)",position:"relative"}}>
+      {queue.length>1&&<div style={{position:"absolute",top:10,right:12,background:"rgba(255,255,255,0.92)",borderRadius:10,padding:"3px 10px",fontSize:11,fontWeight:700,color:C.textMid,zIndex:2}}>{position+1} of {queue.length}</div>}
       {ann.imageUrl&&<img src={ann.imageUrl} alt="" style={{width:"100%",maxHeight:"50vh",objectFit:"contain",background:C.surface,display:"block"}}/>}
       <div style={{padding:"16px 18px"}}>
         <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:7}}>{ann.title}</div>
         <div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:14,whiteSpace:"pre-wrap"}}>{ann.message}</div>
         {ann.link&&<a href={ann.link} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"9px",borderRadius:8,background:C.gold,color:"white",fontWeight:700,fontSize:13,textAlign:"center",textDecoration:"none",marginBottom:8,boxSizing:"border-box"}}>{ann.linkLabel||"Learn More"}</a>}
-        <button onClick={()=>dismiss(ann)} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Got It</button>
-        <button onClick={()=>dismiss(ann)} style={{width:"100%",padding:"7px",borderRadius:8,border:"none",background:"none",color:C.textLight,fontSize:12,cursor:"pointer"}}>{ann.repeatDaily?"Dismiss for today":"Don't show this again"}</button>
+        <button onClick={()=>dismiss(ann,false)} style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:C.teal,color:"white",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Got It</button>
+        <button onClick={()=>dismiss(ann,true)} style={{width:"100%",padding:"7px",borderRadius:8,border:"none",background:"none",color:C.textLight,fontSize:12,cursor:"pointer"}}>Don't show this again</button>
+        {queue.length>1&&<div style={{display:"flex",gap:5,justifyContent:"center",marginTop:8}}>
+          {queue.map((q,i)=><div key={q.id} style={{width:i===position?16:6,height:6,borderRadius:3,background:i===position?C.teal:C.border,transition:"width 0.2s"}}/>)}
+        </div>}
       </div>
     </div>
   </div>;
@@ -10203,7 +10211,7 @@ function AnnouncementsEditor({data,onUpdate,session}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Announcements</div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Admins only. Shows as a popup about 10 seconds after someone opens the Hub. Once dismissed, it won't show again for that person.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Admins only. Shows as a popup about 10 seconds after someone opens the Hub. "Got It" dismisses it — for daily announcements, it comes back the next active day; for one-time announcements, that's permanent. "Don't show this again" is always permanent, even overriding a daily repeat.</div>
 
     {!showForm?
       <button onClick={()=>{setDraft(blankDraft);setEditingId(null);setShowForm(true);}} style={{width:"100%",padding:"9px",borderRadius:8,border:`2px dashed ${C.border}`,background:"white",color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:16}}>+ New Announcement</button>
