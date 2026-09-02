@@ -2464,18 +2464,26 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[invs.filter(i=>Number(i.pac)>0).length,"PAC Accounts",C.purple],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}</div>
         {investmentsOnly&&<div style={{background:C.purple+"08",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.purple}}>Monthly Investment Goals</div>
+            <div style={{fontSize:12,fontWeight:700,color:C.purple}}>{showLastMonthGoals?"Last Month's Results":"Monthly Investment Goals"}</div>
             {prevMonthStart&&<button onClick={()=>setShowLastMonthGoals(!showLastMonthGoals)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.purple}44`,background:showLastMonthGoals?C.purple:"white",color:showLastMonthGoals?"white":C.purple,cursor:"pointer",fontWeight:600}}>{showLastMonthGoals?"← Back to This Month":"View Last Month"}</button>}
           </div>
           {showLastMonthGoals?
-            <div>
-              <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>What you set last Primerica month:</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>{getMonthlyGoal(myProd.monthlyPACCountGoals,prevMonthStart)||"—"}</div><div style={{fontSize:9,color:C.textMid}}>PAC Accounts Goal</div></div>
-                <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.gold}}>{getMonthlyGoal(myProd.monthlyPACGoals,prevMonthStart)?"$"+Number(getMonthlyGoal(myProd.monthlyPACGoals,prevMonthStart)).toLocaleString()+"/mo":"—"}</div><div style={{fontSize:9,color:C.textMid}}>PAC $/mo Goal</div></div>
-                <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>{getMonthlyGoal(myProd.monthlyLumpGoals,prevMonthStart)?"$"+Number(getMonthlyGoal(myProd.monthlyLumpGoals,prevMonthStart)).toLocaleString():"—"}</div><div style={{fontSize:9,color:C.textMid}}>Lump Sum Goal</div></div>
-              </div>
-            </div>
+            (()=>{
+              const lastMonthInvs = invs.filter(i=>i.date&&i.date>=prevMonthStart&&i.date<pmForGoals.start);
+              const lmPAC = lastMonthInvs.filter(i=>Number(i.pac)>0).length;
+              const lmPACTotal = lastMonthInvs.reduce((s,i)=>s+(Number(i.pac)||0),0);
+              const lmLumpTotal = lastMonthInvs.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
+              return <div>
+                <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>What you actually logged last Primerica month:</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                  <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>{lmPAC}</div><div style={{fontSize:9,color:C.textMid}}>PAC Accounts</div></div>
+                  <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.gold}}>${lmPACTotal.toLocaleString()}/mo</div><div style={{fontSize:9,color:C.textMid}}>PAC Total</div></div>
+                  <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>${lmLumpTotal.toLocaleString()}</div><div style={{fontSize:9,color:C.textMid}}>Lump Sum</div></div>
+                </div>
+                {lastMonthInvs.length===0&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",padding:"6px 0"}}>Nothing logged last month.</div>}
+                {lastMonthInvs.map((inv,i)=><div key={i} style={{padding:"5px 0",borderTop:"1px solid "+C.border,fontSize:13}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><span style={{color:C.textMid}}> — {inv.type}{inv.pac?` · $${inv.pac}/mo`:""}{inv.lumpSum?` · $${Number(inv.lumpSum).toLocaleString()} lump`:""}</span></div>)}
+              </div>;
+            })()
           :<>
           <div style={{marginBottom:10}}>
             <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>PAC Goal — # of Accounts</div>
@@ -2644,18 +2652,23 @@ function ProdDash({data,onUpdateData}) {
   const [editG,setEditG]=useState(false);
   const [gd,setGd]=useState(goals);
   const allStaff=[...(data.trainers||[]),...(data.admins||[])];
-  const totPremMo=reps.reduce((s,r)=>s+(Number(r.premiumSubmitted)||0)+(r.selfPremium||[]).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)+allStaff.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
+  // "Clear Counters" only ever moves this reset point forward — it NEVER deletes a Life
+  // App, COD, or Investment entry. Every total below only counts entries dated on/after
+  // this point, so clearing the card's display can never touch real logged data.
+  const resetAt = data.prodDashResetAt || null;
+  const afterReset = (dateStr) => !resetAt || (dateStr && dateStr>=resetAt);
+  const totPremMo=reps.reduce((s,r)=>s+(r.selfPremium||[]).filter(e=>afterReset(e.date)).reduce((ss,e)=>ss+(Number(e.premium)||0),0),0)+allStaff.reduce((s,t)=>{const a=(data.myProduction?.[t.id]?.lifeApps)||[];return s+a.filter(e=>afterReset(e.date)).reduce((ss,a)=>ss+(Number(a.premium)||0),0);},0);
   const totRecs = data.prodOverride?.recruits!==undefined ? data.prodOverride.recruits : reps.filter(r=>!r.inactive).length;
   const totLic=reps.filter(r=>r.isLicensed).length;
   // PAC and lump sum totals from investment logs
   const allInvLogs = [
     ...reps.reduce((a,r)=>([...a,...(r.investments||[])]),[]),
     ...allStaff.reduce((a,t)=>([...a,...((data.myProduction?.[t.id]?.investments)||[])]),[]),
-  ];
+  ].filter(i=>afterReset(i.date));
   const totPAC = allInvLogs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const totLump = allInvLogs.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
   return <Card style={{marginBottom:14}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Clear Annual Premium, New Recruits display, Licensed Agents, and all investment entries? This resets all production counters."))onUpdateData({...data,reps:(data.reps||[]).map(r=>({...r,selfPremium:[],isLicensed:false,premiumSubmitted:0,investments:[]})),myProduction:{},prodOverride:{recruits:0},admins:(data.admins||[]).map(a=>({...a,investments:[]})),trainers:(data.trainers||[]).map(t=>({...t,investments:[]}))});}} style={{fontSize:12,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:13,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:700,color:C.text}}>Team Production</div><div style={{display:"flex",gap:6}}><button onClick={()=>{if(window.confirm("Reset the totals shown on this card back to zero, starting fresh from today?\n\nThis only affects what's DISPLAYED here — none of your actual Life App, COD, or Investment entries are touched, changed, or deleted. Everything stays fully intact and still shows correctly everywhere else in the Hub."))onUpdateData({...data,prodDashResetAt:localDateStr(),prodOverride:{recruits:0}});}} style={{fontSize:12,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.danger+"33",background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Clear Counters</button><button onClick={()=>setEditG(!editG)} style={{fontSize:13,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>{editG?"Cancel":"Edit Goals"}</button></div></div>
     {editG&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:10}}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>{[["premium","Annual Premium $",gd.premium],["recruits","Recruits",gd.recruits],["licensed","Licensed Agents",gd.licensed]].map(([k,l,v])=><div key={k}><div style={{fontSize:12,color:C.textMid,marginBottom:3}}>{l}</div><input type="number" value={v} onChange={e=>setGd({...gd,[k]:Number(e.target.value)})} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box",color:C.text}}/></div>)}</div>
       <button onClick={()=>{onUpdateData({...data,goals:gd});setEditG(false);}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.teal,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Goals</button>
@@ -8355,11 +8368,25 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     {/* Monthly Income Goal */}
     <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{pmForGoals.label}</div>
+        <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{showLastMonthGoal?"Last Month":pmForGoals.label}</div>
         {!readOnly&&prevMonthStartLPE&&<button onClick={()=>setShowLastMonthGoal(!showLastMonthGoal)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showLastMonthGoal?C.navy:"white",color:showLastMonthGoal?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showLastMonthGoal?"← Back":"View Last Month"}</button>}
       </div>
       {showLastMonthGoal?
-        <div style={{fontSize:13,color:C.textMid}}>Last month's income goal was <strong style={{color:C.text}}>{getMonthlyGoal(rep.monthlyIncomeGoals,prevMonthStartLPE)?"$"+Number(getMonthlyGoal(rep.monthlyIncomeGoals,prevMonthStartLPE)).toLocaleString():"not set"}</strong>.</div>
+        (()=>{
+          const lastMonthEntries = entries.filter(e=>e.date&&e.date>=prevMonthStartLPE&&e.date<pmForGoals.start);
+          return <div>
+            <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>What you actually logged last Primerica month:</div>
+            {lastMonthEntries.length===0&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",padding:"6px 0"}}>Nothing logged last month.</div>}
+            {lastMonthEntries.map((e,i)=>{
+              const isDeclined=e.cod&&!!e.codDeclined;
+              const isPending=e.cod&&!e.codAccepted&&!isDeclined;
+              return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderTop:i>0?"1px solid "+C.border:"none",fontSize:13}}>
+                <span style={{color:isDeclined?C.textLight:C.text,fontWeight:600,textDecoration:isDeclined?"line-through":"none"}}>{e.client}{e.cod&&<span style={{marginLeft:6,fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:4,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success}}>{isDeclined?"COD Declined":isPending?"COD Pending":"COD Accepted"}</span>}</span>
+                <span style={{color:isDeclined?C.textLight:C.teal,fontWeight:600}}>${e.premium}/mo</span>
+              </div>;
+            })}
+          </div>;
+        })()
       :<>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
         <div style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
