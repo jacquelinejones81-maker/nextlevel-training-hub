@@ -6316,6 +6316,11 @@ function DailyActivityLog({rep,data,onUpdate,isFirstTime=false}) {
 function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const [myRepsOnlyAcct,setMyRepsOnlyAcct]=useState(false);
+  // Keyed by rep id, since this lives inside a per-rep expandable card — each rep needs
+  // its own independent search box, not one shared across the whole list.
+  const [recruitPickerState,setRecruitPickerState]=useState({});
+  const getRecruitPicker=(repId)=>recruitPickerState[repId]||{search:"",showList:false};
+  const setRecruitPicker=(repId,patch)=>setRecruitPickerState(s=>({...s,[repId]:{...getRecruitPicker(repId),...patch}}));
   const allReps = data.reps||[];
   const trainers = data.trainers||[];
   const allTrainers = [...trainers,...(data.admins||[])];
@@ -6672,19 +6677,33 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           {/* Editable Recruited By */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>Recruited By</div>
-            <select value={rep.recruitedBy||""} onChange={e=>{
-              const val=e.target.value;
-              if(rep.isTrainer){
-                const updated=(data.trainers||[]).map(t=>t.id===rep.id?{...t,recruitedBy:val}:t);
-                onUpdate({...data,trainers:updated});
-              } else {
-                const updated=(data.reps||[]).map(r=>r.id===rep.id?{...r,recruitedBy:val}:r);
-                onUpdate({...data,reps:updated});
-              }
-            }} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}>
-              <option value="">Not specified</option>
-              {[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])].map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            {(()=>{
+              const allPeopleForRecruit=[...(data.reps||[]),...(data.trainers||[]),...(data.admins||[])];
+              const setRecruiter=(val)=>{
+                if(rep.isTrainer){
+                  onUpdate({...data,trainers:(data.trainers||[]).map(t=>t.id===rep.id?{...t,recruitedBy:val}:t)});
+                } else {
+                  onUpdate({...data,reps:(data.reps||[]).map(r=>r.id===rep.id?{...r,recruitedBy:val}:r)});
+                }
+              };
+              const picker=getRecruitPicker(rep.id);
+              const currentRecruiter=allPeopleForRecruit.find(p=>p.id===rep.recruitedBy);
+              const matches=picker.search.trim()
+                ? allPeopleForRecruit.filter(p=>(p.name||"").toLowerCase().includes(picker.search.toLowerCase())).slice(0,8)
+                : allPeopleForRecruit.slice(0,8);
+              if(currentRecruiter&&!picker.showList) return <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal,background:C.teal+"0d"}}>
+                <span style={{fontSize:13,color:C.text,fontWeight:600}}>{currentRecruiter.name}</span>
+                <button onClick={()=>setRecruitPicker(rep.id,{showList:true})} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Change</button>
+              </div>;
+              return <div style={{position:"relative"}}>
+                <input placeholder="Search by name..." value={picker.search} onFocus={()=>setRecruitPicker(rep.id,{showList:true})} onChange={e=>setRecruitPicker(rep.id,{search:e.target.value,showList:true})} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
+                {picker.showList&&<div style={{border:"1px solid "+C.border,borderRadius:7,marginTop:4,maxHeight:150,overflowY:"auto"}}>
+                  <div onClick={()=>{setRecruiter("");setRecruitPicker(rep.id,{showList:false,search:""});}} onMouseDown={e=>e.preventDefault()} style={{padding:"6px 8px",cursor:"pointer",fontSize:12,color:C.textLight,borderBottom:"1px solid "+C.border}}>Not specified</div>
+                  {matches.map(p=><div key={p.id} onClick={()=>{setRecruiter(p.id);setRecruitPicker(rep.id,{showList:false,search:""});}} onMouseDown={e=>e.preventDefault()} style={{padding:"6px 8px",cursor:"pointer",fontSize:13,color:C.text,fontWeight:600,borderBottom:"1px solid "+C.border}}>{p.name}</div>)}
+                  {matches.length===0&&<div style={{padding:"6px 8px",fontSize:12,color:C.textLight}}>No matches</div>}
+                </div>}
+              </div>;
+            })()}
           </div>
 
           {/* Assign RVP/Admin */}
