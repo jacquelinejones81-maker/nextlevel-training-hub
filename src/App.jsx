@@ -377,6 +377,17 @@ function hasUnattendedTasksToday(data,userId){
   });
 }
 
+// Checks if a rep has any reference entered with zero outreach done yet — no text sent,
+// no call, nothing. Powers the small notification dot on the Refs tab in a trainer/admin's
+// view of a rep, so a brand-new reference doesn't get missed.
+function hasUnattendedReferences(rep){
+  return (rep.references||[]).some(r=>{
+    if(!r?.name?.trim()) return false;
+    const status=r.status||{};
+    return !REF_STAGES.some(s=>status[s.k]);
+  });
+}
+
 // ── DATA EXPORT ──
 // Loads SheetJS (the library that actually builds multi-tab .xlsx files) from a CDN at
 // runtime, so this works without needing any build-config or package.json change.
@@ -2377,7 +2388,7 @@ function RepProfile({rep,data,onUpdate,onUpdateData,onBack,onDelete}) {
       </div>
     </Card>
     <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:10}}>
-      {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid}}>{t.l}</button>)}
+      {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"5px 9px",borderRadius:8,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:tab===t.k?600:400,background:tab===t.k?C.navy:C.surface,color:tab===t.k?"white":C.textMid,display:"flex",alignItems:"center",gap:5}}>{t.l}{t.k==="refs"&&hasUnattendedReferences(rep)&&<span title="New reference — no outreach started yet" style={{width:7,height:7,borderRadius:4,background:C.gold,flexShrink:0}}/>}</button>)}
     </div>
     {tab==="trainer"&&<div>{Object.entries(getChecklistItems(data,"trainerChecklist").reduce((a,i)=>{if(!a[i.cat])a[i.cat]=[];a[i.cat].push(i);return a;},{})).map(([cat,items])=>{const cd=items.filter(i=>tc[i.id]).length;return <div key={cat}><SecHead title={cat} count={[cd,items.length]}/>{items.map(item=><CheckItem key={item.id} item={item} checked={!!tc[item.id]} onToggle={()=>togT(item.id)}/>)}</div>;})}</div>}
     {tab==="rep"&&<RepView rep={liveRepData} data={data} onUpdate={onUpdate} onUpdateData={null} readOnly={false}/>}
@@ -2658,6 +2669,12 @@ function ProdDash({data,onUpdateData}) {
 // ── ADD REP ──
 function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
   const [f,setF]=useState({name:"",phone:"",email:"",track:"",trainerId:"",startDate:new Date().toISOString().split("T")[0]});
+  const [recruitSearch,setRecruitSearch]=useState("");
+  const [showRecruitList,setShowRecruitList]=useState(false);
+  const selectedRecruiter=allPeople.find(p=>p.id===f.recruitedBy);
+  const recruitMatches=recruitSearch.trim()
+    ? allPeople.filter(p=>(p.name||"").toLowerCase().includes(recruitSearch.toLowerCase())).slice(0,8)
+    : allPeople.slice(0,8);
   const fmtP=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length>=7)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;if(d.length>=4)return `${d.slice(0,3)}-${d.slice(3)}`;return d;};
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16}}>
     <div style={{background:"white",borderRadius:16,padding:22,width:"100%",maxWidth:420,maxHeight:"90vh",overflowY:"auto"}}>
@@ -2678,7 +2695,23 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
       </div>
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign Trainer</label><select value={f.trainerId} onChange={e=>setF({...f,trainerId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">No trainer</option>{trainers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}{(allPeople||[]).filter(p=>p.role==="Admin"&&(p.alsoRecruits||p.isSuperAdmin)).map(a=><option key={a.id} value={a.id}>{a.name} (Admin)</option>)}</select></div>
       <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Assign RVP / Admin <span style={{fontSize:11,color:C.textLight,fontWeight:400}}>— determines whose My Reps filter they appear under</span></label><select value={f.adminId||""} onChange={e=>setF({...f,adminId:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.gold}`,fontSize:14,color:C.text}}><option value="">Not assigned</option>{(allPeople||[]).filter(p=>p.role==="Admin").map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
-      <div style={{marginBottom:9}}><label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label><select value={f.recruitedBy||""} onChange={e=>setF({...f,recruitedBy:e.target.value})} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="">Select recruiter...</option>{allPeople.map(p=><option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</select></div>
+      <div style={{marginBottom:9,position:"relative"}}>
+        <label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:3}}>Recruited By</label>
+        {selectedRecruiter&&!showRecruitList?
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.teal}`,background:C.teal+"0d"}}>
+            <span style={{fontSize:14,color:C.text,fontWeight:600}}>{selectedRecruiter.name} <span style={{fontWeight:400,color:C.textLight}}>({selectedRecruiter.role})</span></span>
+            <button onClick={()=>{setF({...f,recruitedBy:""});setRecruitSearch("");}} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Change</button>
+          </div>
+        :<>
+          <input placeholder="Search by name..." value={recruitSearch} onFocus={()=>setShowRecruitList(true)} onChange={e=>{setRecruitSearch(e.target.value);setShowRecruitList(true);}} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box"}}/>
+          {showRecruitList&&<div style={{border:`1px solid ${C.border}`,borderRadius:8,marginTop:4,maxHeight:160,overflowY:"auto"}}>
+            {recruitMatches.map(p=><div key={p.id} onClick={()=>{setF({...f,recruitedBy:p.id});setShowRecruitList(false);setRecruitSearch("");}} style={{padding:"8px 11px",cursor:"pointer",fontSize:13,borderBottom:`1px solid ${C.border}`}} onMouseDown={e=>e.preventDefault()}>
+              <span style={{fontWeight:600,color:C.text}}>{p.name}</span> <span style={{color:C.textLight}}>({p.role})</span>
+            </div>)}
+            {recruitMatches.length===0&&<div style={{padding:"8px 11px",fontSize:13,color:C.textLight}}>No matches</div>}
+          </div>}
+        </>}
+      </div>
       <label style={{display:"flex",alignItems:"flex-start",gap:8,padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,marginBottom:14,cursor:"pointer"}}>
         <input type="checkbox" checked={!!f.excludeFromRecruitCount} onChange={e=>setF({...f,excludeFromRecruitCount:e.target.checked})} style={{width:17,height:17,marginTop:1,accentColor:C.teal,cursor:"pointer",flexShrink:0}}/>
         <span style={{fontSize:12,color:C.textMid,lineHeight:1.5}}>This person is already a rep. <strong style={{color:C.text}}>Don't count them toward new recruit numbers.</strong></span>
