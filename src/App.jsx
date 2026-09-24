@@ -1807,6 +1807,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {k:"leadlink",l:"My Lead Link"},
     {k:"scripts",l:"Scripts"},
     {k:"objectiontraining",l:"Objection Training"},
+    {k:"liveobjections",l:"🎯 Live Objection Queue"},
     {k:"prospecting",l:"Prospecting Training"},
     {k:"planner",l:"Daily Planner"},
     {k:"prospects",l:"Prospects"},
@@ -2201,6 +2202,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep" track={rep.track}/>}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
     {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
+    {tab==="liveobjections"&&<LiveObjectionQueuePage onNav={setTab}/>}
     {tab==="prospecting"&&<ProspectingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
     {tab==="planner"&&<DailyPlanner session={{id:rep.id,role:"rep"}} db={db}/>}
       </div>
@@ -10782,6 +10784,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     {k:"wallfame",l:"Wall of Fame",d:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"},
     {k:"emailtemplates",l:"Email Templates",d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6"},
     {k:"objectiontraining",l:"Objection Training",d:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"},
+    {k:"liveobjections",l:"Live Objection Queue",d:"M13 10V3L4 14h7v7l9-11h-7z"},
     {k:"prospecting",l:"Prospecting",d:"M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"},
     {k:"quickmsg",l:"Quick Messages",d:"M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"},
     {k:"leadlink",l:"My Lead Link",d:"M10 13C10.4295 13.5741 10.9774 14.0492 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9404 15.7513 14.6898C16.4231 14.4392 17.0331 14.0471 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.53087C19.5521 2.60381 18.298 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.46997L11.75 5.17997M14 11C13.5705 10.4259 13.0226 9.95083 12.3934 9.60706C11.7642 9.26329 11.0685 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05954 8.24861 9.31018C7.57685 9.56083 6.96684 9.95294 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.0566 16.977C2.06801 18.288 2.59383 19.5421 3.52089 20.4691C4.44796 21.3962 5.70203 21.922 7.01301 21.9334C8.32399 21.9448 9.58701 21.4408 10.53 20.53L12.24 18.82"},
@@ -11163,6 +11166,106 @@ function ProspectingPage({data,onUpdate,userRole}) {
 }
 
 // ── OBJECTION TRAINING — FLASHCARD SYSTEM ──
+// ── LIVE OBJECTION QUEUE ──
+// Short, sayable-in-the-moment responses — written fresh for speed during a live call or
+// appointment, not trimmed from the full training cards above (a good 15-second phone
+// answer and a good written study answer aren't the same thing). Ids match OBJECTION_CARDS
+// 1:1 so "See full training card" can jump straight to the matching one.
+const QUICK_OBJECTION_RESPONSES = [
+  {id:"li1",cat:"Life Insurance",emoji:"💰",title:"I can't afford it",responses:[
+    "Totally understand — that's exactly why we look at the numbers together first. Most families end up paying less than a phone bill. Mind if I show you real quick?",
+    "I hear that a lot, and usually the number surprises people — in a good way. Can I just walk you through what it'd actually look like?",
+  ]},
+  {id:"li2",cat:"Life Insurance",emoji:"⏰",title:"I need to think about it",responses:[
+    "Totally fair — what part would you want to think through? Cost, coverage, or something else? I'd rather help you work through it now.",
+    "No problem at all. Just so I follow up on the right thing — what's the piece you're still unsure about?",
+  ]},
+  {id:"li3",cat:"Life Insurance",emoji:"👫",title:"I need to talk to my spouse",responses:[
+    "Makes total sense — this should be a decision you both make. Want to grab a time this week when you're both free so I can walk you both through it together?",
+    "Of course. Would it help if I sent a quick summary you could share with them before we talk again?",
+  ]},
+  {id:"li4",cat:"Life Insurance",emoji:"📋",title:"I already have insurance through work",responses:[
+    "That's great that you have something — a lot of people don't realize work coverage usually ends the day you leave that job. Want to see what you'd actually be left with?",
+    "Good starting point. Most employer plans only cover 1-2x your salary though — is that enough to replace your income for your family?",
+  ]},
+  {id:"li5",cat:"Life Insurance",emoji:"🧑",title:"I'm too young to worry about that",responses:[
+    "That's actually the best time to lock in a low rate — it only gets more expensive the older you get. Want to see what it'd cost you right now?",
+    "Totally get it. The upside is being young is exactly why this would be so affordable for you — can I show you?",
+  ]},
+  {id:"li6",cat:"Life Insurance",emoji:"🤔",title:"I don't believe in life insurance",responses:[
+    "Fair enough — can I ask what happened, or what you've heard, that led to that? I want to make sure I'm addressing the real concern.",
+    "I respect that. Out of curiosity, what would happen to your family financially if something happened to you tomorrow?",
+  ]},
+  {id:"inv1",cat:"Investments",emoji:"📈",title:"I don't trust the stock market",responses:[
+    "Completely understandable after 2008 — a lot of people feel that way. Can I show you how we manage risk differently than what burned people back then?",
+    "That makes sense. What if I showed you a way to participate without taking on that same kind of risk?",
+  ]},
+  {id:"inv2",cat:"Investments",emoji:"💼",title:"I already have a 401k",responses:[
+    "That's a great start. Do you know what fees you're actually paying in it, or what it's invested in? A lot of people have never looked.",
+    "Good — having something is more than most. Want me to take a quick look and see if it's actually working as hard as it could be?",
+  ]},
+  {id:"inv3",cat:"Investments",emoji:"💸",title:"I don't have extra money to invest",responses:[
+    "I hear that a lot — most people don't feel like they have extra until we find it together. Can I show you where it might be hiding?",
+    "Totally get it. Even starting really small makes a difference over time — want to see what's actually possible with what you have?",
+  ]},
+  {id:"rec1",cat:"Recruiting",emoji:"🔺",title:"Is this a pyramid scheme?",responses:[
+    "Great question — I actually asked the same thing. A pyramid scheme has no real product; we sell real life insurance and investments people actually use. Want me to show you exactly how we get paid?",
+    "Fair to ask. The difference is simple — we make money selling real products to real clients, not off people joining under us. Happy to walk you through it.",
+  ]},
+  {id:"rec2",cat:"Recruiting",emoji:"⌚",title:"I don't have time for this",responses:[
+    "Totally get it — that's exactly why this only takes 15 minutes. When's a quick window this week?",
+    "No worries at all. Can I just grab 10 minutes tomorrow before your day gets going?",
+  ]},
+  {id:"rec3",cat:"Recruiting",emoji:"👥",title:"I don't know enough people",responses:[
+    "Honestly, most of our top people started exactly there — this isn't about who you know today, it's about who you'll meet. Want me to show you how that works?",
+    "That's actually really common starting out. Can I show you how the training builds that network for you?",
+  ]},
+  {id:"rec4",cat:"Recruiting",emoji:"💵",title:"I have to PAY to join?",responses:[
+    "Great question — that covers your licensing and getting set up as a legit financial professional, not a fee to 'join.' Want me to break down exactly what it covers?",
+    "Totally fair to ask. Think of it like the cost of getting licensed for any career — want to see what you actually get for it?",
+  ]},
+  {id:"rec5",cat:"Recruiting",emoji:"❌",title:"I tried MLM before and it didn't work",responses:[
+    "I'm sorry that happened — that's a real thing people go through. Can I ask what was different about that one? This might not be what you're picturing.",
+    "That's a fair concern to bring up. What happened there — was it the product, the support, or something else? I want to make sure this isn't the same situation.",
+  ]},
+];
+
+function LiveObjectionQueuePage({onNav}) {
+  const [search,setSearch]=useState("");
+  const [selectedId,setSelectedId]=useState(null);
+  const filtered = search.trim()
+    ? QUICK_OBJECTION_RESPONSES.filter(o=>o.title.toLowerCase().includes(search.toLowerCase()))
+    : QUICK_OBJECTION_RESPONSES;
+  const selected = QUICK_OBJECTION_RESPONSES.find(o=>o.id===selectedId);
+
+  if(selected) return <div>
+    <button onClick={()=>setSelectedId(null)} style={{fontSize:13,color:C.textMid,background:"none",border:"none",cursor:"pointer",marginBottom:14,padding:0}}>← Back to objections</button>
+    <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:2}}>{selected.emoji} {selected.title}</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Pick one, say it, keep going</div>
+    <div style={{background:C.navy,borderRadius:14,padding:"16px 18px"}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:10}}>Quick Responses</div>
+      {selected.responses.map((r,i)=><div key={i} style={{background:"rgba(255,255,255,0.08)",borderRadius:10,padding:"12px 14px",marginBottom:i<selected.responses.length-1?8:0,fontSize:15,color:"white",lineHeight:1.5}}>
+        <span style={{display:"inline-block",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:5,background:C.gold,color:C.navy,marginBottom:6}}>OPTION {i+1}</span>
+        <div>{r}</div>
+      </div>)}
+      {onNav&&<div onClick={()=>onNav("objectiontraining")} style={{fontSize:12,color:"rgba(255,255,255,0.5)",textAlign:"center",marginTop:12,cursor:"pointer"}}>See the full training card for this →</div>}
+    </div>
+  </div>;
+
+  return <div>
+    <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:2}}>🎯 Live Objection Queue</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Tap what they just said</div>
+    <input placeholder="Search or just tap below..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:14,boxSizing:"border-box"}}/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+      {filtered.map(o=><div key={o.id} onClick={()=>setSelectedId(o.id)} style={{padding:"16px 10px",borderRadius:12,border:`2px solid ${C.border}`,background:"white",textAlign:"center",fontSize:13,fontWeight:700,color:C.text,cursor:"pointer"}}>
+        <div style={{fontSize:22,marginBottom:5}}>{o.emoji}</div>
+        {o.title}
+      </div>)}
+      {filtered.length===0&&<div style={{gridColumn:"1 / -1",textAlign:"center",padding:"30px 0",color:C.textLight,fontSize:13}}>No matches — try different words.</div>}
+    </div>
+  </div>;
+}
+
 const OBJECTION_CARDS = [
   // ══ LIFE INSURANCE ══
   {id:"li1",cat:"Life Insurance",emoji:"💰",
@@ -12928,6 +13031,7 @@ export default function App() {
     if(section==="teamleads"&&(session.role==="admin"||session.role==="superadmin")) return <div><TeamLeads data={data} userId={session.id}/><div style={{marginTop:14}}><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:10}}>Rep Pipelines</div><AdminPipeline data={data} onUpdate={upd} userId={session.id}/></div></div>;
     if(section==="dataexport"&&(session.role==="admin"||session.role==="superadmin")) return <DataExportPage data={data} session={session}/>;
     if(section==="emailtemplates") return <EmailTemplatesPage data={data} onUpdate={upd} userRole={session.role} reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>;    if(section==="objectiontraining") return <ObjectionTrainingPage data={data} onUpdate={upd} userRole={session.role}/>;
+    if(section==="liveobjections") return <LiveObjectionQueuePage onNav={navTo}/>;
     if(section==="prospecting") return <ProspectingPage data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="planner") return <DailyPlanner session={session} db={db}/>;    if(section==="quickmsg") return <QuickMessages data={data} onUpdate={upd} userRole={session.role}/>;
     if(section==="careerpath") return <TrainerCareerPath data={data} onUpdate={upd} session={session}/>;
