@@ -435,6 +435,7 @@ function buildExportSheets(data,repIds,dateRange){
   }));
 
   const lifeApps = [];
+  const becFollowUps = [];
   people.forEach(p=>{
     const entries=(p.selfPremium||[]);
     const myProdEntries=((data.myProduction||{})[p.id]||{}).lifeApps||[];
@@ -445,6 +446,20 @@ function buildExportSheets(data,repIds,dateRange){
         RepName:p.name||"",Client:e.client||"",MonthlyPremium:Number(e.premium)||"",Date:e.date||"",
         COD:e.cod?"Yes":"No",CODAccepted:e.cod?(e.codAccepted?"Yes":"No"):"",CODDeclined:e.cod?(e.codDeclined?"Yes":"No"):"",
       });
+      // Beneficiary & emergency contact follow-up — pulled regardless of the date range
+      // above, since these need to stay findable for a client no matter when the Life App
+      // itself was logged (this mirrors the Roster/References "current status" exception).
+      const bec=e.bec;
+      if(bec){
+        (bec.beneficiaries||[]).forEach(person=>{
+          if(!person.name||!person.name.trim()) return;
+          becFollowUps.push({RepName:p.name||"",Client:e.client||"",Role:"Beneficiary",Name:person.name||"",Phone:person.phone||"",Email:person.email||"",Contacted:person.contacted?"Yes":"No"});
+        });
+        (bec.emergencyContacts||[]).forEach(person=>{
+          if(!person.name||!person.name.trim()) return;
+          becFollowUps.push({RepName:p.name||"",Client:e.client||"",Role:"Emergency Contact",Name:person.name||"",Phone:person.phone||"",Email:person.email||"",Contacted:person.contacted?"Yes":"No"});
+        });
+      }
     });
   });
 
@@ -529,7 +544,7 @@ function buildExportSheets(data,repIds,dateRange){
     });
   });
 
-  return {roster,lifeApps,investments,investmentObservations,appointments,recruits,scorecardHistory,coachingNotes,checklistProgress,referencesSheet};
+  return {roster,lifeApps,becFollowUps,investments,investmentObservations,appointments,recruits,scorecardHistory,coachingNotes,checklistProgress,referencesSheet};
 }
 
 async function downloadExport(data,repIds,filenamePrefix,includeRoster,dateRange){
@@ -563,6 +578,7 @@ async function downloadExport(data,repIds,filenamePrefix,includeRoster,dateRange
   };
   if(includeRoster) add("Roster",sheets.roster); // roster makes sense for any team-level export, not a single person
   add("Life Apps",sheets.lifeApps,["MonthlyPremium"]);
+  add("BEC Follow-Ups",sheets.becFollowUps);
   add("Investments",sheets.investments,["PACPerMonth","LumpSum"]);
   add("Investment Observations",sheets.investmentObservations);
   add("Appointments",sheets.appointments);
@@ -627,7 +643,7 @@ function DataExportPage({data,session}) {
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Data Export</div>
-    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Download a spreadsheet with a tab for each category — Life Apps, Investments, Investment Observations, Appointments, Recruits, Scorecard History, Coaching Notes, Checklist Progress, and References. Nothing here is deleted or changed — this is a read-only snapshot for backup or review.</div>
+    <div style={{fontSize:13,color:C.textMid,marginBottom:16}}>Download a spreadsheet with a tab for each category — Life Apps, BEC Follow-Ups, Investments, Investment Observations, Appointments, Recruits, Scorecard History, Coaching Notes, Checklist Progress, and References. Nothing here is deleted or changed — this is a read-only snapshot for backup or review.</div>
 
     <div style={{display:"flex",gap:8,marginBottom:16}}>
       <button onClick={()=>{setMode("team");setError("");}} style={{flex:1,padding:"10px",borderRadius:9,border:mode==="team"?"none":"1px solid "+C.border,background:mode==="team"?C.teal:"white",color:mode==="team"?"white":C.textMid,cursor:"pointer",fontSize:13,fontWeight:700}}>Whole Team</button>
@@ -8289,6 +8305,29 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   const [form,setForm] = useState({client:"",premium:"",date:localDateStr(),cod:false});
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
+  // BEC (Beneficiary & Emergency Contact) follow-up — keyed per entry index, since each
+  // Life App entry has its own independent expand state and script-visibility state.
+  const [becOpenIdx,setBecOpenIdx]=useState(null);
+  const [scriptOpenKey,setScriptOpenKey]=useState(null);
+  const blankBec=()=>({beneficiaries:[],emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]});
+  const updateBec=(realIdx,patch)=>{
+    const entries=rep.selfPremium||[];
+    const current=entries[realIdx]?.bec||blankBec();
+    onUpdate({...repRef.current,selfPremium:entries.map((e,j)=>j===realIdx?{...e,bec:{...current,...patch}}:e)});
+  };
+  const BENEFICIARY_SCRIPT=(clientName)=>[
+    `"Hello, my name is [Your name]. I appreciate you taking my call. Did ${clientName} mention I'd be reaching out? Is now still a good time to talk? I'll keep this brief."`,
+    `"${clientName} recently took out a life insurance policy and listed you as a beneficiary. One of the biggest problems in this industry is that death claims sometimes go unpaid — not because of the policy, but because the beneficiary didn't know how to file the claim. So I'm sending you a certificate and walking through it together now."`,
+    `"Let me go ahead and complete that form for you right now while we're on the phone — can I confirm how you'd like your name listed, the best number to reach you at, and an email address so I can send that certificate over?"`,
+    `"When I spoke with ${clientName}, what mattered most to them was making sure their income would be replaced — the home, the kids, final expenses. Can I ask — if something happened to you, what do you currently have in place to make sure your own family keeps the same quality of life?"`,
+    `"Do you have anything in place that would keep paying your family for the next 10 years?"`,
+  ];
+  const EC_SCRIPT=(clientName)=>[
+    `"Hello, my name is [Your name]. Did ${clientName} mention I'd be reaching out? Is now an okay time? I'll keep this short."`,
+    `"${clientName} recently took out a life insurance policy and listed you as an emergency contact on file. I just want to make sure I have your correct information, in case I'm ever unable to reach the beneficiary directly — that's exactly what an emergency contact is for."`,
+    `"I'm going to go ahead and fill that form out right now while we're talking — can you confirm your full name, the best number to reach you at, and an email address for the file?"`,
+    `"While I have you — out of curiosity, who's currently protecting your own family with life insurance?"`,
+  ];
   const entries = rep.selfPremium||[];
   const total = entries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>s+(Number(e.premium)||0),0);
   const pendingCOD = entries.filter(e=>e.cod&&!e.codAccepted&&!e.codDeclined);
@@ -8468,6 +8507,68 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
             <div style={{fontSize:10,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
             <div style={{fontSize:10,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
           </div>}
+          {!readOnly&&(()=>{
+            const bec=e.bec||blankBec();
+            const allPeople=[...(bec.beneficiaries||[]),...(bec.emergencyContacts||[])].filter(p=>p.name&&p.name.trim());
+            const contactedCount=allPeople.filter(p=>p.contacted).length;
+            const isOpen=becOpenIdx===realIdx;
+            return <div style={{marginTop:6}}>
+              <div onClick={()=>setBecOpenIdx(isOpen?null:realIdx)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:C.surface,borderRadius:7,cursor:"pointer"}}>
+                <span style={{fontSize:12,fontWeight:600,color:C.text,display:"flex",alignItems:"center",gap:5}}>{isOpen?"▾":"▸"} Beneficiary & EC Follow-Up</span>
+                {allPeople.length>0&&<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:10,background:contactedCount===allPeople.length?C.success+"22":C.gold+"22",color:contactedCount===allPeople.length?C.success:C.gold}}>{contactedCount} of {allPeople.length} contacted</span>}
+              </div>
+              {isOpen&&<div style={{marginTop:6}}>
+                {/* Beneficiaries — open list, add as many as needed */}
+                <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",margin:"8px 0 4px"}}>Beneficiaries</div>
+                {(bec.beneficiaries||[]).map((p,pi)=>{
+                  const scriptKey=realIdx+"-ben-"+pi;
+                  return <div key={pi} style={{background:C.surface,borderRadius:7,padding:"7px 9px",marginBottom:5}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:4,marginBottom:4}}>
+                      <input placeholder="Name" value={p.name} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,name:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+                      <input placeholder="Phone" value={p.phone} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,phone:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+                      <input placeholder="Email" value={p.email} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,email:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+                      <button onClick={()=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.filter((_,j)=>j!==pi)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:11,color:C.textMid}}>
+                        <input type="checkbox" checked={!!p.contacted} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,contacted:ev.target.checked}:x)})} style={{width:13,height:13}}/>
+                        Contacted
+                      </label>
+                      <button onClick={()=>setScriptOpenKey(scriptOpenKey===scriptKey?null:scriptKey)} style={{fontSize:11,padding:"2px 8px",borderRadius:5,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>📞 {scriptOpenKey===scriptKey?"Hide":"Call"} Script</button>
+                    </div>
+                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:11,color:C.textMid,lineHeight:1.6}}>
+                      {BENEFICIARY_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 6px"}}>{line}</p>)}
+                    </div>}
+                  </div>;
+                })}
+                <button onClick={()=>updateBec(realIdx,{beneficiaries:[...(bec.beneficiaries||[]),{name:"",phone:"",email:"",contacted:false}]})} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",marginBottom:10}}>+ Add another beneficiary</button>
+
+                {/* Emergency contacts — always exactly 3 fixed slots */}
+                <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",margin:"6px 0 4px"}}>Emergency Contacts (3)</div>
+                {(bec.emergencyContacts||blankBec().emergencyContacts).map((p,pi)=>{
+                  const scriptKey=realIdx+"-ec-"+pi;
+                  return <div key={pi} style={{background:C.surface,borderRadius:7,padding:"7px 9px",marginBottom:5}}>
+                    <div style={{fontSize:10,color:C.textLight,marginBottom:3}}>Emergency Contact {pi+1}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4,marginBottom:4}}>
+                      <input placeholder="Name" value={p.name} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,name:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+                      <input placeholder="Phone" value={p.phone} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,phone:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+                      <input placeholder="Email" value={p.email} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,email:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:11,color:C.textMid}}>
+                        <input type="checkbox" checked={!!p.contacted} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,contacted:ev.target.checked}:x)})} style={{width:13,height:13}}/>
+                        Contacted
+                      </label>
+                      <button onClick={()=>setScriptOpenKey(scriptOpenKey===scriptKey?null:scriptKey)} style={{fontSize:11,padding:"2px 8px",borderRadius:5,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>📞 {scriptOpenKey===scriptKey?"Hide":"Call"} Script</button>
+                    </div>
+                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:11,color:C.textMid,lineHeight:1.6}}>
+                      {EC_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 6px"}}>{line}</p>)}
+                    </div>}
+                  </div>;
+                })}
+              </div>}
+            </div>;
+          })()}
         </div>;
       })}
     </div>}
