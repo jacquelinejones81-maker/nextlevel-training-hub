@@ -11255,6 +11255,17 @@ function LiveObjectionQueuePage({onNav}) {
   return <div>
     <div style={{fontSize:dv(19,24),fontWeight:800,color:C.text,marginBottom:2}}>🎯 Live Objection Queue</div>
     <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Tap what they just said</div>
+    <div style={{background:`linear-gradient(135deg,${C.teal}14,${C.teal}08)`,border:`1px solid ${C.teal}44`,borderRadius:12,padding:"13px 15px",marginBottom:16}}>
+      <div style={{fontSize:11,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>💡 How To Use This — In The Moment</div>
+      {[
+        "You're on the phone or in an appointment and they push back — pull this up right then, don't wait.",
+        "Tap the objection closest to what they said (or search for it).",
+        "Glance at one response, say it in your own words — you don't have to read it word-for-word.",
+      ].map((step,i)=><div key={i} style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:i<2?4:0,display:"flex",gap:6}}>
+        <span style={{background:C.teal,color:"white",fontSize:10,fontWeight:800,width:16,height:16,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</span>
+        <span>{step}</span>
+      </div>)}
+    </div>
     <input placeholder="Search or just tap below..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:14,boxSizing:"border-box"}}/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
       {filtered.map(o=><div key={o.id} onClick={()=>setSelectedId(o.id)} style={{padding:"16px 10px",borderRadius:12,border:`2px solid ${C.border}`,background:"white",textAlign:"center",fontSize:13,fontWeight:700,color:C.text,cursor:"pointer"}}>
