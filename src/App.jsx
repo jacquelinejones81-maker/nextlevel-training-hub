@@ -2209,13 +2209,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="scripts"&&<RepScriptsView scripts={data.scripts||SCRIPTS}/>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
-    {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData||((u)=>onUpdate(rep.id,u))}/>}
+    {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData} readOnly={readOnly||!onUpdateData}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="advancement"&&<AdvancementLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
     {tab==="recruits"&&<RecruitsTab rep={rep} data={data} myRecruits={myRecruits} onUpdate={onUpdate}/>}
     {tab==="career"&&<CareerPath rep={rep} data={data} onUpdate={onUpdate}/>}
     {tab==="fame"&&<WallOfFame data={data} onUpdate={()=>{}} userRole="rep"/>}
-    {tab==="scorecard"&&<ScorecardPage data={data} onUpdate={onUpdateData||(u=>onUpdate(rep.id,{...rep}))} userId={rep.id} userRole="rep" track={rep.track}/>}
+    {tab==="scorecard"&&(onUpdateData
+      ? <ScorecardPage data={data} onUpdate={onUpdateData} userId={rep.id} userRole="rep" track={rep.track}/>
+      : <div style={{padding:"20px 16px",textAlign:"center",color:C.textLight,fontSize:13}}>Scorecard entry is disabled in this preview — exit preview to make changes as {rep.name}.</div>
+    )}
     {tab==="schedule"&&<ScheduleView data={data} onUpdate={(u)=>onUpdate(rep.id,{...rep})} userRole="rep"/>}
     {tab==="objectiontraining"&&<ObjectionTrainingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
     {tab==="liveobjections"&&<LiveObjectionQueuePage onNav={setTab}/>}
@@ -8302,7 +8305,8 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   useEffect(()=>{repRef.current=rep;},[rep]);
   const [goalInput,setGoalInput]=useState(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));
   useEffect(()=>{setGoalInput(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));},[rep.monthlyIncomeGoals,pmForGoals.start]);
-  const [form,setForm] = useState({client:"",premium:"",date:localDateStr(),cod:false});
+  const blankForm=()=>({client:"",premium:"",date:localDateStr(),cod:false,bec:{beneficiaries:[],emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]}});
+  const [form,setForm] = useState(blankForm());
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
   // BEC (Beneficiary & Emergency Contact) follow-up — keyed per entry index, since each
@@ -8382,7 +8386,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   const save = () => {
     if(!form.client||!form.premium) return;
     onUpdate({...repRef.current,selfPremium:[...entries,{...form,id:Date.now(),codAccepted:false}]});
-    setForm({client:"",premium:"",date:localDateStr(),cod:false});
+    setForm(blankForm());
     setShow(false);
   };
   const acceptCOD=(idx)=>{
@@ -8458,6 +8462,34 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
         <input type="checkbox" checked={form.cod} onChange={e=>setForm({...form,cod:e.target.checked})} style={{width:15,height:15,accentColor:C.gold}}/>
         <span style={{fontSize:13,color:C.textMid}}>COD Application — <span style={{color:C.gold,fontWeight:600}}>premium pending acceptance</span></span>
       </label>
+
+      {/* Beneficiary & Emergency Contact — captured right here, in the same step as the
+          rest of the application, not as a separate thing to remember afterward. */}
+      <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:2,marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Beneficiary & Emergency Contact Info</div>
+        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Get this now, while you're already talking with them.</div>
+
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:4}}>Beneficiaries</div>
+        {form.bec.beneficiaries.map((p,pi)=><div key={pi} style={{background:"white",borderRadius:7,padding:"7px 9px",marginBottom:5}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:4}}>
+            <input placeholder="Name" value={p.name} onChange={e=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.map((x,j)=>j===pi?{...x,name:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+            <input placeholder="Phone" value={p.phone} onChange={e=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.map((x,j)=>j===pi?{...x,phone:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+            <input placeholder="Email" value={p.email} onChange={e=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.map((x,j)=>j===pi?{...x,email:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+            <button onClick={()=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.filter((_,j)=>j!==pi)}})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
+          </div>
+        </div>)}
+        <button onClick={()=>setForm({...form,bec:{...form.bec,beneficiaries:[...form.bec.beneficiaries,{name:"",phone:"",email:"",contacted:false}]}})} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",marginBottom:10}}>+ Add a beneficiary</button>
+
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:4}}>Emergency Contacts (3)</div>
+        {form.bec.emergencyContacts.map((p,pi)=><div key={pi} style={{background:"white",borderRadius:7,padding:"7px 9px",marginBottom:5}}>
+          <div style={{fontSize:10,color:C.textLight,marginBottom:3}}>Emergency Contact {pi+1}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
+            <input placeholder="Name" value={p.name} onChange={e=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?{...x,name:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+            <input placeholder="Phone" value={p.phone} onChange={e=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?{...x,phone:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+            <input placeholder="Email" value={p.email} onChange={e=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?{...x,email:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
+          </div>
+        </div>)}
+      </div>
       {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:form.cod?C.textLight+"11":C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:12}}>
         <div style={{fontWeight:700,color:form.cod?C.textMid:C.gold,marginBottom:2}}>{form.cod?"Estimated Commission (COD — pending acceptance)":"Estimated Commission at"} {form.cod?"":promo.label+" ("+promo.pct+"%)"}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
@@ -9626,7 +9658,7 @@ const PIPELINE_STAGES = [
   {key:"closedNo",label:"Closed - Not Interested",color:C.danger},
 ];
 
-function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
+function LeadPipeline({rep,data,onUpdate,isAdmin=false,readOnly=false}) {
   const [activeStage,setActiveStage] = useState("all");
   const [search,setSearch] = useState("");
   const [showArchived,setShowArchived] = useState(false);
@@ -9674,6 +9706,9 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   });
 
   const updateStage = (docId,stage) => {
+    if(readOnly||typeof onUpdate!=="function") return; // View as Rep and any other read-only
+    // context must never be able to write here — no silent fallback to a mismatched
+    // update path, which is exactly what corrupted a rep's entire record once already.
     const updated = {
       ...pipelineData,
       [rep.id]:{
@@ -9693,6 +9728,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
   // touches the shared MoneyMap lead itself, so it has nothing to do with an admin's
   // org-wide Clear All in Team Leads — those are two completely separate things.
   const setRepArchived = (docId,archived) => {
+    if(readOnly||typeof onUpdate!=="function") return;
     const updated = {
       ...pipelineData,
       [rep.id]:{
@@ -9794,13 +9830,14 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false}) {
           })}
         </div>}
         {/* Stage update */}
-        {!isAdmin&&!showArchived&&<div style={{display:"flex",gap:6}}>
+        {!isAdmin&&!readOnly&&!showArchived&&<div style={{display:"flex",gap:6}}>
           <select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
             {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
           <button onClick={()=>setRepArchived(lead.docId,true)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,fontSize:13,cursor:"pointer",flexShrink:0}}>Archive</button>
         </div>}
-        {!isAdmin&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal+"44",background:C.teal+"08",color:C.teal,fontSize:13,cursor:"pointer",fontWeight:600}}>↩ Restore to Active</button>}
+        {!isAdmin&&readOnly&&<div style={{fontSize:12,color:C.textLight,fontStyle:"italic"}}>Preview only — stage: {stage.label}</div>}
+        {!isAdmin&&!readOnly&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal+"44",background:C.teal+"08",color:C.teal,fontSize:13,cursor:"pointer",fontWeight:600}}>↩ Restore to Active</button>}
       </div>;
     })}
   </div>;
