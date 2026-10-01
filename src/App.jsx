@@ -8324,13 +8324,18 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     `"${clientName} recently took out a life insurance policy and listed you as a beneficiary. One of the biggest problems in this industry is that death claims sometimes go unpaid — not because of the policy, but because the beneficiary didn't know how to file the claim. So I'm sending you a certificate and walking through it together now."`,
     `"Let me go ahead and complete that form for you right now while we're on the phone — can I confirm how you'd like your name listed, the best number to reach you at, and an email address so I can send that certificate over?"`,
     `"When I spoke with ${clientName}, what mattered most to them was making sure their income would be replaced — the home, the kids, final expenses. Can I ask — if something happened to you, what do you currently have in place to make sure your own family keeps the same quality of life?"`,
-    `"Do you have anything in place that would keep paying your family for the next 10 years?"`,
+    `"And just so I'm not assuming — do you already have something in place for your own family?"`,
+    `IF YES: "That's great to hear — a lot of people don't have anything in place, so it says a lot that you do. Would you be open to me taking a quick look, just to see if I could actually do better for you? Worst case, you walk away knowing you've already got a good deal."`,
+    `IF NO: "That's actually really common — most people don't, usually because they never saw the real need, never got around to it, or they thought it was too expensive. Which one sounds most like you?" (let them answer) "None of those are bad reasons — they just mean nobody's walked you through it yet. Would it be alright if I called you back tomorrow or the day after with a quick quote — which one works better for you?"`,
   ];
   const EC_SCRIPT=(clientName)=>[
     `"Hello, my name is [Your name]. Did ${clientName} mention I'd be reaching out? Is now an okay time? I'll keep this short."`,
-    `"${clientName} recently took out a life insurance policy and listed you as an emergency contact on file. I just want to make sure I have your correct information, in case I'm ever unable to reach the beneficiary directly — that's exactly what an emergency contact is for."`,
+    `"${clientName} recently took out a life insurance policy and listed you as an emergency contact on file. One of the biggest problems in this industry is that beneficiaries or emergency contacts sometimes don't know how to help when it actually matters — so I like to reach out ahead of time, make sure I have the right information, and that everyone knows who to call."`,
+    `"I just want to make sure I have your correct information, in case I'm ever unable to reach the beneficiary directly — that's exactly what an emergency contact is for."`,
     `"I'm going to go ahead and fill that form out right now while we're talking — can you confirm your full name, the best number to reach you at, and an email address for the file?"`,
-    `"While I have you — out of curiosity, who's currently protecting your own family with life insurance?"`,
+    `"And while I have you — do you already have something in place for your own family?"`,
+    `IF YES: "That's great to hear — a lot of people don't have anything in place, so it says a lot that you do. Would you be open to me taking a quick look, just to see if I could actually do better for you? Worst case, you walk away knowing you've already got a good deal."`,
+    `IF NO: "That's actually really common — most people don't, usually because they never saw the real need, never got around to it, or they thought it was too expensive. Which one sounds most like you?" (let them answer) "None of those are bad reasons — they just mean nobody's walked you through it yet. Would it be alright if I called you back tomorrow or the day after with a quick quote — which one works better for you?"`,
   ];
   const entries = rep.selfPremium||[];
   const total = entries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>s+(Number(e.premium)||0),0);
@@ -8568,8 +8573,8 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
                       </label>
                       <button onClick={()=>setScriptOpenKey(scriptOpenKey===scriptKey?null:scriptKey)} style={{fontSize:11,padding:"2px 8px",borderRadius:5,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>📞 {scriptOpenKey===scriptKey?"Hide":"Call"} Script</button>
                     </div>
-                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:11,color:C.textMid,lineHeight:1.6}}>
-                      {BENEFICIARY_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 6px"}}>{line}</p>)}
+                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:12,color:C.text,lineHeight:1.65,fontWeight:500}}>
+                      {BENEFICIARY_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 7px"}}>{line}</p>)}
                     </div>}
                   </div>;
                 })}
@@ -8593,8 +8598,8 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
                       </label>
                       <button onClick={()=>setScriptOpenKey(scriptOpenKey===scriptKey?null:scriptKey)} style={{fontSize:11,padding:"2px 8px",borderRadius:5,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>📞 {scriptOpenKey===scriptKey?"Hide":"Call"} Script</button>
                     </div>
-                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:11,color:C.textMid,lineHeight:1.6}}>
-                      {EC_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 6px"}}>{line}</p>)}
+                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:12,color:C.text,lineHeight:1.65,fontWeight:500}}>
+                      {EC_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 7px"}}>{line}</p>)}
                     </div>}
                   </div>;
                 })}
