@@ -1916,6 +1916,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   };
   const [mobileOpen,setMobileOpen]=useState(false);
   const [rewatchVideo,setRewatchVideo]=useState(null);
+  const [navOpen,setNavOpen]=useState(null);
   const [showOrientationVideo,setShowOrientationVideo]=useState(false);
   const [showThreeByThreeVideo,setShowThreeByThreeVideo]=useState(false);
   const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
@@ -2002,14 +2003,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     </div>
     {/* Nav items */}
     <div style={{flex:1,overflowY:"auto",padding:"8px 8px"}}>
-      {tabs.map(t=><button key={t.k} onClick={()=>{setTab(t.k);if(onClose)onClose();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"9px 10px",background:tab===t.k?"rgba(14,165,160,0.18)":"transparent",border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,textAlign:"left"}}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={tab===t.k?C.teal:"rgba(255,255,255,0.4)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d={tabIcons[t.k]||tabIcons.resources}/>
-        </svg>
-        <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400,flex:1}}>{t.l}</span>
-        {t.k==="fttasks"&&hasUnattendedTasksToday(data,rep.id)&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
-        {t.k==="pipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
-      </button>)}
+      <GroupedNav items={tabs} pinnedKeys={REP_NAV_PINNED} groupDefs={rep.fieldTrainerGranted?REP_NAV_GROUPS_FT:REP_NAV_GROUPS} activeKey={tab} onSelect={setTab} navOpen={navOpen} setNavOpen={setNavOpen}
+        hasDot={t=>(t.k==="fttasks"&&hasUnattendedTasksToday(data,rep.id))||(t.k==="pipeline"&&hasNewLead)}
+        renderRow={(t,isKid,select)=><button key={t.k} onClick={()=>{select();if(onClose)onClose();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:isKid?"8px 10px 8px 32px":"9px 10px",background:tab===t.k?"rgba(14,165,160,0.18)":"transparent",border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,textAlign:"left"}}>
+          {!isKid&&<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={tab===t.k?C.teal:"rgba(255,255,255,0.4)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d={tabIcons[t.k]||tabIcons.resources}/>
+          </svg>}
+          <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400,flex:1}}>{t.l}</span>
+          {t.k==="fttasks"&&hasUnattendedTasksToday(data,rep.id)&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+          {t.k==="pipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+        </button>}/>
     </div>
     {/* Footer */}
     <div style={{padding:"10px 12px",borderTop:"1px solid rgba(255,255,255,0.08)",fontSize:12,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>NextLevel Field Training Hub</div>
@@ -10964,7 +10967,108 @@ function ScriptsPage({data,onUpdate,userRole}) {
 }
 
 // ── SIDEBAR ──
+// ── NAV GROUPING LOGIC ──
+// Sidebar tabs are grouped into collapsible drawers. This is layout only: it decides which
+// tabs sit in which drawer, never what a tab does or what data it touches. Any tab that
+// isn't assigned to a drawer below lands in a "More" drawer, so a tab can never go missing.
+const NAV_GROUP_ICONS={
+  calendar:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
+  users:"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  target:"M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0zM18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0z",
+  chat:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+  briefcase:"M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16",
+  settings:"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
+  flag:"M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7",
+  book:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
+  more:"M5 12h.01M12 12h.01M19 12h.01",
+};
+const ADMIN_NAV_PINNED=["dashboard","scorecard","production"];
+const ADMIN_NAV_GROUPS=[
+  {n:"My day",ic:"calendar",keys:["planner","mytasks","myactivity"]},
+  {n:"My team",ic:"users",keys:["reps","accountability","wallfame","schedule"]},
+  {n:"Leads",ic:"target",keys:["leadlink","mypipeline","prospects","teamleads"]},
+  {n:"Sales tools",ic:"chat",keys:["scripts","objectiontraining","liveobjections","prospecting","emailtemplates","quickmsg"]},
+  {n:"My business",ic:"briefcase",keys:["careerpath","advancement","resources","myprofile"]},
+  {n:"Admin tools",ic:"settings",keys:["announcements","dataexport","commitmentcats","checklisteditor","team"]},
+];
+const REP_NAV_PINNED=["checklist","scorecard","production"];
+const REP_NAV_GROUPS=[
+  {n:"My progress",ic:"flag",keys:["refs","milestones","appointments","career","advancement"]},
+  {n:"My day",ic:"calendar",keys:["planner","myactivity"],foldInto:"My progress"},
+  {n:"Leads and recruiting",ic:"target",keys:["leadlink","prospects","pipeline","recruits"]},
+  {n:"Sales tools",ic:"chat",keys:["scripts","objectiontraining","liveobjections","prospecting"]},
+  {n:"Resources",ic:"book",keys:["resources","fame","schedule"]},
+];
+const REP_NAV_GROUPS_FT=[
+  {n:"My progress",ic:"flag",keys:["refs","milestones","appointments","career","advancement"]},
+  {n:"My day",ic:"calendar",keys:["planner","fttasks","myactivity"]},
+  {n:"Leads and recruiting",ic:"target",keys:["leadlink","prospects","pipeline","recruits"]},
+  {n:"Sales tools",ic:"chat",keys:["scripts","objectiontraining","liveobjections","prospecting","ftemail","ftquickmsg"]},
+  {n:"My team",ic:"users",keys:["ftdashboard","ftreps","ftaccountability","fame"]},
+  {n:"Resources and profile",ic:"book",keys:["resources","schedule","ftprofile"]},
+];
+function buildNavGroups(items,pinnedKeys,groupDefs){
+  const byKey={};
+  items.forEach(it=>{byKey[it.k]=it;});
+  const used={};
+  const pinned=[];
+  pinnedKeys.forEach(k=>{if(byKey[k]&&!used[k]){pinned.push(byKey[k]);used[k]=1;}});
+  let groups=groupDefs.map(g=>{
+    const its=[];
+    g.keys.forEach(k=>{if(byKey[k]&&!used[k]){its.push(byKey[k]);used[k]=1;}});
+    return {n:g.n,ic:g.ic,foldInto:g.foldInto,items:its};
+  });
+  groups.forEach(g=>{
+    if(g.foldInto&&g.items.length<2){
+      const target=groups.find(x=>x.n===g.foldInto&&x!==g);
+      if(target){target.items=target.items.concat(g.items);g.items=[];}
+    }
+  });
+  groups=groups.filter(g=>g.items.length>0);
+  const leftovers=items.filter(it=>!used[it.k]);
+  if(leftovers.length) groups.push({n:"More",ic:"more",items:leftovers});
+  return {pinned,groups};
+}
+// ── END NAV GROUPING LOGIC ──
+
+// Renders pinned tabs, then one collapsible drawer per group. Each sidebar passes in its own
+// renderRow so rows keep their existing look, dots, and click behavior. Which drawer is open
+// is held by the caller (navOpen) so it survives re-renders. With no manual choice for the
+// current page, the drawer containing the current page opens by itself.
+function GroupedNav({items,pinnedKeys,groupDefs,activeKey,onSelect,navOpen,setNavOpen,renderRow,hasDot}){
+  const {pinned,groups}=buildNavGroups(items,pinnedKeys,groupDefs);
+  const activeGroupIdx=groups.findIndex(g=>g.items.some(it=>it.k===activeKey));
+  let openIdx;
+  if(navOpen&&navOpen.forKey===activeKey) openIdx=navOpen.idx;
+  else if(activeGroupIdx>=0) openIdx=activeGroupIdx;
+  else openIdx=navOpen?navOpen.idx:-1;
+  const pick=(k,gi)=>()=>{
+    if(gi>=0) setNavOpen({forKey:k,idx:gi});
+    onSelect(k);
+  };
+  return <>
+    {pinned.map(it=>renderRow(it,false,pick(it.k,-1)))}
+    {pinned.length>0&&groups.length>0&&<div style={{height:1,background:"rgba(255,255,255,0.1)",margin:"6px 6px"}}/>}
+    {groups.map((g,gi)=>{
+      const isOpen=openIdx===gi;
+      const holdsActive=gi===activeGroupIdx;
+      const dot=!isOpen&&g.items.some(it=>hasDot(it));
+      return <div key={g.n}>
+        <button onClick={()=>setNavOpen({forKey:activeKey,idx:isOpen?-1:gi})} aria-expanded={isOpen} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:holdsActive?C.teal:"white"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={NAV_GROUP_ICONS[g.ic]||NAV_GROUP_ICONS.more}/></svg>
+          <span style={{fontSize:13,fontWeight:600,flex:1}}>{g.n}</span>
+          {dot&&<div title="Something in here needs your attention" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+          <span style={{fontSize:11,color:"rgba(255,255,255,0.45)"}}>{g.items.length}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d={isOpen?"M6 9l6 6 6-6":"M9 18l6-6-6-6"}/></svg>
+        </button>
+        {isOpen&&g.items.map(it=>renderRow(it,true,pick(it.k,gi)))}
+      </div>;
+    })}
+  </>;
+}
+
 function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null,hasUnattendedTasks=false,hasNewLead=false}) {
+  const [navOpen,setNavOpen]=useState(null);
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
@@ -11017,13 +11121,15 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
       </a>
     </div>
     <nav style={{flex:1,padding:"10px 7px",overflowY:"auto"}}>
-      {nav.map(item=><button key={item.k} onClick={()=>{onNav(item.k);onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>
-        <span style={{fontSize:13,fontWeight:section===item.k?600:400,flex:1}}>{item.l}</span>
-        {item.k==="mytasks"&&hasUnattendedTasks&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
-        {item.k==="mypipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
-        {section===item.k&&<div style={{width:3,height:3,borderRadius:2,background:C.teal,flexShrink:0,marginLeft:6}}/>}
-      </button>)}
+      <GroupedNav items={nav} pinnedKeys={ADMIN_NAV_PINNED} groupDefs={ADMIN_NAV_GROUPS} activeKey={section} onSelect={onNav} navOpen={navOpen} setNavOpen={setNavOpen}
+        hasDot={item=>(item.k==="mytasks"&&hasUnattendedTasks)||(item.k==="mypipeline"&&hasNewLead)}
+        renderRow={(item,isKid,select)=><button key={item.k} onClick={()=>{select();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:isKid?"7px 9px 7px 32px":"8px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:section===item.k?"rgba(14,165,160,0.15)":"transparent",color:section===item.k?C.teal:"rgba(255,255,255,0.6)"}} onMouseEnter={e=>{if(section!==item.k)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(section!==item.k)e.currentTarget.style.background="transparent";}}>
+          {!isKid&&<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.d}/></svg>}
+          <span style={{fontSize:13,fontWeight:section===item.k?600:400,flex:1}}>{item.l}</span>
+          {item.k==="mytasks"&&hasUnattendedTasks&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+          {item.k==="mypipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+          {section===item.k&&<div style={{width:3,height:3,borderRadius:2,background:C.teal,flexShrink:0,marginLeft:6}}/>}
+        </button>}/>
       <div style={{borderTop:`1px solid ${C.borderLight}`,marginTop:8,paddingTop:8}}>
         {[{l:"App Tour",fn:onShowTour},{l:"Add to Phone",fn:onShowPhone}].map(btn=><button key={btn.l} onClick={()=>{btn.fn();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"7px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:"rgba(255,255,255,0.45)",fontSize:13}}>{btn.l}</button>)}
       </div>
