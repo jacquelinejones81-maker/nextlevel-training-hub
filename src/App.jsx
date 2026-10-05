@@ -402,8 +402,22 @@ function getThreeByThreeStatus(rep){
   const hoursLeft=Math.floor(msLeft/(60*60*1000));
   const daysLeft=Math.floor(hoursLeft/24);
   const remHours=hoursLeft%24;
-  const label=daysLeft>0?`${daysLeft}d ${remHours}h left`:`${remHours}h left`;
-  return {active:true,label};
+  const big=hoursLeft<1?"<1h":(daysLeft>0?`${daysLeft}d ${remHours}h`:`${remHours}h`);
+  return {active:true,label:big+" left",big};
+}
+
+// Which DGO link and which 3x3x3 video a rep's card shows, and whether their admin has
+// turned the card off. Same rule for both links: the rep's own trainer's first, then that
+// trainer's (or the rep's own) assigned admin's. There is deliberately no Hub-wide fallback,
+// so a rep never sees another team's calendar or another leader's video.
+function resolveThreeByThree(rep,data){
+  const repTrainer=(data?.trainers||[]).find(t=>t.id===rep.trainerId);
+  const repAdmin=(data?.admins||[]).find(a=>a.id===(repTrainer?.adminId||rep.adminId));
+  return {
+    optedOut:!!(repAdmin&&repAdmin.threeByThreeEnabled===false),
+    dgoLink:repTrainer?.dgoLink||repAdmin?.dgoLink||null,
+    videoUrl:repTrainer?.threeByThreeVideoUrl||repAdmin?.threeByThreeVideoUrl||null,
+  };
 }
 
 // ── DATA EXPORT ──
@@ -2095,31 +2109,51 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       </div>;
     })()}
     {!readOnly&&rep.track==="licensed"&&<MyLeads repName={rep.name}/>}
-    {/* ── 3x3x3 CHALLENGE BANNER (first 3 days only, unlicensed reps, admin can opt their
-        downline out entirely in Team Management — defaults to on) ── */}
+    {/* ── 3x3x3 CHALLENGE CARD (first 3 days only, unlicensed reps). An admin can opt their
+        downline out entirely in Team Management — defaults to on. Video and DGO link come
+        from the rep's own trainer, then their admin. ── */}
     {!readOnly&&rep.track!=="licensed"&&(()=>{
       const status=getThreeByThreeStatus(rep);
       if(!status) return null;
-      const repTrainer=(data?.trainers||[]).find(t=>t.id===rep.trainerId);
-      const repAdmin=(data?.admins||[]).find(a=>a.id===(repTrainer?.adminId||rep.adminId));
-      if(repAdmin&&repAdmin.threeByThreeEnabled===false) return null;
-      // DGO link: the rep's own trainer's link first, then that trainer's (or the rep's
-      // own) assigned admin's link — never a hardcoded default, so it's always the right
-      // person's calendar, never someone else's.
-      const dgoLink=repTrainer?.dgoLink||repAdmin?.dgoLink||null;
-      return <div style={{borderRadius:14,background:"linear-gradient(135deg,#7c2d12,#c2410c 60%,"+C.gold+")",padding:"16px 18px",marginBottom:12,position:"relative",overflow:"hidden",boxShadow:"0 8px 24px rgba(194,65,12,0.3)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:800,color:"white",textTransform:"uppercase",letterSpacing:"1px"}}>🎯 Your First 3 Days</div>
-          <div style={{fontSize:11,fontWeight:800,color:"#7c2d12",background:"white",padding:"3px 10px",borderRadius:20}}>{status.label}</div>
+      const tt=resolveThreeByThree(rep,data);
+      if(tt.optedOut) return null;
+      return <div style={{borderRadius:16,background:"linear-gradient(135deg,#7c2d12 0%,#c2410c 55%,#ea580c 100%)",padding:"18px 18px 16px",marginBottom:14,position:"relative",overflow:"hidden",boxShadow:"0 10px 28px rgba(194,65,12,0.4)",border:"2px solid "+C.gold}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:12}}>
+          <div>
+            <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:2}}>🎯 The 3x3x3 Challenge</div>
+            <div style={{fontSize:38,fontWeight:900,color:"white",lineHeight:1}}>$600</div>
+            <div style={{fontSize:12,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"1px",marginTop:2}}>Bonus — go get it</div>
+          </div>
+          <div style={{background:"white",borderRadius:12,padding:"8px 12px",textAlign:"center",flexShrink:0}}>
+            <div style={{fontSize:9,fontWeight:800,color:"#7c2d12",textTransform:"uppercase",letterSpacing:"1px"}}>Time left</div>
+            <div style={{fontSize:28,fontWeight:900,color:"#7c2d12",lineHeight:1.1}}>{status.big}</div>
+          </div>
         </div>
-        <div style={{fontSize:16,color:"white",fontWeight:800,marginBottom:4}}>The 3x3x3 Challenge</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.92)",lineHeight:1.5,marginBottom:12}}>Get <strong>3 recruits</strong> and <strong>$3,000</strong> in life insurance premium within your first <strong>3 days</strong> — earn a <strong>$600 bonus</strong>. This is the single biggest head start you can give your business.</div>
-        {data?.threeByThreeVideoUrl&&<button onClick={()=>setShowThreeByThreeVideo(true)} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:"white",color:"#7c2d12",fontSize:13,fontWeight:800,cursor:"pointer",marginBottom:dgoLink?8:0}}>▶ Watch: How To Hit 3x3x3</button>}
-        {dgoLink&&<a href={dgoLink} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"10px",borderRadius:9,border:"2px solid white",color:"white",fontSize:13,fontWeight:800,textAlign:"center",textDecoration:"none",boxSizing:"border-box"}}>📅 Schedule Your DGO</a>}
-        {!data?.threeByThreeVideoUrl&&!dgoLink&&<div style={{fontSize:12,color:"rgba(255,255,255,0.75)",fontStyle:"italic"}}>Ask your trainer to walk you through exactly how to hit this.</div>}
+        <div style={{fontSize:15,fontWeight:800,color:"white",lineHeight:1.35,marginBottom:12}}>Hit all three in your first 3 days and the $600 is yours.</div>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          {[["3","Recruits"],["$3,000","Life premium"],["3","Days"]].map(([n,l])=><div key={l} style={{flex:1,background:"rgba(255,255,255,0.16)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"9px 4px",textAlign:"center"}}>
+            <div style={{fontSize:n.length>2?20:26,fontWeight:900,color:"white",lineHeight:1.1}}>{n}</div>
+            <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:"0.6px",marginTop:2}}>{l}</div>
+          </div>)}
+        </div>
+        <div style={{background:"white",borderRadius:10,padding:"10px 12px",marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#7c2d12",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:3}}>Your first move</div>
+          <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1.4}}>Book your DGO and invite 20 people.</div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:5}}>Why this matters</div>
+          {[
+            "It's a $600 bonus for starting fast.",
+            "Your DGO is how you launch — the sooner it's booked, the sooner people show up.",
+            "Fast starters see the business work, and that momentum carries into everything else.",
+          ].map((t,i)=><div key={i} style={{display:"flex",gap:7,fontSize:13,color:"rgba(255,255,255,0.95)",lineHeight:1.45,marginBottom:3}}><span style={{color:C.gold,fontWeight:900}}>✓</span><span>{t}</span></div>)}
+        </div>
+        {tt.videoUrl&&<button onClick={()=>setShowThreeByThreeVideo(true)} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"white",color:"#7c2d12",fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:tt.dgoLink?8:0}}>▶ Watch: How To Hit 3x3x3</button>}
+        {tt.dgoLink&&<a href={tt.dgoLink} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"12px",borderRadius:10,border:"2px solid white",color:"white",fontSize:14,fontWeight:900,textAlign:"center",textDecoration:"none",boxSizing:"border-box"}}>📅 Schedule Your DGO</a>}
+        {!tt.videoUrl&&!tt.dgoLink&&<div style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontStyle:"italic"}}>Ask your trainer to walk you through exactly how to hit this.</div>}
       </div>;
     })()}
-    {showThreeByThreeVideo&&data?.threeByThreeVideoUrl&&<RewatchVideoModal videoUrl={data.threeByThreeVideoUrl} title="How To Hit 3x3x3" onClose={()=>setShowThreeByThreeVideo(false)}/>}
+    {showThreeByThreeVideo&&(()=>{const tt=resolveThreeByThree(rep,data);return tt.videoUrl?<RewatchVideoModal videoUrl={tt.videoUrl} title="How To Hit 3x3x3" onClose={()=>setShowThreeByThreeVideo(false)}/>:null;})()}
     {/* ── YOUR FOCUS BANNER (static reminder, unlicensed reps only) ── */}
     {!readOnly&&rep.track!=="licensed"&&<div style={{borderRadius:14,background:"linear-gradient(135deg,#0f172a 0%,#1e2a4a 50%,#3d2a5c 100%)",padding:"18px 18px 16px",marginBottom:12,position:"relative",overflow:"hidden",boxShadow:"0 8px 24px rgba(15,23,42,0.25)"}}>
       <div style={{position:"absolute",top:-40,right:-40,width:140,height:140,background:"radial-gradient(circle,rgba(212,160,23,0.35),transparent 70%)"}}/>
@@ -2921,6 +2955,7 @@ function ManageTeamPage({data,onUpdate}) {
         </div>
         <input placeholder="Booking link (shows in Appts tab for your assigned reps)" value={a.bookingLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,bookingLink:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <input placeholder="DGO link (shows in a new rep's 3x3x3 banner, scheduling their Digital Grand Opening)" value={a.dgoLink||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,dgoLink:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
+        <input placeholder="3x3x3 video link for your new reps (YouTube embed or Google Drive /preview link)" value={a.threeByThreeVideoUrl||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,threeByThreeVideoUrl:e.target.value.trim()}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <input placeholder="Phone (shown to MoneyMap as Your Financial Rep)" value={a.phone||""} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,phone:e.target.value}:ad);updateLocal({...localData,admins:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginTop:4}}>
           <input type="checkbox" checked={!!a.alsoRecruits} onChange={e=>{const u=admins.map((ad,j)=>j===i?{...ad,alsoRecruits:e.target.checked}:ad);updateLocal({...localData,admins:u});}}/>
@@ -2954,6 +2989,7 @@ function ManageTeamPage({data,onUpdate}) {
         </div>
         <input placeholder="Booking link (optional)" value={t.bookingLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,bookingLink:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <input placeholder="DGO link (shows in a new rep's 3x3x3 banner, scheduling their Digital Grand Opening)" value={t.dgoLink||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,dgoLink:e.target.value}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
+        <input placeholder="3x3x3 video link for your new reps (YouTube embed or Google Drive /preview link — leave blank to use your RVP's)" value={t.threeByThreeVideoUrl||""} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,threeByThreeVideoUrl:e.target.value.trim()}:tr);updateLocal({...localData,trainers:u});}} style={{width:"100%",padding:"4px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box",marginBottom:4}}/>
         <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
           <input type="checkbox" checked={!!t.locked} onChange={e=>{const u=trainers.map((tr,j)=>j===i?{...tr,locked:e.target.checked}:tr);updateLocal({...localData,trainers:u});}}/>
           <span style={{fontSize:13,color:t.locked?C.danger:C.textMid,fontWeight:t.locked?600:400}}>{t.locked?"🔒 Locked — can't log in":"Lock this account's access"}</span>
@@ -3015,7 +3051,6 @@ function ManageTeamPage({data,onUpdate}) {
         ["licensedVideoUrl","Licensed Now What Video (fires on first login as licensed)"],
         ["fieldTrainerVideoUrl","Field Trainer Video (fires on first login as field trainer)"],
         ["rvpPathVideoUrl","RVP Path Video (fires on first login to RVP path)"],
-        ["threeByThreeVideoUrl","3x3x3 Challenge Video (shown in the first-3-days banner on a new rep's checklist)"],
       ].map(([k,l])=><div key={k} style={{marginBottom:10}}>
         <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>{l}</div>
         <input placeholder="YouTube embed URL or Google Drive /preview URL" value={localData[k]||""} onChange={e=>updateLocal({...localData,[k]:e.target.value.trim()})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:12,color:C.text,boxSizing:"border-box"}}/>
