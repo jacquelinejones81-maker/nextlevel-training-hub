@@ -487,6 +487,9 @@ function buildExportSheets(data,repIds,dateRange){
           if(!person.name||!person.name.trim()) return;
           becFollowUps.push({RepName:p.name||"",Client:e.client||"",Role:"Beneficiary",Name:person.name||"",Phone:person.phone||"",Email:person.email||"",Contacted:person.contacted?"Yes":"No"});
         });
+        if(bec.contingent&&bec.contingent.name&&bec.contingent.name.trim()){
+          becFollowUps.push({RepName:p.name||"",Client:e.client||"",Role:"Contingent Beneficiary",Name:bec.contingent.name||"",Phone:bec.contingent.phone||"",Email:bec.contingent.email||"",Contacted:bec.contingent.contacted?"Yes":"No"});
+        }
         (bec.emergencyContacts||[]).forEach(person=>{
           if(!person.name||!person.name.trim()) return;
           becFollowUps.push({RepName:p.name||"",Client:e.client||"",Role:"Emergency Contact",Name:person.name||"",Phone:person.phone||"",Email:person.email||"",Contacted:person.contacted?"Yes":"No"});
@@ -2519,6 +2522,8 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
   const [na,setNa]=useState({clientName:"",premium:"",date:localDateStr()});
   const [ni,setNi]=useState({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});
   const [addPrem,setAddPrem]=useState("");
+  const [showInvForm,setShowInvForm]=useState(false);
+  const [editInvGoals,setEditInvGoals]=useState(false);
   const apps=myProd.lifeApps||[];
   const invs=myProd.investments||[];
   // Same pattern as Life Apps — list defaults to this month only, running totals above
@@ -2562,13 +2567,51 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
         </div>}
         {apps.map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{color:C.text}}>{a.clientName}</span><div style={{display:"flex",gap:7,alignItems:"center"}}>{a.premium&&<span style={{color:C.gold}}>${a.premium}/mo</span>}<button onClick={()=>onUpdate({...myProd,lifeApps:apps.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>x</button></div></div>)}
       </div>}
-      {tab==="investments"&&<div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:10}}>{[[invs.length,"Investments",C.teal],[invs.filter(i=>Number(i.pac)>0).length,"PAC Accounts",C.purple],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={{background:c+"11",borderRadius:8,padding:"7px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:9,color:C.textMid}}>{l}</div></div>)}</div>
-        {investmentsOnly&&<div style={{background:C.purple+"08",border:`1px solid ${C.purple}33`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.purple}}>{showLastMonthGoals?"Last Month's Results":"Monthly Investment Goals"}</div>
-            {prevMonthStart&&<button onClick={()=>setShowLastMonthGoals(!showLastMonthGoals)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.purple}44`,background:showLastMonthGoals?C.purple:"white",color:showLastMonthGoals?"white":C.purple,cursor:"pointer",fontWeight:600}}>{showLastMonthGoals?"← Back to This Month":"View Last Month"}</button>}
+      {tab==="investments"&&(()=>{
+        const goalCount=Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start))||0;
+        const goalPAC=Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start))||0;
+        const goalLump=Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start))||0;
+        const pacCountNow=invs.filter(i=>Number(i.pac)>0).length;
+        const invField={padding:"9px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:15,color:C.text,boxSizing:"border-box",width:"100%",background:"white"};
+        const invTile={border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",background:C.surface};
+        const invTileLabel={fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"};
+        const goalRow=(label,valueText,color,pctNum)=><div style={{flex:"1 1 200px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6}}><span style={{fontSize:14,fontWeight:700,color:C.text}}>{label}</span><span style={{fontSize:13,fontWeight:800,color}}>{valueText}</span></div>
+          <div style={{height:8,background:"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",marginTop:6}}><div style={{height:"100%",borderRadius:4,background:color,width:Math.min(100,Math.round(pctNum))+"%"}}/></div>
+        </div>;
+        const goalInput=(label,unit,placeholder,field)=><div style={{flex:"1 1 200px"}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>{label}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <input type="number" placeholder={placeholder} value={getMonthlyGoal(myProd[field],pmForGoals.start)} onChange={e=>onUpdate({...myProd,[field]:setMonthlyGoal(myProd[field],pmForGoals.start,e.target.value)})} style={{...invField,fontSize:14,padding:"7px 9px"}}/>
+            <span style={{fontSize:12,color:C.textMid,whiteSpace:"nowrap"}}>{unit}</span>
           </div>
+        </div>;
+        return <div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,marginBottom:12}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"}}>{showLastMonthGoals?"Last month":pmForGoals.label}</div>
+          <div style={{display:"flex",gap:8}}>
+            {investmentsOnly&&prevMonthStart&&<button onClick={()=>setShowLastMonthGoals(!showLastMonthGoals)} style={{fontSize:13,padding:"8px 14px",borderRadius:8,border:`1px solid ${C.border}`,background:showLastMonthGoals?C.navy:"white",color:showLastMonthGoals?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showLastMonthGoals?"← Back to This Month":"View Last Month"}</button>}
+            <button onClick={()=>setShowInvForm(!showInvForm)} style={{fontSize:13,padding:"8px 16px",borderRadius:8,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:700}}>{showInvForm?"Close form":"+ Log Investment"}</button>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:14}}>{[[invs.length,"Investments",C.teal],[pacCountNow,"PAC Accounts",C.purple],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={invTile}><div style={invTileLabel}>{l}</div><div style={{fontSize:dv(20,28),fontWeight:800,color:c,marginTop:4}}>{v}</div></div>)}</div>
+        {showInvForm&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:dv(14,22),marginBottom:14,maxWidth:760}}>
+          <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:12}}>Log an Investment</div>
+          <label style={{display:"block",fontSize:13,fontWeight:600,color:C.text,marginBottom:12}}>Client name<input placeholder="Client Name" value={ni.clientName} onChange={e=>setNi({...ni,clientName:e.target.value})} style={{...invField,marginTop:4}}/></label>
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:6}}>Product type</div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12}}>
+            {["Mutual Fund","Annuity"].map(t=><button key={t} onClick={()=>setNi({...ni,type:t})} style={{flex:"1 1 180px",padding:"12px 14px",borderRadius:10,border:`2px solid ${ni.type===t?C.purple:C.border}`,background:ni.type===t?C.purple+"11":"white",cursor:"pointer",textAlign:"left",fontSize:15,fontWeight:700,color:C.text}}>{t}</button>)}
+          </div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:14}}>
+            <label style={{flex:"1 1 200px",fontSize:13,fontWeight:600,color:C.text}}>PAC $/mo<input placeholder="PAC $/mo" value={ni.pac} onChange={e=>setNi({...ni,pac:e.target.value})} style={{...invField,marginTop:4}}/></label>
+            <label style={{flex:"1 1 200px",fontSize:13,fontWeight:600,color:C.text}}>Lump Sum $<input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{...invField,marginTop:4}}/></label>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+            <button onClick={()=>setShowInvForm(false)} style={{padding:"10px 18px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid,fontWeight:600}}>Cancel</button>
+            <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:localDateStr()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});setShowInvForm(false);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:C.purple,color:"white",cursor:"pointer",fontSize:14,fontWeight:700}}>Save Investment</button>
+          </div>
+        </div>}
+        {investmentsOnly&&<div style={{border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 18px",marginBottom:14}}>
           {showLastMonthGoals?
             (()=>{
               const lastMonthInvs = invs.filter(i=>i.date&&i.date>=prevMonthStart&&i.date<pmForGoals.start);
@@ -2576,83 +2619,51 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
               const lmPACTotal = lastMonthInvs.reduce((s,i)=>s+(Number(i.pac)||0),0);
               const lmLumpTotal = lastMonthInvs.reduce((s,i)=>s+(Number(String(i.lumpSum||"").replace(/[$,]/g,""))||0),0);
               return <div>
-                <div style={{fontSize:11,color:C.textMid,marginBottom:8}}>What you actually logged last Primerica month:</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
-                  <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>{lmPAC}</div><div style={{fontSize:9,color:C.textMid}}>PAC Accounts</div></div>
-                  <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.gold}}>${lmPACTotal.toLocaleString()}/mo</div><div style={{fontSize:9,color:C.textMid}}>PAC Total</div></div>
-                  <div style={{background:"white",borderRadius:7,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.purple}}>${lmLumpTotal.toLocaleString()}</div><div style={{fontSize:9,color:C.textMid}}>Lump Sum</div></div>
+                <div style={{fontSize:13,color:C.textMid,marginBottom:10}}>What you actually logged last Primerica month:</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:10}}>
+                  <div style={invTile}><div style={invTileLabel}>PAC Accounts</div><div style={{fontSize:22,fontWeight:800,color:C.purple,marginTop:2}}>{lmPAC}</div></div>
+                  <div style={invTile}><div style={invTileLabel}>PAC Total</div><div style={{fontSize:22,fontWeight:800,color:C.gold,marginTop:2}}>${lmPACTotal.toLocaleString()}/mo</div></div>
+                  <div style={invTile}><div style={invTileLabel}>Lump Sum</div><div style={{fontSize:22,fontWeight:800,color:C.purple,marginTop:2}}>${lmLumpTotal.toLocaleString()}</div></div>
                 </div>
-                {lastMonthInvs.length===0&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",padding:"6px 0"}}>Nothing logged last month.</div>}
-                {lastMonthInvs.map((inv,i)=><div key={i} style={{padding:"5px 0",borderTop:"1px solid "+C.border,fontSize:13}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><span style={{color:C.textMid}}> — {inv.type}{inv.pac?` · $${inv.pac}/mo`:""}{inv.lumpSum?` · $${Number(inv.lumpSum).toLocaleString()} lump`:""}</span></div>)}
+                {lastMonthInvs.length===0&&<div style={{fontSize:14,color:C.textLight,textAlign:"center",padding:"6px 0"}}>Nothing logged last month.</div>}
+                {lastMonthInvs.map((inv,i)=><div key={i} style={{padding:"7px 0",borderTop:"1px solid "+C.border,fontSize:14}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><span style={{color:C.textMid}}> — {inv.type}{inv.pac?` · $${inv.pac}/mo`:""}{inv.lumpSum?` · $${Number(inv.lumpSum).toLocaleString()} lump`:""}</span></div>)}
               </div>;
             })()
           :<>
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>PAC Goal — # of Accounts</div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input type="number" placeholder="e.g. 10" value={getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start)} onChange={e=>onUpdate({...myProd,monthlyPACCountGoals:setMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-              <span style={{fontSize:13,color:C.textMid}}>PAC accounts</span>
-            </div>
-            {getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start)&&Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start))>0&&<div style={{marginTop:6}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
-                <span>PAC Count Progress</span>
-                <span style={{fontWeight:700,color:C.purple}}>{invs.filter(i=>Number(i.pac)>0).length} / {Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start))}</span>
-              </div>
-              <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((invs.filter(i=>Number(i.pac)>0).length/Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start)))*100))+"%"}}/>
-              </div>
-            </div>}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,gap:8}}>
+            <div style={{fontSize:13,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"}}>Monthly investment goals</div>
+            <button onClick={()=>setEditInvGoals(!editInvGoals)} style={{fontSize:12,padding:"5px 11px",borderRadius:7,border:`1px solid ${C.purple}55`,background:editInvGoals?C.purple:"white",color:editInvGoals?"white":C.purple,cursor:"pointer",fontWeight:700}}>{editInvGoals?"Done":"Edit goals"}</button>
           </div>
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>PAC Goal — $/mo Total</div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input type="number" placeholder="e.g. 5000" value={getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)} onChange={e=>onUpdate({...myProd,monthlyPACGoals:setMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-              <span style={{fontSize:13,color:C.textMid}}>/mo</span>
-            </div>
-            {getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)&&Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start))>0&&<div style={{marginTop:6}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
-                <span>PAC Progress</span>
-                <span style={{fontWeight:700,color:C.gold}}>${Math.round(totPAC).toLocaleString()}/mo / ${Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)).toLocaleString()}/mo</span>
-              </div>
-              <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:3,background:C.gold,width:Math.min(100,Math.round((totPAC/Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start)))*100))+"%"}}/>
-              </div>
-            </div>}
-          </div>
-          <div>
-            <div style={{fontSize:11,fontWeight:600,color:C.text,marginBottom:3}}>Lump Sum Goal ($ this month)</div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input type="number" placeholder="e.g. 250000" value={getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)} onChange={e=>onUpdate({...myProd,monthlyLumpGoals:setMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"6px 9px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-              <span style={{fontSize:13,color:C.textMid}}>this month</span>
-            </div>
-            {getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)&&Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start))>0&&<div style={{marginTop:6}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.textMid,marginBottom:3}}>
-                <span>Lump Sum Progress</span>
-                <span style={{fontWeight:700,color:C.purple}}>${Math.round(totLump).toLocaleString()} / ${Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)).toLocaleString()}</span>
-              </div>
-              <div style={{height:6,background:"rgba(0,0,0,0.08)",borderRadius:3,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:3,background:C.purple,width:Math.min(100,Math.round((totLump/Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start)))*100))+"%"}}/>
-              </div>
-            </div>}
-          </div>
+          {editInvGoals&&<div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:14}}>
+            {goalInput("PAC Goal — # of Accounts","PAC accounts","e.g. 10","monthlyPACCountGoals")}
+            {goalInput("PAC Goal — $/mo Total","/mo","e.g. 5000","monthlyPACGoals")}
+            {goalInput("Lump Sum Goal ($ this month)","this month","e.g. 250000","monthlyLumpGoals")}
+          </div>}
+          {goalCount>0||goalPAC>0||goalLump>0?<div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+            {goalCount>0&&goalRow("PAC accounts",`${pacCountNow} / ${goalCount}`,C.purple,(pacCountNow/goalCount)*100)}
+            {goalPAC>0&&goalRow("PAC $/mo",`$${Math.round(totPAC).toLocaleString()}/mo / $${goalPAC.toLocaleString()}/mo`,C.gold,(totPAC/goalPAC)*100)}
+            {goalLump>0&&goalRow("Lump sum",`$${Math.round(totLump).toLocaleString()} / $${goalLump.toLocaleString()}`,C.purple,(totLump/goalLump)*100)}
+          </div>:<div style={{fontSize:13,color:C.textLight}}>No goals set for this month yet — tap "Edit goals" to add them.</div>}
           </>}
         </div>}
-        <div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:6}}>Log New Investment</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-            <input placeholder="Client Name" value={ni.clientName} onChange={e=>setNi({...ni,clientName:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <input placeholder="PAC $/mo" value={ni.pac} onChange={e=>setNi({...ni,pac:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <input type="number" placeholder="Lump Sum $" value={ni.lumpSum} onChange={e=>setNi({...ni,lumpSum:e.target.value})} style={{padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-            <select value={ni.type} onChange={e=>setNi({...ni,type:e.target.value})} style={{gridColumn:"span 2",padding:"5px 7px",borderRadius:6,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option>Mutual Fund</option><option>Annuity</option></select>
-          </div>
-          <button onClick={()=>{if(!ni.clientName)return;onUpdate({...myProd,investments:[...invs,{...ni,id:Date.now(),date:localDateStr()}]});setNi({clientName:"",pac:"",lumpSum:"",type:"Mutual Fund"});}} style={{marginTop:7,width:"100%",padding:"6px",borderRadius:7,background:C.gold,color:"white",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>+ Log New Investment</button>
-        </div>
-        {invs.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:2}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{showAllInvHistory?"All Time":pmForGoals.label}</div>
-          {olderInvsCount>0&&<button onClick={()=>setShowAllInvHistory(!showAllInvHistory)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showAllInvHistory?C.navy:"white",color:showAllInvHistory?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showAllInvHistory?"← Just This Month":"View Full History ("+olderInvsCount+")"}</button>}
+        {invs.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:8,flexWrap:"wrap"}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"}}>{showAllInvHistory?"All Time":"Logged this month"} ({displayInvs.length})</div>
+          {olderInvsCount>0&&<button onClick={()=>setShowAllInvHistory(!showAllInvHistory)} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"1px solid "+C.border,background:showAllInvHistory?C.navy:"white",color:showAllInvHistory?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showAllInvHistory?"← Just This Month":"View Full History ("+olderInvsCount+")"}</button>}
         </div>}
-        {displayInvs.map((inv)=>{const i=invs.indexOf(inv);return <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.text,fontWeight:600}}>{inv.clientName}</span><button onClick={()=>onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer"}}>x</button></div><div style={{color:C.textMid,display:"flex",gap:6,marginTop:1}}><Badge color={C.teal} small>{inv.type}</Badge>{inv.pac&&<span>PAC: ${inv.pac}/mo</span>}{inv.lumpSum&&<span>Lump: ${inv.lumpSum}</span>}</div></div>;})}
-      </div>}
+        {displayInvs.map((inv)=>{const i=invs.indexOf(inv);return <div key={i} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.text}}>{inv.clientName}</div>
+            <div style={{fontSize:12,color:C.textMid}}>{inv.date||""}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <Badge color={C.teal} small>{inv.type}</Badge>
+            {inv.pac&&<span style={{fontSize:15,fontWeight:800,color:C.gold}}>PAC ${inv.pac}/mo</span>}
+            {inv.lumpSum&&<span style={{fontSize:15,fontWeight:800,color:C.purple}}>Lump ${Number(String(inv.lumpSum).replace(/[$,]/g,"")).toLocaleString()}</span>}
+            <button aria-label={"Remove "+inv.clientName} onClick={()=>{if(window.confirm("Remove this investment from your list?"))onUpdate({...myProd,investments:invs.filter((_,j)=>j!==i)});}} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:16}}>x</button>
+          </div>
+        </div>;})}
+        </div>;
+      })()}
     </div>}
   </Card>;
 }
@@ -8396,15 +8407,17 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   useEffect(()=>{repRef.current=rep;},[rep]);
   const [goalInput,setGoalInput]=useState(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));
   useEffect(()=>{setGoalInput(getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start));},[rep.monthlyIncomeGoals,pmForGoals.start]);
-  const blankForm=()=>({client:"",premium:"",date:localDateStr(),cod:false,bec:{beneficiaries:[],emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]}});
+  const blankForm=()=>({client:"",premium:"",date:localDateStr(),cod:false,bec:{beneficiaries:[{name:"",phone:"",email:"",contacted:false}],contingent:{name:"",phone:"",email:"",contacted:false},emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]}});
   const [form,setForm] = useState(blankForm());
   const [show,setShow] = useState(false);
   const [calcPremium,setCalcPremium] = useState("");
   // BEC (Beneficiary & Emergency Contact) follow-up — keyed per entry index, since each
   // Life App entry has its own independent expand state and script-visibility state.
-  const [becOpenIdx,setBecOpenIdx]=useState(null);
+  const [selIdx,setSelIdx]=useState(null);
   const [scriptOpenKey,setScriptOpenKey]=useState(null);
-  const blankBec=()=>({beneficiaries:[],emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]});
+  const [editPersonKey,setEditPersonKey]=useState(null);
+  const [onlyOpenFU,setOnlyOpenFU]=useState(false);
+  const blankBec=()=>({beneficiaries:[],contingent:{name:"",phone:"",email:"",contacted:false},emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]});
   const updateBec=(realIdx,patch)=>{
     const entries=rep.selfPremium||[];
     const current=entries[realIdx]?.bec||blankBec();
@@ -8495,226 +8508,282 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
 
   const calcResult = calcCommission(calcPremium);
 
-  return <Card style={{marginBottom:12,border:"1px solid "+C.teal+"33"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div>
-        <div style={{fontSize:13,fontWeight:700,color:C.text}}>My Life Apps</div>
-        <div style={{fontSize:13,color:C.textMid}}>Running total: <span style={{color:C.teal,fontWeight:700}}>${total.toFixed(0)}/mo</span> · <span style={{color:C.gold,fontWeight:600}}>{promo.label} ({promo.pct}%)</span></div>
+  // ── Desktop-friendly layout helpers (display only — no totals, goals, or saved fields change) ──
+  const blankP=()=>({name:"",phone:"",email:"",contacted:false});
+  const fieldStyle={padding:"8px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:14,color:C.text,boxSizing:"border-box",width:"100%",background:"white"};
+  const tileStyle={border:"1px solid "+C.border,borderRadius:12,padding:"14px 16px",background:C.surface};
+  const tileLabel={fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"};
+  const sectionLabel={fontSize:13,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"};
+  const becNamed=(p)=>!!(p&&p.name&&p.name.trim());
+  const becPeopleOf=(e)=>{
+    const b=e.bec||blankBec();
+    return [...(b.beneficiaries||[]),...(b.contingent?[b.contingent]:[]),...(b.emergencyContacts||[])].filter(becNamed);
+  };
+  const renderScript=(lines)=>{
+    const main=lines.filter(l=>!/^IF (YES|NO):/.test(l));
+    const yes=lines.find(l=>/^IF YES:/.test(l));
+    const no=lines.find(l=>/^IF NO:/.test(l));
+    return <div>
+      <div style={{maxWidth:720}}>
+        {main.map((line,li)=><div key={li} style={{marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:3}}>Step {li+1}</div>
+          <div style={{fontSize:15,lineHeight:1.7,color:C.text,fontWeight:500}}>{line}</div>
+        </div>)}
       </div>
-      {!readOnly&&<button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"4px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Log</button>}
+      <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+        {yes&&<div style={{flex:"1 1 280px",background:"white",border:"1px solid "+C.success+"55",borderRadius:10,padding:"12px 14px"}}>
+          <div style={{fontSize:12,fontWeight:800,color:C.success,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:4}}>If yes</div>
+          <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{yes.replace(/^IF YES:\s*/,"")}</div>
+        </div>}
+        {no&&<div style={{flex:"1 1 280px",background:"white",border:"1px solid "+C.danger+"55",borderRadius:10,padding:"12px 14px"}}>
+          <div style={{fontSize:12,fontWeight:800,color:C.danger,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:4}}>If no</div>
+          <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{no.replace(/^IF NO:\s*/,"")}</div>
+        </div>}
+      </div>
+    </div>;
+  };
+  // Log-form field group for one person (beneficiary / contingent / emergency contact)
+  const formPerson=(key,label,p,onChange,onRemove)=><div key={key} style={{border:"1px solid "+C.border,borderRadius:10,padding:"10px 12px",background:"white",marginBottom:8}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+      <div style={{fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
+      {onRemove&&<button onClick={onRemove} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Remove</button>}
     </div>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+      <input aria-label={label+" name"} placeholder="Name" value={p.name} onChange={ev=>onChange({...p,name:ev.target.value})} style={{...fieldStyle,flex:"1 1 160px",width:"auto"}}/>
+      <input aria-label={label+" phone"} placeholder="Phone" value={p.phone} onChange={ev=>onChange({...p,phone:ev.target.value})} style={{...fieldStyle,flex:"1 1 130px",width:"auto"}}/>
+      <input aria-label={label+" email"} placeholder="Email" value={p.email} onChange={ev=>onChange({...p,email:ev.target.value})} style={{...fieldStyle,flex:"1 1 180px",width:"auto"}}/>
+    </div>
+  </div>;
 
-    {/* Monthly Income Goal */}
-    <div style={{background:C.surface,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{showLastMonthGoal?"Last Month":pmForGoals.label}</div>
-        {!readOnly&&prevMonthStartLPE&&<button onClick={()=>setShowLastMonthGoal(!showLastMonthGoal)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showLastMonthGoal?C.navy:"white",color:showLastMonthGoal?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showLastMonthGoal?"← Back":"View Last Month"}</button>}
-      </div>
-      {showLastMonthGoal?
-        (()=>{
-          const lastMonthEntries = entries.filter(e=>e.date&&e.date>=prevMonthStartLPE&&e.date<pmForGoals.start);
-          return <div>
-            <div style={{fontSize:11,color:C.textLight,marginBottom:6}}>What you actually logged last Primerica month:</div>
-            {lastMonthEntries.length===0&&<div style={{fontSize:12,color:C.textLight,textAlign:"center",padding:"6px 0"}}>Nothing logged last month.</div>}
-            {lastMonthEntries.map((e,i)=>{
-              const isDeclined=e.cod&&!!e.codDeclined;
-              const isPending=e.cod&&!e.codAccepted&&!isDeclined;
-              return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderTop:i>0?"1px solid "+C.border:"none",fontSize:13}}>
-                <span style={{color:isDeclined?C.textLight:C.text,fontWeight:600,textDecoration:isDeclined?"line-through":"none"}}>{e.client}{e.cod&&<span style={{marginLeft:6,fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:4,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success}}>{isDeclined?"COD Declined":isPending?"COD Pending":"COD Accepted"}</span>}</span>
-                <span style={{color:isDeclined?C.textLight:C.teal,fontWeight:600}}>${e.premium}/mo</span>
-              </div>;
-            })}
-          </div>;
-        })()
-      :<>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:goal>0?8:0}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:"nowrap"}}>Monthly Income Goal $</div>
-        {readOnly?<div style={{fontSize:13,fontWeight:700,color:C.text}}>${goal.toLocaleString()}</div>:<input type="number" placeholder="e.g. 2000" value={getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start)} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoals:setMonthlyGoal(repRef.current.monthlyIncomeGoals,pmForGoals.start,e.target.value)})} style={{flex:1,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text,maxWidth:100}}/>}
-        {goal>0&&<div style={{fontSize:13,color:C.textMid,whiteSpace:"nowrap"}}>Earned: <strong style={{color:C.success}}>${thisMonthEarned.toFixed(0)}</strong></div>}
-      </div>
-      {goal>0&&<div>
-        <div style={{height:8,background:"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",marginBottom:4}}>
-          <div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${C.teal},${C.success})`,width:goalPct+"%",transition:"width 0.4s"}}/>
+  // Selected entry for the follow-up panel (defaults to the newest entry shown)
+  const shownList=displayEntries.slice().reverse();
+  const selEntry=shownList.find(e=>entries.indexOf(e)===selIdx)||shownList[0]||null;
+  const selReal=selEntry?entries.indexOf(selEntry):-1;
+  const listForRows=onlyOpenFU?shownList.filter(e=>{const ppl=becPeopleOf(e);return ppl.length===0||ppl.some(p=>!p.contacted);}):shownList;
+
+  const renderDetail=()=>{
+    const e=selEntry; const realIdx=selReal;
+    const c=calcCommission(e.premium);
+    const isCOD=!!e.cod; const isDeclined=isCOD&&!!e.codDeclined; const isPending=isCOD&&!e.codAccepted&&!isDeclined;
+    const bec=e.bec||blankBec();
+    const bens=(bec.beneficiaries&&bec.beneficiaries.length)?bec.beneficiaries:[blankP()];
+    const people=[
+      ...bens.map((p,pi)=>({key:"ben-"+pi,role:bens.length>1?"Beneficiary "+(pi+1):"Beneficiary",kind:"ben",p,
+        set:np=>updateBec(realIdx,{beneficiaries:bens.map((x,j)=>j===pi?np:x)}),
+        remove:bens.length>1?()=>updateBec(realIdx,{beneficiaries:bens.filter((_,j)=>j!==pi)}):null})),
+      {key:"con",role:"Contingent beneficiary",kind:"ben",p:bec.contingent||blankP(),set:np=>updateBec(realIdx,{contingent:np}),remove:null},
+      ...(bec.emergencyContacts||blankBec().emergencyContacts).map((p,pi)=>({key:"ec-"+pi,role:"Emergency contact "+(pi+1),kind:"ec",p,
+        set:np=>updateBec(realIdx,{emergencyContacts:(bec.emergencyContacts||blankBec().emergencyContacts).map((x,j)=>j===pi?np:x)}),remove:null})),
+    ];
+    const named=people.filter(x=>becNamed(x.p));
+    const doneCount=named.filter(x=>x.p.contacted).length;
+    const activePerson=people.find(x=>x.key===scriptOpenKey&&true);
+    return <div style={{flex:"1 1 460px",minWidth:0,border:"1px solid "+C.border,borderRadius:14,padding:"18px 20px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:10}}>
+        <div>
+          <div style={sectionLabel}>Beneficiary & emergency contacts</div>
+          <div style={{fontSize:20,fontWeight:800,color:C.text,marginTop:2,textDecoration:isDeclined?"line-through":"none"}}>{e.client}</div>
+          <div style={{fontSize:13,color:C.textMid,marginTop:2}}>${e.premium}/mo{e.date?" · "+e.date:""}{isCOD&&<span style={{marginLeft:6,fontSize:11,fontWeight:700,padding:"2px 7px",borderRadius:6,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success}}>{isDeclined?"✕ Declined":isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}</div>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.textMid}}>
-          <span>{goalPct}% of ${goal.toLocaleString()} goal</span>
-          {appsNeeded!==null&&appsNeeded>0&&<span>~{appsNeeded} more app{appsNeeded!==1?"s":""} needed</span>}
-          {goalPct>=100&&<span style={{color:C.success,fontWeight:700}}>🎉 Goal reached!</span>}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {named.length>0&&<span style={{fontSize:13,fontWeight:700,padding:"5px 12px",borderRadius:8,background:doneCount===named.length?C.success+"22":C.teal+"1a",color:doneCount===named.length?C.success:C.teal}}>{doneCount} of {named.length} contacted</span>}
+          <button onClick={()=>{if(window.confirm("Remove this Life App from your list? This removes its logged premium and any beneficiary / emergency contact info saved with it."))onUpdate({...repRef.current,selfPremium:entries.filter((_,j)=>j!==realIdx)});}} style={{fontSize:12,color:C.danger,background:"none",border:"1px solid "+C.danger+"33",borderRadius:7,cursor:"pointer",padding:"4px 9px",fontWeight:600}}>Remove</button>
         </div>
+      </div>
+      {isPending&&<div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+        <button onClick={()=>acceptCOD(realIdx)} style={{flex:"1 1 160px",padding:"8px 10px",borderRadius:8,background:C.success+"11",border:"1px solid "+C.success+"33",color:C.success,fontSize:13,fontWeight:700,cursor:"pointer"}}>✓ Mark as Accepted</button>
+        <button onClick={()=>declineCOD(realIdx)} style={{flex:"1 1 160px",padding:"8px 10px",borderRadius:8,background:C.danger+"11",border:"1px solid "+C.danger+"33",color:C.danger,fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Decline</button>
       </div>}
-      </>}
-    </div>
-
-    {/* Log App Form */}
-    {!readOnly&&show&&<div style={{background:C.surface,borderRadius:8,padding:9,marginBottom:8}}>
-      <input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{width:"100%",padding:"6px 9px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:6,boxSizing:"border-box"}}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
-        <input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
-        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:"6px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text,boxSizing:"border-box"}}/>
-      </div>
-      <label style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,cursor:"pointer"}}>
-        <input type="checkbox" checked={form.cod} onChange={e=>setForm({...form,cod:e.target.checked})} style={{width:15,height:15,accentColor:C.gold}}/>
-        <span style={{fontSize:13,color:C.textMid}}>COD Application — <span style={{color:C.gold,fontWeight:600}}>premium pending acceptance</span></span>
-      </label>
-
-      {/* Beneficiary & Emergency Contact — captured right here, in the same step as the
-          rest of the application, not as a separate thing to remember afterward. */}
-      <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:2,marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Beneficiary & Emergency Contact Info</div>
-        <div style={{fontSize:11,color:C.textLight,marginBottom:8}}>Get this now, while you're already talking with them.</div>
-
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:4}}>Beneficiaries</div>
-        {form.bec.beneficiaries.map((p,pi)=><div key={pi} style={{background:"white",borderRadius:7,padding:"7px 9px",marginBottom:5}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:4}}>
-            <input placeholder="Name" value={p.name} onChange={e=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.map((x,j)=>j===pi?{...x,name:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-            <input placeholder="Phone" value={p.phone} onChange={e=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.map((x,j)=>j===pi?{...x,phone:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-            <input placeholder="Email" value={p.email} onChange={e=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.map((x,j)=>j===pi?{...x,email:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-            <button onClick={()=>setForm({...form,bec:{...form.bec,beneficiaries:form.bec.beneficiaries.filter((_,j)=>j!==pi)}})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
-          </div>
-        </div>)}
-        <button onClick={()=>setForm({...form,bec:{...form.bec,beneficiaries:[...form.bec.beneficiaries,{name:"",phone:"",email:"",contacted:false}]}})} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",marginBottom:10}}>+ Add a beneficiary</button>
-
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:4}}>Emergency Contacts (3)</div>
-        {form.bec.emergencyContacts.map((p,pi)=><div key={pi} style={{background:"white",borderRadius:7,padding:"7px 9px",marginBottom:5}}>
-          <div style={{fontSize:10,color:C.textLight,marginBottom:3}}>Emergency Contact {pi+1}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
-            <input placeholder="Name" value={p.name} onChange={e=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?{...x,name:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-            <input placeholder="Phone" value={p.phone} onChange={e=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?{...x,phone:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-            <input placeholder="Email" value={p.email} onChange={e=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?{...x,email:e.target.value}:x)}})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-          </div>
-        </div>)}
-      </div>
-      {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:form.cod?C.textLight+"11":C.gold+"11",borderRadius:7,padding:"6px 8px",marginBottom:6,fontSize:12}}>
-        <div style={{fontWeight:700,color:form.cod?C.textMid:C.gold,marginBottom:2}}>{form.cod?"Estimated Commission (COD — pending acceptance)":"Estimated Commission at"} {form.cod?"":promo.label+" ("+promo.pct+"%)"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
-          <div><div style={{color:C.textMid}}>Upfront</div><div style={{fontWeight:700,color:C.text}}>${c.upfront.toFixed(2)}</div></div>
-          <div><div style={{color:C.textMid}}>As Earned</div><div style={{fontWeight:700,color:C.text}}>${c.asEarned.toFixed(2)}</div></div>
-          <div><div style={{color:C.textMid}}>Total 1st Yr</div><div style={{fontWeight:700,color:C.text}}>${c.total1yr.toFixed(2)}</div></div>
-        </div>
-      </div>:null;})()}
-      <div style={{display:"flex",gap:6}}>
-        <button onClick={()=>setShow(false)} style={{flex:1,padding:"6px",borderRadius:7,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"6px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save</button>
-      </div>
-    </div>}
-
-    {/* Pending COD banner */}
-    {pendingCOD.length>0&&<div style={{background:C.gold+"11",border:`1px solid ${C.gold}33`,borderRadius:8,padding:"7px 10px",marginBottom:8,fontSize:12}}>
-      <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>⏳ {pendingCOD.length} COD App{pendingCOD.length>1?"s":""} Pending Acceptance</div>
-      <div style={{color:C.textMid}}>These are not counted in your totals or commission until accepted.</div>
-    </div>}
-    {/* App entries with commission breakdown */}
-    {entries.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:4}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.4px"}}>{showAllHistory?"All Time":pmForGoals.label}</div>
-      {olderEntriesCount>0&&<button onClick={()=>setShowAllHistory(!showAllHistory)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid "+C.border,background:showAllHistory?C.navy:"white",color:showAllHistory?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showAllHistory?"← Just This Month":"View Full History ("+olderEntriesCount+")"}</button>}
-    </div>}
-    {entries.length>0&&<div style={{maxHeight:240,overflowY:"auto",marginTop:6}}>
-      {displayEntries.slice().reverse().map((e,i)=>{
-        const realIdx=entries.indexOf(e);
-        const c=calcCommission(e.premium);
-        const isCOD=!!e.cod;
-        const isDeclined=isCOD&&!!e.codDeclined;
-        const isPending=isCOD&&!e.codAccepted&&!isDeclined;
-        return <div key={realIdx} style={{padding:"6px 0",borderBottom:"1px solid "+C.border,opacity:(isPending||isDeclined)?0.75:1}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13}}>
-            <div style={{flex:1}}>
-              <span style={{color:C.text,fontWeight:600,textDecoration:isDeclined?"line-through":"none"}}>{e.client}</span>
-              {isCOD&&<span style={{marginLeft:6,fontSize:10,padding:"1px 5px",borderRadius:4,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success,fontWeight:700}}>{isDeclined?"✕ Declined":isPending?"⏳ COD Pending":"✅ COD Accepted"}</span>}
+      {c&&!isPending&&!isDeclined&&<div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:12,fontSize:13,color:C.textMid}}>
+        <span>Upfront: <b style={{color:C.success}}>${c.upfront.toFixed(0)}</b></span>
+        <span>As Earned: <b style={{color:C.text}}>${c.asEarned.toFixed(0)}</b></span>
+        <span>Total 1st Yr: <b style={{color:C.gold}}>${c.total1yr.toFixed(0)}</b></span>
+      </div>}
+      {readOnly?<div style={{fontSize:13,color:C.textLight}}>Follow-up details are only editable by the rep.</div>:<>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>Click a name to open its call script.</div>
+      {people.map(x=>{
+        const p=x.p; const has=becNamed(p); const isEdit=editPersonKey===realIdx+"-"+x.key; const isActive=scriptOpenKey===x.key;
+        return <div key={x.key} style={{border:"2px solid "+(isActive?C.teal:C.border),borderRadius:10,padding:"9px 12px",marginBottom:8,background:p.contacted&&has?C.success+"0d":"white"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <div style={{minWidth:0}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>{x.role}</div>
+              {has?<button onClick={()=>setScriptOpenKey(isActive?null:x.key)} style={{padding:0,border:"none",background:"none",cursor:"pointer",fontSize:16,fontWeight:700,color:C.teal,textDecoration:"underline",textAlign:"left"}}>{p.name}</button>
+                  :<div style={{fontSize:14,color:C.textLight,fontStyle:"italic"}}>Not entered yet</div>}
+              {has&&(p.phone||p.email)&&<div style={{fontSize:13,color:C.textMid}}>{[p.phone,p.email].filter(Boolean).join("  ·  ")}</div>}
             </div>
-            <span style={{color:(isPending||isDeclined)?C.textMid:C.teal,fontWeight:600,marginRight:8,textDecoration:isDeclined?"line-through":"none"}}>${e.premium}/mo</span>
-            <button onClick={()=>onUpdate({...repRef.current,selfPremium:entries.filter((_,j)=>j!==realIdx)})} style={{fontSize:12,color:C.danger,background:"none",border:"none",cursor:"pointer",padding:"0 2px"}}>x</button>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <button onClick={()=>setEditPersonKey(isEdit?null:realIdx+"-"+x.key)} style={{fontSize:12,padding:"6px 10px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600}}>{isEdit?"Done":(has?"Edit":"Add details")}</button>
+              {has&&<button onClick={()=>x.set({...p,contacted:!p.contacted})} style={{fontSize:13,padding:"6px 12px",borderRadius:8,border:"2px solid "+(p.contacted?C.success:C.textLight),background:p.contacted?C.success:"white",color:p.contacted?"white":C.textMid,cursor:"pointer",fontWeight:700}}>{p.contacted?"Contacted ✓":"Mark contacted"}</button>}
+            </div>
           </div>
-          {isPending&&<div style={{display:"flex",gap:6,marginTop:4}}>
-            <button onClick={()=>acceptCOD(realIdx)} style={{flex:1,padding:"3px 8px",borderRadius:5,background:C.success+"11",border:`1px solid ${C.success}33`,color:C.success,fontSize:12,fontWeight:600,cursor:"pointer"}}>✓ Mark as Accepted</button>
-            <button onClick={()=>declineCOD(realIdx)} style={{flex:1,padding:"3px 8px",borderRadius:5,background:C.danger+"11",border:`1px solid ${C.danger}33`,color:C.danger,fontSize:12,fontWeight:600,cursor:"pointer"}}>✕ Decline</button>
+          {isEdit&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
+            <input aria-label={x.role+" name"} placeholder="Name" value={p.name} onChange={ev=>x.set({...p,name:ev.target.value})} style={{...fieldStyle,flex:"1 1 160px",width:"auto"}}/>
+            <input aria-label={x.role+" phone"} placeholder="Phone" value={p.phone} onChange={ev=>x.set({...p,phone:ev.target.value})} style={{...fieldStyle,flex:"1 1 130px",width:"auto"}}/>
+            <input aria-label={x.role+" email"} placeholder="Email" value={p.email} onChange={ev=>x.set({...p,email:ev.target.value})} style={{...fieldStyle,flex:"1 1 180px",width:"auto"}}/>
+            {x.remove&&<button onClick={x.remove} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:13,fontWeight:600}}>Remove</button>}
           </div>}
-          {c&&!isPending&&!isDeclined&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginTop:3}}>
-            <div style={{fontSize:10,color:C.textMid}}>Upfront: <span style={{color:C.success,fontWeight:600}}>${c.upfront.toFixed(0)}</span></div>
-            <div style={{fontSize:10,color:C.textMid}}>As Earned: <span style={{color:C.text,fontWeight:600}}>${c.asEarned.toFixed(0)}</span></div>
-            <div style={{fontSize:10,color:C.textMid}}>Total: <span style={{color:C.gold,fontWeight:600}}>${c.total1yr.toFixed(0)}</span></div>
-          </div>}
-          {!readOnly&&(()=>{
-            const bec=e.bec||blankBec();
-            const allPeople=[...(bec.beneficiaries||[]),...(bec.emergencyContacts||[])].filter(p=>p.name&&p.name.trim());
-            const contactedCount=allPeople.filter(p=>p.contacted).length;
-            const isOpen=becOpenIdx===realIdx;
-            return <div style={{marginTop:6}}>
-              <div onClick={()=>setBecOpenIdx(isOpen?null:realIdx)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:C.surface,borderRadius:7,cursor:"pointer"}}>
-                <span style={{fontSize:12,fontWeight:600,color:C.text,display:"flex",alignItems:"center",gap:5}}>{isOpen?"▾":"▸"} Beneficiary & EC Follow-Up</span>
-                {allPeople.length>0&&<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:10,background:contactedCount===allPeople.length?C.success+"22":C.gold+"22",color:contactedCount===allPeople.length?C.success:C.gold}}>{contactedCount} of {allPeople.length} contacted</span>}
-              </div>
-              {isOpen&&<div style={{marginTop:6}}>
-                {/* Beneficiaries — open list, add as many as needed */}
-                <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",margin:"8px 0 4px"}}>Beneficiaries</div>
-                {(bec.beneficiaries||[]).map((p,pi)=>{
-                  const scriptKey=realIdx+"-ben-"+pi;
-                  return <div key={pi} style={{background:C.surface,borderRadius:7,padding:"7px 9px",marginBottom:5}}>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:4,marginBottom:4}}>
-                      <input placeholder="Name" value={p.name} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,name:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-                      <input placeholder="Phone" value={p.phone} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,phone:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-                      <input placeholder="Email" value={p.email} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,email:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-                      <button onClick={()=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.filter((_,j)=>j!==pi)})} style={{color:C.danger,background:"none",border:"none",cursor:"pointer",fontSize:14}}>×</button>
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:11,color:C.textMid}}>
-                        <input type="checkbox" checked={!!p.contacted} onChange={ev=>updateBec(realIdx,{beneficiaries:bec.beneficiaries.map((x,j)=>j===pi?{...x,contacted:ev.target.checked}:x)})} style={{width:13,height:13}}/>
-                        Contacted
-                      </label>
-                      <button onClick={()=>setScriptOpenKey(scriptOpenKey===scriptKey?null:scriptKey)} style={{fontSize:11,padding:"2px 8px",borderRadius:5,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>📞 {scriptOpenKey===scriptKey?"Hide":"Call"} Script</button>
-                    </div>
-                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:12,color:C.text,lineHeight:1.65,fontWeight:500}}>
-                      {BENEFICIARY_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 7px"}}>{line}</p>)}
-                    </div>}
-                  </div>;
-                })}
-                <button onClick={()=>updateBec(realIdx,{beneficiaries:[...(bec.beneficiaries||[]),{name:"",phone:"",email:"",contacted:false}]})} style={{fontSize:11,padding:"4px 9px",borderRadius:6,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",marginBottom:10}}>+ Add another beneficiary</button>
-
-                {/* Emergency contacts — always exactly 3 fixed slots */}
-                <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",margin:"6px 0 4px"}}>Emergency Contacts (3)</div>
-                {(bec.emergencyContacts||blankBec().emergencyContacts).map((p,pi)=>{
-                  const scriptKey=realIdx+"-ec-"+pi;
-                  return <div key={pi} style={{background:C.surface,borderRadius:7,padding:"7px 9px",marginBottom:5}}>
-                    <div style={{fontSize:10,color:C.textLight,marginBottom:3}}>Emergency Contact {pi+1}</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4,marginBottom:4}}>
-                      <input placeholder="Name" value={p.name} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,name:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-                      <input placeholder="Phone" value={p.phone} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,phone:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-                      <input placeholder="Email" value={p.email} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,email:ev.target.value}:x)})} style={{padding:"4px 6px",borderRadius:5,border:"1px solid "+C.border,fontSize:12}}/>
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:11,color:C.textMid}}>
-                        <input type="checkbox" checked={!!p.contacted} onChange={ev=>updateBec(realIdx,{emergencyContacts:bec.emergencyContacts.map((x,j)=>j===pi?{...x,contacted:ev.target.checked}:x)})} style={{width:13,height:13}}/>
-                        Contacted
-                      </label>
-                      <button onClick={()=>setScriptOpenKey(scriptOpenKey===scriptKey?null:scriptKey)} style={{fontSize:11,padding:"2px 8px",borderRadius:5,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600}}>📞 {scriptOpenKey===scriptKey?"Hide":"Call"} Script</button>
-                    </div>
-                    {scriptOpenKey===scriptKey&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px solid "+C.border,fontSize:12,color:C.text,lineHeight:1.65,fontWeight:500}}>
-                      {EC_SCRIPT(e.client||"the client").map((line,li)=><p key={li} style={{margin:"0 0 7px"}}>{line}</p>)}
-                    </div>}
-                  </div>;
-                })}
-              </div>}
-            </div>;
-          })()}
         </div>;
       })}
+      <button onClick={()=>updateBec(realIdx,{beneficiaries:[...bens,blankP()]})} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginBottom:14}}>+ Add another beneficiary</button>
+      {activePerson&&becNamed(activePerson.p)&&<div style={{background:C.surface,border:"1px solid "+C.border,borderRadius:12,padding:"18px 22px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:800,color:C.text}}>{activePerson.kind==="ben"?"Beneficiary script":"Emergency contact script"}</div>
+          <div style={{fontSize:13,color:C.textMid}}>Calling: <b style={{color:C.text}}>{activePerson.p.name}</b> ({activePerson.role.toLowerCase()})</div>
+        </div>
+        {renderScript(activePerson.kind==="ben"?BENEFICIARY_SCRIPT(e.client||"the client"):EC_SCRIPT(e.client||"the client"))}
+        <div style={{textAlign:"right",marginTop:10}}><button onClick={()=>setScriptOpenKey(null)} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600}}>Hide script</button></div>
+      </div>}
+      </>}
+    </div>;
+  };
+
+  return <Card style={{marginBottom:12,border:"1px solid "+C.teal+"33",padding:dv(14,24)}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:14}}>
+      <div>
+        <div style={{fontSize:dv(16,22),fontWeight:800,color:C.text}}>My Life Apps</div>
+        <div style={{fontSize:13,color:C.textMid}}>{showLastMonthGoal?"Last Month":pmForGoals.label} · <span style={{color:C.gold,fontWeight:600}}>{promo.label} ({promo.pct}%)</span></div>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        {!readOnly&&prevMonthStartLPE&&<button onClick={()=>setShowLastMonthGoal(!showLastMonthGoal)} style={{fontSize:13,padding:"8px 14px",borderRadius:8,border:"1px solid "+C.border,background:showLastMonthGoal?C.navy:"white",color:showLastMonthGoal?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showLastMonthGoal?"← Back":"View Last Month"}</button>}
+        {!readOnly&&<button onClick={()=>setShow(!show)} style={{fontSize:13,padding:"8px 16px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:700}}>{show?"Close form":"+ Log Life App"}</button>}
+      </div>
+    </div>
+
+    {/* Summary tiles */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12,marginBottom:14}}>
+      <div style={tileStyle}>
+        <div style={tileLabel}>Running total</div>
+        <div style={{fontSize:dv(24,30),fontWeight:800,color:C.teal,marginTop:4}}>${total.toFixed(0)}<span style={{fontSize:14,fontWeight:600,color:C.textMid}}>/mo premium</span></div>
+      </div>
+      <div style={tileStyle}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+          <div style={tileLabel}>Income goal</div>
+          {readOnly?<div style={{fontSize:13,fontWeight:700,color:C.text}}>${goal.toLocaleString()}</div>:!showLastMonthGoal&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:13,color:C.textMid}}>$</span><input aria-label="Monthly income goal" type="number" placeholder="e.g. 2000" value={getMonthlyGoal(rep.monthlyIncomeGoals,pmForGoals.start)} onChange={e=>onUpdate({...repRef.current,monthlyIncomeGoals:setMonthlyGoal(repRef.current.monthlyIncomeGoals,pmForGoals.start,e.target.value)})} style={{width:90,padding:"4px 7px",borderRadius:6,border:"1px solid "+C.border,fontSize:13,color:C.text}}/></div>}
+        </div>
+        <div style={{fontSize:dv(24,30),fontWeight:800,color:C.success,marginTop:4}}>${thisMonthEarned.toFixed(0)}<span style={{fontSize:14,fontWeight:600,color:C.textMid}}> earned</span></div>
+        {goal>0&&<div>
+          <div style={{height:8,background:"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",margin:"8px 0 4px"}}>
+            <div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${C.teal},${C.success})`,width:goalPct+"%",transition:"width 0.4s"}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.textMid,gap:6,flexWrap:"wrap"}}>
+            <span>{goalPct}% of ${goal.toLocaleString()} goal</span>
+            {appsNeeded!==null&&appsNeeded>0&&<span>~{appsNeeded} more app{appsNeeded!==1?"s":""} needed</span>}
+            {goalPct>=100&&<span style={{color:C.success,fontWeight:700}}>🎉 Goal reached!</span>}
+          </div>
+        </div>}
+      </div>
+      <div style={{...tileStyle,background:pendingCOD.length>0?C.gold+"11":C.surface,border:"1px solid "+(pendingCOD.length>0?C.gold+"55":C.border)}}>
+        <div style={{...tileLabel,color:pendingCOD.length>0?C.gold:C.textMid}}>COD pending acceptance</div>
+        <div style={{fontSize:dv(24,30),fontWeight:800,color:pendingCOD.length>0?C.gold:C.textMid,marginTop:4}}>{pendingCOD.length}<span style={{fontSize:14,fontWeight:600}}> app{pendingCOD.length!==1?"s":""}</span></div>
+        <div style={{fontSize:12,color:C.textMid,marginTop:2}}>Not counted in totals or commission until accepted.</div>
+      </div>
+    </div>
+
+    {/* Last month (replaces nothing — shown above the list while toggled) */}
+    {showLastMonthGoal&&(()=>{
+      const lastMonthEntries = entries.filter(e=>e.date&&e.date>=prevMonthStartLPE&&e.date<pmForGoals.start);
+      return <div style={{...tileStyle,marginBottom:14}}>
+        <div style={{fontSize:13,color:C.textMid,marginBottom:8}}>What you actually logged last Primerica month:</div>
+        {lastMonthEntries.length===0&&<div style={{fontSize:14,color:C.textLight,textAlign:"center",padding:"6px 0"}}>Nothing logged last month.</div>}
+        {lastMonthEntries.map((e,i)=>{
+          const isDeclined=e.cod&&!!e.codDeclined;
+          const isPending=e.cod&&!e.codAccepted&&!isDeclined;
+          return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderTop:i>0?"1px solid "+C.border:"none",fontSize:14}}>
+            <span style={{color:isDeclined?C.textLight:C.text,fontWeight:600,textDecoration:isDeclined?"line-through":"none"}}>{e.client}{e.cod&&<span style={{marginLeft:6,fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:4,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success}}>{isDeclined?"COD Declined":isPending?"COD Pending":"COD Accepted"}</span>}</span>
+            <span style={{color:isDeclined?C.textLight:C.teal,fontWeight:700}}>${e.premium}/mo</span>
+          </div>;
+        })}
+      </div>;
+    })()}
+
+    {/* Log App Form — application first, then beneficiary / contingent / emergency contacts, one step */}
+    {!readOnly&&show&&<div style={{background:C.surface,border:"1px solid "+C.border,borderRadius:14,padding:dv(14,22),marginBottom:14}}>
+      <div style={{display:"flex",gap:dv(14,28),flexWrap:"wrap",alignItems:"flex-start"}}>
+        <div style={{flex:"1 1 260px",minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:10}}>Part 1 · The application</div>
+          <label style={{display:"block",fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Client name<input placeholder="Client name" value={form.client} onChange={e=>setForm({...form,client:e.target.value})} style={{...fieldStyle,marginTop:4,fontSize:15}}/></label>
+          <label style={{display:"block",fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Monthly premium $ (per month)<input type="number" placeholder="Monthly premium $ (per month)" value={form.premium} onChange={e=>setForm({...form,premium:e.target.value})} style={{...fieldStyle,marginTop:4,fontSize:15}}/></label>
+          <label style={{display:"block",fontSize:13,fontWeight:600,color:C.text,marginBottom:10}}>Date<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{...fieldStyle,marginTop:4,fontSize:15}}/></label>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:10}}>
+            <input type="checkbox" checked={form.cod} onChange={e=>setForm({...form,cod:e.target.checked})} style={{width:17,height:17,accentColor:C.gold}}/>
+            <span style={{fontSize:14,color:C.textMid}}>COD Application — <span style={{color:C.gold,fontWeight:600}}>premium pending acceptance</span></span>
+          </label>
+          {form.premium&&(()=>{const c=calcCommission(form.premium);return c?<div style={{background:form.cod?C.textLight+"11":C.gold+"11",borderRadius:8,padding:"8px 10px",fontSize:13}}>
+            <div style={{fontWeight:700,color:form.cod?C.textMid:C.gold,marginBottom:4}}>{form.cod?"Estimated Commission (COD — pending acceptance)":"Estimated Commission at"} {form.cod?"":promo.label+" ("+promo.pct+"%)"}</div>
+            <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+              <div><div style={{color:C.textMid}}>Upfront</div><div style={{fontWeight:700,color:C.text}}>${c.upfront.toFixed(2)}</div></div>
+              <div><div style={{color:C.textMid}}>As Earned</div><div style={{fontWeight:700,color:C.text}}>${c.asEarned.toFixed(2)}</div></div>
+              <div><div style={{color:C.textMid}}>Total 1st Yr</div><div style={{fontWeight:700,color:C.text}}>${c.total1yr.toFixed(2)}</div></div>
+            </div>
+          </div>:null;})()}
+        </div>
+        <div style={{flex:"2 1 420px",minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:800,color:C.teal,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:2}}>Part 2 · Beneficiary, contingent & emergency contacts</div>
+          <div style={{fontSize:13,color:C.textMid,marginBottom:10}}>Get this now, while you're already talking with them.</div>
+          {(form.bec.beneficiaries.length?form.bec.beneficiaries:[blankP()]).map((p,pi,arr)=>formPerson("fb"+pi,arr.length>1?"Beneficiary "+(pi+1):"Beneficiary",p,
+            np=>setForm({...form,bec:{...form.bec,beneficiaries:arr.map((x,j)=>j===pi?np:x)}}),
+            arr.length>1?()=>setForm({...form,bec:{...form.bec,beneficiaries:arr.filter((_,j)=>j!==pi)}}):null))}
+          <button onClick={()=>setForm({...form,bec:{...form.bec,beneficiaries:[...(form.bec.beneficiaries.length?form.bec.beneficiaries:[blankP()]),blankP()]}})} style={{fontSize:13,padding:"6px 12px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,cursor:"pointer",fontWeight:600,marginBottom:10}}>+ Add another beneficiary</button>
+          {formPerson("fcon","Contingent beneficiary",form.bec.contingent||blankP(),np=>setForm({...form,bec:{...form.bec,contingent:np}}),null)}
+          {form.bec.emergencyContacts.map((p,pi)=>formPerson("fec"+pi,"Emergency contact "+(pi+1),p,
+            np=>setForm({...form,bec:{...form.bec,emergencyContacts:form.bec.emergencyContacts.map((x,j)=>j===pi?np:x)}}),null))}
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:10}}>
+        <button onClick={()=>setShow(false)} style={{padding:"10px 18px",borderRadius:8,border:"1px solid "+C.border,background:"white",cursor:"pointer",fontSize:14,color:C.textMid,fontWeight:600}}>Cancel</button>
+        <button onClick={save} style={{padding:"10px 24px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:14,fontWeight:700}}>Save Life App</button>
+      </div>
     </div>}
 
-    <div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:8}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
-      <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
-      <div style={{background:C.surface,borderLeft:`3px solid ${C.textLight}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:C.textMid,lineHeight:1.5,marginBottom:8}}>This is an estimate only; confirm exact figures through Primerica Online.</div>
-      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0}}>
-        <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:7,border:"1px solid "+C.border,fontSize:13,color:C.text}}/>
-        {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:12,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
+    {/* Logged entries: slim list on the left, selected policy's follow-up on the right */}
+    {entries.length>0&&<div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,marginBottom:10}}>
+        <div style={sectionLabel}>{showAllHistory?"All Time":"Logged this month"} ({displayEntries.length})</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button onClick={()=>setOnlyOpenFU(!onlyOpenFU)} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"1px solid "+(onlyOpenFU?C.teal:C.border),background:onlyOpenFU?C.teal:"white",color:onlyOpenFU?"white":C.textMid,cursor:"pointer",fontWeight:700}}>{onlyOpenFU?"Showing: needs follow-up":"Show: needs follow-up"}</button>
+          {olderEntriesCount>0&&<button onClick={()=>setShowAllHistory(!showAllHistory)} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"1px solid "+C.border,background:showAllHistory?C.navy:"white",color:showAllHistory?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showAllHistory?"← Just This Month":"View Full History ("+olderEntriesCount+")"}</button>}
+        </div>
       </div>
-      {calcResult&&<div style={{background:C.gold+"11",borderRadius:7,padding:"7px 9px",fontSize:12}}>
+      <div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
+        <div style={{flex:"0 1 330px",minWidth:260,display:"flex",flexDirection:"column",gap:7,maxHeight:560,overflowY:"auto",paddingRight:2}}>
+          {listForRows.length===0&&<div style={{fontSize:13,color:C.textLight,padding:"8px 0"}}>Nothing needs follow-up right now.</div>}
+          {listForRows.map(e=>{
+            const realIdx=entries.indexOf(e);
+            const isCOD=!!e.cod; const isDeclined=isCOD&&!!e.codDeclined; const isPending=isCOD&&!e.codAccepted&&!isDeclined;
+            const ppl=becPeopleOf(e); const done=ppl.filter(p=>p.contacted).length;
+            const active=selEntry&&realIdx===selReal;
+            return <button key={realIdx} onClick={()=>{setSelIdx(realIdx);setScriptOpenKey(null);setEditPersonKey(null);}} style={{textAlign:"left",padding:"10px 12px",borderRadius:10,border:"2px solid "+(active?C.teal:C.border),background:active?C.teal+"0d":"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,opacity:(isPending||isDeclined)?0.85:1}}>
+              <span style={{minWidth:0}}>
+                <span style={{display:"block",fontSize:15,fontWeight:700,color:C.text,textDecoration:isDeclined?"line-through":"none"}}>{e.client}</span>
+                <span style={{display:"block",fontSize:12,color:C.textMid}}>{e.date||""}{e.date?" · ":""}${e.premium}/mo</span>
+              </span>
+              <span style={{display:"flex",gap:5,alignItems:"center",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                {isCOD&&<span style={{fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:5,background:isDeclined?C.danger+"22":isPending?C.gold+"22":C.success+"22",color:isDeclined?C.danger:isPending?C.gold:C.success}}>{isDeclined?"Declined":isPending?"COD":"COD ✓"}</span>}
+                <span style={{fontSize:11,fontWeight:700,padding:"2px 7px",borderRadius:5,background:ppl.length>0&&done===ppl.length?C.success+"22":C.teal+"1a",color:ppl.length>0&&done===ppl.length?C.success:C.teal}}>{ppl.length===0?"Add contacts":done+" of "+ppl.length}</span>
+              </span>
+            </button>;
+          })}
+        </div>
+        {selEntry&&renderDetail()}
+      </div>
+    </div>}
+
+    <div style={{borderTop:"1px solid "+C.border,paddingTop:12,marginTop:16}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>💡 Quick Commission Calculator</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:6}}>Enter the <strong>monthly</strong> premium amount (what the client pays per month). The calculator will use their annual premium to compute your commission.</div>
+      <div style={{background:C.surface,borderLeft:`3px solid ${C.textLight}`,borderRadius:6,padding:"7px 9px",fontSize:12,color:C.textMid,lineHeight:1.5,marginBottom:8}}>This is an estimate only; confirm exact figures through Primerica Online.</div>
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:calcResult?6:0,maxWidth:480}}>
+        <input type="number" placeholder="Monthly premium $ (per month)" value={calcPremium} onChange={e=>setCalcPremium(e.target.value)} style={{flex:1,padding:"7px 10px",borderRadius:7,border:"1px solid "+C.border,fontSize:14,color:C.text}}/>
+        {calcPremium&&<button onClick={()=>setCalcPremium("")} style={{fontSize:13,color:C.textMid,background:"none",border:"none",cursor:"pointer"}}>Clear</button>}
+      </div>
+      {calcResult&&<div style={{background:C.gold+"11",borderRadius:8,padding:"9px 11px",fontSize:13,maxWidth:480}}>
         <div style={{fontWeight:700,color:C.gold,marginBottom:4}}>{promo.label} ({promo.pct}%) on ${calcPremium}/mo app (${(Number(calcPremium)*12).toFixed(0)}/yr annual)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Upfront</div><div style={{fontSize:14,fontWeight:800,color:C.success}}>${calcResult.upfront.toFixed(2)}</div></div>
-          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>As Earned</div><div style={{fontSize:14,fontWeight:800,color:C.text}}>${calcResult.asEarned.toFixed(2)}</div></div>
-          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:14,fontWeight:800,color:C.gold}}>${calcResult.total1yr.toFixed(2)}</div></div>
+          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Upfront</div><div style={{fontSize:15,fontWeight:800,color:C.success}}>${calcResult.upfront.toFixed(2)}</div></div>
+          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>As Earned</div><div style={{fontSize:15,fontWeight:800,color:C.text}}>${calcResult.asEarned.toFixed(2)}</div></div>
+          <div style={{textAlign:"center"}}><div style={{color:C.textMid,marginBottom:2}}>Total 1st Yr</div><div style={{fontSize:15,fontWeight:800,color:C.gold}}>${calcResult.total1yr.toFixed(2)}</div></div>
         </div>
-        <div style={{fontSize:10,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
+        <div style={{fontSize:11,color:C.textLight,marginTop:4,textAlign:"center"}}>Commissionable: ${calcResult.commissionable.toFixed(2)} (annual premium minus $65 policy fee)</div>
       </div>}
     </div>
   </Card>;
