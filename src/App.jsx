@@ -4003,12 +4003,32 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   const [filter,setFilter]=useState("all");
   const [showAdd,setShowAdd]=useState(false);
   const reps=(data.reps||[]).filter(r=>isTrainerScoped?r.trainerId===userId:true);
-  const filtered=reps.filter(r=>(r.name.toLowerCase().includes(search.toLowerCase())||r.phone?.includes(search))&&(filter==="all"||r.track===filter));
+  // Search now lives in the top bar and shows a results dropdown; the rep list below is
+  // narrowed by the track filter only.
+  const filtered=reps.filter(r=>filter==="all"||r.track===filter);
+  const searchMatches=search.trim()?reps.filter(r=>(r.name||"").toLowerCase().includes(search.trim().toLowerCase())||(r.phone||"").includes(search.trim())).slice(0,8):[];
+  const [searchFocused,setSearchFocused]=useState(false);
   const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
   const trainers=data.trainers||[];
   const stats=[{l:"Total Reps",v:reps.length,c:C.teal},{l:"Fast Start",v:reps.filter(r=>r.track==="fast").length,c:C.teal},{l:"Licensed",v:reps.filter(r=>r.track==="licensed").length,c:C.gold},{l:"Graduated",v:reps.filter(r=>{const cl=TRACK_TO_CHECKLIST_KEY[r.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[r.track]):[];return cl.length>0&&cl.every(i=>(r.checked||{})[i.id])}).length,c:C.success}];
   const pm=getCurrentPrimerMonth(data.primerMonthEnds||[]);
   return <div>
+    {/* Top bar — search, track filter, and Add New Rep live at the very top of the dashboard */}
+    <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:16}}>
+      <div style={{fontSize:dv(18,22),fontWeight:800,color:C.text,marginRight:4}}>Dashboard</div>
+      <div style={{flex:"1 1 240px",position:"relative"}}>
+        <input aria-label="Search reps" placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setSearchFocused(true)} onBlur={()=>setTimeout(()=>setSearchFocused(false),150)} style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:9,border:`1px solid ${C.border}`,fontSize:14,color:C.text,background:"white"}}/>
+        {searchFocused&&search.trim()&&<div style={{position:"absolute",top:"100%",left:0,right:0,marginTop:4,background:"white",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",overflow:"hidden",zIndex:20}}>
+          {searchMatches.length===0&&<div style={{padding:"10px 14px",fontSize:14,color:C.textLight}}>No reps match "{search}"</div>}
+          {searchMatches.map(r=><div key={r.id} onMouseDown={e=>e.preventDefault()} onClick={()=>{setSearch("");setSearchFocused(false);onSelectRep&&onSelectRep(r.id);}} style={{padding:"10px 14px",fontSize:14,borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",gap:8,cursor:"pointer"}}>
+            <span style={{fontWeight:600,color:C.text}}>{r.name}</span>
+            <span style={{fontSize:12,color:C.textMid}}>{(TRACK_INFO[r.track]||{}).label||""}</span>
+          </div>)}
+        </div>}
+      </div>
+      <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
+      <button onClick={()=>setShowAdd(true)} style={{padding:"10px 20px",borderRadius:9,background:C.teal,color:"white",border:"none",cursor:"pointer",fontWeight:700,fontSize:14,whiteSpace:"nowrap"}}>+ Add New Rep</button>
+    </div>
     {isAdmin&&<TeamNumbersCard data={data} userId={userId}/>}
     {showTrainerCommitment&&isTrainer&&trainerRecord&&<CommitmentPopup rep={trainerRecord} primerMonth={pm} onSave={(commitment)=>{
       localStorage.setItem(`commitment_seen_${userId}_${pm.key}`,"true");
@@ -4088,14 +4108,6 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       </Card>;
     })()}
 
-    <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
-      <input placeholder="Search reps..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140,padding:"7px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}/>
-      <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"7px 9px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
-    </div>
-    <div style={{display:"flex",gap:7,marginBottom:14}}>
-      <button onClick={()=>setShowAdd(true)} style={{flex:1,padding:"8px",borderRadius:8,background:C.teal,color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add New Rep</button>
-      
-    </div>
     {filtered.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textLight}}>{reps.length===0?"No reps yet - add your first rep":"No results found"}</div>}
     {filtered.map(rep=>{
       const track=TRACK_INFO[rep.track];
@@ -6680,8 +6692,8 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
     </div>
 
     {/* Summary stats */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
-      {[{l:"Active Today",v:repStats.filter(r=>r.status==="green").length,c:C.success},{l:"Needs Attention",v:repStats.filter(r=>r.status==="yellow").length,c:C.gold},{l:"Going Silent",v:repStats.filter(r=>r.status==="red").length,c:C.danger}].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
+      {[{l:"Active Today",v:repStats.filter(r=>r.status==="green").length,c:C.success},{l:"Needs Attention",v:repStats.filter(r=>r.status==="yellow").length,c:C.gold},{l:"Going Silent",v:repStats.filter(r=>r.status==="red").length,c:C.danger},{l:"At Risk",v:repStats.filter(r=>r.isAtRisk&&!r.inactive).length,c:"#f97316"}].map(s=><Card key={s.l} style={{padding:"9px 11px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
         <div style={{fontSize:12,color:C.textMid}}>{s.l}</div>
       </Card>)}
@@ -6703,27 +6715,29 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
       const isExpanded = expandedRep===rep.id;
       return <div key={i} style={{borderRadius:10,border:"1px solid "+C.border,marginBottom:10,overflow:"hidden",borderLeft:"4px solid "+statusColors[rep.status]}}>
         {/* Rep header — clickable */}
-        <div onClick={()=>setExpandedRep(isExpanded?null:rep.id)} style={{padding:"10px 14px",background:isExpanded?C.navy:"white",cursor:"pointer"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                <div style={{width:8,height:8,borderRadius:4,background:statusColors[rep.status],flexShrink:0}}/>
-                <span style={{fontSize:dv(13,16),fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
+        <div onClick={()=>setExpandedRep(isExpanded?null:rep.id)} style={{padding:"12px 16px",background:isExpanded?C.navy:"white",cursor:"pointer"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px 18px",flexWrap:"wrap"}}>
+            <div style={{flex:"2 1 220px",minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                <div style={{width:10,height:10,borderRadius:5,background:statusColors[rep.status],flexShrink:0}}/>
+                <span style={{fontSize:dv(15,17),fontWeight:700,color:isExpanded?"white":C.text}}>{rep.name}</span>
                 {rep.isTrainer&&<Badge color={C.purple} small>Trainer</Badge>}
-                <Badge color={statusColors[rep.status]} small>{getStatusLabel(rep,rep.status)}</Badge>
                 {rep.isAtRisk&&!rep.inactive&&<Badge color={"#f97316"} small>At Risk</Badge>}
               </div>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Streak: <strong style={{color:rep.streak>0?C.gold:(isExpanded?"rgba(255,255,255,0.5)":C.textLight)}}>{rep.streak}d</strong></span>
-                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Progress: <strong style={{color:isExpanded?"white":C.teal}}>{rep.progress}%</strong></span>
-                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Tasks: <strong style={{color:rep.openTasks>0?C.danger:(isExpanded?"white":C.success)}}>{rep.openTasks} open</strong></span>
-                <span style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.5)":C.textMid}}>Recruited by: <strong style={{color:isExpanded?"white":C.purple}}>{rep.recruiter?.name||"Direct"}</strong></span>
-              </div>
+              <div style={{fontSize:13,color:isExpanded?"rgba(255,255,255,0.75)":statusColors[rep.status],fontWeight:600,marginTop:2}}>{getStatusLabel(rep,rep.status)}</div>
             </div>
-            <span style={{color:isExpanded?"rgba(255,255,255,0.5)":C.textLight,fontSize:14,transform:isExpanded?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block",flexShrink:0}}>v</span>
+            <div style={{flex:"0 0 70px",fontSize:13,color:isExpanded?"rgba(255,255,255,0.7)":C.textMid}}>Streak<div style={{fontSize:16,fontWeight:800,color:rep.streak>0?C.gold:(isExpanded?"rgba(255,255,255,0.7)":C.textMid)}}>{rep.streak}d</div></div>
+            <div style={{flex:"1 1 140px",minWidth:120,fontSize:13,color:isExpanded?"rgba(255,255,255,0.7)":C.textMid}}>Checklist <strong style={{color:isExpanded?"white":C.teal}}>{rep.progress}%</strong>
+              <div style={{height:8,background:isExpanded?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.08)",borderRadius:4,overflow:"hidden",marginTop:4}}><div style={{height:"100%",width:Math.min(100,rep.progress)+"%",background:rep.progress>=100?C.success:C.teal}}/></div>
+            </div>
+            <div style={{flex:"0 0 90px",fontSize:13,color:isExpanded?"rgba(255,255,255,0.7)":C.textMid}}>Open tasks<div style={{fontSize:16,fontWeight:800,color:rep.openTasks>0?(isExpanded?"#fca5a5":C.danger):(isExpanded?"white":C.success)}}>{rep.openTasks}</div></div>
+            <div style={{flex:"0 0 auto",fontSize:13,color:isExpanded?"rgba(255,255,255,0.7)":C.textMid}}>This week
+              <div style={{display:"flex",gap:3,marginTop:4}}>{rep.last7.map((day,di)=><span key={di} aria-label={day.submitted?"logged":"no log"} style={{width:16,height:16,borderRadius:4,background:day.submitted?C.success:(isExpanded?"rgba(255,255,255,0.2)":C.danger+"33"),border:day.isToday?"2px solid "+C.teal:"none",boxSizing:"border-box"}}/>)}</div>
+            </div>
+            <div style={{flex:"1 1 130px",minWidth:110,fontSize:13,color:isExpanded?"rgba(255,255,255,0.7)":C.textMid}}>Recruited by<div style={{fontSize:14,fontWeight:700,color:isExpanded?"white":C.purple}}>{rep.recruiter?.name||"Direct"}</div></div>
+            <span style={{color:isExpanded?"rgba(255,255,255,0.7)":C.textLight,fontSize:14,transform:isExpanded?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block",flexShrink:0}}>v</span>
           </div>
         </div>
-
         {/* Expanded details */}
         {isExpanded&&<div style={{padding:"14px",background:C.surface}}>
 
@@ -6748,7 +6762,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
               <span style={{fontSize:13,fontWeight:700,color:C.teal}}>{rep.todayLog[q.id]||0}</span>
             </div>)}
           </div>}
-          {!rep.todayLog&&<div style={{background:C.danger+"11",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:13,color:C.danger,fontWeight:600}}>No activity log submitted today</div>}
+          {/* The old daily activity log form is no longer part of the Hub, so "no log submitted" was always a false alarm — activity now lives in the Scorecard below. */}
 
           {/* Checklist progress */}
           <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
@@ -6768,7 +6782,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
           </div>
 
           {/* Weekly Activity Totals */}
-          <div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
+          {rep.weekTotals.daysLogged>0&&<div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
             <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:8}}>Weekly Activity Totals ({rep.weekTotals.daysLogged}/7 days logged)</div>
             {rep.weekTotals.daysLogged===0?<div style={{fontSize:13,color:C.textLight}}>No activity logged this week</div>:
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
@@ -6777,7 +6791,7 @@ function AccountabilityDashboard({data,onUpdate,userRole,userId}) {
                 <div style={{fontSize:10,color:C.textMid}}>{item.l}</div>
               </div>)}
             </div>}
-          </div>
+          </div>}
 
           {/* Scorecard */}
           {rep.scorecard&&Object.keys(rep.scorecard).length>0&&<div style={{background:"white",borderRadius:8,padding:"10px 12px",marginBottom:12}}>
@@ -9825,6 +9839,7 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false,readOnly=false}) {
   const [activeStage,setActiveStage] = useState("all");
   const [search,setSearch] = useState("");
   const [showArchived,setShowArchived] = useState(false);
+  const [selLeadId,setSelLeadId] = useState(null);
   const pipelineData = data.leadPipeline||{};
   const repPipeline = pipelineData[rep.id]||{};
 
@@ -9926,83 +9941,96 @@ function LeadPipeline({rep,data,onUpdate,isAdmin=false,readOnly=false}) {
 
   if(mmLeads.length===0) return <div style={{textAlign:"center",padding:"20px 0",color:C.textLight,fontSize:13}}>No leads in your pipeline yet. Share your MoneyMap link to get started!</div>;
 
+  const selLead = filtered.find(l=>l.docId===selLeadId)||filtered[0]||null;
+  const wantsReviewCount = leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length;
+  const renderLeadDetail = (lead) => {
+    const stage = PIPELINE_STAGES.find(s=>s.key===lead.stage)||PIPELINE_STAGES[0];
+    const daysInStage = getDaysInStage(lead.stageUpdatedAt);
+    const isStale = daysInStage>=7&&lead.stage!=="closedClient"&&lead.stage!=="closedNo";
+    return <div style={{flex:"1 1 460px",minWidth:0,border:"1px solid "+C.border,borderRadius:14,padding:"18px 20px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+        <div>
+          <div style={{fontSize:22,fontWeight:800,color:C.text}}>{lead.name||"Unknown"}</div>
+          <div style={{fontSize:13,color:C.textMid,marginTop:3}}>Received: {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"Unknown"}</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <span style={{fontSize:13,fontWeight:700,color:stage.color,background:stage.color+"15",borderRadius:7,padding:"4px 10px"}}>{stage.label}</span>
+          <div style={{fontSize:13,color:isStale?C.danger:C.textMid,fontWeight:isStale?700:400,marginTop:4}}>{daysInStage}d in stage{isStale?" ⚠":""}</div>
+        </div>
+      </div>
+      {lead.hasRenewedInterest&&<div style={{background:C.gold+"18",border:`1px solid ${C.gold}55`,borderRadius:8,padding:"8px 12px",fontSize:13,fontWeight:600,color:"#92400e",margin:"12px 0 0"}}>🔔 New activity since you last updated this lead</div>}
+      <div style={{display:"flex",gap:"6px 24px",flexWrap:"wrap",margin:"14px 0",fontSize:15}}>
+        {lead.phone&&<span style={{color:C.textMid}}><PhoneLink phone={lead.phone}/></span>}
+        {lead.email&&<a href={"mailto:"+lead.email} style={{color:C.teal,textDecoration:"none",fontWeight:600}}>✉ {lead.email}</a>}
+      </div>
+      {!isAdmin&&!readOnly&&!showArchived&&<div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
+        <select aria-label="Lead stage" value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{flex:"1 1 200px",maxWidth:300,padding:"10px 12px",borderRadius:8,border:"1px solid "+stage.color+"66",fontSize:14,color:C.text,background:"white"}}>
+          {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
+        <button onClick={()=>setRepArchived(lead.docId,true)} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+C.border,background:"white",color:C.textMid,fontSize:14,cursor:"pointer",fontWeight:600}}>Archive</button>
+      </div>}
+      {!isAdmin&&readOnly&&<div style={{fontSize:13,color:C.textLight,fontStyle:"italic",marginBottom:14}}>Preview only — stage: {stage.label}</div>}
+      {!isAdmin&&!readOnly&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{padding:"10px 16px",borderRadius:8,border:"1px solid "+C.teal+"44",background:C.teal+"11",color:C.teal,fontSize:14,cursor:"pointer",fontWeight:700,marginBottom:14}}>Restore to Pipeline</button>}
+      {lead.contactRequests&&lead.contactRequests.length>0&&<div>
+        <div style={{fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4}}>Interested In ({lead.contactRequests.length})</div>
+        {lead.contactRequests.map((cr,ci)=>{
+          const isLatest = ci===0;
+          const crDate = cr.requestedAt?new Date(cr.requestedAt):null;
+          const afterStageUpdate = crDate&&lead.stageUpdatedAt&&crDate>new Date(lead.stageUpdatedAt);
+          return <div key={ci} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderTop:`1px solid ${C.border}`}}>
+            <span style={{fontSize:18,width:24,textAlign:"center",flexShrink:0}}>{cr.icon||"📌"}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:600,color:C.text}}>{cr.label||cr.source||"Interest"}{isLatest&&<span style={{fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:4,background:C.gold+"22",color:C.gold,marginLeft:6}}>LATEST</span>}</div>
+              {cr.detail&&<div style={{fontSize:13,color:C.text,fontWeight:600,marginTop:1}}>{cr.detail}</div>}
+              <div style={{fontSize:12,color:afterStageUpdate?C.gold:C.textMid,fontWeight:afterStageUpdate?700:400}}>{crDate?crDate.toLocaleDateString("en-US",{month:"short",day:"numeric"})+", "+crDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):""}{afterStageUpdate?" · new since your last update":""}</div>
+            </div>
+          </div>;
+        })}
+      </div>}
+    </div>;
+  };
+
   return <div>
-    {/* Wants Review notification banner */}
-    {leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length>0&&<div style={{background:"linear-gradient(135deg,#f97316,#ea580c)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:12}}>
+      <div style={{fontSize:13,color:C.textMid}}>{activeLeadsOnly.length} active lead{activeLeadsOnly.length!==1?"s":""}{showArchived?" · viewing archived":""}</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <input aria-label="Search leads" placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{padding:"8px 12px",borderRadius:9,border:"1px solid "+C.border,fontSize:14,color:C.text,width:210,boxSizing:"border-box"}}/>
+        {archivedLeadsOnly.length>0&&<button onClick={()=>{setShowArchived(!showArchived);setActiveStage("all");}} style={{fontSize:13,padding:"8px 14px",borderRadius:9,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showArchived?"← Back to Active Leads":"View Archived ("+archivedLeadsOnly.length+")"}</button>}
+      </div>
+    </div>
+    {wantsReviewCount>0&&<div style={{background:"linear-gradient(135deg,#f97316,#ea580c)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
       <span style={{fontSize:16}}>🔔</span>
       <div style={{flex:1}}>
-        <div style={{fontSize:14,fontWeight:700,color:"white"}}>{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length} lead{leads.filter(l=>l.wantsReview&&l.stage==="wantsReview").length!==1?"s":""} requesting a review!</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
+        <div style={{fontSize:14,fontWeight:700,color:"white"}}>{wantsReviewCount} lead{wantsReviewCount!==1?"s":""} requesting a review!</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.9)"}}>They submitted a Financial Needs Analysis request and are ready to speak with you.</div>
       </div>
     </div>}
-    {/* Archived toggle */}
-    {archivedLeadsOnly.length>0&&<div style={{marginBottom:10}}>
-      <button onClick={()=>{setShowArchived(!showArchived);setActiveStage("all");}} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:"1px solid "+C.border,background:showArchived?C.navy:"white",color:showArchived?"white":C.textMid,cursor:"pointer",fontWeight:600}}>{showArchived?"← Back to Active Leads":"View Archived ("+archivedLeadsOnly.length+")"}</button>
+    {!showArchived&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+      <button onClick={()=>setActiveStage("all")} style={{padding:"7px 12px",borderRadius:8,border:"1px solid "+(activeStage==="all"?C.navy:C.border),cursor:"pointer",fontWeight:activeStage==="all"?700:600,background:activeStage==="all"?C.navy:"white",color:activeStage==="all"?"white":C.textMid,fontSize:13}}>All ({baseList.length})</button>
+      {PIPELINE_STAGES.map(s=><button key={s.key} onClick={()=>setActiveStage(s.key)} style={{padding:"7px 12px",borderRadius:8,border:"1px solid "+(activeStage===s.key?s.color:C.border),cursor:"pointer",fontWeight:activeStage===s.key?700:600,background:activeStage===s.key?s.color:"white",color:activeStage===s.key?"white":C.textMid,fontSize:13}}>{s.label} ({stageCounts[s.key]||0})</button>)}
     </div>}
-    {/* Stage selector */}
-    {!showArchived&&<div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:6,marginBottom:12,WebkitOverflowScrolling:"touch"}}>
-      <button onClick={()=>setActiveStage("all")} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage==="all"?700:400,background:activeStage==="all"?C.navy:C.surface,color:activeStage==="all"?"white":C.textMid,fontSize:13}}>
-        All ({baseList.length})
-      </button>
-      {PIPELINE_STAGES.map(s=><button key={s.key} onClick={()=>setActiveStage(s.key)} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontWeight:activeStage===s.key?700:400,background:activeStage===s.key?s.color:C.surface,color:activeStage===s.key?"white":C.textMid,fontSize:13,whiteSpace:"nowrap"}}>
-        {s.label} {stageCounts[s.key]>0&&<span style={{background:"rgba(255,255,255,0.3)",borderRadius:10,padding:"1px 5px"}}>{stageCounts[s.key]}</span>}
-      </button>)}
+    {filtered.length===0&&<div style={{textAlign:"center",padding:"16px 0",color:C.textLight,fontSize:14}}>{showArchived?"No archived leads":"No leads in this stage"}</div>}
+    {filtered.length>0&&<div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
+      <div style={{flex:"0 1 340px",minWidth:260,display:"flex",flexDirection:"column",gap:7,maxHeight:620,overflowY:"auto",paddingRight:2}}>
+        {filtered.map(lead=>{
+          const stage = PIPELINE_STAGES.find(s=>s.key===lead.stage)||PIPELINE_STAGES[0];
+          const daysInStage = getDaysInStage(lead.stageUpdatedAt);
+          const isStale = daysInStage>=7&&lead.stage!=="closedClient"&&lead.stage!=="closedNo";
+          const active = selLead&&lead.docId===selLead.docId;
+          return <button key={lead.docId} onClick={()=>setSelLeadId(lead.docId)} style={{textAlign:"left",padding:"10px 12px",borderRadius:10,border:"2px solid "+(active?C.teal:(lead.hasRenewedInterest?C.gold:C.border)),background:active?C.teal+"0d":"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+            <span style={{minWidth:0}}>
+              <span style={{display:"block",fontSize:15,fontWeight:700,color:C.text}}>{lead.hasRenewedInterest&&<span aria-label="New activity" style={{display:"inline-block",width:9,height:9,borderRadius:"50%",background:C.gold,marginRight:6}}/>}{lead.name||"Unknown"}</span>
+              <span style={{display:"block",fontSize:12,color:C.textMid}}>{lead.phone||lead.email||""}</span>
+            </span>
+            <span style={{textAlign:"right",flexShrink:0}}>
+              <span style={{display:"inline-block",fontSize:12,fontWeight:700,color:stage.color,background:stage.color+"15",borderRadius:6,padding:"2px 8px"}}>{stage.label}</span>
+              <span style={{display:"block",fontSize:12,color:isStale?C.danger:C.textMid,fontWeight:isStale?700:400,marginTop:2}}>{daysInStage}d in stage{isStale?" ⚠":""}</span>
+            </span>
+          </button>;
+        })}
+      </div>
+      {selLead&&renderLeadDetail(selLead)}
     </div>}
-
-    {/* Search */}
-    {leads.length>3&&<input placeholder="Search leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid "+C.border,fontSize:13,color:C.text,marginBottom:10,boxSizing:"border-box"}}/>}
-
-    {/* Lead cards */}
-    {filtered.length===0&&<div style={{textAlign:"center",padding:"16px 0",color:C.textLight,fontSize:13}}>No leads in this stage</div>}
-    {filtered.map((lead,i)=>{
-      const stage = PIPELINE_STAGES.find(s=>s.key===lead.stage)||PIPELINE_STAGES[0];
-      const daysInStage = getDaysInStage(lead.stageUpdatedAt);
-      const isStale = daysInStage>=7&&lead.stage!=="closedClient"&&lead.stage!=="closedNo";
-      return <div key={i} style={{borderRadius:10,border:lead.hasRenewedInterest?`2px solid ${C.gold}`:"2px solid "+stage.color+"33",padding:"10px 12px",marginBottom:8,background:"white"}}>
-        {lead.hasRenewedInterest&&<div style={{background:C.gold+"18",border:`1px solid ${C.gold}55`,borderRadius:7,padding:"6px 9px",fontSize:12,fontWeight:600,color:"#92400e",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>🔔 New activity since you last updated this lead</div>}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:700,color:C.text}}>{lead.name||"Unknown"}</div>
-            {lead.phone&&<div style={{fontSize:13,color:C.textMid}}><PhoneLink phone={lead.phone}/></div>}
-            {lead.email&&<div style={{fontSize:13,color:C.teal}}><a href={"mailto:"+lead.email} style={{color:C.teal,textDecoration:"none"}}>✉ {lead.email}</a></div>}
-            <div style={{fontSize:12,color:C.textLight,marginTop:2}}>
-              Received: {lead.submittedAt?new Date(lead.submittedAt).toLocaleDateString():"Unknown"}
-            </div>
-          </div>
-          <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:12,fontWeight:700,color:stage.color,background:stage.color+"15",borderRadius:6,padding:"2px 8px",marginBottom:4}}>{stage.label}</div>
-            <div style={{fontSize:12,color:isStale?C.danger:C.textLight,fontWeight:isStale?600:400}}>{daysInStage}d in stage{isStale?" ⚠":""}
-            </div>
-          </div>
-        </div>
-        {/* Interested In — full click history from MoneyMap, most recent first */}
-        {lead.contactRequests&&lead.contactRequests.length>0&&<div style={{borderTop:`1px solid ${C.border}`,paddingTop:8,marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:5}}>Interested In ({lead.contactRequests.length})</div>
-          {lead.contactRequests.map((cr,ci)=>{
-            const isLatest = ci===0;
-            const crDate = cr.requestedAt?new Date(cr.requestedAt):null;
-            const afterStageUpdate = crDate&&lead.stageUpdatedAt&&crDate>new Date(lead.stageUpdatedAt);
-            return <div key={ci} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
-              <span style={{fontSize:15,width:20,textAlign:"center",flexShrink:0}}>{cr.icon||"📌"}</span>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.text}}>{cr.label||cr.source||"Interest"}{isLatest&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:4,background:C.gold+"22",color:C.gold,marginLeft:6}}>LATEST</span>}</div>
-                {cr.detail&&<div style={{fontSize:12,color:C.text,fontWeight:600,marginTop:1}}>{cr.detail}</div>}
-                <div style={{fontSize:11,color:afterStageUpdate?C.gold:C.textLight,fontWeight:afterStageUpdate?700:400}}>{crDate?crDate.toLocaleDateString("en-US",{month:"short",day:"numeric"})+", "+crDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):""}{afterStageUpdate?" — after you updated this lead":""}</div>
-              </div>
-            </div>;
-          })}
-        </div>}
-        {/* Stage update */}
-        {!isAdmin&&!readOnly&&!showArchived&&<div style={{display:"flex",gap:6}}>
-          <select value={lead.stage} onChange={e=>updateStage(lead.docId,e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:7,border:"1px solid "+stage.color+"44",fontSize:13,color:C.text,background:stage.color+"08",cursor:"pointer"}}>
-            {PIPELINE_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
-          </select>
-          <button onClick={()=>setRepArchived(lead.docId,true)} style={{padding:"6px 10px",borderRadius:7,border:"1px solid "+C.border,background:"white",color:C.textMid,fontSize:13,cursor:"pointer",flexShrink:0}}>Archive</button>
-        </div>}
-        {!isAdmin&&readOnly&&<div style={{fontSize:12,color:C.textLight,fontStyle:"italic"}}>Preview only — stage: {stage.label}</div>}
-        {!isAdmin&&!readOnly&&showArchived&&<button onClick={()=>setRepArchived(lead.docId,false)} style={{width:"100%",padding:"6px 8px",borderRadius:7,border:"1px solid "+C.teal+"44",background:C.teal+"08",color:C.teal,fontSize:13,cursor:"pointer",fontWeight:600}}>↩ Restore to Active</button>}
-      </div>;
-    })}
   </div>;
 }
 
