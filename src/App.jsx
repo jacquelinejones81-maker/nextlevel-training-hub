@@ -4421,6 +4421,7 @@ function ResourceLibrary({data,onUpdate,userRole}) {
   const [form,setForm]=useState({title:"",url:"",description:"",category:"Training"});
   const [editing,setEditing]=useState(null);
   const [filter,setFilter]=useState("All");
+  const [resSearch,setResSearch]=useState("");
 
   const save=()=>{
     if(!form.title||!form.url) return;
@@ -4439,56 +4440,84 @@ function ResourceLibrary({data,onUpdate,userRole}) {
   const cats=["All",...RESOURCE_CATEGORIES.filter(c=>resources.some(r=>r.category===c))];
   const filtered=filter==="All"?resources:resources.filter(r=>r.category===filter);
   const catColors={Training:C.teal,Licensing:C.gold,Tools:C.purple,Company:C.success,Other:C.textMid};
+  const catIcons={
+    Training:<path d="M5 3l14 9-14 9z"/>,
+    Licensing:<g><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></g>,
+    Tools:<g><path d="M14 6l4 4-9 9H5v-4z"/><path d="M13 7l4 4"/></g>,
+    Company:<g><path d="M4 20V8l8-4 8 4v12"/><path d="M9 20v-6h6v6"/></g>,
+    Other:<g><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></g>,
+  };
+  const domainOf=(u)=>{try{return new URL(/^https?:\/\//i.test(u)?u:"https://"+u).hostname.replace(/^www\./,"");}catch(e){return "";}};
+  const q=resSearch.trim().toLowerCase();
+  const shown=filtered.filter(r=>!q||((r.title||"")+" "+(r.description||"")).toLowerCase().includes(q));
+  const inp={width:"100%",padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text,marginBottom:10,boxSizing:"border-box",background:"white"};
+  const renderCard=(r)=>{
+    const realIdx=resources.indexOf(r);
+    const col=catColors[r.category]||C.textMid;
+    return <div key={realIdx} style={{border:`1px solid ${C.border}`,borderRadius:14,padding:18,display:"flex",flexDirection:"column",gap:10,background:"white"}}>
+      <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+        <div style={{width:44,height:44,borderRadius:12,background:col+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{catIcons[r.category]||catIcons.Other}</svg>
+        </div>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:16,fontWeight:700,color:C.text,lineHeight:1.3,wordBreak:"break-word"}}>{r.title}</div>
+          {domainOf(r.url)&&<div style={{fontSize:12,color:C.textMid,marginTop:2}}>{domainOf(r.url)}</div>}
+        </div>
+      </div>
+      <div style={{fontSize:14,color:C.textMid,lineHeight:1.55,flex:1}}>{r.description||<span style={{color:C.textLight}}>No description</span>}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <a href={r.url} target="_blank" rel="noreferrer" style={{padding:"8px 16px",borderRadius:8,background:col,color:"white",textDecoration:"none",fontSize:13,fontWeight:700}}>Open &rarr;</a>
+        {isAdmin&&<div style={{display:"flex",gap:6}}>
+          <button onClick={()=>{setEditing(realIdx);setForm({...r});setShowForm(true);window.scrollTo&&window.scrollTo({top:0,behavior:"smooth"});}} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid,fontWeight:600}}>Edit</button>
+          <button onClick={()=>{if(window.confirm("Delete this resource for everyone?"))del(realIdx);}} style={{fontSize:12,padding:"5px 10px",borderRadius:7,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger,fontWeight:600}}>Delete</button>
+        </div>}
+      </div>
+    </div>;
+  };
+  const gridStyle={display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14};
+  const knownShown=RESOURCE_CATEGORIES.filter(cat=>shown.some(r=>r.category===cat));
+  const otherShown=shown.filter(r=>!RESOURCE_CATEGORIES.includes(r.category));
 
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-      <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text}}>Resource Library</div>
-      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{fontSize:13,padding:"5px 10px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:600}}>+ Add Resource</button>}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:16}}>
+      <div>
+        <div style={{fontSize:dv(20,26),fontWeight:800,color:C.text}}>Resource Library</div>
+        <div style={{fontSize:14,color:C.textMid,marginTop:4}}>Documents, training videos, and company materials for the team.</div>
+      </div>
+      {isAdmin&&<button onClick={()=>{setShowForm(!showForm);setEditing(null);setForm({title:"",url:"",description:"",category:"Training"});}} style={{padding:"10px 18px",borderRadius:9,border:"none",background:C.teal,color:"white",cursor:"pointer",fontWeight:700,fontSize:14}}>{showForm&&editing===null?"Close form":"+ Add Resource"}</button>}
     </div>
-    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:13,color:C.teal}}>Add links to documents, training videos, and company materials for your team. <strong>Tip:</strong> Upload files to Google Drive, set sharing to "Anyone with the link", and paste the link here.</div>}
-    {showForm&&<Card style={{marginBottom:14,border:`1px solid ${C.teal}44`}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:10}}>{editing!==null?"Edit":"New"} Resource</div>
-      <input placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <input placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <input placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:7,boxSizing:"border-box"}}/>
-      <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:10}}>
+    {isAdmin&&<div style={{background:C.teal+"11",border:`1px solid ${C.teal}33`,borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:13,color:C.teal}}>Add links to documents, training videos, and company materials for your team. <strong>Tip:</strong> Upload files to Google Drive, set sharing to "anyone with the link," and paste the link here.</div>}
+    {showForm&&<Card style={{marginBottom:16,border:`1px solid ${C.teal}44`,maxWidth:640}}>
+      <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:12}}>{editing!==null?"Edit":"New"} Resource</div>
+      <input aria-label="Title" placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={inp}/>
+      <input aria-label="URL" placeholder="URL (https://...)" value={form.url} onChange={e=>setForm({...form,url:e.target.value})} style={inp}/>
+      <input aria-label="Description" placeholder="Description (optional)" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={inp}/>
+      <select aria-label="Category" value={form.category} onChange={e=>setForm({...form,category:e.target.value})} style={{...inp,marginBottom:14}}>
         {RESOURCE_CATEGORIES.map(c=><option key={c}>{c}</option>)}
       </select>
-      <div style={{display:"flex",gap:7}}>
-        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"7px",borderRadius:7,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:13,color:C.textMid}}>Cancel</button>
-        <button onClick={save} style={{flex:2,padding:"7px",borderRadius:7,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>Save Resource</button>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>{setShowForm(false);setEditing(null);}} style={{flex:1,padding:"10px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",fontSize:14,color:C.textMid,fontWeight:600}}>Cancel</button>
+        <button onClick={save} style={{flex:2,padding:"10px",borderRadius:8,border:"none",background:C.teal,color:"white",cursor:"pointer",fontSize:14,fontWeight:700}}>Save Resource</button>
       </div>
     </Card>}
-    {resources.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textLight}}>{isAdmin?"No resources yet — add your first one above":"No resources added yet — ask your admin to add some"}</div>}
-    {resources.length>0&&<div style={{display:"flex",gap:5,overflowX:"auto",marginBottom:12,paddingBottom:2}}>
-      {cats.map(c=><button key={c} onClick={()=>setFilter(c)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:filter===c?600:400,background:filter===c?C.navy:C.surface,color:filter===c?"white":C.textMid}}>{c}</button>)}
+    {resources.length===0&&<div style={{textAlign:"center",padding:"32px 0",color:C.textMid}}>{isAdmin?"No resources yet — add your first one above":"No resources added yet — ask your admin to add some"}</div>}
+    {resources.length>0&&<div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:16}}>
+      <input aria-label="Search resources" placeholder="Search resources..." value={resSearch} onChange={e=>setResSearch(e.target.value)} style={{flex:"1 1 240px",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.border}`,fontSize:14,color:C.text,boxSizing:"border-box",background:"white"}}/>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {cats.map(c=>{const n=c==="All"?resources.length:resources.filter(r=>r.category===c).length;return <button key={c} onClick={()=>setFilter(c)} style={{padding:"8px 14px",borderRadius:999,border:`1px solid ${filter===c?C.navy:C.border}`,cursor:"pointer",whiteSpace:"nowrap",fontSize:13,fontWeight:600,background:filter===c?C.navy:"white",color:filter===c?"white":C.textMid}}>{c}<span style={{opacity:0.75,marginLeft:5,fontWeight:500}}>{n}</span></button>;})}
+      </div>
     </div>}
-    {RESOURCE_CATEGORIES.filter(cat=>filtered.some(r=>r.category===cat)).map(cat=><div key={cat}>
-      <SecHead title={cat} color={catColors[cat]||C.teal}/>
-      {filtered.filter(r=>r.category===cat).map((r,i)=>{
-        const realIdx=resources.indexOf(r);
-        return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:6,background:"white",display:"flex",gap:10,alignItems:"flex-start"}}>
-          <div style={{width:32,height:32,borderRadius:8,background:catColors[r.category]+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={catColors[r.category]||C.teal} strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:14,fontWeight:600,color:C.teal,textDecoration:"none",display:"block",marginBottom:2}}>{r.title} &rarr;</a>
-            {r.description&&<div style={{fontSize:13,color:C.textMid}}>{r.description}</div>}
-          </div>
-          {isAdmin&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-            <button onClick={()=>{setEditing(realIdx);setForm({...r});setShowForm(true);}} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.border}`,background:"white",cursor:"pointer",color:C.textMid}}>Edit</button>
-            <button onClick={()=>del(realIdx)} style={{fontSize:12,padding:"3px 7px",borderRadius:5,border:`1px solid ${C.danger}33`,background:C.danger+"11",cursor:"pointer",color:C.danger}}>Del</button>
-          </div>}
-        </div>;
-      })}
+    {resources.length>0&&shown.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textMid,fontSize:14}}>No resources match your search.</div>}
+    {knownShown.map(cat=><div key={cat}>
+      <div style={{display:"flex",alignItems:"center",gap:10,margin:"22px 0 10px",fontSize:13,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.6px",color:catColors[cat]||C.teal}}>
+        <span style={{width:10,height:10,borderRadius:"50%",background:catColors[cat]||C.teal,display:"inline-block"}}/>{cat}<span style={{flex:1,height:1,background:C.border}}/>
+      </div>
+      <div style={gridStyle}>{shown.filter(r=>r.category===cat).map(renderCard)}</div>
     </div>)}
-    {filtered.length>0&&filtered.every(r=>!RESOURCE_CATEGORIES.includes(r.category))&&filtered.map((r,i)=>{
-      const realIdx=resources.indexOf(r);
-      return <div key={i} style={{borderRadius:8,border:`1px solid ${C.border}`,padding:"10px 12px",marginBottom:6}}>
-        <a href={r.url} target="_blank" rel="noreferrer" style={{fontSize:14,fontWeight:600,color:C.teal,textDecoration:"none"}}>{r.title} &rarr;</a>
-        {r.description&&<div style={{fontSize:13,color:C.textMid,marginTop:2}}>{r.description}</div>}
-      </div>;
-    })}
+    {otherShown.length>0&&<div>
+      <div style={{margin:"22px 0 10px",fontSize:13,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.6px",color:C.textMid}}>Uncategorized</div>
+      <div style={gridStyle}>{otherShown.map(renderCard)}</div>
+    </div>}
   </div>;
 }
 
