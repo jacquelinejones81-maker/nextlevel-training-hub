@@ -5694,28 +5694,47 @@ function MyActivityReport({session,data,onUpdate}) {
   const hasGoalsSet = incomeGoal>0 || pacGoal>0 || pacCountGoal>0 || lumpGoal>0;
   const hasCoaching = coaching.length>0;
 
-  return <div style={{ maxWidth:700, margin:"0 auto" }}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap",marginBottom:4}}>
-      <div style={{ fontSize:dv(19,24), fontWeight:800, color:C.text }}>📊 My Activity Report</div>
-      <button onClick={archiveThisMonth} style={{fontSize:12,padding:"5px 11px",borderRadius:8,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>{alreadyArchivedThisMonth?"Save Another Snapshot":"Archive This Month"}</button>
+  const aTile=(value,label,color,bg)=><div style={{ background:bg||C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px" }}>
+    <div style={{ fontSize:dv(20,24), fontWeight:800, color, lineHeight:1.1 }}>{value}</div>
+    <div style={{ fontSize:12, color:C.textMid, marginTop:3 }}>{label}</div>
+  </div>;
+  const aLabel={ fontSize:12, fontWeight:800, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:10 };
+  const aCard={ border:`1px solid ${C.border}`, borderRadius:14, padding:"18px 20px" };
+  const aGrid=(min)=>({ display:"grid", gridTemplateColumns:`repeat(auto-fit,minmax(${min}px,1fr))`, gap:10 });
+  const aBar=(label,pctValue,color,extra)=><div>
+    <div style={{ display:"flex", justifyContent:"space-between", gap:8, fontSize:14, color:C.text }}><span>{label}{extra?<span style={{ color:C.textMid, fontSize:12 }}> {extra}</span>:null}</span><b style={{ color }}>{pctValue}%</b></div>
+    <div style={{ height:8, background:"rgba(0,0,0,0.08)", borderRadius:4, overflow:"hidden", marginTop:4 }}><div style={{ height:"100%", width:Math.min(100,pctValue)+"%", background:color }}/></div>
+  </div>;
+  const wkBar=(v,goal)=><span style={{ display:"inline-block", width:70, height:7, background:"rgba(0,0,0,0.08)", borderRadius:4, overflow:"hidden", verticalAlign:"middle", marginLeft:8 }}><span style={{ display:"block", height:"100%", width:Math.min(100,Math.round((v/goal)*100))+"%", background:C.teal }}/></span>;
+  const thStyle={ textAlign:"left", fontSize:12, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.5px", padding:"8px 10px", borderBottom:`2px solid ${C.border}` };
+  const tdStyle={ padding:"11px 10px", borderBottom:`1px solid ${C.border}`, fontSize:14, color:C.text };
+  const nStyle=(color)=>({ ...tdStyle, fontWeight:800, fontSize:16, color });
+
+  return <div style={{ maxWidth:1100, margin:"0 auto" }}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap",marginBottom:6}}>
+      <div>
+        <div style={{ fontSize:dv(20,26), fontWeight:800, color:C.text }}>My Activity Report</div>
+        <div style={{ fontSize:14, color:C.textMid, marginTop:4 }}>
+          {now.toLocaleDateString("en-US",{month:"long",year:"numeric"})} — Day {dayOfMonth} of {daysInMonth} ({monthPct}% of month elapsed)
+        </div>
+      </div>
+      <button onClick={archiveThisMonth} style={{fontSize:13,padding:"9px 14px",borderRadius:9,border:`1px solid ${C.teal}`,background:C.teal+"11",color:C.teal,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>{alreadyArchivedThisMonth?"Save Another Snapshot":"Archive This Month"}</button>
     </div>
-    <div style={{ fontSize:13, color:C.textMid, marginBottom:16 }}>
-      {now.toLocaleDateString("en-US",{month:"long",year:"numeric"})} — Day {dayOfMonth} of {daysInMonth} ({monthPct}% of month elapsed)
-    </div>
+    <div style={{ height:8, background:"rgba(0,0,0,0.08)", borderRadius:4, overflow:"hidden", margin:"10px 0 18px" }}><div style={{ height:"100%", width:Math.min(100,monthPct)+"%", background:C.teal }}/></div>
 
     {/* Monthly Production Archive viewer */}
-    {monthlyArchive.length>0&&<div style={{marginBottom:16}}>
-      <button onClick={()=>setShowMonthlyArchive(!showMonthlyArchive)} style={{fontSize:13,fontWeight:700,color:C.text,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6,marginBottom:showMonthlyArchive?10:0}}>
+    {monthlyArchive.length>0&&<div style={{marginBottom:18}}>
+      <button onClick={()=>setShowMonthlyArchive(!showMonthlyArchive)} style={{fontSize:14,fontWeight:700,color:C.text,background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:6,marginBottom:showMonthlyArchive?10:0}}>
         <span style={{transform:showMonthlyArchive?"rotate(90deg)":"none",display:"inline-block",fontSize:11}}>▶</span>
         Archived Months ({monthlyArchive.length})
       </button>
-      {showMonthlyArchive&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {monthlyArchive.map(m=><div key={m.id} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",background:C.surface||"#f8fafc"}}>
+      {showMonthlyArchive&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:10}}>
+        {monthlyArchive.map(m=><div key={m.id} style={{border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",background:C.surface||"#f8fafc"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text}}>{m.monthLabel}</div>
-            <button onClick={()=>deleteMonthlySnapshot(m.id)} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textLight,cursor:"pointer",flexShrink:0}}>Delete</button>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>{m.monthLabel}</div>
+            <button onClick={()=>deleteMonthlySnapshot(m.id)} style={{fontSize:12,padding:"3px 9px",borderRadius:6,border:`1px solid ${C.border}`,background:"white",color:C.textMid,cursor:"pointer",flexShrink:0}}>Delete</button>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:6,marginTop:6,fontSize:12,color:C.textMid}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:6,marginTop:6,fontSize:13,color:C.textMid}}>
             {m.incomeGoal>0&&<div>Income: <b style={{color:C.text}}>${m.incomeEarned.toLocaleString()}</b> / ${m.incomeGoal.toLocaleString()}</div>}
             {m.pacGoal>0&&<div>PAC $: <b style={{color:C.text}}>${m.pacActual.toLocaleString()}</b> / ${m.pacGoal.toLocaleString()}</div>}
             {m.pacCountGoal>0&&<div>PAC Accounts: <b style={{color:C.text}}>{m.pacCountActual}</b> / {m.pacCountGoal}</div>}
@@ -5727,162 +5746,95 @@ function MyActivityReport({session,data,onUpdate}) {
       </div>}
     </div>}
 
-    {/* Coaching Section — shown first if there's anything to flag */}
-    {hasCoaching && <Card style={{ marginBottom:16, border:`2px solid ${C.gold}55` }}>
-      <div style={{ fontSize:14, fontWeight:800, color:"#b45309", marginBottom:10 }}>🎯 Where You May Be Lagging</div>
-      {coaching.map((c,i) => <div key={i} style={{ marginBottom: i<coaching.length-1?12:0, paddingBottom: i<coaching.length-1?12:0, borderBottom: i<coaching.length-1?`1px solid ${C.border}`:"none" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-          <span style={{ fontSize:14 }}>{c.severity==="high"?"🔴":c.severity==="medium"?"🟡":"🔵"}</span>
-          <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{c.title}</div>
-        </div>
-        <div style={{ fontSize:12, color:C.textMid, lineHeight:1.6, marginBottom:5 }}>{c.detail}</div>
-        <div style={{ fontSize:12, color:C.teal, lineHeight:1.6, background:C.teal+"0c", borderRadius:7, padding:"7px 10px" }}>💡 {c.action}</div>
-      </div>)}
-    </Card>}
+    {/* Coaching banner — first if there's anything to flag */}
+    {hasCoaching && <div style={{ marginBottom:18, border:`1px solid ${C.gold}66`, background:C.gold+"0d", borderRadius:14, padding:"18px 20px" }}>
+      <div style={{ fontSize:16, fontWeight:800, color:"#b45309" }}>🎯 Where You May Be Lagging</div>
+      <div style={{ ...aGrid(300), gap:12, marginTop:12 }}>
+        {coaching.map((c,i) => <div key={i} style={{ background:"white", border:`1px solid ${C.gold}33`, borderRadius:10, padding:"12px 14px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+            <span style={{ fontSize:14 }}>{c.severity==="high"?"🔴":c.severity==="medium"?"🟡":"🔵"}</span>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{c.title}</div>
+          </div>
+          <div style={{ fontSize:13, color:C.textMid, lineHeight:1.6, marginBottom:6 }}>{c.detail}</div>
+          <div style={{ fontSize:13, color:C.teal, lineHeight:1.6, background:C.teal+"0c", borderRadius:7, padding:"8px 10px" }}>💡 {c.action}</div>
+        </div>)}
+      </div>
+    </div>}
 
-    {!hasCoaching && hasGoalsSet && <Card style={{ marginBottom:16, border:`2px solid ${C.success}55`, background:C.success+"08" }}>
-      <div style={{ fontSize:14, fontWeight:800, color:C.success }}>✅ On Pace</div>
-      <div style={{ fontSize:12, color:C.textMid, marginTop:4 }}>You're tracking well against your goals this month. Keep up the consistency.</div>
-    </Card>}
+    {!hasCoaching && hasGoalsSet && <div style={{ marginBottom:18, border:`1px solid ${C.success}55`, background:C.success+"0d", borderRadius:14, padding:"16px 20px" }}>
+      <div style={{ fontSize:16, fontWeight:800, color:C.success }}>✅ On Pace</div>
+      <div style={{ fontSize:14, color:C.textMid, marginTop:4 }}>You're tracking well against your goals this month. Keep up the consistency.</div>
+    </div>}
 
-    {!hasGoalsSet && <Card style={{ marginBottom:16, border:`1px solid ${C.gold}33`, background:C.gold+"06" }}>
-      <div style={{ fontSize:13, fontWeight:700, color:"#b45309" }}>⏳ No Goals Set Yet</div>
-      <div style={{ fontSize:12, color:C.textMid, marginTop:4 }}>Set a Monthly Income Goal and Monthly Investment Goal in your Production tab to unlock personalized coaching here.</div>
-    </Card>}
+    {!hasGoalsSet && <div style={{ marginBottom:18, border:`1px solid ${C.gold}33`, background:C.gold+"08", borderRadius:14, padding:"16px 20px" }}>
+      <div style={{ fontSize:15, fontWeight:700, color:"#b45309" }}>⏳ No Goals Set Yet</div>
+      <div style={{ fontSize:14, color:C.textMid, marginTop:4 }}>Set a Monthly Income Goal and Monthly Investment Goal in your Production tab to unlock personalized coaching here.</div>
+    </div>}
 
     {/* 30-Day Averages */}
-    <Card style={{ marginBottom:12 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>📊 30-Day Averages</div>
-      <div style={{ fontSize:11, color:C.textLight, marginBottom:8 }}>Rolling daily average over the last 30 days — not tied to the Primerica month.</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.calls}</div>
-          <div style={{ fontSize:10, color:C.textMid }}>Calls / day</div>
-        </div>
-        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.contacts}</div>
-          <div style={{ fontSize:10, color:C.textMid }}>Contacts / day</div>
-        </div>
-        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.apptSet}</div>
-          <div style={{ fontSize:10, color:C.textMid }}>Appts Set / day</div>
-        </div>
-        <div style={{ background:C.surface, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{avg30.apptDone}</div>
-          <div style={{ fontSize:10, color:C.textMid }}>Appts Done / day</div>
-        </div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>{avg30.lifeApps}</div>
-          <div style={{ fontSize:10, color:C.textMid }}>Life Apps / day</div>
-        </div>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>{avg30.recruits}</div>
-          <div style={{ fontSize:10, color:C.textMid }}>Recruits / day</div>
-        </div>
-      </div>
-    </Card>
+    <div style={aLabel}>30-day averages (per day)</div>
+    <div style={{ fontSize:12, color:C.textLight, margin:"-6px 0 10px" }}>Rolling daily average over the last 30 days — not tied to the Primerica month.</div>
+    <div style={{ ...aGrid(150), marginBottom:18 }}>
+      {aTile(avg30.calls,"Calls / day",C.teal)}
+      {aTile(avg30.contacts,"Contacts / day",C.teal)}
+      {aTile(avg30.apptSet,"Appts set / day",C.teal)}
+      {aTile(avg30.apptDone,"Appts done / day",C.teal)}
+      {aTile(avg30.lifeApps,"Life apps / day",C.gold,C.gold+"11")}
+      {aTile(avg30.recruits,"Recruits / day",C.purple,C.purple+"11")}
+    </div>
 
-    {/* Income */}
-    <Card style={{ marginBottom:12 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>💰 Income & Life Apps</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{lifeAppsThisMonth.length}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Life Apps This Month</div>
+    {/* Income + Investments side by side */}
+    <div style={{ ...aGrid(340), gap:16, marginBottom:16 }}>
+      <div style={aCard}>
+        <div style={aLabel}>💰 Income & life apps</div>
+        <div style={aGrid(130)}>
+          {aTile(lifeAppsThisMonth.length,"Life apps this month",C.teal)}
+          {aTile("$"+Math.round(totalPremiumMonth).toLocaleString()+"/mo","Premium written",C.gold)}
+          {aTile("$"+Math.round(totalPremiumMonth*12).toLocaleString(),"Annual premium written",C.gold)}
+          {aTile("$"+Math.round(upfrontEarned).toLocaleString(),"Earned this month (upfront)",C.purple)}
         </div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(totalPremiumMonth).toLocaleString()}/mo</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Premium Written</div>
-        </div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(totalPremiumMonth*12).toLocaleString()}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Annual Premium Written</div>
-        </div>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>${Math.round(upfrontEarned).toLocaleString()}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Earned This Month (Upfront)</div>
-        </div>
-        <div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{incomeGoal>0?Math.round((upfrontEarned/incomeGoal)*100)+"%":"—"}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Income Goal Progress{incomeGoal>0?` ($${incomeGoal.toLocaleString()})`:""}</div>
-        </div>
+        {incomeGoal>0&&<div style={{ marginTop:14 }}>{aBar("Income goal",Math.round((upfrontEarned/incomeGoal)*100),C.success,"($"+incomeGoal.toLocaleString()+")")}</div>}
       </div>
-    </Card>
-
-    {/* Investments */}
-    <Card style={{ marginBottom:12 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>📈 Investments</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
-        <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{investmentsThisMonth.length}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>New Clients This Month</div>
+      <div style={aCard}>
+        <div style={aLabel}>📈 Investments</div>
+        <div style={aGrid(130)}>
+          {aTile(investmentsThisMonth.length,"New clients this month",C.teal)}
+          {aTile(pacCount,"PAC accounts (total)",C.purple)}
+          {aTile("$"+Math.round(pacMonth).toLocaleString()+"/mo","Total PAC $ (running)",C.gold)}
+          {aTile("$"+Math.round(lumpMonth).toLocaleString(),"Lump sum this month",C.purple)}
         </div>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>{pacCount}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>PAC Accounts (Total)</div>
-        </div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>${Math.round(pacMonth).toLocaleString()}/mo</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Total PAC $ (Running)</div>
-        </div>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.purple }}>${Math.round(lumpMonth).toLocaleString()}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Lump Sum This Month</div>
-        </div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        {pacCountGoal>0&&<div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{Math.round((pacCount/pacCountGoal)*100)}%</div>
-          <div style={{ fontSize:11, color:C.textMid }}>PAC Count Goal ({pacCount}/{pacCountGoal})</div>
-        </div>}
-        {pacGoal>0&&<div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{Math.round((pacMonth/pacGoal)*100)}%</div>
-          <div style={{ fontSize:11, color:C.textMid }}>PAC $ Goal Progress (${pacGoal.toLocaleString()}/mo)</div>
-        </div>}
-        {lumpGoal>0&&<div style={{ background:C.success+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.success }}>{Math.round((lumpMonth/lumpGoal)*100)}%</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Lump Sum Goal Progress (${lumpGoal.toLocaleString()})</div>
+        {(pacCountGoal>0||pacGoal>0||lumpGoal>0)&&<div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:10 }}>
+          {pacCountGoal>0&&aBar("PAC count goal",Math.round((pacCount/pacCountGoal)*100),C.purple,"("+pacCount+"/"+pacCountGoal+")")}
+          {pacGoal>0&&aBar("PAC $ goal",Math.round((pacMonth/pacGoal)*100),C.gold,"($"+pacGoal.toLocaleString()+"/mo)")}
+          {lumpGoal>0&&aBar("Lump sum goal",Math.round((lumpMonth/lumpGoal)*100),C.purple,"($"+lumpGoal.toLocaleString()+")")}
         </div>}
       </div>
-    </Card>
+    </div>
 
-    {/* Scorecard */}
-    <Card style={{ marginBottom:12 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>📋 Scorecard</div>
-      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Yesterday <span style={{textTransform:"none",fontWeight:400,color:C.textLight}}>({yesterdayLabel})</span></div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:12 }}>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.gold }}>{scorecardYesterday.contacts}</div><div style={{ fontSize:10, color:C.textMid }}>Contacts</div></div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.gold }}>{scorecardYesterday.apptSet}</div><div style={{ fontSize:10, color:C.textMid }}>Appts Set</div></div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.gold }}>{scorecardYesterday.apptDone}</div><div style={{ fontSize:10, color:C.textMid }}>Appts Done</div></div>
-      </div>
-      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>This Week</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:12 }}>
-        <div style={{ background:C.surface, borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.text }}>{scorecardWeek.contacts}<span style={{fontSize:11,color:C.textLight}}>/100</span></div><div style={{ fontSize:10, color:C.textMid }}>Contacts</div></div>
-        <div style={{ background:C.surface, borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.text }}>{scorecardWeek.apptSet}<span style={{fontSize:11,color:C.textLight}}>/20</span></div><div style={{ fontSize:10, color:C.textMid }}>Appts Set</div></div>
-        <div style={{ background:C.surface, borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.text }}>{scorecardWeek.apptDone}<span style={{fontSize:11,color:C.textLight}}>/20</span></div><div style={{ fontSize:10, color:C.textMid }}>Appts Done</div></div>
-      </div>
-      <div style={{ fontSize:11, fontWeight:700, color:C.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>This Month (Total)</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.purple }}>{scorecardMonth.contacts}</div><div style={{ fontSize:10, color:C.textMid }}>Contacts</div></div>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.purple }}>{scorecardMonth.apptSet}</div><div style={{ fontSize:10, color:C.textMid }}>Appts Set</div></div>
-        <div style={{ background:C.purple+"11", borderRadius:8, padding:"7px 8px", textAlign:"center" }}><div style={{ fontSize:14, fontWeight:700, color:C.purple }}>{scorecardMonth.apptDone}</div><div style={{ fontSize:10, color:C.textMid }}>Appts Done</div></div>
-      </div>
-    </Card>
-
-    {/* Recruiting */}
-    <Card style={{ marginBottom:12 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>🤝 Recruiting</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        <div style={{ background:C.teal+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.teal }}>{recruitsThisMonth.length}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Recruits This Month</div>
+    {/* Scorecard + Recruiting side by side */}
+    <div style={{ ...aGrid(340), gap:16, marginBottom:16 }}>
+      <div style={aCard}>
+        <div style={aLabel}>📋 Scorecard</div>
+        <div style={{ overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead><tr><th style={thStyle}></th><th style={thStyle}>Contacts</th><th style={thStyle}>Appts set</th><th style={thStyle}>Appts done</th></tr></thead>
+          <tbody>
+            <tr><td style={tdStyle}>Yesterday<div style={{ fontSize:11, color:C.textLight }}>{yesterdayLabel}</div></td><td style={nStyle(C.gold)}>{scorecardYesterday.contacts}</td><td style={nStyle(C.gold)}>{scorecardYesterday.apptSet}</td><td style={nStyle(C.gold)}>{scorecardYesterday.apptDone}</td></tr>
+            <tr><td style={tdStyle}>This week</td><td style={nStyle(C.text)}>{scorecardWeek.contacts}<span style={{fontSize:11,fontWeight:500,color:C.textLight}}>/100</span>{wkBar(scorecardWeek.contacts,100)}</td><td style={nStyle(C.text)}>{scorecardWeek.apptSet}<span style={{fontSize:11,fontWeight:500,color:C.textLight}}>/20</span>{wkBar(scorecardWeek.apptSet,20)}</td><td style={nStyle(C.text)}>{scorecardWeek.apptDone}<span style={{fontSize:11,fontWeight:500,color:C.textLight}}>/20</span>{wkBar(scorecardWeek.apptDone,20)}</td></tr>
+            <tr><td style={tdStyle}>This month</td><td style={nStyle(C.purple)}>{scorecardMonth.contacts}</td><td style={nStyle(C.purple)}>{scorecardMonth.apptSet}</td><td style={nStyle(C.purple)}>{scorecardMonth.apptDone}</td></tr>
+          </tbody>
+        </table>
         </div>
-        <div style={{ background:C.gold+"11", borderRadius:8, padding:"8px 10px" }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.gold }}>{myRecruits.length}</div>
-          <div style={{ fontSize:11, color:C.textMid }}>Total Active Recruits</div>
+        <div style={{ fontSize:12, color:C.textMid, marginTop:8 }}>Small bars show progress toward your weekly goal.</div>
+      </div>
+      <div style={aCard}>
+        <div style={aLabel}>🤝 Recruiting</div>
+        <div style={aGrid(130)}>
+          {aTile(recruitsThisMonth.length,"Recruits this month",C.teal)}
+          {aTile(myRecruits.length,"Total active recruits",C.gold,C.gold+"11")}
         </div>
       </div>
-    </Card>
+    </div>
   </div>;
 }
 
