@@ -5746,18 +5746,24 @@ function MyActivityReport({session,data,onUpdate}) {
       </div>}
     </div>}
 
-    {/* Coaching banner — first if there's anything to flag */}
-    {hasCoaching && <div style={{ marginBottom:18, border:`1px solid ${C.gold}66`, background:C.gold+"0d", borderRadius:14, padding:"18px 20px" }}>
-      <div style={{ fontSize:16, fontWeight:800, color:"#b45309" }}>🎯 Where You May Be Lagging</div>
-      <div style={{ ...aGrid(300), gap:12, marginTop:12 }}>
-        {coaching.map((c,i) => <div key={i} style={{ background:"white", border:`1px solid ${C.gold}33`, borderRadius:10, padding:"12px 14px" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-            <span style={{ fontSize:14 }}>{c.severity==="high"?"🔴":c.severity==="medium"?"🟡":"🔵"}</span>
-            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{c.title}</div>
-          </div>
-          <div style={{ fontSize:13, color:C.textMid, lineHeight:1.6, marginBottom:6 }}>{c.detail}</div>
-          <div style={{ fontSize:13, color:C.teal, lineHeight:1.6, background:C.teal+"0c", borderRadius:7, padding:"8px 10px" }}>💡 {c.action}</div>
-        </div>)}
+    {/* Coaching — one readable column, red items first, big dark text */}
+    {hasCoaching && <div style={{ marginBottom:18, border:`1px solid ${C.gold}66`, background:"white", borderRadius:14, padding:dv("16px","22px 26px") }}>
+      <div style={{ fontSize:dv(18,20), fontWeight:800, color:"#92400e" }}>🎯 Where You May Be Lagging</div>
+      <div style={{ fontSize:15, color:C.text, marginTop:4, marginBottom:6 }}>{coaching.filter(c=>c.severity==="high").length>0?coaching.filter(c=>c.severity==="high").length+" need attention now":""}{coaching.filter(c=>c.severity==="high").length>0&&coaching.filter(c=>c.severity!=="high").length>0?" · ":""}{coaching.filter(c=>c.severity!=="high").length>0?coaching.filter(c=>c.severity!=="high").length+" to keep an eye on":""}</div>
+      <div style={{ maxWidth:860 }}>
+        {coaching.slice().sort((a,b)=>({high:0,medium:1,low:2}[a.severity]??3)-({high:0,medium:1,low:2}[b.severity]??3)).map((c,i,arr) => {
+          const sevColor=c.severity==="high"?"#b91c1c":c.severity==="medium"?"#92400e":"#1d4ed8";
+          const sevBg=c.severity==="high"?"#fee2e2":c.severity==="medium"?"#fef3c7":"#dbeafe";
+          const sevLabel=c.severity==="high"?"Needs attention":c.severity==="medium"?"Keep an eye on":"Heads up";
+          return <div key={i} style={{ padding:"16px 0", borderTop:`1px solid ${C.border}` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:6 }}>
+              <span style={{ fontSize:12, fontWeight:800, color:sevColor, background:sevBg, borderRadius:6, padding:"3px 9px", textTransform:"uppercase", letterSpacing:"0.4px" }}>{sevLabel}</span>
+              <div style={{ fontSize:dv(17,18), fontWeight:800, color:C.text }}>{c.title}</div>
+            </div>
+            <div style={{ fontSize:dv(15,16), color:C.text, lineHeight:1.7, marginBottom:10 }}>{c.detail}</div>
+            <div style={{ fontSize:dv(15,16), color:"#0b4f4a", lineHeight:1.7, background:C.teal+"12", borderRadius:10, padding:"12px 14px" }}><b>What to do: </b>{c.action}</div>
+          </div>;
+        })}
       </div>
     </div>}
 
