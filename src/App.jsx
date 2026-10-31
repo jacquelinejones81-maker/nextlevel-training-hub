@@ -5581,6 +5581,7 @@ function MyActivityReport({session,data,onUpdate}) {
       const appsNeeded = avgPerApp>0 ? Math.ceil((gap/(promo.pct/100)/12*(12/9))/avgPerApp) : null;
       coaching.push({
         type:"income",
+        tile:{name:"Income goal",big:incomePct+"%",sub:"of $"+incomeGoal.toLocaleString()+" goal",pct:incomePct},
         severity: incomePct < expectedPct - 25 ? "high" : "medium",
         title: "Income Goal Behind Pace",
         detail: `You've earned $${Math.round(upfrontEarned).toLocaleString()} of your $${incomeGoal.toLocaleString()} goal (${incomePct}%) with ${monthPct}% of the month gone.`,
@@ -5598,6 +5599,7 @@ function MyActivityReport({session,data,onUpdate}) {
       const gap = pacCountGoal - pacCount;
       coaching.push({
         type:"paccount",
+        tile:{name:"PAC accounts",big:pacCountPct+"%",sub:pacCount+" of "+pacCountGoal+" accounts",pct:pacCountPct},
         severity: pacCountPct < monthPct - 25 ? "high" : "medium",
         title:"PAC Count Behind Pace",
         detail:`Your goal is ${pacCountGoal} PAC accounts this month — you've opened ${pacCount} (${pacCountPct}%) with ${monthPct}% of the month gone.`,
@@ -5615,6 +5617,7 @@ function MyActivityReport({session,data,onUpdate}) {
       const clientsNeeded = avgPACPerClient>0 ? Math.ceil(gap/avgPACPerClient) : null;
       coaching.push({
         type:"pac",
+        tile:{name:"PAC $ per month",big:pacPct+"%",sub:"$"+Math.round(pacMonth).toLocaleString()+" of $"+pacGoal.toLocaleString()+"/mo",pct:pacPct},
         severity: pacPct < monthPct - 25 ? "high" : "medium",
         title:"PAC $ Goal Behind Pace",
         detail:`Your PAC dollar goal is $${pacGoal.toLocaleString()}/mo — you're at $${Math.round(pacMonth).toLocaleString()}/mo (${pacPct}%). You're $${Math.round(gap).toLocaleString()}/mo behind your goal.`,
@@ -5635,6 +5638,7 @@ function MyActivityReport({session,data,onUpdate}) {
       const clientsNeeded = avgLumpPerClient>0 ? Math.ceil(gap/avgLumpPerClient) : null;
       coaching.push({
         type:"lump",
+        tile:{name:"Lump sum",big:lumpPct+"%",sub:"$"+Math.round(lumpMonth).toLocaleString()+" of $"+lumpGoal.toLocaleString(),pct:lumpPct},
         severity: lumpPct < monthPct - 25 ? "high" : "medium",
         title:"Lump Sum Goal Behind Pace",
         detail:`Your Lump Sum goal is $${lumpGoal.toLocaleString()} this month — you're at $${Math.round(lumpMonth).toLocaleString()} (${lumpPct}%) with ${monthPct}% of the month gone. You're $${Math.round(gap).toLocaleString()} behind pace.`,
@@ -5651,6 +5655,7 @@ function MyActivityReport({session,data,onUpdate}) {
   if (scorecardMonth.contacts < expectedContacts * 0.7 && weeksElapsedThisMonth > 0) {
     coaching.push({
       type:"contacts",
+      tile:{name:"Contacts",big:scorecardMonth.contacts+"",sub:"of about "+expectedContacts+" expected",pct:Math.round((scorecardMonth.contacts/expectedContacts)*100)},
       severity:"medium",
       title:"Contacts Below Weekly Pace",
       detail:`Your scorecard goal is 100 contacts/week. This month you've logged ${scorecardMonth.contacts} contacts across ${weeksElapsedThisMonth} week${weeksElapsedThisMonth!==1?"s":""} (expected ~${expectedContacts}).`,
@@ -5662,6 +5667,7 @@ function MyActivityReport({session,data,onUpdate}) {
   if (scorecardMonth.contacts >= 20 && contactToApptRate < 0.15) {
     coaching.push({
       type:"conversion",
+      tile:{name:"Contact to appointment",big:Math.round(contactToApptRate*100)+"%",sub:"target about 20%",pct:Math.round((contactToApptRate/0.2)*100)},
       severity:"medium",
       title:"Contact-to-Appointment Rate Low",
       detail:`Out of ${scorecardMonth.contacts} contacts this month, only ${scorecardMonth.apptSet} became appointments (${Math.round(contactToApptRate*100)}%). A healthy rate is typically 1 appointment per 5 contacts (20%).`,
@@ -5673,6 +5679,7 @@ function MyActivityReport({session,data,onUpdate}) {
   if (scorecardMonth.apptSet >= 5 && apptToShowRate < 0.6) {
     coaching.push({
       type:"showrate",
+      tile:{name:"Appointment show rate",big:Math.round(apptToShowRate*100)+"%",sub:"target 60% or more",pct:Math.round((apptToShowRate/0.6)*100)},
       severity:"medium",
       title:"Appointment Show Rate Needs Attention",
       detail:`Of ${scorecardMonth.apptSet} appointments set this month, only ${scorecardMonth.apptDone} were completed (${Math.round(apptToShowRate*100)}% show rate).`,
@@ -5684,6 +5691,7 @@ function MyActivityReport({session,data,onUpdate}) {
   if (recruitsThisMonth.length === 0 && dayOfMonth > 10) {
     coaching.push({
       type:"recruiting",
+      tile:{name:"Recruits",big:"0",sub:"this month so far",pct:0},
       severity:"low",
       title:"No Recruits Logged This Month Yet",
       detail:`It's day ${dayOfMonth} of the month and no new recruits have been added under your name.`,
@@ -5691,6 +5699,45 @@ function MyActivityReport({session,data,onUpdate}) {
     });
   }
 
+  // ── Goal tiles: every goal, not just the ones behind pace (lag items come from the coaching engine above, unchanged) ──
+  const goalTiles = coaching.map(c=>({...c, kind:"lag"}));
+  const hasTile = (t)=>goalTiles.some(g=>g.type===t);
+  const moneyTile = (type,name,goal,actual,fmt,unit)=>{
+    if(!(goal>0) || hasTile(type)) return;
+    const pct=Math.round((actual/goal)*100);
+    const win=pct>=100;
+    goalTiles.push({
+      type, kind:win?"win":"track", severity:"none",
+      tile:{name,big:pct+"%",sub:fmt(actual)+" of "+fmt(goal)+(unit||""),pct},
+      title:name+(win?" — goal reached":" — on pace"),
+      detail:win
+        ? `You've reached your ${name.toLowerCase()} goal: ${fmt(actual)} of ${fmt(goal)}${unit||""}.`
+        : `You're at ${fmt(actual)} of your ${fmt(goal)}${unit||""} goal (${pct}%) with ${monthPct}% of the month gone, which is on pace.`,
+    });
+  };
+  const fmtD=(n)=>"$"+Math.round(n).toLocaleString();
+  const fmtN=(n)=>String(Math.round(n));
+  moneyTile("income","Income goal",incomeGoal,upfrontEarned,fmtD,"");
+  moneyTile("paccount","PAC accounts",pacCountGoal,pacCount,fmtN," accounts");
+  moneyTile("pac","PAC $ per month",pacGoal,pacMonth,fmtD,"/mo");
+  moneyTile("lump","Lump sum",lumpGoal,lumpMonth,fmtD,"");
+  if(!hasTile("contacts") && expectedContacts>0 && scorecardMonth.contacts>=expectedContacts){
+    const cp=Math.round((scorecardMonth.contacts/expectedContacts)*100);
+    goalTiles.push({type:"contacts",kind:"win",severity:"none",tile:{name:"Contacts",big:scorecardMonth.contacts+"",sub:"of about "+expectedContacts+" expected",pct:cp},title:"Contacts — ahead of pace",detail:`Your scorecard goal is 100 contacts/week. You've logged ${scorecardMonth.contacts} contacts across ${weeksElapsedThisMonth} week${weeksElapsedThisMonth!==1?"s":""} (expected ~${expectedContacts}).`});
+  }
+  const goalFacts=(g)=>{
+    const m=monthPct+"%";
+    if(g.type==="income") return [["Goal",fmtD(incomeGoal)],["You're at",fmtD(upfrontEarned)],[upfrontEarned>=incomeGoal?"Over goal":"Still needed",fmtD(Math.abs(incomeGoal-upfrontEarned))],["Month gone",m]];
+    if(g.type==="paccount") return [["Goal",pacCountGoal+" accounts"],["You're at",String(pacCount)],[pacCount>=pacCountGoal?"Over goal":"Still needed",String(Math.abs(pacCountGoal-pacCount))],["Month gone",m]];
+    if(g.type==="pac") return [["Goal",fmtD(pacGoal)+"/mo"],["You're at",fmtD(pacMonth)+"/mo"],[pacMonth>=pacGoal?"Over goal":"Still needed",fmtD(Math.abs(pacGoal-pacMonth))+"/mo"],["Month gone",m]];
+    if(g.type==="lump") return [["Goal",fmtD(lumpGoal)],["You're at",fmtD(lumpMonth)],[lumpMonth>=lumpGoal?"Over goal":"Still needed",fmtD(Math.abs(lumpGoal-lumpMonth))],["Month gone",m]];
+    if(g.type==="contacts") return [["Expected so far","about "+expectedContacts],["You're at",String(scorecardMonth.contacts)],[scorecardMonth.contacts>=expectedContacts?"Ahead by":"Still needed","about "+Math.abs(expectedContacts-scorecardMonth.contacts)],["Weeks in",String(weeksElapsedThisMonth)]];
+    if(g.type==="conversion") return [["Target","about 20%"],["You're at",Math.round(contactToApptRate*100)+"%"],["Contacts",String(scorecardMonth.contacts)],["Appointments",String(scorecardMonth.apptSet)]];
+    if(g.type==="showrate") return [["Target","60% or more"],["You're at",Math.round(apptToShowRate*100)+"%"],["Set",String(scorecardMonth.apptSet)],["Completed",String(scorecardMonth.apptDone)]];
+    if(g.type==="recruiting") return [["Recruits this month","0"],["Day of month",String(dayOfMonth)]];
+    return [];
+  };
+  const [selCoach,setSelCoach]=useState(0);
   const hasGoalsSet = incomeGoal>0 || pacGoal>0 || pacCountGoal>0 || lumpGoal>0;
   const hasCoaching = coaching.length>0;
 
@@ -5746,31 +5793,75 @@ function MyActivityReport({session,data,onUpdate}) {
       </div>}
     </div>}
 
-    {/* Coaching — one readable column, red items first, big dark text */}
-    {hasCoaching && <div style={{ marginBottom:18, border:`1px solid ${C.gold}66`, background:"white", borderRadius:14, padding:dv("16px","22px 26px") }}>
-      <div style={{ fontSize:dv(18,20), fontWeight:800, color:"#92400e" }}>🎯 Where You May Be Lagging</div>
-      <div style={{ fontSize:15, color:C.text, marginTop:4, marginBottom:6 }}>{coaching.filter(c=>c.severity==="high").length>0?coaching.filter(c=>c.severity==="high").length+" need attention now":""}{coaching.filter(c=>c.severity==="high").length>0&&coaching.filter(c=>c.severity!=="high").length>0?" · ":""}{coaching.filter(c=>c.severity!=="high").length>0?coaching.filter(c=>c.severity!=="high").length+" to keep an eye on":""}</div>
-      <div style={{ maxWidth:860 }}>
-        {coaching.slice().sort((a,b)=>({high:0,medium:1,low:2}[a.severity]??3)-({high:0,medium:1,low:2}[b.severity]??3)).map((c,i,arr) => {
-          const sevColor=c.severity==="high"?"#b91c1c":c.severity==="medium"?"#92400e":"#1d4ed8";
-          const sevBg=c.severity==="high"?"#fee2e2":c.severity==="medium"?"#fef3c7":"#dbeafe";
-          const sevLabel=c.severity==="high"?"Needs attention":c.severity==="medium"?"Keep an eye on":"Heads up";
-          return <div key={i} style={{ padding:"16px 0", borderTop:`1px solid ${C.border}` }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:6 }}>
-              <span style={{ fontSize:12, fontWeight:800, color:sevColor, background:sevBg, borderRadius:6, padding:"3px 9px", textTransform:"uppercase", letterSpacing:"0.4px" }}>{sevLabel}</span>
-              <div style={{ fontSize:dv(17,18), fontWeight:800, color:C.text }}>{c.title}</div>
-            </div>
-            <div style={{ fontSize:dv(15,16), color:C.text, lineHeight:1.7, marginBottom:10 }}>{c.detail}</div>
-            <div style={{ fontSize:dv(15,16), color:"#0b4f4a", lineHeight:1.7, background:C.teal+"12", borderRadius:10, padding:"12px 14px" }}><b>What to do: </b>{c.action}</div>
-          </div>;
-        })}
-      </div>
-    </div>}
+    {/* Goals — every goal as a tile; click one for details. Gold star when a goal is hit. */}
+    {goalTiles.length>0 && (()=>{
+      const rank=(g)=>g.kind==="lag"?({high:0,medium:1,low:2}[g.severity]??3):g.kind==="track"?4:5;
+      const sorted=goalTiles.slice().sort((a,b)=>rank(a)-rank(b));
+      const GOLD="#b45309", STAR="#e0a526";
+      const pctColor=(pc)=>pc>=100?GOLD:pc>=80?C.success:pc>=50?"#b45309":"#b91c1c";
+      const nWin=sorted.filter(g=>g.kind==="win").length;
+      const nHigh=sorted.filter(g=>g.kind==="lag"&&g.severity==="high").length;
+      const nWatch=sorted.filter(g=>g.kind==="lag"&&g.severity!=="high").length;
+      const nTrack=sorted.filter(g=>g.kind==="track").length;
+      const parts=[];
+      if(nWin) parts.push(nWin+(nWin===1?" goal hit":" goals hit"));
+      if(nHigh) parts.push(nHigh+" need attention now");
+      if(nWatch) parts.push(nWatch+" to keep an eye on");
+      if(nTrack) parts.push(nTrack+" on pace");
+      const idx=Math.min(selCoach,sorted.length-1);
+      const cur=sorted[idx];
+      const curWin=cur.kind==="win";
+      const over=cur.tile.pct>100;
+      const starSvg=<svg width="22" height="22" viewBox="0 0 24 24" fill={STAR} stroke={GOLD} strokeWidth="1.5" strokeLinejoin="round" role="img" aria-label="Goal reached" style={{ position:"absolute", top:10, right:10 }}><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7-6.2-3.5L5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg>;
+      const tag=curWin?{t:"★ Goal reached",c:"#78350f",bg:"#fde68a"}:cur.kind==="track"?{t:"On pace",c:"#166534",bg:"#dcfce7"}:cur.severity==="high"?{t:"Needs attention",c:"#b91c1c",bg:"#fee2e2"}:cur.severity==="medium"?{t:"Keep an eye on",c:"#92400e",bg:"#fef3c7"}:{t:"Heads up",c:"#1d4ed8",bg:"#dbeafe"};
+      const winNote=over
+        ? "You exceeded your expectation. That is not the finish line, it is proof of what you are capable of. Every extra one now is a bonus."
+        : "You hit it. Stay consistent and see how far past it you can go.";
+      return <div style={{ marginBottom:18, border:`1px solid ${C.gold}66`, background:"white", borderRadius:14, padding:dv("16px","20px 24px") }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:4 }}>
+          <div style={{ fontSize:dv(18,20), fontWeight:800, color:"#92400e" }}>🎯 Your Goals This Month</div>
+          <div style={{ fontSize:14, color:C.text }}>{parts.join(" · ")}</div>
+        </div>
+        <div style={{ fontSize:14, color:C.textMid, marginBottom:12 }}>Click any goal below to see the details underneath.</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))", gap:12 }}>
+          {sorted.map((g,i)=>{
+            const win=g.kind==="win";
+            const col=pctColor(g.tile.pct);
+            const active=i===idx;
+            const big=win?(g.tile.pct>100?"+"+(g.tile.pct-100)+"% over":"Goal hit"):g.tile.big;
+            return <button key={g.type} onClick={()=>setSelCoach(i)} aria-pressed={active} style={{ position:"relative", textAlign:"left", border:`2px solid ${win?(active?GOLD:"#e0b43a"):active?C.teal:C.border}`, background:win?"#fffbeb":active?C.teal+"0d":"white", borderRadius:12, padding:"12px 14px", cursor:"pointer", width:"100%" }}>
+              {win&&starSvg}
+              <div style={{ fontSize:14, fontWeight:700, color:C.text, paddingRight:win?26:0 }}>{g.tile.name}</div>
+              <div style={{ fontSize:26, fontWeight:800, color:col, lineHeight:1.2, marginTop:2 }}>{big}</div>
+              <div style={{ fontSize:12, color:C.textMid, marginTop:1 }}>{g.tile.sub}</div>
+              <div style={{ height:8, background:"rgba(0,0,0,0.08)", borderRadius:4, overflow:"hidden", marginTop:8 }}><div style={{ height:"100%", width:Math.max(2,Math.min(100,g.tile.pct))+"%", background:win?STAR:col }}/></div>
+              <div style={{ fontSize:12, fontWeight:700, color:win?GOLD:C.teal, marginTop:8 }}>{active?"Showing details below ▼":"Click for details ▸"}</div>
+            </button>;
+          })}
+        </div>
+        <div style={{ fontSize:12, color:C.textMid, margin:"10px 0 0" }}>Bar color shows progress toward the target: <b style={{color:"#b91c1c"}}>red</b> under 50%, <b style={{color:"#b45309"}}>amber</b> 50–79%, <b style={{color:C.success}}>green</b> 80–99%, and a <b style={{color:GOLD}}>gold star</b> once you hit it.</div>
+        <div style={{ marginTop:14, border:`1px solid ${curWin?"#e0b43a":C.border}`, borderRadius:12, padding:"18px 20px", background:curWin?"#fffbeb":C.surface }}>
+          <div style={{ fontSize:12, fontWeight:800, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:6 }}>Details for: {cur.tile.name}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+            <span style={{ fontSize:12, fontWeight:800, color:tag.c, background:tag.bg, borderRadius:6, padding:"3px 9px", textTransform:"uppercase", letterSpacing:"0.4px" }}>{tag.t}</span>
+            <div style={{ fontSize:dv(17,18), fontWeight:800, color:C.text }}>{curWin?cur.tile.name+(over?" — you went past it":" — you did it"):cur.title}</div>
+          </div>
+          {goalFacts(cur).length>0&&<div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:10, margin:"12px 0" }}>
+            {goalFacts(cur).map((f,k)=><div key={k} style={{ background:"white", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px" }}>
+              <div style={{ fontSize:20, fontWeight:800, color:C.text }}>{f[1]}</div>
+              <div style={{ fontSize:12, color:C.textMid }}>{f[0]}</div>
+            </div>)}
+          </div>}
+          <div style={{ fontSize:dv(15,16), color:C.text, lineHeight:1.7, margin:"10px 0" }}>{cur.detail}</div>
+          {curWin
+            ? <div style={{ fontSize:dv(15,16), color:"#78350f", lineHeight:1.7, background:"#fef3c7", borderRadius:10, padding:"12px 14px" }}><b>Keep going: </b>{winNote}</div>
+            : cur.kind==="track"
+              ? <div style={{ fontSize:dv(15,16), color:"#166534", lineHeight:1.7, background:"#dcfce7", borderRadius:10, padding:"12px 14px" }}><b>Keep going: </b>You're tracking well. Stay consistent and you'll get there.</div>
+              : <div style={{ fontSize:dv(15,16), color:"#0b4f4a", lineHeight:1.7, background:C.teal+"12", borderRadius:10, padding:"12px 14px" }}><b>What to do: </b>{cur.action}</div>}
+        </div>
+      </div>;
+    })()}
 
-    {!hasCoaching && hasGoalsSet && <div style={{ marginBottom:18, border:`1px solid ${C.success}55`, background:C.success+"0d", borderRadius:14, padding:"16px 20px" }}>
-      <div style={{ fontSize:16, fontWeight:800, color:C.success }}>✅ On Pace</div>
-      <div style={{ fontSize:14, color:C.textMid, marginTop:4 }}>You're tracking well against your goals this month. Keep up the consistency.</div>
-    </div>}
 
     {!hasGoalsSet && <div style={{ marginBottom:18, border:`1px solid ${C.gold}33`, background:C.gold+"08", borderRadius:14, padding:"16px 20px" }}>
       <div style={{ fontSize:15, fontWeight:700, color:"#b45309" }}>⏳ No Goals Set Yet</div>
@@ -11101,9 +11192,9 @@ const NAV_GROUP_ICONS={
   book:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   more:"M5 12h.01M12 12h.01M19 12h.01",
 };
-const ADMIN_NAV_PINNED=["dashboard","scorecard","production"];
+const ADMIN_NAV_PINNED=["dashboard","myactivity","scorecard","production"];
 const ADMIN_NAV_GROUPS=[
-  {n:"My day",ic:"calendar",keys:["planner","mytasks","myactivity"]},
+  {n:"My day",ic:"calendar",keys:["planner","mytasks"]},
   {n:"My team",ic:"users",keys:["reps","accountability","wallfame","schedule"]},
   {n:"Leads",ic:"target",keys:["leadlink","mypipeline","prospects","teamleads"]},
   {n:"Sales tools",ic:"chat",keys:["scripts","objectiontraining","liveobjections","prospecting","emailtemplates","quickmsg"]},
