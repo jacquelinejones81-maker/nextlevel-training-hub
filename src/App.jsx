@@ -11532,7 +11532,7 @@ function ProspectingPage({data,onUpdate,userRole}) {
     setTab("library");
   };
 
-  return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
+  return <div style={{padding:dv(14,24),maxWidth:960,margin:"0 auto"}}>
     {editingBuiltInP&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
       <div style={{background:"white",borderRadius:16,padding:20,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
         <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>Edit Prospecting Card</div>
@@ -11557,49 +11557,54 @@ function ProspectingPage({data,onUpdate,userRole}) {
     </div>
 
     {tab==="situations"&&<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,fontSize:11,color:C.textMid}}>
-        <span>Card {cardIndex+1} of {allCards.length}</span>
-        <span>{card?.emoji} {card?.situation}</span>
+      <div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0 12px",fontSize:14,color:C.textMid}}>
+        <span style={{whiteSpace:"nowrap"}}>Card {cardIndex+1} of {allCards.length}</span>
+        <div style={{display:"flex",gap:4,flex:1}}>
+          {allCards.map((c,i)=><span key={c.id} style={{height:6,flex:1,borderRadius:3,background:i<=cardIndex?C.teal:"rgba(0,0,0,0.1)"}}/>)}
+        </div>
+        <span style={{whiteSpace:"nowrap"}}>{card?.emoji} {card?.situation}</span>
       </div>
-      <div onClick={()=>setFlipped(f=>!f)} style={{cursor:"pointer",marginBottom:12,minHeight:260,borderRadius:16,border:`2px solid ${flipped?C.teal:C.border}`,background:flipped?`linear-gradient(135deg,${C.navy},#16304f)`:"white",padding:"20px",transition:"all 0.3s",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
+      <div onClick={()=>setFlipped(f=>!f)} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setFlipped(f=>!f);}}} style={{cursor:"pointer",marginBottom:12,minHeight:300,borderRadius:18,border:`2px solid ${flipped?C.teal:C.border}`,background:"white",padding:dv("20px","30px 34px"),boxShadow:"0 4px 18px rgba(15,23,42,0.06)"}}>
         {!flipped?<div>
-          <div style={{fontSize:11,fontWeight:700,color:C.textLight,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>THE SITUATION</div>
-          <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>{card?.emoji} {card?.situation}</div>
-          {card?.context&&<div style={{fontSize:13,color:C.textMid,lineHeight:1.6,marginBottom:12,fontStyle:"italic"}}>{card.context}</div>}
-          <div style={{marginTop:12,padding:"10px 14px",background:C.teal+"11",borderRadius:10,border:`1px solid ${C.teal}33`}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.teal,marginBottom:4}}>YOUR OPENING LINE</div>
-            <div style={{fontSize:13,color:C.text,fontWeight:600,lineHeight:1.6}}>{card?.opening}</div>
+          <div style={{fontSize:13,fontWeight:800,color:C.textMid,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.7px"}}>The situation</div>
+          <div style={{fontSize:dv(21,26),fontWeight:800,color:C.text,lineHeight:1.25,marginBottom:12}}>{card?.emoji} {card?.situation}</div>
+          {card?.context&&<div style={{fontSize:dv(16,18),color:C.textMid,lineHeight:1.65,marginBottom:16}}>{card.context}</div>}
+          <div style={{background:"#f0fdfa",border:"1px solid #99f6e4",color:"#0b4f4a",borderRadius:12,padding:"16px 20px"}}>
+            <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",color:C.teal,marginBottom:6}}>Your opening line</div>
+            <div style={{fontSize:dv(17,21),fontWeight:700,lineHeight:1.55}}>{card?.opening}</div>
           </div>
-          <div style={{marginTop:16,textAlign:"center",fontSize:11,color:C.textLight}}>👆 Tap to see how to handle their response</div>
+          <div style={{marginTop:26,textAlign:"center",fontSize:14,fontWeight:700,color:C.teal}}>👆 Click the card to see how to handle their response</div>
         </div>:<div>
-          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.5px"}}>HOW TO HANDLE IT</div>
-          {card?.ifYes&&<div style={{background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#10b981",marginBottom:4}}>✅ IF THEY SAY YES</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>{card.ifYes}</div>
+          <div style={{fontSize:13,fontWeight:800,color:C.textMid,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.7px"}}>How to handle it — {card?.emoji} {card?.situation}</div>
+          {(card?.ifYes||card?.ifNo)&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:12}}>
+            {card?.ifYes&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",color:"#14532d",borderRadius:12,padding:"14px 18px",fontSize:dv(15,17),lineHeight:1.65}}>
+              <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4,color:"#15803d"}}>✅ If they say yes</div>
+              {card.ifYes}
+            </div>}
+            {card?.ifNo&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",color:"#7f1d1d",borderRadius:12,padding:"14px 18px",fontSize:dv(15,17),lineHeight:1.65}}>
+              <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4,color:"#b91c1c"}}>🙅 If they say no</div>
+              {card.ifNo}
+            </div>}
           </div>}
-          {card?.ifNo&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#ef4444",marginBottom:4}}>🙅 IF THEY SAY NO</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",lineHeight:1.6}}>{card.ifNo}</div>
+          {card?.purpose&&<div style={{background:"#f1f5f9",border:"1px solid #e2e8f0",color:"#334155",borderRadius:12,padding:"14px 18px",marginBottom:12,fontSize:dv(15,17),lineHeight:1.65}}>
+            <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4}}>🧠 The purpose</div>
+            {card.purpose}
           </div>}
-          {card?.purpose&&<div style={{background:"rgba(255,255,255,0.05)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>🧠 THE PURPOSE</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",lineHeight:1.6}}>{card.purpose}</div>
-          </div>}
-          {card?.tip&&<div style={{background:C.gold+"22",borderRadius:8,padding:"8px 12px"}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.gold,marginBottom:3}}>💡 PRO TIP</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>{card.tip}</div>
+          {card?.tip&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",color:"#78350f",borderRadius:12,padding:"14px 18px",fontSize:dv(15,17),lineHeight:1.65}}>
+            <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4,color:"#92400e"}}>💡 Pro tip</div>
+            {card.tip}
           </div>}
         </div>}
       </div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <button onClick={prev} disabled={cardIndex===0} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-        <div style={{flex:1,textAlign:"center",fontSize:11,color:C.textLight}}>Tap card to {flipped?"hide":"see"} response</div>
-        <button onClick={next} disabled={cardIndex===allCards.length-1} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<allCards.length-1?"pointer":"default",color:cardIndex<allCards.length-1?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>→</button>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <button onClick={prev} disabled={cardIndex===0} aria-label="Previous card" style={{width:46,height:46,borderRadius:23,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>‹</button>
+        <div style={{flex:1,textAlign:"center",fontSize:14,color:C.textMid}}>Click the card to {flipped?"go back to the situation":"see how to handle their response"}</div>
+        <button onClick={next} disabled={cardIndex===allCards.length-1} aria-label="Next card" style={{width:46,height:46,borderRadius:23,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<allCards.length-1?"pointer":"default",color:cardIndex<allCards.length-1?C.text:C.textLight,fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>›</button>
       </div>
-      <div style={{marginTop:16}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,marginBottom:8}}>Jump to a situation:</div>
+      <div style={{marginTop:18}}>
+        <div style={{fontSize:13,fontWeight:800,color:C.textMid,marginBottom:8}}>Jump to a situation</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {allCards.map((c,i)=><button key={c.id} onClick={()=>{setCardIndex(i);setFlipped(false);}} style={{padding:"4px 10px",borderRadius:14,border:`1px solid ${cardIndex===i?C.teal:C.border}`,background:cardIndex===i?C.teal+"11":"white",color:cardIndex===i?C.teal:C.textMid,fontSize:11,cursor:"pointer"}}>{c.emoji} {c.situation}</button>)}
+          {allCards.map((c,i)=><button key={c.id} onClick={()=>{setCardIndex(i);setFlipped(false);}} style={{padding:"6px 13px",borderRadius:999,border:`1px solid ${cardIndex===i?C.teal:C.border}`,background:cardIndex===i?C.teal:"white",color:cardIndex===i?"white":C.textMid,fontSize:13,fontWeight:600,cursor:"pointer"}}>{c.emoji} {c.situation}</button>)}
         </div>
       </div>
     </div>}
@@ -12074,7 +12079,7 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
     setShowLibraryForm(true);
   };
 
-  return <div style={{padding:dv(14,24),maxWidth:680,margin:"0 auto"}}>
+  return <div style={{padding:dv(14,24),maxWidth:960,margin:"0 auto"}}>
     {/* Edit Built-In Modal */}
     {editingBuiltIn&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
       <div style={{background:"white",borderRadius:16,padding:20,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
@@ -12115,46 +12120,50 @@ function ObjectionTrainingPage({data,onUpdate,userRole}) {
 
       {deck.length===0?<div style={{textAlign:"center",padding:"40px 20px",color:C.textLight}}>No cards in this filter. Try a different category.</div>:card&&<div>
         {/* Progress */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,fontSize:13,color:C.textMid}}>
-          <span>Card {cardIndex+1} of {deck.length}</span>
-          <span>{card.cat} {card.emoji}</span>
+        <div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0 12px",fontSize:14,color:C.textMid}}>
+          <span style={{whiteSpace:"nowrap"}}>Card {cardIndex+1} of {deck.length}</span>
+          <div style={{display:"flex",gap:4,flex:1}}>
+            {deck.map((d,i)=><span key={d.id} style={{height:6,flex:1,borderRadius:3,background:mastered[d.id]?C.success:i<=cardIndex?C.teal:"rgba(0,0,0,0.1)"}}/>)}
+          </div>
+          <span style={{whiteSpace:"nowrap"}}>{card.cat} {card.emoji}</span>
         </div>
 
         {/* Flashcard */}
-        <div onClick={()=>setFlipped(f=>!f)} style={{cursor:"pointer",marginBottom:12,minHeight:220,borderRadius:16,border:`2px solid ${flipped?C.teal:C.border}`,background:flipped?`linear-gradient(135deg,${C.navy},#16304f)`:"white",padding:"20px",transition:"all 0.3s",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
+        <div onClick={()=>setFlipped(f=>!f)} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setFlipped(f=>!f);}}} style={{cursor:"pointer",marginBottom:12,minHeight:280,borderRadius:18,border:`2px solid ${flipped?C.teal:C.border}`,background:"white",padding:dv("20px","30px 34px"),boxShadow:"0 4px 18px rgba(15,23,42,0.06)"}}>
           {!flipped?<div>
-            <div style={{fontSize:13,fontWeight:700,color:C.textLight,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>PROSPECT SAYS...</div>
-            <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:12}}>{card.front.title}</div>
-            <div style={{fontSize:14,color:C.textMid,lineHeight:1.6,fontStyle:"italic"}}>"{card.front.prospect}"</div>
-            {card.front.variations?.length>0&&<div style={{marginTop:12,fontSize:12,color:C.textLight}}>Also heard as: {card.front.variations.slice(0,2).join(" · ")}</div>}
-            <div style={{marginTop:16,textAlign:"center",fontSize:13,color:C.textLight}}>👆 Tap to reveal response</div>
+            <div style={{fontSize:13,fontWeight:800,color:C.textMid,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.7px"}}>Prospect says…</div>
+            <div style={{fontSize:dv(21,26),fontWeight:800,color:C.text,lineHeight:1.25,marginBottom:14}}>{card.front.title}</div>
+            <div style={{fontSize:dv(17,21),color:"#374151",lineHeight:1.6,fontStyle:"italic",borderLeft:"5px solid #cbd5e1",padding:"2px 0 2px 18px"}}>“{card.front.prospect}”</div>
+            {card.front.variations?.length>0&&<div style={{marginTop:14,fontSize:14,color:C.textMid}}>Also heard as: {card.front.variations.slice(0,2).join(" · ")}</div>}
+            <div style={{marginTop:26,textAlign:"center",fontSize:14,fontWeight:700,color:C.teal}}>👆 Click the card to reveal the best response</div>
           </div>:<div>
-            <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"}}>BEST RESPONSE</div>
-            <div style={{fontSize:14,color:"white",lineHeight:1.6,marginBottom:14}}>"{card.back.best}"</div>
-            {card.back.keyPhrase&&<div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
-              <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:2}}>⚡ KEY PHRASE</div>
-              <div style={{fontSize:13,color:C.gold,fontWeight:600}}>"{card.back.keyPhrase}"</div>
+            <div style={{fontSize:13,fontWeight:800,color:C.textMid,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.7px"}}>Best response</div>
+            <div style={{fontSize:dv(17,20),color:C.text,lineHeight:1.7,marginBottom:16}}>“{card.back.best}”</div>
+            {card.back.keyPhrase&&<div style={{background:"#fef3c7",color:"#78350f",border:"1px solid #fcd34d",borderRadius:12,padding:"14px 18px",marginBottom:12,fontWeight:700,fontSize:dv(16,19),lineHeight:1.55}}>
+              <div style={{fontSize:12,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4,color:"#92400e"}}>⚡ Key phrase</div>
+              “{card.back.keyPhrase}”
             </div>}
-            {card.back.dontSay&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
-              <div style={{fontSize:12,color:"#ef4444",fontWeight:700,marginBottom:2}}>⚠️ DON'T SAY</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>{card.back.dontSay}</div>
-            </div>}
-            {card.back.coaching&&<div style={{background:"rgba(255,255,255,0.05)",borderRadius:8,padding:"8px 10px"}}>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:2}}>🧠 COACHING NOTE</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>{card.back.coaching}</div>
+            {(card.back.dontSay||card.back.coaching)&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14}}>
+              {card.back.dontSay&&<div style={{background:"#fef2f2",color:"#7f1d1d",border:"1px solid #fecaca",borderRadius:12,padding:"14px 18px",fontSize:dv(15,17),lineHeight:1.65}}>
+                <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4}}>⚠️ Don't say</div>
+                {card.back.dontSay}
+              </div>}
+              {card.back.coaching&&<div style={{background:"#f1f5f9",color:"#334155",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 18px",fontSize:dv(15,17),lineHeight:1.65}}>
+                <div style={{fontSize:12,fontWeight:800,letterSpacing:"0.7px",textTransform:"uppercase",marginBottom:4}}>🧠 Coaching note</div>
+                {card.back.coaching}
+              </div>}
             </div>}
           </div>}
         </div>
 
         {/* Navigation */}
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={prev} disabled={cardIndex===0} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-          {flipped&&<>
-            <button onClick={markLearning} style={{flex:1,padding:"10px",borderRadius:10,background:"white",border:`2px solid ${C.border}`,color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer"}}>🔄 Still Learning</button>
-            <button onClick={markMastered} style={{flex:1,padding:"10px",borderRadius:10,background:C.success,border:"none",color:"white",fontSize:13,fontWeight:700,cursor:"pointer"}}>✅ Got It!</button>
-          </>}
-          {!flipped&&<div style={{flex:1,textAlign:"center",fontSize:13,color:C.textLight}}>Tap card to see response</div>}
-          <button onClick={next} disabled={cardIndex===deck.length-1} style={{width:40,height:40,borderRadius:20,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<deck.length-1?"pointer":"default",color:cardIndex<deck.length-1?C.text:C.textLight,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>→</button>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <button onClick={prev} disabled={cardIndex===0} aria-label="Previous card" style={{width:46,height:46,borderRadius:23,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex>0?"pointer":"default",color:cardIndex>0?C.text:C.textLight,fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>‹</button>
+          {flipped?<div style={{flex:1,display:"flex",gap:10}}>
+            <button onClick={markLearning} style={{flex:1,padding:"13px",borderRadius:12,background:"white",border:`2px solid ${C.border}`,color:C.textMid,fontSize:16,fontWeight:800,cursor:"pointer"}}>🔄 Still learning</button>
+            <button onClick={markMastered} style={{flex:1,padding:"13px",borderRadius:12,background:C.success,border:"none",color:"white",fontSize:16,fontWeight:800,cursor:"pointer"}}>✅ Got it!</button>
+          </div>:<div style={{flex:1,textAlign:"center",fontSize:14,color:C.textMid}}>Click the card to see the response</div>}
+          <button onClick={next} disabled={cardIndex===deck.length-1} aria-label="Next card" style={{width:46,height:46,borderRadius:23,border:`1px solid ${C.border}`,background:"white",cursor:cardIndex<deck.length-1?"pointer":"default",color:cardIndex<deck.length-1?C.text:C.textLight,fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>›</button>
         </div>
       </div>}
     </div>}
