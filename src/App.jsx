@@ -8615,6 +8615,10 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     const main=lines.filter(l=>!/^IF (YES|NO):/.test(l));
     const yes=lines.find(l=>/^IF YES:/.test(l));
     const no=lines.find(l=>/^IF NO:/.test(l));
+    const closingAddOn=<div style={{marginTop:12,paddingTop:10,borderTop:"1px dashed #cbd5e1"}}>
+      <div style={{fontSize:12,fontWeight:800,color:"#b45309",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:3}}>Before you hang up</div>
+      <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"8px 10px"}}>“By the way, my office is expanding. Do you or someone you know keep your options open for extra income?”</div>
+    </div>;
     return <div>
       <div style={{maxWidth:720}}>
         {main.map((line,li)=><div key={li} style={{marginBottom:14}}>
@@ -8626,10 +8630,12 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
         {yes&&<div style={{flex:"1 1 280px",background:"white",border:"1px solid "+C.success+"55",borderRadius:10,padding:"12px 14px"}}>
           <div style={{fontSize:12,fontWeight:800,color:C.success,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:4}}>If yes</div>
           <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{yes.replace(/^IF YES:\s*/,"")}</div>
+          {closingAddOn}
         </div>}
         {no&&<div style={{flex:"1 1 280px",background:"white",border:"1px solid "+C.danger+"55",borderRadius:10,padding:"12px 14px"}}>
           <div style={{fontSize:12,fontWeight:800,color:C.danger,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:4}}>If no</div>
           <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{no.replace(/^IF NO:\s*/,"")}</div>
+          {closingAddOn}
         </div>}
       </div>
     </div>;
