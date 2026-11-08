@@ -770,7 +770,15 @@ const SCRIPTS = [
   {title:"Opportunity Night Invite",content:"Hey [Name], I am attending a financial education event this [day] and I think you would really get value from it. It is about how money works and strategies people use to build wealth. It is free and only about an hour. I would love for you to come as my guest. Can you make it at [time]?"},
   {title:"\"I Don't Have Time\" — Recruiting Opener",content:"[Name]! I know. That's exactly why we need to get together. I'm gonna sit down with you — ten to twenty minutes. I want to share with you exactly what I'm doing and what's taking me out of my job — or what's already taken me out of my job — so I can work less but still make the same amount of money working remote. [Name], you can't tell me you don't want to hear about that.\n\nI know you don't work 168 hours a week. When's the best time to get together — during the week or on the weekends? [Let them answer.] Morning or evening? [Let them answer.] Book the appointment.\n\nIMPORTANT: If they ask what it is before the meeting, say: \"That's exactly what I want to show you — that's why I want to sit down with you.\" Protect the curiosity. Never pitch before the meeting."},
   {title:"\"How Much Have You Made?\" — Honest Answer + Redirect",content:"Be honest. Tell them exactly what you've made. Then say:\n\n\"But here's what I want you to think about — how does what I made have any bearing on what YOU'RE going to do? It doesn't. I could go on to make a million dollars and that doesn't guarantee you will. And you could outwork me and make ten times what I've made in the same amount of time. Your results are going to be based on YOU.\"\n\nRemember: Honesty builds trust. Dodging the question kills it. Own your number, then redirect to their potential."},
+  {title:"\"I Don't Have Time\" — After the Presentation",category:"Objection Handling",content:"WHY IT DOESN'T ADD UP\n1. They responded to your call or text.\n2. They set the appointment.\n3. They kept it, so they blocked out time to meet with you.\n4. They sat through a 30–45 minute presentation.\n\nWhat they are really telling you: \"After everything you presented, I don't feel this is worth my time.\" Don't try to find time in their schedule, and don't argue.\n\nSTEP 1\n\"Hey John, thanks for hopping on. Before we wrap up, can I ask you a straight-up question? I need you to be really honest with me. I won't get my feelings hurt.\"\n\nSTEP 2\n\"Before you hopped on here, you already knew your schedule and your obligations. If you were truly busy, to the point where you knew you could not take on anything else, could we agree you would never have booked this Zoom with me?\"\n(STOP — let him answer.)\n\nSTEP 3\n\"Just level with me. I won't get my feelings hurt. Usually when people tell me that after setting an appointment, keeping it, and blocking out time to meet with me, what they really mean (they're just too polite to say it) is that they don't feel it's worth their time. Is that how you feel?\"\n(STOP — let him answer.)\n\nSTEP 4 (when he says yes)\n\"Why do you feel it's not worth your time? Do you feel this is something you're not capable of, or do you feel it's too much work?\"\n\nHis answer tells you exactly how to move next."},
 ];
+// Adds built-in scripts that were introduced after a team's saved list was created.
+// Only ever adds (matched by title); never removes or changes anything already saved.
+const withBuiltInScripts=(list)=>{
+  const have=new Set((list||[]).map(s=>s.title));
+  const missing=SCRIPTS.filter(s=>s.category&&!have.has(s.title));
+  return missing.length?[...(list||[]),...missing]:(list||[]);
+};
 
 const BONUS_GOALS = [
   {id:"b1",label:"3 x $3,000",desc:"$650 Bonus + District Manager Promotion",target:3,premium:3000},
@@ -2291,7 +2299,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     </div>}
     {tab==="appointments"&&<ApptTracker appointments={rep.appointments||[]} onChange={a=>onUpdate(rep.id,{...rep,appointments:a})} readOnly={readOnly} bookingLink={bookingLink} track={rep.track}/>}
     {tab==="refs"&&<RefsEditor rep={rep} data={data} onUpdate={onUpdate}/>}
-    {tab==="scripts"&&<RepScriptsView scripts={data.scripts||SCRIPTS}/>}
+    {tab==="scripts"&&<RepScriptsView scripts={withBuiltInScripts(data.scripts||SCRIPTS)}/>}
     {tab==="prospects"&&<ProspectsTab rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)}/>}
     {tab==="pipeline"&&<LeadPipeline rep={rep} data={data} onUpdate={onUpdateData} readOnly={readOnly||!onUpdateData}/>}
     {tab==="resources"&&<ResourceLibrary data={data} onUpdate={()=>{}} userRole="rep"/>}
@@ -8509,6 +8517,7 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
   const [scriptOpenKey,setScriptOpenKey]=useState(null);
   const [editPersonKey,setEditPersonKey]=useState(null);
   const [onlyOpenFU,setOnlyOpenFU]=useState(false);
+  const [yesBranch,setYesBranch]=useState("work");
   const blankBec=()=>({beneficiaries:[],contingent:{name:"",phone:"",email:"",contacted:false},emergencyContacts:[{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false},{name:"",phone:"",email:"",contacted:false}]});
   const updateBec=(realIdx,patch)=>{
     const entries=rep.selfPremium||[];
@@ -8519,17 +8528,13 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     `"Hello, my name is [Your name]. I appreciate you taking my call. Did ${clientName} mention I'd be reaching out? Is now still a good time to talk? I'll keep this brief."`,
     `"${clientName} recently took out a life insurance policy and listed you as a beneficiary. One of the biggest problems in this industry is that death claims sometimes go unpaid — not because of the policy, but because the beneficiary didn't know how to file the claim. So I'm sending you a certificate and walking through it together now."`,
     `"Let me go ahead and complete that form for you right now while we're on the phone — can I confirm how you'd like your name listed, the best number to reach you at, and an email address so I can send that certificate over?"`,
-    `"When I spoke with ${clientName}, what mattered most to them was making sure their income would be replaced — the home, the kids, final expenses. Can I ask — do you already have something in place to make sure your own family would keep the same quality of life if something happened to you?"`,
-    `IF YES: "That's great to hear — a lot of people don't have anything in place, so it says a lot that you do. Would you be open to me taking a quick look, just to see if I could actually do better for you? Worst case, you walk away knowing you've already got a good deal."`,
-    `IF NO: "That's actually really common — most people don't, usually because they never saw the real need, never got around to it, or they thought it was too expensive. Which one sounds most like you?" (let them answer) "None of those are bad reasons — they just mean nobody's walked you through it yet. Would it be alright if I called you back tomorrow or the day after with a quick quote — which one works better for you?"`,
+    `"When I spoke with ${clientName}, what mattered most to them was making sure their income would be replaced — the home, the kids, final expenses. If you don't mind me asking, do you currently have life insurance in place?"`,
   ];
   const EC_SCRIPT=(clientName)=>[
     `"Hello, my name is [Your name]. Did ${clientName} mention I'd be reaching out? Is now an okay time? I'll keep this short."`,
     `"${clientName} recently took out a life insurance policy and listed you as an emergency contact on file. One of the biggest problems in this industry is that beneficiaries or emergency contacts sometimes don't know how to help when it actually matters — so I like to reach out ahead of time, that way everyone knows who to call."`,
     `"I'm going to go ahead and fill that form out right now while we're talking — can you confirm your full name, the best number to reach you at, and an email address for the file? That way, if I'm ever unable to reach the beneficiary, I'll know exactly who to call."`,
-    `"When I spoke with ${clientName}, what mattered most to them was making sure their income would be replaced — the home, the kids, final expenses. Can I ask — do you already have something in place to make sure your own family would keep the same quality of life if something happened to you?"`,
-    `IF YES: "That's great to hear — a lot of people don't have anything in place, so it says a lot that you do. Would you be open to me taking a quick look, just to see if I could actually do better for you? Worst case, you walk away knowing you've already got a good deal."`,
-    `IF NO: "That's actually really common — most people don't, usually because they never saw the real need, never got around to it, or they thought it was too expensive. Which one sounds most like you?" (let them answer) "None of those are bad reasons — they just mean nobody's walked you through it yet. Would it be alright if I called you back tomorrow or the day after with a quick quote — which one works better for you?"`,
+    `"When I spoke with ${clientName}, what mattered most to them was making sure their income would be replaced — the home, the kids, final expenses. If you don't mind me asking, do you currently have life insurance in place?"`,
   ];
   const entries = rep.selfPremium||[];
   const total = entries.filter(e=>!e.cod||e.codAccepted).reduce((s,e)=>s+(Number(e.premium)||0),0);
@@ -8611,10 +8616,48 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
     const b=e.bec||blankBec();
     return [...(b.beneficiaries||[]),...(b.contingent?[b.contingent]:[]),...(b.emergencyContacts||[])].filter(becNamed);
   };
+  // Wording for the If yes / If no sections of both the Beneficiary and Emergency Contact scripts
+  const YES_OPEN="“I want to commend you for having that in place. I talk to a lot of people who don't have anything. If you don't mind me asking, is that protection through work, or is it outside of work?”";
+  const YES_GAP=[
+    ["Who depends on you","“Quick question: who in your life depends on your income? A spouse, kids, a house, anyone like that?” (let them answer)"],
+    ["The gap question (use their answer)","“So with [their answer: your spouse / the kids / the house], if something happened to you, would what you have cover that and replace your income for the next 10 years if you're no longer here?” (let them answer, then pause. If they say no or not sure: “Even just 5 years?”)"],
+    ["If nobody depends on them","“Got it. Then it's really about making sure your final expenses and any bills are covered, so no one is stuck paying them, and maybe leaving a little something for someone you care about. Would what you have cover that?” (let them answer)"],
+  ];
+  const ZOOM_CLOSE=[
+    ["Set the Zoom","“Most people tell me they're not sure. Let's find out together, so you know for sure. It takes about 15 minutes over Zoom. I have [Day/Time A] or [Day/Time B] open. Which one works better for you?”"],
+    ["Lock it in","“Perfect, I'm putting that on my calendar right now. What's the best email to send the Zoom invite to, so it goes on your calendar too? I'll also text you a reminder the morning of.”"],
+  ];
+  const YES_FLOW={
+    work:[
+      ["Coverage amount","“Do you know how much coverage you have through work? Often it's only a year or two of your salary.” (let them answer)"],
+      ["Does it go with you?","“And do you know if it goes with you if you change jobs or lose your job? Often it doesn't.” (let them answer)"],
+      ...YES_GAP,...ZOOM_CLOSE],
+    outside:[
+      ["Type and amount","“What type is it, term or whole life? And do you know how much coverage you have?” (let them answer. Most people don't know)"],
+      ["How long it lasts","“Do you know when it ends, and whether the premium changes over time?” (let them answer)"],
+      ...YES_GAP,...ZOOM_CLOSE],
+  };
+  const YES_ALLSET_FLOW=[
+    ["Acknowledge","“I love that you're covered, and I'm not asking you to change anything.”"],
+    ["Review question","“Out of curiosity, when was the last time someone sat down and reviewed it with you?” (let them answer)"],
+    ["If it's been a while, or never","“That's really common. A lot has probably changed since then, and coverage doesn't update itself. I like to give everyone a second set of eyes so they feel confident in what they have. If it's solid, you'll feel great about it. If there's a gap, you'll know now and not later. Would it make sense to take 15 minutes on Zoom to check? I have [Day/Time A] or [Day/Time B] open. Which one works better for you?”"],
+    ["Lock it in","“Perfect, I'm putting that on my calendar right now. What's the best email to send the Zoom invite to, so it goes on your calendar too? I'll also text you a reminder the morning of.”"],
+    ["If they say it was recent","“Good, then you're ahead of most people. Out of curiosity, is that coverage through work or outside of work?” (then tap At work or Outside of work above and continue)"],
+  ];
+  const NO_OPEN="“That's more common than you think. Most people tell me they don't have it because they never saw a need for it, they just never got around to it, or they thought it was too expensive. Which one sounds most like you?” (let them answer)";
+  const NO_FLOW=[
+    ["Acknowledge + urgency","“You know what, I hear that a lot. And honestly, the best time to look at this is right now, because your rate is based on your age and your health today. Would you agree that for most people, health doesn't improve as the years go by?” (let them agree)"],
+    ["Ask for right now","“Then let's take advantage of today. Do you have 10 minutes right now? I can run a quick quote while we're on the phone, and if it doesn't make sense, I'll let you go.”"],
+    ["If they can't do it now: set the Zoom","“No problem, let's get you on the calendar so it's locked in. It takes about 15 minutes over Zoom. I have [Day/Time A] or [Day/Time B] open. Which one works better for you?”"],
+    ["Lock it in","“Perfect, I'm putting that on my calendar right now. What's the best email to send the Zoom invite to, so it goes on your calendar too? I'll also text you a reminder the morning of.”"],
+    ["If they say “just call me tomorrow” or “text me”","“Absolutely. So we don't play phone tag, let's put a Zoom on the calendar now. Is [Time A] or [Time B] better?”"],
+  ];
   const renderScript=(lines)=>{
-    const main=lines.filter(l=>!/^IF (YES|NO):/.test(l));
-    const yes=lines.find(l=>/^IF YES:/.test(l));
-    const no=lines.find(l=>/^IF NO:/.test(l));
+    const main=lines;
+    const sub=(color)=>(item,k)=><div key={k} style={{marginTop:10}}>
+      <div style={{fontSize:12,fontWeight:800,color,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:2}}>{item[0]}</div>
+      <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{item[1]}</div>
+    </div>;
     const closingAddOn=<div style={{marginTop:12,paddingTop:10,borderTop:"1px dashed #cbd5e1"}}>
       <div style={{fontSize:12,fontWeight:800,color:"#b45309",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:3}}>Before you hang up</div>
       <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"8px 10px"}}>“By the way, my office is expanding. Do you or someone you know keep your options open for extra income?”</div>
@@ -8627,16 +8670,22 @@ function LicensedPremiumEntry({rep,onUpdate,readOnly,data={}}) {
         </div>)}
       </div>
       <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-        {yes&&<div style={{flex:"1 1 280px",background:"white",border:"1px solid "+C.success+"55",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{flex:"1 1 320px",background:"white",border:"1px solid "+C.success+"55",borderRadius:10,padding:"12px 14px"}}>
           <div style={{fontSize:12,fontWeight:800,color:C.success,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:4}}>If yes</div>
-          <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{yes.replace(/^IF YES:\s*/,"")}</div>
+          <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{YES_OPEN}</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:10}}>
+            <span style={{fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.5px"}}>They answer:</span>
+            {[["work","At work"],["outside","Outside of work"],["allset","I'm already covered"]].map(([k,l])=><button key={k} onClick={()=>setYesBranch(k)} aria-pressed={yesBranch===k} style={{fontSize:13,fontWeight:700,padding:"6px 12px",borderRadius:999,border:"1px solid "+(yesBranch===k?C.teal:C.border),background:yesBranch===k?C.teal:"white",color:yesBranch===k?"white":C.textMid,cursor:"pointer"}}>{l}</button>)}
+          </div>
+          {(yesBranch==="allset"?YES_ALLSET_FLOW:YES_FLOW[yesBranch]).map(sub(C.success))}
           {closingAddOn}
-        </div>}
-        {no&&<div style={{flex:"1 1 280px",background:"white",border:"1px solid "+C.danger+"55",borderRadius:10,padding:"12px 14px"}}>
+        </div>
+        <div style={{flex:"1 1 320px",background:"white",border:"1px solid "+C.danger+"55",borderRadius:10,padding:"12px 14px"}}>
           <div style={{fontSize:12,fontWeight:800,color:C.danger,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:4}}>If no</div>
-          <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{no.replace(/^IF NO:\s*/,"")}</div>
+          <div style={{fontSize:15,lineHeight:1.65,color:C.text,fontWeight:500}}>{NO_OPEN}</div>
+          {NO_FLOW.map(sub(C.danger))}
           {closingAddOn}
-        </div>}
+        </div>
       </div>
     </div>;
   };
@@ -11080,7 +11129,7 @@ function RepScriptsView({scripts}) {
 }
 
 function ScriptsPage({data,onUpdate,userRole}) {
-  const scripts = data.scripts || SCRIPTS;
+  const scripts = withBuiltInScripts(data.scripts || SCRIPTS);
   const isAdmin = userRole==="admin"||userRole==="superadmin";
   const [editing,setEditing] = useState(null);
   const [draft,setDraft] = useState({title:"",category:"",content:"",link:""});
@@ -11972,6 +12021,22 @@ const OBJECTION_CARDS = [
       dontSay:"Don't dodge the question. Don't make up a number. Don't say 'it depends' or 'I'm just getting started' without owning it. Honesty builds trust — trying to spin your answer kills it instantly.",
       coaching:"This isn't really an objection — it's a transparency question. And the rep who struggles with it usually struggles because they're insecure about their own answer. The real coaching here is: look in the mirror and ask yourself why you don't have a better answer yet. The best handler for this question is a bigger paycheck. In the meantime, own your number, then redirect to their potential — because their results have nothing to do with yours.",
       variations:["Are you making good money at this?","What's your income been like?","Is this actually worth it financially?","How long before you start making real money?"]
+    }
+  },
+  {
+    id:"o17",
+    cat:"Recruiting",
+    emoji:"⌚",
+    front:{
+      title:"\"I don't have time\" (after the presentation)",
+      prospect:"I just don't have time for this."
+    },
+    back:{
+      best:"Hey John, thanks for hopping on. Before we wrap up, can I ask you a straight-up question? Be really honest with me — I won't get my feelings hurt. Before you hopped on, you already knew your schedule and your obligations. If you were truly that busy, to the point where you couldn't take on anything else, would you have ever booked this Zoom with me? (Stop. Let them answer.) Just level with me. Usually when people tell me this after setting an appointment, keeping it, and blocking out time to meet with me, what they really mean — they're just too polite to say it — is that they don't feel it's worth their time. Is that how you feel? (Stop. Let them answer.)",
+      keyPhrase:"\"Why do you feel it's not worth your time? Is this something you're not capable of, or is it too much work?\"",
+      dontSay:"Don't hunt for time in their schedule, and don't argue. They responded to your call or text, set the appointment, kept it, and sat through a 30–45 minute presentation, so time is not the real issue.",
+      coaching:"\"I don't have time\" at the end of a presentation really means \"it's not worth my time.\" After each question, stop talking and let them answer. Their answer to the last question (not capable, or too much work) tells you exactly how to move next. If they say \"I don't have time\" BEFORE the presentation, use the \"I don't have time / I work too much\" card instead.",
+      variations:["I'm too busy right now","I just don't have the time","I can't fit this into my schedule"]
     }
   },
 ];
