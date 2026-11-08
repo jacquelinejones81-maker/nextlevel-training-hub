@@ -5467,8 +5467,8 @@ function MyActivityReport({session,data,onUpdate}) {
   const investmentsThisMonth = investments.filter(i => i.date && (()=>{
     try{ return new Date(i.date) >= monthStart; }catch(e){ return false; }
   })());
-  const pacMonth = investments.reduce((s,i)=>s+(Number(i.pac)||0),0); // running total (not date filtered — PAC is ongoing)
-  const pacCount = investments.filter(i=>Number(i.pac)>0).length; // total # of PAC accounts
+  const pacMonth = investmentsThisMonth.reduce((s,i)=>s+(Number(i.pac)||0),0); // this Primerica month only, so it resets with the month and matches the monthly goals
+  const pacCount = investmentsThisMonth.filter(i=>Number(i.pac)>0).length; // # of PAC accounts opened this Primerica month
   const lumpMonth = investmentsThisMonth.reduce((s,i)=>s+parseLump(i.lumpSum),0);
 
   // ── Scorecard — this week + this month ──
@@ -5904,8 +5904,8 @@ function MyActivityReport({session,data,onUpdate}) {
         <div style={aLabel}>📈 Investments</div>
         <div style={aGrid(130)}>
           {aTile(investmentsThisMonth.length,"New clients this month",C.teal)}
-          {aTile(pacCount,"PAC accounts (total)",C.purple)}
-          {aTile("$"+Math.round(pacMonth).toLocaleString()+"/mo","Total PAC $ (running)",C.gold)}
+          {aTile(pacCount,"PAC accounts this month",C.purple)}
+          {aTile("$"+Math.round(pacMonth).toLocaleString()+"/mo","PAC $/mo this month",C.gold)}
           {aTile("$"+Math.round(lumpMonth).toLocaleString(),"Lump sum this month",C.purple)}
         </div>
         {(pacCountGoal>0||pacGoal>0||lumpGoal>0)&&<div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:10 }}>
