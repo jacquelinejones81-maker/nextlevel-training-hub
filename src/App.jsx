@@ -2535,17 +2535,17 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
   const apps=myProd.lifeApps||[];
   const invs=myProd.investments||[];
   // Same pattern as Life Apps — list defaults to this month only, running totals above
-  // stay all-time.
+  // stay all-time. (Update: the Investments totals, tiles and goal bars now use this Primerica month only.)
   const thisMonthInvs = invs.filter(inv=>inv.date&&inv.date>=pmForGoals.start);
   const olderInvsCount = invs.length-thisMonthInvs.length;
   const displayInvs = showAllInvHistory?invs:thisMonthInvs;
   const totPrem=apps.reduce((s,a)=>s+(Number(a.premium)||0),0);
-  const totPAC=invs.reduce((s,i)=>s+(Number(i.pac)||0),0);
+  const totPAC=thisMonthInvs.reduce((s,i)=>s+(Number(i.pac)||0),0);
   const parseLump=v=>Number(String(v||"").replace(/[$,]/g,""))||0;
-  const totLump=invs.reduce((s,i)=>s+parseLump(i.lumpSum),0);
+  const totLump=thisMonthInvs.reduce((s,i)=>s+parseLump(i.lumpSum),0);
   return <Card style={{marginBottom:14}}>
     <div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-      <div><div style={{fontSize:14,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:13,color:C.textMid,marginTop:1}}>{investmentsOnly?`${invs.length} investment${invs.length!==1?"s":""} · $${totPAC.toLocaleString()}/mo PAC · $${totLump.toLocaleString()} lump`:`${apps.length} apps · $${totPrem.toFixed(0)}/mo · $${(totPrem*12).toFixed(0)}/yr`}</div></div>
+      <div><div style={{fontSize:14,fontWeight:700,color:C.text}}>{investmentsOnly?"My Investments":"My Production"}</div><div style={{fontSize:13,color:C.textMid,marginTop:1}}>{investmentsOnly?`${thisMonthInvs.length} investment${thisMonthInvs.length!==1?"s":""} this month · $${totPAC.toLocaleString()}/mo PAC · $${totLump.toLocaleString()} lump`:`${apps.length} apps · $${totPrem.toFixed(0)}/mo · $${(totPrem*12).toFixed(0)}/yr`}</div></div>
       <span style={{color:C.textLight,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>v</span>
     </div>
     {open&&<div style={{marginTop:12}}>
@@ -2579,7 +2579,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
         const goalCount=Number(getMonthlyGoal(myProd.monthlyPACCountGoals,pmForGoals.start))||0;
         const goalPAC=Number(getMonthlyGoal(myProd.monthlyPACGoals,pmForGoals.start))||0;
         const goalLump=Number(getMonthlyGoal(myProd.monthlyLumpGoals,pmForGoals.start))||0;
-        const pacCountNow=invs.filter(i=>Number(i.pac)>0).length;
+        const pacCountNow=thisMonthInvs.filter(i=>Number(i.pac)>0).length;
         const invField={padding:"9px 11px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:15,color:C.text,boxSizing:"border-box",width:"100%",background:"white"};
         const invTile={border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",background:C.surface};
         const invTileLabel={fontSize:12,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.6px"};
@@ -2602,7 +2602,7 @@ function MyProd({myProd,onUpdate,investmentsOnly=false,data={}}) {
             <button onClick={()=>setShowInvForm(!showInvForm)} style={{fontSize:13,padding:"8px 16px",borderRadius:8,border:"none",background:C.purple,color:"white",cursor:"pointer",fontWeight:700}}>{showInvForm?"Close form":"+ Log Investment"}</button>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:14}}>{[[invs.length,"Investments",C.teal],[pacCountNow,"PAC Accounts",C.purple],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={invTile}><div style={invTileLabel}>{l}</div><div style={{fontSize:dv(20,28),fontWeight:800,color:c,marginTop:4}}>{v}</div></div>)}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:14}}>{[[thisMonthInvs.length,"Investments",C.teal],[pacCountNow,"PAC Accounts",C.purple],[`$${totPAC.toLocaleString()}/mo`,"PAC Total",C.gold],[`$${totLump.toLocaleString()}`,"Lump Sum",C.purple]].map(([v,l,c])=><div key={l} style={invTile}><div style={invTileLabel}>{l}</div><div style={{fontSize:dv(20,28),fontWeight:800,color:c,marginTop:4}}>{v}</div></div>)}</div>
         {showInvForm&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:dv(14,22),marginBottom:14,maxWidth:760}}>
           <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:12}}>Log an Investment</div>
           <label style={{display:"block",fontSize:13,fontWeight:600,color:C.text,marginBottom:12}}>Client name<input placeholder="Client Name" value={ni.clientName} onChange={e=>setNi({...ni,clientName:e.target.value})} style={{...invField,marginTop:4}}/></label>
