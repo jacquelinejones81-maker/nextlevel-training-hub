@@ -410,10 +410,16 @@ function getThreeByThreeStatus(rep){
 // turned the card off. Same rule for both links: the rep's own trainer's first, then that
 // trainer's (or the rep's own) assigned admin's. There is deliberately no Hub-wide fallback,
 // so a rep never sees another team's calendar or another leader's video.
+// Calling / texting script shown in the DGO card. This is the team's proven script, so it is fixed
+// here in the code (not editable per trainer or admin).
+const DGO_SCRIPT_1="Hey mom, dad, sis, bro, etc. I hope all is well. I need a huge favor. I'm in the process of getting my life insurance license to work in financial services and I'm having my live Digital Grand Opening on (date and time) via Zoom. I need to have as many of my family and friends attend as possible so I qualify for my first promotion. Can I count on you?";
+const DGO_SCRIPT_2="Thanks! I appreciate it. I will get you registered. Please try to be a few minutes early and have your camera on. I want to make a good impression with my trainer. What's your email address?";
 function resolveThreeByThree(rep,data){
   const repTrainer=(data?.trainers||[]).find(t=>t.id===rep.trainerId);
   const repAdmin=(data?.admins||[]).find(a=>a.id===(repTrainer?.adminId||rep.adminId));
   return {
+    script1:DGO_SCRIPT_1,
+    script2:DGO_SCRIPT_2,
     optedOut:!!(repAdmin&&repAdmin.threeByThreeEnabled===false),
     dgoLink:repTrainer?.dgoLink||repAdmin?.dgoLink||null,
     videoUrl:repTrainer?.threeByThreeVideoUrl||repAdmin?.threeByThreeVideoUrl||null,
@@ -1007,7 +1013,42 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink,track}) {
 }
 
 // ── REP EXTRAS ──
-function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
+// ── DGO invite tools (Milestones tab): Schedule link + calling/texting script. Shown to the rep
+// only, until they mark their DGO complete. Uses the same trainer/admin DGO link and the same fixed
+// script as the orange 3x3x3 card. Display only — it never writes any data.
+function DgoInviteTools({rep,data}) {
+  const [open,setOpen]=useState(false);
+  const [copied,setCopied]=useState("");
+  const tt=resolveThreeByThree(rep,data);
+  const copy=(key,text)=>{
+    const done=()=>{setCopied(key);setTimeout(()=>setCopied(""),1500);};
+    const fallback=()=>{try{const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);}catch(ex){}done();};
+    try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback);}else{fallback();}}catch(ex){fallback();}
+  };
+  const renderMsg=(text)=>text.split("(date and time)").reduce((acc,part,i,arr)=>{acc.push(part);if(i<arr.length-1)acc.push(<mark key={i} style={{background:"#fef3c7",color:"#92400e",borderRadius:4,padding:"0 4px",fontWeight:700}}>(date and time)</mark>);return acc;},[]);
+  const copyBtn=(key,text)=><button onClick={()=>copy(key,text)} style={{padding:"7px 12px",borderRadius:8,border:"1px solid "+(copied===key?"#86efac":"#d1d5db"),background:copied===key?"#dcfce7":"white",fontSize:13,fontWeight:800,color:copied===key?"#15803d":"#0f766e",cursor:"pointer"}}>{copied===key?"Copied ✓":"Copy"}</button>;
+  const lbl={fontSize:11,fontWeight:800,color:"#7c2d12",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4};
+  const msg={background:"white",border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 12px",fontSize:14,lineHeight:1.6,color:C.text,marginBottom:6};
+  return <div style={{marginTop:12,paddingTop:12,borderTop:"1px dashed #cbd5e1"}}>
+    <div style={{...lbl,marginBottom:8}}>Use the Schedule Your DGO link to schedule your guests</div>
+    {tt.dgoLink&&<a href={tt.dgoLink} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"12px",borderRadius:10,border:"2px solid #c2410c",color:"#c2410c",background:"white",fontSize:14,fontWeight:900,textAlign:"center",textDecoration:"none",boxSizing:"border-box",marginBottom:8}}>📅 Schedule Your DGO</a>}
+    <button onClick={()=>setOpen(v=>!v)} aria-expanded={open} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"12px 14px",borderRadius:10,border:"2px solid "+C.gold,background:"rgba(251,191,36,0.18)",color:"#7c2d12",fontSize:14,fontWeight:900,cursor:"pointer"}}><span>📞 Calling &amp; Texting Script</span><span style={{fontSize:12,fontWeight:700,color:"#92400e"}}>{open?"Hide ▲":"Tap to open ▼"}</span></button>
+    {open&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginTop:10}}>
+      <div style={lbl}>Step 1 — Call or text this</div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>Fill in your DGO date and time, then send it to family and friends.</div>
+      <div style={msg}>{renderMsg(tt.script1)}</div>
+      {copyBtn("s1",tt.script1)}
+      <div style={{borderTop:"1px dashed #cbd5e1",marginTop:12,paddingTop:12}}>
+        <span style={{display:"inline-block",fontSize:11,fontWeight:800,background:"#dcfce7",color:"#15803d",borderRadius:6,padding:"2px 8px",textTransform:"uppercase",marginBottom:6}}>If they say yes</span>
+        <div style={lbl}>Step 2 — Send this</div>
+        <div style={msg}>{tt.script2}</div>
+        {copyBtn("s2",tt.script2)}
+      </div>
+    </div>}
+  </div>;
+}
+
+function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={},isOwnView=false}) {
   const repRef2=useRef(rep);
   useEffect(()=>{repRef2.current=rep;},[rep]);
   const [showWhyExample,setShowWhyExample]=useState(false);
@@ -1208,6 +1249,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={}}) {
         </div>}
         {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:13,color:C.textLight}}>No photo uploaded yet</div>}
       </div>
+      {isOwnView&&!readOnly&&!rep.dgoDone&&<DgoInviteTools rep={rep} data={data}/>}
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
       {rep.track!=="licensed"&&<div>
@@ -1944,6 +1986,8 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const [navOpen,setNavOpen]=useState(null);
   const [showOrientationVideo,setShowOrientationVideo]=useState(false);
   const [showThreeByThreeVideo,setShowThreeByThreeVideo]=useState(false);
+  const [showDgoScript,setShowDgoScript]=useState(false);
+  const [copiedDgo,setCopiedDgo]=useState("");
   const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
   const [ftViewingRepId,setFtViewingRepId]=useState(null);
   const [showBizCommitInfo,setShowBizCommitInfo]=useState(false);
@@ -2149,7 +2193,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         </div>
         <div style={{background:"white",borderRadius:10,padding:"10px 12px",marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:800,color:"#7c2d12",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:3}}>Your first move</div>
-          <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1.4}}>Book your DGO and invite 20 people.</div>
+          <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1.4}}>Book your DGO and invite 20 people minimum.</div>
         </div>
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:5}}>Why this matters</div>
@@ -2162,6 +2206,32 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         {tt.videoUrl&&<button onClick={()=>setShowThreeByThreeVideo(true)} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"white",color:"#7c2d12",fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:tt.dgoLink?8:0}}>▶ Watch: How To Hit 3x3x3</button>}
         {tt.dgoLink&&<a href={tt.dgoLink} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"12px",borderRadius:10,border:"2px solid white",color:"white",fontSize:14,fontWeight:900,textAlign:"center",textDecoration:"none",boxSizing:"border-box"}}>📅 Schedule Your DGO</a>}
         {!tt.videoUrl&&!tt.dgoLink&&<div style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontStyle:"italic"}}>Ask your trainer to walk you through exactly how to hit this.</div>}
+        {(()=>{
+          const copyDgo=(key,text)=>{
+            const done=()=>{setCopiedDgo(key);setTimeout(()=>setCopiedDgo(""),1500);};
+            const fallback=()=>{try{const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);}catch(ex){}done();};
+            try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback);}else{fallback();}}catch(ex){fallback();}
+          };
+          const renderMsg=(text)=>text.split("(date and time)").reduce((acc,part,i,arr)=>{acc.push(part);if(i<arr.length-1)acc.push(<mark key={i} style={{background:"#fef3c7",color:"#92400e",borderRadius:4,padding:"0 4px",fontWeight:700}}>(date and time)</mark>);return acc;},[]);
+          const copyBtn=(key,text)=><button onClick={()=>copyDgo(key,text)} style={{padding:"7px 12px",borderRadius:8,border:"1px solid "+(copiedDgo===key?"#86efac":"#d1d5db"),background:copiedDgo===key?"#dcfce7":"white",fontSize:13,fontWeight:800,color:copiedDgo===key?"#15803d":C.teal,cursor:"pointer"}}>{copiedDgo===key?"Copied ✓":"Copy"}</button>;
+          const lbl={fontSize:11,fontWeight:800,color:"#7c2d12",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4};
+          const msg={background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 12px",fontSize:14,lineHeight:1.6,color:C.text,marginBottom:6};
+          return <div style={{marginTop:(tt.videoUrl||tt.dgoLink)?8:10}}>
+            <button onClick={()=>setShowDgoScript(v=>!v)} aria-expanded={showDgoScript} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"12px 14px",borderRadius:10,border:"2px solid "+C.gold,background:"rgba(251,191,36,0.18)",color:"white",fontSize:14,fontWeight:900,cursor:"pointer"}}><span>📞 Calling &amp; Texting Script</span><span style={{fontSize:12,fontWeight:700,color:C.gold}}>{showDgoScript?"Hide ▲":"Tap to open ▼"}</span></button>
+            {showDgoScript&&<div style={{background:"white",color:C.text,borderRadius:12,padding:14,marginTop:10}}>
+              <div style={lbl}>Step 1 — Call or text this</div>
+              <div style={{fontSize:12,color:C.textMid,marginBottom:10,lineHeight:1.45}}>Fill in your DGO date and time, then send it to family and friends.</div>
+              <div style={msg}>{renderMsg(tt.script1)}</div>
+              {copyBtn("s1",tt.script1)}
+              <div style={{borderTop:"1px dashed #cbd5e1",marginTop:12,paddingTop:12}}>
+                <span style={{display:"inline-block",fontSize:11,fontWeight:800,background:"#dcfce7",color:"#15803d",borderRadius:6,padding:"2px 8px",textTransform:"uppercase",marginBottom:6}}>If they say yes</span>
+                <div style={lbl}>Step 2 — Send this</div>
+                <div style={msg}>{tt.script2}</div>
+                {copyBtn("s2",tt.script2)}
+              </div>
+            </div>}
+          </div>;
+        })()}
       </div>;
     })()}
     {showThreeByThreeVideo&&(()=>{const tt=resolveThreeByThree(rep,data);return tt.videoUrl?<RewatchVideoModal videoUrl={tt.videoUrl} title="How To Hit 3x3x3" onClose={()=>setShowThreeByThreeVideo(false)}/>:null;})()}
@@ -2278,7 +2348,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="ftemail"&&rep.fieldTrainerGranted&&<EmailTemplatesPage data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer" reps={data.reps||[]} trainers={data.trainers||[]} admins={data.admins||[]}/>}
     {tab==="ftquickmsg"&&rep.fieldTrainerGranted&&<QuickMessages data={data} onUpdate={onUpdateData||(()=>{})} userRole="fieldtrainer"/>}
     {tab==="ftprofile"&&rep.fieldTrainerGranted&&<MyProfilePage session={{id:rep.id,name:rep.name,role:"rep"}} data={data} onUpdate={onUpdateData||(()=>{})}/>}
-    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data}/>}
+    {tab==="milestones"&&<RepExtras rep={rep} onUpdate={(u)=>onUpdate(rep.id,u)} onUpdateData={onUpdateData||null} readOnly={readOnly} data={data} isOwnView={isOwnView}/>}
     {tab==="leadlink"&&<div>
       <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>Your personal MoneyMap link. Share it with anyone to start a financial conversation.</div>
       <MyLeadLink name={rep.name} data={data} onUpdate={onUpdate} personId={rep.id}/>
