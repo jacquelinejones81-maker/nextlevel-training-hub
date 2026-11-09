@@ -1976,7 +1976,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         <div style={{width:36,height:36,borderRadius:9,background:C.teal+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:C.teal}}>{rep.name?.charAt(0)}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rep.name}</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{track?.label}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{(isOwnView&&rep.track==="fast")?"Your Checklist":track?.label}</div>
         </div>
         {onClose&&<button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:18,padding:0}}>×</button>}
       </div>
@@ -2066,7 +2066,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
       <div style={{padding:"14px 16px"}}>
     <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`,borderRadius:12,padding:"14px 18px",marginBottom:14,color:"white"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginTop:2}}>{track?.label} - {track?.days}</div></div>
+        <div><div style={{fontSize:15,fontWeight:700}}>{rep.name}</div><div style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginTop:2}}>{(isOwnView&&rep.track==="fast")?"Your Checklist":`${track?.label} - ${track?.days}`}</div></div>
         <div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:700,color:C.teal}}>{pct}%</div><div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>COMPLETE</div></div>
       </div>
       <Bar pct={pct} h={5}/>
@@ -2818,12 +2818,12 @@ function AddRep({onAdd,onClose,trainers,allPeople=[]}) {
         <label style={{fontSize:13,color:C.textMid,display:"block",marginBottom:5}}>Track</label>
         <div style={{display:"flex",flexDirection:"column",gap:7}}>
           <button onClick={()=>setF({...f,track:""})} style={{padding:"10px 12px",borderRadius:8,border:`2px solid ${!f.track?C.teal:C.border}`,background:!f.track?C.teal+"11":"white",cursor:"pointer",textAlign:"left"}}>
-            <div style={{fontSize:13,fontWeight:700,color:!f.track?C.teal:C.text,marginBottom:2}}>🎯 Rep Chooses — Unlicensed New Rep</div>
-            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4}}>Rep will watch the welcome video first, then choose Fast Start (7-14 days) or Regular Start (30 days) for themselves. Best for all new unlicensed reps.</div>
+            <div style={{fontSize:13,fontWeight:700,color:!f.track?C.teal:C.text,marginBottom:2}}>⚡ Unlicensed New Rep (Fast Start)</div>
+            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4}}>Rep watches the welcome video first, then starts the Fast Start checklist (7-14 days). Best for all new unlicensed reps.</div>
           </button>
           <button onClick={()=>setF({...f,track:"licensed"})} style={{padding:"10px 12px",borderRadius:8,border:`2px solid ${f.track==="licensed"?C.gold:C.border}`,background:f.track==="licensed"?C.gold+"11":"white",cursor:"pointer",textAlign:"left"}}>
             <div style={{fontSize:13,fontWeight:700,color:f.track==="licensed"?C.gold:C.text,marginBottom:2}}>🎓 Already Licensed — Skip to Licensed Now What</div>
-            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4}}>Rep already holds a life insurance license. Skips Fast/Regular Start entirely and goes straight to the Licensed Now What checklist.</div>
+            <div style={{fontSize:12,color:C.textMid,lineHeight:1.4}}>Rep already holds a life insurance license. Skips Fast Start entirely and goes straight to the Licensed Now What checklist.</div>
           </button>
         </div>
       </div>
@@ -13007,9 +13007,9 @@ function ChooseYourPath({rep,onChoose}) {
   };
 
   if(animating&&chosen==="fast") return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#1c3d63)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
-    <div style={{fontSize:64,marginBottom:16,animation:"bounce 0.5s infinite alternate"}}>⚡</div>
-    <div style={{fontSize:28,fontWeight:900,color:C.gold,marginBottom:8,textAlign:"center"}}>You chose Fast Start!</div>
-    <div style={{fontSize:16,color:"rgba(255,255,255,0.8)",textAlign:"center",marginBottom:24}}>Let's GO! Your checklist is ready. 🚀</div>
+    <div style={{fontSize:64,marginBottom:16,animation:"bounce 0.5s infinite alternate"}}>🚀</div>
+    <div style={{fontSize:28,fontWeight:900,color:C.gold,marginBottom:8,textAlign:"center"}}>You're on track!</div>
+    <div style={{fontSize:16,color:"rgba(255,255,255,0.8)",textAlign:"center",marginBottom:24}}>Your checklist is ready. Let's go!</div>
     <div style={{display:"flex",gap:8}}>{[...Array(8)].map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:5,background:C.gold,opacity:Math.random(),animation:`pulse ${0.3+Math.random()*0.4}s infinite alternate`}}/>)}</div>
     <style>{`@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-20px)}}@keyframes pulse{from{opacity:0.2}to{opacity:1}}`}</style>
   </div>;
@@ -13022,53 +13022,22 @@ function ChooseYourPath({rep,onChoose}) {
     <style>{`@keyframes grow{from{width:0%}to{width:100%}}`}</style>
   </div>;
 
-  return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#16304f)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
+  return <div style={{position:"fixed",inset:0,background:"linear-gradient(135deg,#0f1f35,#16304f)",zIndex:5000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,overflowY:"auto"}}>
     <div style={{maxWidth:480,width:"100%"}}>
-      <div style={{textAlign:"center",marginBottom:28}}>
-        <div style={{fontSize:32,marginBottom:8}}>🎯</div>
-        <div style={{fontSize:24,fontWeight:900,color:"white",marginBottom:6}}>Choose Your Path</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>Hey {rep.name}! Now that you've watched the welcome video, it's time to choose your training path. Both paths lead to the same goal — pick the one that fits your life right now.</div>
+      <div style={{textAlign:"center",marginBottom:22}}>
+        <div style={{fontSize:38,marginBottom:6}}>🎉</div>
+        <div style={{fontSize:27,fontWeight:900,color:"white",marginBottom:8}}>Welcome to the Team!</div>
+        <div style={{fontSize:15,color:"rgba(255,255,255,0.72)",lineHeight:1.6}}>Hey {rep.name}! You're on track to start your checklist. It's ready for you, and your trainer is right here to help.</div>
       </div>
-
-      <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        {/* Fast Start */}
-        <button onClick={()=>choose("fast")} style={{background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.06))",border:"2px solid "+C.gold,borderRadius:16,padding:"20px",textAlign:"left",cursor:"pointer",transition:"transform 0.1s",width:"100%"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-            <div style={{fontSize:32}}>⚡</div>
-            <div>
-              <div style={{fontSize:18,fontWeight:800,color:C.gold}}>Fast Start</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>7–14 days to complete</div>
-            </div>
-          </div>
-          <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>High intensity, full commitment. You're ready to go all in right now. This path is for people who want to get licensed and writing business as fast as possible.</div>
-          <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {["Daily focused activity","Faster path to income","High accountability","Best for: full-time focus"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"rgba(255,255,255,0.65)"}}>
-              <span style={{color:C.gold}}>✓</span>{item}
-            </div>)}
-          </div>
-          <div style={{marginTop:14,padding:"10px",background:C.gold,borderRadius:10,textAlign:"center",fontSize:14,fontWeight:700,color:"#0f1f35"}}>I'm Going Fast Start! ⚡</div>
-        </button>
-
-        {/* Regular Start */}
-        <button onClick={()=>choose("regular")} style={{background:"linear-gradient(135deg,rgba(14,165,160,0.12),rgba(14,165,160,0.06))",border:"2px solid "+C.teal,borderRadius:16,padding:"20px",textAlign:"left",cursor:"pointer",width:"100%"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-            <div style={{fontSize:32}}>🏆</div>
-            <div>
-              <div style={{fontSize:18,fontWeight:800,color:C.teal}}>Regular Start</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>30 days to complete</div>
-            </div>
-          </div>
-          <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.6,marginBottom:12}}>Steady, consistent pace. You're building a strong foundation. This path gives you 30 days to learn, practice, and prepare — perfect if you're balancing other commitments.</div>
-          <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {["Balanced daily activity","30 days to get licensed","Strong foundation building","Best for: part-time or balanced schedule"].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"rgba(255,255,255,0.65)"}}>
-              <span style={{color:C.teal}}>✓</span>{item}
-            </div>)}
-          </div>
-          <div style={{marginTop:14,padding:"10px",background:C.teal,borderRadius:10,textAlign:"center",fontSize:14,fontWeight:700,color:"white"}}>I'm Taking Regular Start 🏆</div>
-        </button>
+      <div style={{background:"linear-gradient(135deg,rgba(14,165,160,0.16),rgba(14,165,160,0.07))",border:"2px solid "+C.teal,borderRadius:16,padding:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <div style={{fontSize:30}}>✅</div>
+          <div style={{fontSize:19,fontWeight:800,color:"#5eead4"}}>Your Checklist</div>
+        </div>
+        <div style={{fontSize:15,color:"rgba(255,255,255,0.85)",lineHeight:1.65}}>Work through it one step at a time. Your trainer can see your progress and will help you along the way.</div>
+        <button onClick={()=>choose("fast")} style={{display:"block",width:"100%",marginTop:16,padding:"13px",border:"none",borderRadius:10,background:C.teal,color:"white",fontSize:16,fontWeight:800,cursor:"pointer"}}>Start My Checklist ➜</button>
       </div>
-
-      <div style={{textAlign:"center",marginTop:16,fontSize:13,color:"rgba(255,255,255,0.35)"}}>Your choice will be shared with your trainer. You can discuss it with them at any time.</div>
+      <div style={{textAlign:"center",marginTop:14,fontSize:13,color:"rgba(255,255,255,0.4)"}}>Your trainer will see your progress and can help you at any time.</div>
     </div>
   </div>;
 }
