@@ -2243,7 +2243,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
             <div style={{fontSize:14,fontWeight:800,marginBottom:4}}>Already did your DGO?</div>
             <div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:10}}>This hides the card for you. Your checklist and everything else stays exactly as it is.</div>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{onUpdate({...rep,dgoDismissed:true});setConfirmDgoDismiss(false);}} style={{flex:1,padding:10,borderRadius:9,border:"none",background:"#15803d",color:"white",fontSize:13,fontWeight:800,cursor:"pointer"}}>Yes, hide it</button>
+              <button onClick={()=>{onUpdate(rep.id,{...rep,dgoDismissed:true});setConfirmDgoDismiss(false);}} style={{flex:1,padding:10,borderRadius:9,border:"none",background:"#15803d",color:"white",fontSize:13,fontWeight:800,cursor:"pointer"}}>Yes, hide it</button>
               <button onClick={()=>setConfirmDgoDismiss(false)} style={{flex:1,padding:10,borderRadius:9,border:"1px solid #d1d5db",background:"white",color:C.textMid,fontSize:13,fontWeight:800,cursor:"pointer"}}>Not yet</button>
             </div>
           </div>
