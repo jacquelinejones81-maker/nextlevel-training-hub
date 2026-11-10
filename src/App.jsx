@@ -392,10 +392,10 @@ function hasUnattendedReferences(rep){
 // $600 bonus. Active only within that 72-hour window from their actual start date, so the
 // urgency is real and specific, not a vague "do this sometime" nudge. Returns null once
 // the window has passed or if no start date is on file — the banner just doesn't show.
-function getThreeByThreeStatus(rep){
+function getThreeByThreeStatus(rep,windowDays=3){
   if(!rep.startDate) return null;
   const start=new Date(rep.startDate+"T00:00:00");
-  const deadline=new Date(start.getTime()+3*24*60*60*1000);
+  const deadline=new Date(start.getTime()+windowDays*24*60*60*1000);
   const now=new Date();
   const msLeft=deadline-now;
   if(msLeft<=0) return null;
@@ -1249,7 +1249,8 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={},isOwnView=false})
         </div>}
         {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:13,color:C.textLight}}>No photo uploaded yet</div>}
       </div>
-      {isOwnView&&!readOnly&&!rep.dgoDone&&<DgoInviteTools rep={rep} data={data}/>}
+      {isOwnView&&!readOnly&&!rep.dgoDone&&!rep.dgoDismissed&&<DgoInviteTools rep={rep} data={data}/>}
+      {!isOwnView&&!readOnly&&rep.dgoDismissed&&<div style={{marginTop:10,fontSize:12,color:C.textMid}}>This rep hid their DGO card (said they already did it). <button onClick={()=>onUpdate({...rep,dgoDismissed:false})} style={{border:"none",background:"none",color:C.teal,fontWeight:800,cursor:"pointer",textDecoration:"underline",fontSize:12,padding:0}}>Show it again</button></div>}
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
       {rep.track!=="licensed"&&<div>
@@ -1986,6 +1987,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const [navOpen,setNavOpen]=useState(null);
   const [showOrientationVideo,setShowOrientationVideo]=useState(false);
   const [showThreeByThreeVideo,setShowThreeByThreeVideo]=useState(false);
+  const [confirmDgoDismiss,setConfirmDgoDismiss]=useState(false);
   const [showDgoScript,setShowDgoScript]=useState(false);
   const [copiedDgo,setCopiedDgo]=useState("");
   const [showLicensedRewatch,setShowLicensedRewatch]=useState(false);
@@ -2167,26 +2169,30 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {/* ── 3x3x3 CHALLENGE CARD (first 3 days only, unlicensed reps). An admin can opt their
         downline out entirely in Team Management — defaults to on. Video and DGO link come
         from the rep's own trainer, then their admin. ── */}
-    {!readOnly&&rep.track!=="licensed"&&(()=>{
-      const status=getThreeByThreeStatus(rep);
+    {!readOnly&&(()=>{
+      // Licensed reps get the same card with a 5-day window and a District Leader promotion goal
+      // (no $600 bonus). They can hide it only by saying they already did their DGO.
+      const lic=rep.track==="licensed";
+      if(lic&&(rep.dgoDone||rep.dgoDismissed)) return null;
+      const status=getThreeByThreeStatus(rep,lic?5:3);
       if(!status) return null;
       const tt=resolveThreeByThree(rep,data);
       if(tt.optedOut) return null;
       return <div style={{borderRadius:16,background:"linear-gradient(135deg,#7c2d12 0%,#c2410c 55%,#ea580c 100%)",padding:"18px 18px 16px",marginBottom:14,position:"relative",overflow:"hidden",boxShadow:"0 10px 28px rgba(194,65,12,0.4)",border:"2px solid "+C.gold}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:12}}>
           <div>
-            <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:2}}>🎯 The 3x3x3 Challenge</div>
-            <div style={{fontSize:38,fontWeight:900,color:"white",lineHeight:1}}>$600</div>
-            <div style={{fontSize:12,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"1px",marginTop:2}}>Bonus — go get it</div>
+            <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:2}}>{lic?"🎯 District Leader Promotion Challenge":"🎯 The 3x3x3 Challenge"}</div>
+            <div style={{fontSize:lic?28:38,fontWeight:900,color:"white",lineHeight:lic?1.1:1}}>{lic?"Your DL promotion":"$600"}</div>
+            <div style={{fontSize:12,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"1px",marginTop:2}}>{lic?"Go get it":"Bonus — go get it"}</div>
           </div>
           <div style={{background:"white",borderRadius:12,padding:"8px 12px",textAlign:"center",flexShrink:0}}>
             <div style={{fontSize:9,fontWeight:800,color:"#7c2d12",textTransform:"uppercase",letterSpacing:"1px"}}>Time left</div>
             <div style={{fontSize:28,fontWeight:900,color:"#7c2d12",lineHeight:1.1}}>{status.big}</div>
           </div>
         </div>
-        <div style={{fontSize:15,fontWeight:800,color:"white",lineHeight:1.35,marginBottom:12}}>Hit all three in your first 3 days and the $600 is yours.</div>
+        <div style={{fontSize:15,fontWeight:800,color:"white",lineHeight:1.35,marginBottom:12}}>{lic?"Hit all three in your first 5 days and you are on your way to District Leader.":"Hit all three in your first 3 days and the $600 is yours."}</div>
         <div style={{display:"flex",gap:8,marginBottom:12}}>
-          {[["3","Recruits"],["$3,000","Life premium"],["3","Days"]].map(([n,l])=><div key={l} style={{flex:1,background:"rgba(255,255,255,0.16)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"9px 4px",textAlign:"center"}}>
+          {[["3","Recruits"],["$3,000","Life premium"],[lic?"5":"3","Days"]].map(([n,l])=><div key={l} style={{flex:1,background:"rgba(255,255,255,0.16)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"9px 4px",textAlign:"center"}}>
             <div style={{fontSize:n.length>2?20:26,fontWeight:900,color:"white",lineHeight:1.1}}>{n}</div>
             <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:"0.6px",marginTop:2}}>{l}</div>
           </div>)}
@@ -2198,7 +2204,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11,fontWeight:800,color:C.gold,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:5}}>Why this matters</div>
           {[
-            "It's a $600 bonus for starting fast.",
+            lic?"It's the fastest path to your District Leader promotion.":"It's a $600 bonus for starting fast.",
             "Your DGO is how you launch — the sooner it's booked, the sooner people show up.",
             "Fast starters see the business work, and that momentum carries into everything else.",
           ].map((t,i)=><div key={i} style={{display:"flex",gap:7,fontSize:13,color:"rgba(255,255,255,0.95)",lineHeight:1.45,marginBottom:3}}><span style={{color:C.gold,fontWeight:900}}>✓</span><span>{t}</span></div>)}
@@ -2232,6 +2238,16 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
             </div>}
           </div>;
         })()}
+        {lic&&(confirmDgoDismiss
+          ?<div style={{background:"white",color:C.text,borderRadius:12,padding:14,marginTop:12}}>
+            <div style={{fontSize:14,fontWeight:800,marginBottom:4}}>Already did your DGO?</div>
+            <div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:10}}>This hides the card for you. Your checklist and everything else stays exactly as it is.</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{onUpdate({...rep,dgoDismissed:true});setConfirmDgoDismiss(false);}} style={{flex:1,padding:10,borderRadius:9,border:"none",background:"#15803d",color:"white",fontSize:13,fontWeight:800,cursor:"pointer"}}>Yes, hide it</button>
+              <button onClick={()=>setConfirmDgoDismiss(false)} style={{flex:1,padding:10,borderRadius:9,border:"1px solid #d1d5db",background:"white",color:C.textMid,fontSize:13,fontWeight:800,cursor:"pointer"}}>Not yet</button>
+            </div>
+          </div>
+          :<button onClick={()=>setConfirmDgoDismiss(true)} style={{display:"block",width:"100%",marginTop:12,padding:10,borderRadius:10,border:"1px dashed rgba(255,255,255,0.55)",background:"transparent",color:"white",fontSize:13,fontWeight:800,cursor:"pointer"}}>✓ I already did my DGO</button>)}
       </div>;
     })()}
     {showThreeByThreeVideo&&(()=>{const tt=resolveThreeByThree(rep,data);return tt.videoUrl?<RewatchVideoModal videoUrl={tt.videoUrl} title="How To Hit 3x3x3" onClose={()=>setShowThreeByThreeVideo(false)}/>:null;})()}
