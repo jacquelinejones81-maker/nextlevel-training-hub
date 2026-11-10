@@ -11342,7 +11342,7 @@ const ADMIN_NAV_GROUPS=[
   {n:"My business",ic:"briefcase",keys:["careerpath","advancement","resources","myprofile"]},
   {n:"Admin tools",ic:"settings",keys:["announcements","dataexport","commitmentcats","checklisteditor","team"]},
 ];
-const REP_NAV_PINNED=["checklist","scorecard","production"];
+const REP_NAV_PINNED=["checklist","myactivity","scorecard","production"];
 const REP_NAV_GROUPS=[
   {n:"My progress",ic:"flag",keys:["refs","milestones","appointments","career","advancement"]},
   {n:"My day",ic:"calendar",keys:["planner","myactivity"],foldInto:"My progress"},
