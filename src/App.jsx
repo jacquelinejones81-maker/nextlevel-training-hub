@@ -1019,6 +1019,7 @@ function ApptTracker({appointments=[],onChange,readOnly,bookingLink,track}) {
 function DgoInviteTools({rep,data}) {
   const [open,setOpen]=useState(false);
   const [copied,setCopied]=useState("");
+  const [showVideo,setShowVideo]=useState(false);
   const tt=resolveThreeByThree(rep,data);
   const copy=(key,text)=>{
     const done=()=>{setCopied(key);setTimeout(()=>setCopied(""),1500);};
@@ -1031,6 +1032,8 @@ function DgoInviteTools({rep,data}) {
   const msg={background:"white",border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 12px",fontSize:14,lineHeight:1.6,color:C.text,marginBottom:6};
   return <div style={{marginTop:12,paddingTop:12,borderTop:"1px dashed #cbd5e1"}}>
     <div style={{...lbl,marginBottom:8}}>Use the Schedule Your DGO link to schedule your guests</div>
+    {tt.videoUrl&&<button onClick={()=>setShowVideo(true)} style={{display:"block",width:"100%",padding:"12px",borderRadius:10,border:"none",background:"#c2410c",color:"white",fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:8}}>▶ Watch: How To Hit 3x3x3</button>}
+    {showVideo&&tt.videoUrl&&<RewatchVideoModal videoUrl={tt.videoUrl} title="How To Hit 3x3x3" onClose={()=>setShowVideo(false)}/>}
     {tt.dgoLink&&<a href={tt.dgoLink} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",padding:"12px",borderRadius:10,border:"2px solid #c2410c",color:"#c2410c",background:"white",fontSize:14,fontWeight:900,textAlign:"center",textDecoration:"none",boxSizing:"border-box",marginBottom:8}}>📅 Schedule Your DGO</a>}
     <button onClick={()=>setOpen(v=>!v)} aria-expanded={open} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"12px 14px",borderRadius:10,border:"2px solid "+C.gold,background:"rgba(251,191,36,0.18)",color:"#7c2d12",fontSize:14,fontWeight:900,cursor:"pointer"}}><span>📞 Calling &amp; Texting Script</span><span style={{fontSize:12,fontWeight:700,color:"#92400e"}}>{open?"Hide ▲":"Tap to open ▼"}</span></button>
     {open&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginTop:10}}>
