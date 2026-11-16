@@ -1249,7 +1249,7 @@ function RepExtras({rep,onUpdate,onUpdateData,readOnly,data={},isOwnView=false})
         </div>}
         {readOnly&&!rep.dgoPhoto&&<div style={{fontSize:13,color:C.textLight}}>No photo uploaded yet</div>}
       </div>
-      {isOwnView&&!readOnly&&!rep.dgoDone&&!rep.dgoDismissed&&<DgoInviteTools rep={rep} data={data}/>}
+      {isOwnView&&!readOnly&&!rep.dgoDone&&<DgoInviteTools rep={rep} data={data}/>}
       {!isOwnView&&!readOnly&&rep.dgoDismissed&&<div style={{marginTop:10,fontSize:12,color:C.textMid}}>This rep hid their DGO card (said they already did it). <button onClick={()=>onUpdate({...rep,dgoDismissed:false})} style={{border:"none",background:"none",color:C.teal,fontWeight:800,cursor:"pointer",textDecoration:"underline",fontSize:12,padding:0}}>Show it again</button></div>}
     </Card>
     <Card style={{marginBottom:12,border:`1px solid ${rep.examPassed?C.success+"44":C.gold+"33"}`}}>
