@@ -12982,7 +12982,7 @@ function useTgSettings(){
   return st;
 }
 const tgGameOf=(st)=>((st&&st.game)||"bingo");
-const TG_GAMES={bingo:{e:"🎯",n:"Bingo"},race:{e:"🏁",n:"Team Race"}};
+const TG_GAMES={bingo:{e:"🎯",n:"Bingo"},race:{e:"🏁",n:"Team Race"},summit:{e:"⛰️",n:"Summit Climb"}};
 const TG_RACE_FINISH_DEFAULT=60;
 const tgHowKey=(g,id)=>"nl_tg_how_"+g+"_"+(id||"x");
 const tgHowClosed=(g,id)=>{try{return localStorage.getItem(tgHowKey(g,id))==="1";}catch(e){return false;}};
@@ -12997,6 +12997,13 @@ function TgHowTo({game,uid,open,setOpen}){
     <>Fill a <b>full row, column or diagonal</b> and it's a <b>BINGO</b> 🎉 with confetti for everyone.</>,
     <>After a BINGO, the whole team goes for the <b>BLACKOUT</b>: fill all 25 squares.</>,
     <>Tapped by mistake? Tap your own stamp to take it off.</>,
+  ]:game==="summit"?[
+    <>Every time you <b>do something that earns income</b>, tap <b>“I did one”</b> and pick what it was.</>,
+    <>Each one is <b>1 step</b> up the mountain. Life App, Investment, Training Appt, Mortgage, Auto, Home, LegalShield, ID Theft or Vivint all count.</>,
+    <>Everyone <b>starts at Base Camp</b>. Hit the <b>checkpoints</b> (Ridge, Halfway Camp, High Camp, Peak) to earn a shout-out for the team.</>,
+    <>Only log what you <b>really did</b>. The team can see everything in the feed.</>,
+    <>Tapped by mistake? Tap <b>Undo</b> on your own entry in the feed.</>,
+    <>The mountain <b>resets every Monday</b>. Reach the Peak to join the <b>Peak Club</b> 👑.</>,
   ]:[
     <>Every admin's team has <b>a car on the track</b>.</>,
     <>You don't have to do anything extra. <b>Your scorecard moves your team's car</b>: contacts, appointments set and appointments done.</>,
@@ -13007,7 +13014,7 @@ function TgHowTo({game,uid,open,setOpen}){
   ];
   return <div style={{background:"#f0fdf4",border:"2px solid #86efac",borderRadius:14,padding:"14px 16px",marginBottom:14}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <div style={{fontSize:15,fontWeight:800,color:"#166534"}}>{game==="bingo"?"How to play Bingo":"How the Team Race works"}</div>
+      <div style={{fontSize:15,fontWeight:800,color:"#166534"}}>{game==="bingo"?"How to play Bingo":game==="summit"?"How to play Summit Climb":"How the Team Race works"}</div>
       <button onClick={()=>{tgHowSet(game,uid,true);setOpen(false);}} style={{border:"none",background:"none",fontSize:13,fontWeight:800,color:"#166534",cursor:"pointer"}}>Got it ✕</button>
     </div>
     <ol style={{margin:0,paddingLeft:20,fontSize:14,lineHeight:1.7,color:C.text}}>{steps.map((x,i)=><li key={i}>{x}</li>)}</ol>
@@ -13165,6 +13172,251 @@ function RaceGame({data,colors,finishPer,readOnly=false}){
   </div>;
 }
 
+// ── SUMMIT CLIMB ── weekly. Each logged income-producing activity is one step up the mountain.
+// Self-reported (nothing is pulled from other Hub data). Stored in teamGames/summit.
+const TG_SUMMIT_ACTS=["Life App","Investment","Training Appt","Mortgage","Auto Insurance","Home Insurance","LegalShield","ID Theft","Vivint"];
+const TG_SUMMIT_EMOJI={"Life App":"🛡️","Investment":"📈","Training Appt":"🎓","Mortgage":"🏠","Auto Insurance":"🚗","Home Insurance":"🏡","LegalShield":"⚖️","ID Theft":"🔒","Vivint":"📹"};
+const TG_SUMMIT_PEAK=10;
+const tgSummitCheckpoints=(peak)=>{
+  const p=Math.max(4,Math.round(peak||TG_SUMMIT_PEAK));
+  const r=Math.max(1,Math.round(p*0.3)),h=Math.max(r+1,Math.round(p*0.5)),hc=Math.max(h+1,Math.min(p-1,Math.round(p*0.8)));
+  return [{at:r,l:"🏔️ Ridge"},{at:h,l:"🚩 Halfway Camp"},{at:hc,l:"🔥 High Camp"},{at:p,l:"👑 Peak"}];
+};
+const tgSummitCounts=(log)=>{const by={};(log||[]).forEach(e=>{const k=e.ownerId||e.name;by[k]=by[k]||{ownerId:e.ownerId,name:e.name,team:e.team,n:0};by[k].n++;});return by;};
+function tgMyTeam(session,data){
+  const role=session&&session.role,me=session&&session.id;
+  if(role==="admin"||role==="superadmin") return me;
+  const trainers=(data&&data.trainers)||[],reps=(data&&data.reps)||[];
+  if(role==="trainer"){const t=trainers.find(x=>x.id===me);return (t&&t.adminId)||null;}
+  const r=reps.find(x=>x.id===me);const t=trainers.find(x=>x.id===(r&&r.trainerId));
+  return (t&&t.adminId)||(r&&r.adminId)||null;
+}
+
+function SummitGame({session,data,readOnly=false,colors={}}){
+  const me=session&&session.id;
+  const isAdmin=(session&&(session.role==="admin"||session.role==="superadmin"));
+  const myName=tgShortName(session&&session.name);
+  const myTeam=tgMyTeam(session,data);
+  const admins=(data&&data.admins)||[];
+  const week=getWeekStart();
+  const [doc_,setDoc_]=useState(null);
+  const [loadErr,setLoadErr]=useState(false);
+  const [popOpen,setPopOpen]=useState(false);
+  const [banner,setBanner]=useState(null);
+  const [saveStatus,setSaveStatus]=useState(null);
+  const [showAdmin,setShowAdmin]=useState(false);
+  const [editActs,setEditActs]=useState([]);
+  const [editPeak,setEditPeak]=useState("");
+  const [adminMsg,setAdminMsg]=useState("");
+  const [pos,setPos]=useState([]);
+  const canvasRef=useRef(null);
+  const trailRef=useRef(null);
+  const seenRef=useRef(undefined);
+  const bannerTimer=useRef(null);
+  const savedTimer=useRef(null);
+  const ref=doc(db,"teamGames","summit");
+
+  useEffect(()=>{
+    const unsub=onSnapshot(ref,snap=>{setDoc_(snap.exists()?snap.data():{});setLoadErr(false);},err=>{console.warn("Summit load failed:",err);setLoadErr(true);setDoc_(d=>d||{});});
+    return ()=>{unsub();clearTimeout(bannerTimer.current);clearTimeout(savedTimer.current);};
+  },[]);
+
+  const d=doc_||{};
+  const acts=(d.activities&&d.activities.length)?d.activities:TG_SUMMIT_ACTS;
+  const peak=Math.max(4,Number(d.peak)||TG_SUMMIT_PEAK);
+  const cps=tgSummitCheckpoints(peak);
+  const log=(d.week===week&&d.log)||[];
+  const counts=tgSummitCounts(log);
+  const climbers=Object.values(counts);
+  if(me&&!counts[me]&&!readOnly) climbers.push({ownerId:me,name:myName,team:myTeam,n:0});
+  climbers.sort((a,b)=>b.n-a.n||String(a.name).localeCompare(String(b.name)));
+  const myN=(counts[me]&&counts[me].n)||0;
+  const tcol=(t)=>tgTeamColor(admins,colors,t);
+  const nextCp=cps.find(c=>c.at>myN);
+  const badge=(n)=>{let b="⛺ At Base Camp";cps.forEach(c=>{if(n>=c.at)b=c.l;});return b;};
+  const history=d.history||[];
+  const peakers=climbers.filter(c=>c.n>=peak);
+
+  // Position climbers along the trail (the SVG path itself is the measuring stick)
+  const sig=JSON.stringify(climbers.map(c=>[c.ownerId||c.name,c.n]))+peak;
+  useEffect(()=>{
+    const el=trailRef.current;if(!el) return;
+    const len=el.getTotalLength();
+    const tops=climbers.filter(c=>c.n>=peak);
+    setPos(climbers.map((c,i)=>{
+      const f=Math.min(c.n,peak)/peak;const p=el.getPointAtLength(len*f);
+      const top=c.n>=peak;
+      if(top){const ti=tops.indexOf(c),row=Math.floor(ti/3),inRow=Math.min(3,tops.length-row*3),col=ti-row*3;return {x:p.x+(col-(inRow-1)/2)*58,y:p.y-6+row*66,top:true};}
+      const same=climbers.slice(0,i).filter(o=>o.n===c.n&&o.n<peak).length;
+      return {x:p.x+((same%3)-1)*22*(same?1:0),y:p.y-Math.floor(same/3)*20,top:false};
+    }));
+  },[sig]);
+
+  const writeRetry=async(fn)=>{
+    setSaveStatus("saving");
+    const ok=()=>{setSaveStatus("saved");clearTimeout(savedTimer.current);savedTimer.current=setTimeout(()=>setSaveStatus(s=>s==="saved"?null:s),2000);};
+    try{await fn();ok();}catch(e1){await new Promise(r=>setTimeout(r,1200));try{await fn();ok();}catch(e2){console.warn("Summit save failed",e2);setSaveStatus("failed");}}
+  };
+  // Read-modify-write; a new Monday archives last week's Peak Club and starts everyone at Base Camp
+  const runTx=(fn)=>writeRetry(()=>runTransaction(db,async(tx)=>{
+    const snap=await tx.get(ref);
+    let cur=snap.exists()?snap.data():{};
+    if(cur.week!==week){
+      let hist=(cur.history||[]).slice();
+      if(cur.week&&cur.log&&cur.log.length){
+        const pk=Math.max(4,Number(cur.peak)||TG_SUMMIT_PEAK);
+        const names=Object.values(tgSummitCounts(cur.log)).filter(c=>c.n>=pk).map(c=>c.name);
+        if(names.length) hist.unshift({week:cur.week,names});
+      }
+      cur={...cur,week,log:[],lastEvent:null,history:hist.slice(0,12)};
+    }
+    const next=fn(cur);
+    if(!next) return;
+    tx.set(ref,next);
+  }));
+
+  const doLog=async(act)=>{
+    setPopOpen(false);
+    await runTx(cur=>{
+      const iso=new Date().toISOString();
+      const before=(cur.log||[]).filter(e=>(e.ownerId||e.name)===me).length;
+      const entry={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),ownerId:me,name:myName,team:myTeam||null,activity:act,at:iso};
+      const pk=Math.max(4,Number(cur.peak)||TG_SUMMIT_PEAK);
+      const hit=tgSummitCheckpoints(pk).filter(c=>before<c.at&&before+1>=c.at)[0];
+      const next={...cur,log:[entry,...(cur.log||[])].slice(0,600),updatedAt:iso};
+      if(hit) next.lastEvent={id:entry.id,name:myName,label:hit.l,peak:hit.at>=pk,at:iso};
+      return next;
+    });
+  };
+  const doUndo=async(id)=>{
+    await runTx(cur=>{
+      const e=(cur.log||[]).find(x=>x.id===id);
+      if(!e||!(e.ownerId===me||isAdmin)) return null;
+      return {...cur,log:cur.log.filter(x=>x.id!==id),updatedAt:new Date().toISOString()};
+    });
+  };
+  const saveSetup=async()=>{
+    if(!isAdmin) return;
+    const list=editActs.map(x=>String(x||"").trim().slice(0,30)).filter(Boolean);
+    if(!list.length){setAdminMsg("Add at least one activity.");return;}
+    const pk=Math.max(4,Math.min(100,Number(editPeak)||TG_SUMMIT_PEAK));
+    await runTx(cur=>({...cur,activities:list,peak:pk,updatedAt:new Date().toISOString()}));
+    setAdminMsg("✓ Saved.");
+  };
+  const openAdmin=()=>{if(!showAdmin){setEditActs(acts.slice());setEditPeak(String(peak));setAdminMsg("");}setShowAdmin(v=>!v);};
+
+  // Banner + confetti for everyone watching when someone hits a checkpoint
+  const ev=d.week===week?d.lastEvent:null;
+  useEffect(()=>{
+    if(doc_===null) return;
+    const show=(x)=>{setBanner(x);tgFireConfetti(canvasRef.current,!!x.peak);clearTimeout(bannerTimer.current);bannerTimer.current=setTimeout(()=>setBanner(null),9000);};
+    if(seenRef.current===undefined){seenRef.current=ev?ev.id:null;if(ev&&Date.now()-new Date(ev.at).getTime()<90000) show(ev);return;}
+    if(ev&&ev.id!==seenRef.current){seenRef.current=ev.id;show(ev);}
+  },[ev&&ev.id,doc_===null]);
+
+  const card={background:"white",border:`1px solid ${C.border}`,borderRadius:16,padding:dv(14,18),marginBottom:14};
+  const btn=(bg,color,border)=>({padding:"11px 16px",borderRadius:10,border:border||"none",background:bg,color,fontSize:14,fontWeight:800,cursor:"pointer"});
+  const [wide,setWide]=useState(typeof window!=="undefined"?window.innerWidth>=760:true);
+  useEffect(()=>{const f=()=>setWide(window.innerWidth>=760);window.addEventListener("resize",f);return ()=>window.removeEventListener("resize",f);},[]);
+  const feed=log.slice(0,10);
+  const cpLabelPos=[[290,276],[410,215],[385,150,"end"],[600,40]];
+  const canLog=!readOnly&&!!me;
+
+  if(doc_===null) return <div style={{...card,textAlign:"center",color:C.textMid,fontSize:14}}>Loading the mountain...</div>;
+  return <div>
+    <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:50}}/>
+    {readOnly&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:13,color:C.textMid}}>Preview — logging steps is turned off here.</div>}
+    {saveStatus==="saving"&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:12,color:C.textMid}}>⏳ Saving...</div>}
+    {saveStatus==="failed"&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#991b1b",fontWeight:700}}>⚠️ Didn't save. Check your connection and try again.</div>}
+    {loadErr&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:13,color:"#991b1b"}}>Couldn't load the mountain. Refresh and try again.</div>}
+    {banner&&<div style={{background:"linear-gradient(135deg,#0f172a,#1e3a8a)",color:"white",borderRadius:14,padding:14,textAlign:"center",marginBottom:12,fontWeight:800,fontSize:18,border:"3px solid #fbbf24"}}>
+      🎉 {banner.name} reached {banner.label}! 🎉
+      <div style={{fontSize:13,fontWeight:600,marginTop:2}}>{banner.peak?"Welcome to the Peak Club! 👑":"Keep climbing!"}</div></div>}
+    <div style={{display:"grid",gridTemplateColumns:wide?"minmax(0,1.5fr) minmax(0,1fr)":"1fr",gap:14,alignItems:"start"}}>
+      <div>
+        <div style={card}>
+          <svg viewBox="0 0 900 380" style={{width:"100%",display:"block"}} role="img" aria-label="Mountain">
+            <rect width="900" height="380" rx="16" fill="#e0f2fe"/>
+            <polygon points="30,360 450,40 870,360" fill="#94a3b8"/><polygon points="450,40 525,98 485,90 450,122 415,90 375,100" fill="#fff"/><polygon points="30,360 200,230 360,360" fill="#78909c"/>
+            <path ref={trailRef} d="M110,352 C200,300 250,300 300,250 S380,190 400,150 S440,90 450,52" fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="7 8" opacity=".85"/>
+            <g fontSize="13" fontWeight="800" fill="#0f172a">
+              <text x="128" y="346">⛺ Base Camp · start</text>
+              {cps.slice(0,3).map((c,i)=><text key={i} x={cpLabelPos[i][0]} y={cpLabelPos[i][1]} textAnchor={cpLabelPos[i][2]||"start"}>{c.l} · {c.at}</text>)}
+              <text x="600" y="40">{cps[3].l} · {cps[3].at}</text>
+            </g>
+            {climbers.map((c,i)=>pos[i]&&<g key={(c.ownerId||c.name)} style={{transform:`translate(${pos[i].x}px,${pos[i].y}px)`,transition:"transform .9s ease"}}>
+              {pos[i].top&&<text y="-20" textAnchor="middle" fontSize="16">👑</text>}
+              <text y="6" textAnchor="middle" fontSize={(c.ownerId===me||pos[i].top)?30:24}>🚶</text>
+              <rect x={(c.ownerId===me||pos[i].top)?-24:-16} y="10" width={(c.ownerId===me||pos[i].top)?48:32} height="15" rx="7.5" fill={tcol(c.team)} stroke={c.ownerId===me?"#fbbf24":"#fff"} strokeWidth="2"/>
+              <text y="21.5" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">{(c.ownerId===me||pos[i].top)?String(c.name).split(" ")[0]:String(c.name).charAt(0)}</text>
+            </g>)}
+          </svg>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginTop:8}}>
+            <div><b style={{fontSize:20,color:C.text}}>{myN}</b> <span style={{fontSize:13,color:C.textMid}}>step{myN===1?"":"s"} this week · {badge(myN)}{nextCp?` · ${nextCp.at-myN} step${nextCp.at-myN===1?"":"s"} to the next checkpoint`:" · You made it! 👑"}</span></div>
+            {canLog&&<div style={{position:"relative"}}>
+              <button onClick={()=>setPopOpen(v=>!v)} style={{...btn(C.teal,"white"),fontSize:15,padding:"12px 18px"}}>🧗 I did one</button>
+              {popOpen&&<div style={{position:"absolute",right:0,top:56,width:"min(300px,calc(100vw - 48px))",background:"white",border:`2px solid ${C.teal}`,borderRadius:14,padding:10,boxShadow:"0 10px 30px rgba(0,0,0,0.2)",zIndex:20}}>
+                <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:6}}>What did you do? <span style={{fontWeight:600,color:C.textMid}}>(adds 1 step)</span></div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                  {acts.map(a=><button key={a} onClick={()=>doLog(a)} style={{textAlign:"left",padding:"8px 9px",border:"2px solid #e5e7eb",borderRadius:10,background:"white",fontSize:13,fontWeight:700,color:C.text,cursor:"pointer"}}>{(TG_SUMMIT_EMOJI[a]||"➕")+" "+a}</button>)}
+                </div>
+                <button onClick={()=>setPopOpen(false)} style={{marginTop:8,width:"100%",...btn("white",C.textMid,"1px solid #d1d5db"),padding:"8px 12px",fontSize:13}}>Cancel</button>
+              </div>}
+            </div>}
+          </div>
+        </div>
+        <div style={card}>
+          <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8}}>Team activity</div>
+          {feed.length===0?<div style={{fontSize:13,color:C.textMid}}>No steps yet this week. Be the first to climb!</div>
+            :feed.map((e,i)=><div key={e.id} style={{display:"flex",justifyContent:"space-between",gap:8,padding:"8px 0",borderTop:i?`1px solid ${C.border}`:"none",fontSize:13,color:C.text}}>
+              <span><b>{e.name}</b> logged <b>{e.activity}</b> 🧗</span>
+              <span style={{color:C.textLight,whiteSpace:"nowrap"}}>{tgAgo(e.at)}{canLog&&(e.ownerId===me||isAdmin)&&<> · <a href="#" onClick={ev2=>{ev2.preventDefault();doUndo(e.id);}} style={{color:"#dc2626",fontWeight:700}}>Undo</a></>}</span>
+            </div>)}
+        </div>
+      </div>
+      <div>
+        <div style={card}>
+          <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:4}}>Team total this week</div>
+          <div style={{fontSize:30,fontWeight:900,color:C.text}}>{log.length}</div>
+          <div style={{fontSize:13,color:C.textMid}}>steps climbed by the whole team</div>
+          <div style={{marginTop:10}}>{peakers.length===0?<span style={{fontSize:13,color:C.textMid}}>No one at the Peak yet. Who's first?</span>:peakers.map(c=><span key={c.name} style={{display:"inline-block",fontSize:12,fontWeight:700,background:"#dcfce7",border:"1px solid #86efac",color:"#166534",borderRadius:999,padding:"3px 10px",margin:"2px 4px 2px 0"}}>👑 {c.name} reached the Peak</span>)}</div>
+        </div>
+        <div style={card}>
+          <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:6}}>Climbers</div>
+          {climbers.length===0?<div style={{fontSize:13,color:C.textMid}}>No climbers yet.</div>:climbers.slice(0,10).map((c,i)=><div key={(c.ownerId||c.name)+i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderTop:i?`1px solid ${C.border}`:"none",fontSize:13}}>
+            <div style={{width:26,height:26,borderRadius:"50%",background:tcol(c.team),color:"white",fontWeight:800,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{tgInitials(c.name)}</div>
+            <b style={{width:70,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{String(c.name).split(" ")[0]}</b>
+            <div style={{flex:1,height:8,background:"#e5e7eb",borderRadius:5,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,c.n/peak*100)+"%",background:tcol(c.team),transition:"width .4s"}}/></div>
+            <b style={{color:C.text}}>{c.n}</b>
+          </div>)}
+        </div>
+        <div style={card}>
+          <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:6}}>🏆 Peak Club (past weeks)</div>
+          {history.length===0?<div style={{fontSize:13,color:C.textMid}}>Nobody yet. Be the first!</div>:history.slice(0,6).map((h,i)=><div key={h.week+i} style={{fontSize:13,color:C.text,lineHeight:1.7}}>Week of {new Date(h.week+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"})}: <b>{h.names.join(", ")}</b></div>)}
+        </div>
+        {isAdmin&&!readOnly&&<div style={card}>
+          <button onClick={openAdmin} style={{...btn(showAdmin?C.navy:"white",showAdmin?"white":C.textMid,`1px solid ${showAdmin?C.navy:C.border}`),fontSize:13,padding:"8px 14px"}}>⚙️ Admin setup</button>
+          {showAdmin&&<div style={{marginTop:12}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Steps to reach the Peak (the checkpoints adjust automatically)</div>
+            <input type="number" min="4" max="100" value={editPeak} onChange={e=>setEditPeak(e.target.value)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,width:100,marginBottom:12}}/>
+            <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Activities that count (one step each)</div>
+            {editActs.map((a,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:5}}>
+              <input value={a} maxLength={30} onChange={e=>{const v=e.target.value;setEditActs(l=>l.map((x,j)=>j===i?v:x));}} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13}}/>
+              <button onClick={()=>setEditActs(l=>l.filter((_,j)=>j!==i))} style={{...btn("white",C.textMid,"1px solid #d1d5db"),padding:"6px 10px",fontSize:12}}>✕</button>
+            </div>)}
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6}}>
+              <button onClick={()=>setEditActs(l=>[...l,""])} style={{...btn("white",C.textMid,"1px solid #d1d5db"),padding:"8px 12px",fontSize:13}}>+ Add an activity</button>
+              <button onClick={saveSetup} style={{...btn(C.teal,"white"),padding:"8px 14px",fontSize:13}}>Save setup</button>
+            </div>
+            {adminMsg&&<div style={{fontSize:13,color:adminMsg.startsWith("✓")?"#15803d":"#991b1b",fontWeight:700,marginTop:8}}>{adminMsg}</div>}
+            <div style={{fontSize:12,color:C.textMid,marginTop:8}}>Only admins see this. Admins can also remove anyone's step with Undo in the feed.</div>
+          </div>}
+        </div>}
+      </div>
+    </div>
+  </div>;
+}
+
 function TeamGames({session,data,db:dbProp,readOnly=false}){
   const st=useTgSettings();
   const game=tgGameOf(st);
@@ -13220,6 +13472,7 @@ function TeamGames({session,data,db:dbProp,readOnly=false}){
       <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8}}>Game of the week <span style={{fontSize:11,fontWeight:800,background:"#fef3c7",color:"#92400e",borderRadius:5,padding:"1px 6px",marginLeft:6}}>Super admin only</span></div>
       {opt("bingo","🎯","Bingo","One shared card for the whole team. Tap squares as you do them, go for a BINGO, then the blackout.")}
       {opt("race","🏁","Team Race","Each team's car races around the track, powered by scorecard results. First across the finish line wins the week.")}
+      {opt("summit","⛰️","Summit Climb","Everyone climbs the mountain by logging income-producing activities. Reach the Peak to join the Peak Club.")}
       {opt("off","⏸️","No game this week","Team Games is hidden from the menu until you turn a game back on.")}
       {pickG==="race"&&<div style={{margin:"4px 0 10px"}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Finish line (points per team member, 1 per contact, 5 per appt set, 10 per appt done)</div><input type="number" min="10" max="1000" value={pickFinish} onChange={e=>setPickFinish(e.target.value)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,width:120}}/></div>}
       <label style={{display:"flex",gap:9,fontSize:13,margin:"10px 0",alignItems:"center",cursor:"pointer",color:C.text}}><input type="checkbox" checked={announce} onChange={e=>setAnnounce(e.target.checked)}/> Show everyone a “New game this week” banner when I switch</label>
@@ -13243,7 +13496,7 @@ function TeamGames({session,data,db:dbProp,readOnly=false}){
       <button onClick={()=>{const nv=!howOpen;setHowOpen(nv);if(!nv) tgHowSet(game,uid,true);else tgHowSet(game,uid,false);}} aria-label="How to play" title="How to play" style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.5)",color:"white",borderRadius:999,width:34,height:34,fontWeight:900,fontSize:16,cursor:"pointer"}}>?</button>
     </div>
     <TgHowTo game={game} uid={uid} open={howOpen} setOpen={setHowOpen}/>
-    {game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer} readOnly={readOnly}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
+    {game==="summit"?<SummitGame session={session} data={data} readOnly={readOnly} colors={colors}/>:game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer} readOnly={readOnly}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
   </div>;
 }
 
