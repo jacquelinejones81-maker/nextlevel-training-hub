@@ -13209,6 +13209,7 @@ function SummitGame({session,data,readOnly=false,colors={}}){
   const [editPeak,setEditPeak]=useState("");
   const [adminMsg,setAdminMsg]=useState("");
   const [pos,setPos]=useState([]);
+  const [openP,setOpenP]=useState({});
   const canvasRef=useRef(null);
   const trailRef=useRef(null);
   const seenRef=useRef(undefined);
@@ -13318,7 +13319,8 @@ function SummitGame({session,data,readOnly=false,colors={}}){
   const btn=(bg,color,border)=>({padding:"11px 16px",borderRadius:10,border:border||"none",background:bg,color,fontSize:14,fontWeight:800,cursor:"pointer"});
   const [wide,setWide]=useState(typeof window!=="undefined"?window.innerWidth>=760:true);
   useEffect(()=>{const f=()=>setWide(window.innerWidth>=760);window.addEventListener("resize",f);return ()=>window.removeEventListener("resize",f);},[]);
-  const feed=log.slice(0,10);
+  // Team activity grouped by person: one row per name, tap to see what they logged
+  const groups=(()=>{const g={};log.forEach(e=>{const k=e.ownerId||e.name;(g[k]=g[k]||{key:k,name:e.name,team:e.team,items:[]}).items.push(e);});return Object.values(g).sort((a,b)=>String(b.items[0].at).localeCompare(String(a.items[0].at)));})();
   const cpLabelPos=[[290,276],[410,215],[385,150,"end"],[600,40]];
   const canLog=!readOnly&&!!me;
 
@@ -13367,11 +13369,22 @@ function SummitGame({session,data,readOnly=false,colors={}}){
         </div>
         <div style={card}>
           <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8}}>Team activity</div>
-          {feed.length===0?<div style={{fontSize:13,color:C.textMid}}>No steps yet this week. Be the first to climb!</div>
-            :feed.map((e,i)=><div key={e.id} style={{display:"flex",justifyContent:"space-between",gap:8,padding:"8px 0",borderTop:i?`1px solid ${C.border}`:"none",fontSize:13,color:C.text}}>
-              <span><b>{e.name}</b> logged <b>{e.activity}</b> 🧗</span>
-              <span style={{color:C.textLight,whiteSpace:"nowrap"}}>{tgAgo(e.at)}{canLog&&(e.ownerId===me||isAdmin)&&<> · <a href="#" onClick={ev2=>{ev2.preventDefault();doUndo(e.id);}} style={{color:"#dc2626",fontWeight:700}}>Undo</a></>}</span>
-            </div>)}
+          {groups.length===0?<div style={{fontSize:13,color:C.textMid}}>No steps yet this week. Be the first to climb!</div>
+            :groups.map((g,i)=>{const open=!!openP[g.key];return <div key={g.key} style={{borderTop:i?`1px solid ${C.border}`:"none"}}>
+              <button onClick={()=>setOpenP(o=>({...o,[g.key]:!o[g.key]}))} aria-expanded={open} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 0",border:"none",background:"none",cursor:"pointer",textAlign:"left"}}>
+                <span style={{fontSize:11,color:C.textMid,width:12}}>{open?"▼":"▶"}</span>
+                <span style={{width:24,height:24,borderRadius:"50%",background:tcol(g.team),color:"white",fontWeight:800,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{tgInitials(g.name)}</span>
+                <span style={{flex:1,fontSize:13,fontWeight:800,color:C.text}}>{g.name} <span style={{fontWeight:600,color:C.textMid}}>· {g.items.length} step{g.items.length===1?"":"s"}</span></span>
+                <span style={{fontSize:12,color:C.textLight,whiteSpace:"nowrap"}}>{tgAgo(g.items[0].at)}</span>
+              </button>
+              {open&&<div style={{margin:"0 0 8px 34px",background:C.surface,borderRadius:10,padding:"4px 12px"}}>
+                {g.items.slice(0,30).map((e,j)=><div key={e.id} style={{display:"flex",justifyContent:"space-between",gap:8,padding:"6px 0",borderTop:j?`1px solid ${C.border}`:"none",fontSize:13,color:C.text}}>
+                  <span>{(TG_SUMMIT_EMOJI[e.activity]||"➕")+" "}<b>{e.activity}</b></span>
+                  <span style={{color:C.textLight,whiteSpace:"nowrap"}}>{tgAgo(e.at)}{canLog&&(e.ownerId===me||isAdmin)&&<> · <a href="#" onClick={ev2=>{ev2.preventDefault();doUndo(e.id);}} style={{color:"#dc2626",fontWeight:700}}>Undo</a></>}</span>
+                </div>)}
+                {g.items.length>30&&<div style={{fontSize:12,color:C.textMid,padding:"4px 0"}}>Showing the latest 30.</div>}
+              </div>}
+            </div>;})}
         </div>
       </div>
       <div>
