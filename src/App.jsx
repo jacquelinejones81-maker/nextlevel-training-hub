@@ -13021,7 +13021,7 @@ function TgHowTo({game,uid,open,setOpen}){
   </div>;
 }
 
-function tgRaceTeams(data,week){
+function tgRaceTeams(data,week,base,wantMap){
   const admins=data.admins||[],trainers=data.trainers||[],reps=(data.reps||[]).filter(r=>!r.inactive);
   const cats=getEffectiveCommitmentCategories(data);
   const total=(uid,key)=>{
@@ -13034,7 +13034,10 @@ function tgRaceTeams(data,week){
     }
     return Number(w[key])||0;
   };
-  const pts=(uid)=>total(uid,"contacts")*1+total(uid,"apptSet")*5+total(uid,"apptDone")*10;
+  const rawPts=(uid)=>total(uid,"contacts")*1+total(uid,"apptSet")*5+total(uid,"apptDone")*10;
+  if(wantMap){const m={};[...admins,...trainers,...(data.reps||[])].forEach(x=>{m[x.id]=rawPts(x.id);});return m;}
+  // A reset stores everyone's points at that moment; the race only counts points earned since then
+  const pts=(uid)=>Math.max(0,rawPts(uid)-((base&&base[uid])||0));
   return admins.map(a=>{
     const memberIds=[];
     trainers.forEach(t=>{if(t.adminId===a.id) memberIds.push(t.id);});
@@ -13045,19 +13048,30 @@ function tgRaceTeams(data,week){
   }).filter(t=>t.assigned>0);
 }
 
-function RaceGame({data,colors,finishPer,readOnly=false}){
+function RaceGame({data,colors,finishPer,readOnly=false,canReset=false}){
   const week=getWeekStart();
   const [raceDoc,setRaceDoc]=useState(null);
   const [lapBanner,setLapBanner]=useState(null);
   const canvasRef=useRef(null);
   const seenLapRef=useRef(undefined);
   const lapTimerRef=useRef(null);
+  const [confirmReset,setConfirmReset]=useState(false);
+  const [resetMsg,setResetMsg]=useState("");
   useEffect(()=>{
     const unsub=onSnapshot(doc(db,"teamGames","race"),snap=>setRaceDoc(snap.exists()?snap.data():{}),()=>setRaceDoc({}));
     return ()=>{unsub();clearTimeout(lapTimerRef.current);};
   },[]);
   const admins=data.admins||[];
-  const teams=tgRaceTeams(data,week).map(t=>({...t,pace:t.points/t.members,frac:(t.points/t.members)/finishPer,color:tgTeamColor(admins,colors,t.admin.id),label:tgShortName(t.admin.name).split(" ")[0]+"'s team"}));
+  const baseline=(raceDoc&&raceDoc.week===week&&raceDoc.baseline)||null;
+  const doReset=async()=>{
+    setResetMsg("");
+    try{
+      const all=tgRaceTeams(data,week,null,true);
+      await setDoc(doc(db,"teamGames","race"),{week,laps:{},log:[],lastLap:null,baseline:all,resetAt:new Date().toISOString()});
+      setConfirmReset(false);setLapBanner(null);setResetMsg("✓ Race reset. Every car is back at the starting line.");
+    }catch(e){console.warn("race reset failed",e);setResetMsg("⚠️ Didn't reset. Check your connection and try again.");}
+  };
+  const teams=tgRaceTeams(data,week,baseline).map(t=>({...t,pace:t.points/t.members,frac:(t.points/t.members)/finishPer,color:tgTeamColor(admins,colors,t.admin.id),label:tgShortName(t.admin.name).split(" ")[0]+"'s team"}));
   const lapSig=teams.map(t=>t.admin.id+":"+Math.floor(t.frac+1e-9)).join(",");
   // Record each completed lap once (for everyone), so the celebration and the lap log are shared
   useEffect(()=>{
@@ -13079,7 +13093,7 @@ function RaceGame({data,colors,finishPer,readOnly=false}){
         }
       });
       if(!changed) return;
-      tx.set(ref,{week,laps,log:log.slice(0,60),lastLap:last});
+      tx.set(ref,{...cur,week,laps,log:log.slice(0,60),lastLap:last});
     }).catch(e=>console.warn("lap save failed",e));
   },[lapSig,raceDoc&&raceDoc.week,raceDoc&&JSON.stringify(raceDoc.laps||{}),readOnly]);
   // Confetti + banner for everyone watching when a lap is completed
@@ -13137,6 +13151,15 @@ function RaceGame({data,colors,finishPer,readOnly=false}){
         <div style={{fontSize:16,fontWeight:800,color:C.text}}>🏁 Team Race · {fmt(mon)} – {fmt(sun)}</div>
         <div style={{fontSize:12,color:C.textMid}}>Finish line: {finishPer} points per team member</div>
       </div>
+      {canReset&&!readOnly&&<div style={{marginBottom:10}}>
+        {!confirmReset?<button onClick={()=>{setConfirmReset(true);setResetMsg("");}} style={{padding:"8px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"white",color:C.textMid,fontSize:13,fontWeight:800,cursor:"pointer"}}>🔄 Reset race</button>
+        :<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#991b1b",marginBottom:4}}>Put every car back at the starting line?</div>
+          <div style={{fontSize:12,color:"#7f1d1d",marginBottom:8,lineHeight:1.5}}>Everyone's race points and the lap log go back to zero, and only scorecard results from now on will move the cars. Scorecards themselves are not changed.</div>
+          <div style={{display:"flex",gap:8}}><button onClick={doReset} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#dc2626",color:"white",fontSize:13,fontWeight:800,cursor:"pointer"}}>Yes, reset the race</button><button onClick={()=>setConfirmReset(false)} style={{padding:"8px 14px",borderRadius:8,border:`1px solid ${C.border}`,background:"white",color:C.textMid,fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancel</button></div>
+        </div>}
+        {resetMsg&&<div style={{fontSize:13,fontWeight:700,marginTop:8,color:resetMsg.startsWith("✓")?"#15803d":"#991b1b"}}>{resetMsg}</div>}
+      </div>}
       {teams.length===0?<div style={{fontSize:14,color:C.textMid,padding:"18px 0",textAlign:"center"}}>No teams on the track yet. A team appears once an admin has at least one rep or trainer assigned.</div>:<>
         <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}} role="img" aria-label="Race track">
           <rect width={W} height={H} rx="18" fill="#dcfce7"/>
@@ -13509,7 +13532,7 @@ function TeamGames({session,data,db:dbProp,readOnly=false}){
       <button onClick={()=>{const nv=!howOpen;setHowOpen(nv);if(!nv) tgHowSet(game,uid,true);else tgHowSet(game,uid,false);}} aria-label="How to play" title="How to play" style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.5)",color:"white",borderRadius:999,width:34,height:34,fontWeight:900,fontSize:16,cursor:"pointer"}}>?</button>
     </div>
     <TgHowTo game={game} uid={uid} open={howOpen} setOpen={setHowOpen}/>
-    {game==="summit"?<SummitGame session={session} data={data} readOnly={readOnly} colors={colors}/>:game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer} readOnly={readOnly}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
+    {game==="summit"?<SummitGame session={session} data={data} readOnly={readOnly} colors={colors}/>:game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer} readOnly={readOnly} canReset={isSuper}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
   </div>;
 }
 
