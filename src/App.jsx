@@ -1848,6 +1848,7 @@ function RefsEditor({rep,data,onUpdate}) {
 }
 
 function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpenCommitment}) {
+  const tgOff=tgGameOf(useTgSettings())==="off";
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
   // Lightweight check for the sidebar's "new lead" dot — same MoneyMap leads collection
@@ -1904,7 +1905,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id&&!r.excludeFromRecruitCount);
   const tabs=[
     {k:"checklist",l:"Checklist"},
-    {k:"teamgames",l:"Team Games"},
+    ...(tgOff?[]:[{k:"teamgames",l:"Team Games"}]),
     {k:"refs",l:"Refs"},
     {k:"milestones",l:"Milestones"},
     ...(rep.track==="licensed"?[{k:"production",l:"Production"},{k:"myactivity",l:"My Activity Report"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
@@ -11426,13 +11427,14 @@ function GroupedNav({items,pinnedKeys,groupDefs,activeKey,onSelect,navOpen,setNa
 
 function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null,hasUnattendedTasks=false,hasNewLead=false}) {
   const [navOpen,setNavOpen]=useState(null);
+  const tgOffSb=tgGameOf(useTgSettings())==="off";
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
     ...(role==="admin"||role==="superadmin"||role==="trainer"?[{k:"myactivity",l:"My Activity Report",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"}]:[]),
     {k:"reps",l:"My Reps",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 14C9.8 14 8 12.2 8 10C8 7.8 9.8 6 12 6C14.2 6 16 7.8 16 10C16 12.2 14.2 14 12 14Z"},
     {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
-    {k:"teamgames",l:"Team Games",d:"M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"},
+    ...(tgOffSb?[]:[{k:"teamgames",l:"Team Games",d:"M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"}]),
     {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
     {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
@@ -12649,7 +12651,7 @@ function tgFireConfetti(canvas,big){
   requestAnimationFrame(f);
 }
 
-function TeamGames({session,data,db,readOnly=false}){
+function BingoGame({session,data,db,readOnly=false,colors={}}){
   const me=session?.id;
   const isAdmin=(session?.role==="admin"||session?.role==="superadmin");
   const myName=tgShortName(session?.name);
@@ -12664,7 +12666,7 @@ function TeamGames({session,data,db,readOnly=false}){
     const t=trainers.find(x=>x.id===r?.trainerId);
     return t?.adminId||r?.adminId||null;
   })();
-  const teamColor=(tid)=>{const i=admins.findIndex(a=>a.id===tid);return i<0?"#6b7280":TG_TEAM_COLORS[i%TG_TEAM_COLORS.length];};
+  const teamColor=(tid)=>tgTeamColor(admins,colors,tid);
   const teamLabel=(a)=>tgShortName(a.name).split(" ")[0]+"'s team";
 
   const [state,setState]=useState(null); // null until the first snapshot
@@ -12867,7 +12869,7 @@ function TeamGames({session,data,db,readOnly=false}){
   return <div style={{maxWidth:1000,margin:"0 auto"}}>
     <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:50}}/>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
-      <div style={{fontSize:dv(18,22),fontWeight:800,color:C.text}}>🎯 Team Games</div>
+      <div style={{fontSize:dv(18,22),fontWeight:800,color:C.text}}>🎯 Bingo</div>
       {isAdmin&&!readOnly&&<button onClick={openAdmin} style={{padding:"8px 14px",borderRadius:10,border:`1px solid ${showAdmin?C.navy:C.border}`,background:showAdmin?C.navy:"white",color:showAdmin?"white":C.textMid,fontSize:13,fontWeight:800,cursor:"pointer"}}>⚙️ Admin setup</button>}
     </div>
     {readOnly&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:13,color:C.textMid}}>Preview — you can look at the card, but marking squares is turned off here.</div>}
@@ -12897,7 +12899,7 @@ function TeamGames({session,data,db,readOnly=false}){
           })}
         </div>
         <div style={{display:"flex",gap:14,flexWrap:"wrap",justifyContent:"center",marginTop:12,fontSize:12,color:C.textMid}}>
-          {admins.slice(0,6).map((a,i)=><span key={a.id}><span style={{display:"inline-block",width:10,height:10,borderRadius:"50%",background:TG_TEAM_COLORS[i%TG_TEAM_COLORS.length],marginRight:5,verticalAlign:"middle"}}/>{teamLabel(a)}</span>)}
+          {admins.slice(0,6).map((a,i)=><span key={a.id}><span style={{display:"inline-block",width:10,height:10,borderRadius:"50%",background:tgTeamColor(admins,colors,a.id),marginRight:5,verticalAlign:"middle"}}/>{teamLabel(a)}</span>)}
           <span><span style={{display:"inline-block",width:10,height:10,borderRadius:"50%",background:"#fbbf24",marginRight:5,verticalAlign:"middle"}}/>Part of a BINGO</span>
         </div>
       </div>
@@ -12961,6 +12963,222 @@ function TeamGames({session,data,db,readOnly=false}){
       <div style={{fontSize:12,color:C.textMid,marginTop:10}}>Only admins see these buttons. Shuffling puts the squares in a new order (the center square stays put) and clears the stamps. You always get a warning first.</div>
     </div>}
     {modalBody}
+  </div>;
+}
+
+// ── GAME OF THE WEEK ──
+const tgTeamColor=(admins,colors,tid)=>{
+  if(colors&&colors[tid]) return colors[tid];
+  const i=(admins||[]).findIndex(a=>a.id===tid);
+  return i<0?"#6b7280":TG_TEAM_COLORS[i%TG_TEAM_COLORS.length];
+};
+// Live "which game is on" setting. Default is Bingo until a super admin picks something else.
+function useTgSettings(){
+  const [st,setSt]=useState(null);
+  useEffect(()=>{
+    const unsub=onSnapshot(doc(db,"teamGames","settings"),snap=>setSt(snap.exists()?snap.data():{}),()=>setSt({}));
+    return ()=>unsub();
+  },[]);
+  return st;
+}
+const tgGameOf=(st)=>((st&&st.game)||"bingo");
+const TG_GAMES={bingo:{e:"🎯",n:"Bingo"},race:{e:"🏁",n:"Team Race"}};
+const TG_RACE_FINISH_DEFAULT=60;
+const tgHowKey=(g,id)=>"nl_tg_how_"+g+"_"+(id||"x");
+const tgHowClosed=(g,id)=>{try{return localStorage.getItem(tgHowKey(g,id))==="1";}catch(e){return false;}};
+const tgHowSet=(g,id,v)=>{try{if(v) localStorage.setItem(tgHowKey(g,id),"1");else localStorage.removeItem(tgHowKey(g,id));}catch(e){}};
+
+function TgHowTo({game,uid,open,setOpen}){
+  if(!open) return null;
+  const steps=game==="bingo"?[
+    <>There is <b>one card for the whole team</b>.</>,
+    <>When you finish something on the card (like an interview or a Life App), <b>tap that square</b> and press “Yes, I did it.” Only tap what you really did.</>,
+    <>The square stamps with <b>your initials and your team's color</b>, so everyone sees who got it.</>,
+    <>Fill a <b>full row, column or diagonal</b> and it's a <b>BINGO</b> 🎉 with confetti for everyone.</>,
+    <>After a BINGO, the whole team goes for the <b>BLACKOUT</b>: fill all 25 squares.</>,
+    <>Tapped by mistake? Tap your own stamp to take it off.</>,
+  ]:[
+    <>Every admin's team has <b>a car on the track</b>.</>,
+    <>You don't have to do anything extra. <b>Your scorecard moves your team's car</b>: contacts, appointments set and appointments done.</>,
+    <>Points: <b>1</b> per contact, <b>5</b> per appointment set, <b>10</b> per appointment done.</>,
+    <>The car's speed is <b>points per team member</b>, so a smaller team can beat a bigger one.</>,
+    <>The <b>first car across the finish line</b> wins the week. If nobody gets there, the best pace when the week closes wins.</>,
+    <>Go past the finish line and you start lap 2. The race starts fresh every Monday.</>,
+  ];
+  return <div style={{background:"#f0fdf4",border:"2px solid #86efac",borderRadius:14,padding:"14px 16px",marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+      <div style={{fontSize:15,fontWeight:800,color:"#166534"}}>{game==="bingo"?"How to play Bingo":"How the Team Race works"}</div>
+      <button onClick={()=>{tgHowSet(game,uid,true);setOpen(false);}} style={{border:"none",background:"none",fontSize:13,fontWeight:800,color:"#166534",cursor:"pointer"}}>Got it ✕</button>
+    </div>
+    <ol style={{margin:0,paddingLeft:20,fontSize:14,lineHeight:1.7,color:C.text}}>{steps.map((x,i)=><li key={i}>{x}</li>)}</ol>
+  </div>;
+}
+
+function tgRaceTeams(data,week){
+  const admins=data.admins||[],trainers=data.trainers||[],reps=(data.reps||[]).filter(r=>!r.inactive);
+  const cats=getEffectiveCommitmentCategories(data);
+  const total=(uid,key)=>{
+    const w=((data.scorecards||{})[uid]||{})[week]||{};
+    const days=w.days||{};const list=Object.keys(days);
+    if(list.length>0){
+      const cat=cats.find(c=>c.key===key);
+      if(cat&&!cat.manual) return list.reduce((s,d)=>s+((getAutoActuals(data,uid,d)||{})[key]||0),0);
+      return list.reduce((s,d)=>s+(Number(days[d].actual&&days[d].actual[key])||0),0);
+    }
+    return Number(w[key])||0;
+  };
+  const pts=(uid)=>total(uid,"contacts")*1+total(uid,"apptSet")*5+total(uid,"apptDone")*10;
+  return admins.map(a=>{
+    const memberIds=[];
+    trainers.forEach(t=>{if(t.adminId===a.id) memberIds.push(t.id);});
+    reps.forEach(r=>{const t=trainers.find(x=>x.id===r.trainerId);const aid=(t&&t.adminId)||r.adminId;if(aid===a.id) memberIds.push(r.id);});
+    const assigned=memberIds.length;
+    const ids=[a.id,...memberIds];
+    return {admin:a,assigned,members:ids.length,points:ids.reduce((s,id)=>s+pts(id),0)};
+  }).filter(t=>t.assigned>0);
+}
+
+function RaceGame({data,colors,finishPer}){
+  const week=getWeekStart();
+  const admins=data.admins||[];
+  const teams=tgRaceTeams(data,week).map(t=>({...t,pace:t.points/t.members,frac:(t.points/t.members)/finishPer,color:tgTeamColor(admins,colors,t.admin.id),label:tgShortName(t.admin.name).split(" ")[0]+"'s team"}));
+  const ranked=teams.slice().sort((a,b)=>b.frac-a.frac);
+  const leader=ranked[0];
+  const crossed=leader&&leader.frac>=1;
+  const mon=new Date(week+"T00:00:00");const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const fmt=d=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  const card={background:"white",border:`1px solid ${C.border}`,borderRadius:16,padding:dv(14,18)};
+  const W=900,H=300,midY=150,cx1=200,cx2=700,Rc=95;
+  const lanes=Math.max(teams.length,1);
+  const roadW=Math.min(100,lanes*30+10);
+  const laneW=(roadW-10)/lanes;
+  const laneR=(i)=>Rc+roadW/2-5-laneW*(i+.5);
+  const road=(r)=>`M${cx1},${midY-r} H${cx2} A${r},${r} 0 0 1 ${cx2},${midY+r} H${cx1} A${r},${r} 0 0 1 ${cx1},${midY-r} Z`;
+  const pathRefs=useRef([]);
+  const [pos,setPos]=useState([]);
+  const sig=JSON.stringify(teams.map(t=>[t.admin.id,Math.round(t.frac*1000)]));
+  useEffect(()=>{
+    setPos(teams.map((t,i)=>{
+      const el=pathRefs.current[i];if(!el) return null;
+      const len=el.getTotalLength();
+      const fr=t.frac>=1&&t.frac%1===0?1:(t.frac%1);
+      const p=el.getPointAtLength(len*fr);const q=el.getPointAtLength(Math.min(len,len*fr+2));
+      return {x:p.x,y:p.y,a:Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI};
+    }));
+  },[sig]);
+  return <div>
+    <div style={{...card,marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:16,fontWeight:800,color:C.text}}>🏁 Team Race · {fmt(mon)} – {fmt(sun)}</div>
+        <div style={{fontSize:12,color:C.textMid}}>Finish line: {finishPer} points per team member</div>
+      </div>
+      {teams.length===0?<div style={{fontSize:14,color:C.textMid,padding:"18px 0",textAlign:"center"}}>No teams on the track yet. A team appears once an admin has at least one rep or trainer assigned.</div>:<>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}} role="img" aria-label="Race track">
+          <rect width={W} height={H} rx="18" fill="#dcfce7"/>
+          <path d={road(Rc)} fill="none" stroke="#374151" strokeWidth={roadW}/>
+          <path d={road(Rc)} fill="none" stroke="#fbbf24" strokeWidth="2" strokeDasharray="14 12"/>
+          {[0,1,2,3].map(k=><rect key={k} x={cx1-4} y={midY-Rc-roadW/2+k*roadW/4} width="8" height={roadW/4} fill={k%2?"#fff":"#111"}/>)}
+          {teams.map((t,i)=><path key={"p"+i} ref={el=>{pathRefs.current[i]=el;}} d={road(laneR(i))} fill="none" stroke="none"/>)}
+          {teams.map((t,i)=>pos[i]&&<g key={"c"+i} transform={`translate(${pos[i].x},${pos[i].y}) rotate(${pos[i].a})`}>
+            <rect x="-19" y="-9" width="38" height="18" rx="6" fill={t.color} stroke="#fff" strokeWidth="2"/><rect x="2" y="-6" width="8" height="12" rx="2" fill="#fff" opacity=".7"/>
+          </g>)}
+        </svg>
+        {crossed&&<div style={{background:"#fff7ed",border:"2px solid #f26b21",borderRadius:12,padding:"10px 14px",marginTop:10,textAlign:"center",fontWeight:800,color:"#c2410c"}}>🏆 {leader.label} crossed the finish line first!</div>}
+      </>}
+    </div>
+    {teams.length>0&&<div style={card}>
+      <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>Standings</div>
+      {ranked.map((t,i)=><div key={t.admin.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderTop:i?`1px solid ${C.border}`:"none"}}>
+        <div style={{width:26,height:26,borderRadius:"50%",background:t.color,color:"white",fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:800,color:C.text}}>{t.label}{t.frac>=1?` · lap ${Math.floor(t.frac)+1}`:""}</div>
+          <div style={{height:8,background:"#e5e7eb",borderRadius:5,overflow:"hidden",margin:"4px 0 2px"}}><div style={{height:"100%",width:Math.min(100,t.frac*100)+"%",background:t.color}}/></div>
+          <div style={{fontSize:12,color:C.textMid}}>{Math.round(t.points)} points · {t.members} member{t.members===1?"":"s"} · {t.pace.toFixed(1)} per member</div>
+        </div>
+        <div style={{fontWeight:900,color:C.text}}>{Math.round(t.frac*100)}%</div>
+      </div>)}
+    </div>}
+  </div>;
+}
+
+function TeamGames({session,data,db:dbProp,readOnly=false}){
+  const st=useTgSettings();
+  const game=tgGameOf(st);
+  const isSuper=session?.role==="superadmin"&&!readOnly;
+  const uid=session?.id;
+  const admins=(data&&data.admins)||[];
+  const colors=(st&&st.teamColors)||{};
+  const finishPer=Number(st&&st.finishPer)||TG_RACE_FINISH_DEFAULT;
+  const [howOpen,setHowOpen]=useState(()=>!tgHowClosed(game,uid));
+  useEffect(()=>{setHowOpen(!tgHowClosed(game,uid));},[game,uid]);
+  const [pickG,setPickG]=useState(null);
+  const [pickFinish,setPickFinish]=useState("");
+  const [announce,setAnnounce]=useState(true);
+  const [msg,setMsg]=useState("");
+  const [showPick,setShowPick]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const sref=doc(db,"teamGames","settings");
+  // Give each admin team a color that sticks, so removing an admin later never recolors the others
+  useEffect(()=>{
+    if(!isSuper||!st) return;
+    const have=st.teamColors||{};
+    const missing=admins.filter(a=>!have[a.id]);
+    if(!missing.length) return;
+    const used=new Set(Object.values(have));
+    const next={...have};
+    admins.forEach((a,i)=>{
+      if(next[a.id]) return;
+      const free=TG_TEAM_COLORS.find(c=>!used.has(c))||TG_TEAM_COLORS[i%TG_TEAM_COLORS.length];
+      next[a.id]=(have[a.id]||(admins.length&&i<TG_TEAM_COLORS.length&&!used.has(TG_TEAM_COLORS[i])?TG_TEAM_COLORS[i]:free));used.add(next[a.id]);
+    });
+    setDoc(sref,{teamColors:next},{merge:true}).catch(e=>console.warn("team colors save failed",e));
+  },[isSuper,st&&JSON.stringify(st.teamColors||{}),admins.map(a=>a.id).join(",")]);
+  const openPick=()=>{setPickG(game);setPickFinish(String(finishPer));setMsg("");setShowPick(v=>!v);};
+  const savePick=async()=>{
+    if(!isSuper) return;
+    setSaving(true);setMsg("");
+    const fin=Math.max(10,Math.min(1000,Number(pickFinish)||TG_RACE_FINISH_DEFAULT));
+    const payload={game:pickG||game,finishPer:fin,changedAt:new Date().toISOString(),announce:!!announce&&(pickG||game)!==game?true:!!(st&&st.announce&&pickG===game)};
+    try{await setDoc(sref,payload,{merge:true});setMsg("✓ Saved. "+((pickG||game)==="off"?"Team Games is now hidden from the menu.":"This week's game: "+TG_GAMES[pickG||game].n+"."));}
+    catch(e){console.warn(e);setMsg("⚠️ Didn't save. Check your connection and try again.");}
+    setSaving(false);
+  };
+  const recent=st&&st.announce&&st.changedAt&&(Date.now()-new Date(st.changedAt).getTime())<7*86400000;
+  const card={background:"white",border:`1px solid ${C.border}`,borderRadius:16,padding:dv(14,18)};
+  const opt=(k,e,n,d)=><button key={k} onClick={()=>setPickG(k)} style={{display:"flex",gap:12,alignItems:"flex-start",width:"100%",textAlign:"left",padding:"12px 14px",border:`2px solid ${pickG===k?C.teal:C.border}`,borderRadius:12,background:pickG===k?"rgba(15,118,110,0.07)":"white",marginBottom:8,cursor:"pointer"}}>
+    <span style={{fontSize:24}}>{e}</span><span><b style={{display:"block",fontSize:15,color:C.text}}>{n}</b><span style={{fontSize:13,color:C.textMid,lineHeight:1.45}}>{d}</span></span></button>;
+
+  if(st===null) return <div style={{...card,textAlign:"center",color:C.textMid,fontSize:14}}>Loading...</div>;
+  const picker=isSuper?<div style={{marginBottom:14}}>
+    <button onClick={openPick} style={{padding:"8px 14px",borderRadius:10,border:`1px solid ${showPick?C.navy:C.border}`,background:showPick?C.navy:"white",color:showPick?"white":C.textMid,fontSize:13,fontWeight:800,cursor:"pointer"}}>🎮 Choose the game of the week</button>
+    {showPick&&<div style={{...card,marginTop:10}}>
+      <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8}}>Game of the week <span style={{fontSize:11,fontWeight:800,background:"#fef3c7",color:"#92400e",borderRadius:5,padding:"1px 6px",marginLeft:6}}>Super admin only</span></div>
+      {opt("bingo","🎯","Bingo","One shared card for the whole team. Tap squares as you do them, go for a BINGO, then the blackout.")}
+      {opt("race","🏁","Team Race","Each team's car races around the track, powered by scorecard results. First across the finish line wins the week.")}
+      {opt("off","⏸️","No game this week","Team Games is hidden from the menu until you turn a game back on.")}
+      {pickG==="race"&&<div style={{margin:"4px 0 10px"}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Finish line (points per team member, 1 per contact, 5 per appt set, 10 per appt done)</div><input type="number" min="10" max="1000" value={pickFinish} onChange={e=>setPickFinish(e.target.value)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,width:120}}/></div>}
+      <label style={{display:"flex",gap:9,fontSize:13,margin:"10px 0",alignItems:"center",cursor:"pointer",color:C.text}}><input type="checkbox" checked={announce} onChange={e=>setAnnounce(e.target.checked)}/> Show everyone a “New game this week” banner when I switch</label>
+      <button onClick={savePick} disabled={saving} style={{padding:"11px 16px",borderRadius:10,border:"none",background:C.teal,color:"white",fontSize:14,fontWeight:800,cursor:"pointer"}}>{saving?"Saving...":"Save game of the week"}</button>
+      {msg&&<div style={{fontSize:13,color:msg.startsWith("✓")?"#15803d":"#991b1b",fontWeight:700,marginTop:10}}>{msg}</div>}
+      <div style={{fontSize:12,color:C.textMid,marginTop:10,lineHeight:1.5}}>Switching never erases anything. The Bingo card and past cards are kept while another game is on, and pick up where they left off when Bingo comes back.</div>
+    </div>}
+  </div>:null;
+
+  if(game==="off") return <div style={{maxWidth:1000,margin:"0 auto"}}>
+    <div style={{fontSize:dv(18,22),fontWeight:800,color:C.text,marginBottom:12}}>🎮 Team Games</div>
+    {picker}
+    <div style={{...card,textAlign:"center",color:C.textMid,fontSize:14}}>No game this week. Check back soon!</div>
+  </div>;
+
+  const g=TG_GAMES[game]||TG_GAMES.bingo;
+  return <div style={{maxWidth:1000,margin:"0 auto"}}>
+    {picker}
+    <div style={{background:"linear-gradient(135deg,#7c2d12,#c2410c,#ea580c)",color:"white",borderRadius:14,padding:"13px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+      <div><div style={{fontSize:17,fontWeight:800}}>{g.e} This week's game: {g.n}</div><div style={{fontSize:12,opacity:.9,marginTop:1}}>{recent?"New this week! Tap ? any time to see how to play.":"Tap ? any time to see how to play."}</div></div>
+      <button onClick={()=>{const nv=!howOpen;setHowOpen(nv);if(!nv) tgHowSet(game,uid,true);else tgHowSet(game,uid,false);}} aria-label="How to play" title="How to play" style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.5)",color:"white",borderRadius:999,width:34,height:34,fontWeight:900,fontSize:16,cursor:"pointer"}}>?</button>
+    </div>
+    <TgHowTo game={game} uid={uid} open={howOpen} setOpen={setHowOpen}/>
+    {game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
   </div>;
 }
 
