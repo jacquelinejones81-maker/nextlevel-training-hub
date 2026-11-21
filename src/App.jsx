@@ -13104,9 +13104,10 @@ function RaceGame({data,colors,finishPer}){
 function TeamGames({session,data,db:dbProp,readOnly=false}){
   const st=useTgSettings();
   const game=tgGameOf(st);
-  const isSuper=session?.role==="superadmin"&&!readOnly;
   const uid=session?.id;
   const admins=(data&&data.admins)||[];
+  // Logins come in as role "admin"; the super admin is the admin record flagged isSuperAdmin
+  const isSuper=!readOnly&&(session?.role==="superadmin"||!!(session?.role==="admin"&&(admins.find(a=>a.id===uid)||{}).isSuperAdmin));
   const colors=(st&&st.teamColors)||{};
   const finishPer=Number(st&&st.finishPer)||TG_RACE_FINISH_DEFAULT;
   const [howOpen,setHowOpen]=useState(()=>!tgHowClosed(game,uid));
