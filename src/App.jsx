@@ -13038,10 +13038,63 @@ function tgRaceTeams(data,week){
   }).filter(t=>t.assigned>0);
 }
 
-function RaceGame({data,colors,finishPer}){
+function RaceGame({data,colors,finishPer,readOnly=false}){
   const week=getWeekStart();
+  const [raceDoc,setRaceDoc]=useState(null);
+  const [lapBanner,setLapBanner]=useState(null);
+  const canvasRef=useRef(null);
+  const seenLapRef=useRef(undefined);
+  const lapTimerRef=useRef(null);
+  useEffect(()=>{
+    const unsub=onSnapshot(doc(db,"teamGames","race"),snap=>setRaceDoc(snap.exists()?snap.data():{}),()=>setRaceDoc({}));
+    return ()=>{unsub();clearTimeout(lapTimerRef.current);};
+  },[]);
   const admins=data.admins||[];
   const teams=tgRaceTeams(data,week).map(t=>({...t,pace:t.points/t.members,frac:(t.points/t.members)/finishPer,color:tgTeamColor(admins,colors,t.admin.id),label:tgShortName(t.admin.name).split(" ")[0]+"'s team"}));
+  const lapSig=teams.map(t=>t.admin.id+":"+Math.floor(t.frac+1e-9)).join(",");
+  // Record each completed lap once (for everyone), so the celebration and the lap log are shared
+  useEffect(()=>{
+    if(readOnly||raceDoc===null||!teams.length) return;
+    const due=teams.some(t=>Math.floor(t.frac+1e-9)>(((raceDoc.week===week?raceDoc.laps:null)||{})[t.admin.id]||0));
+    if(!due) return;
+    runTransaction(db,async(tx)=>{
+      const ref=doc(db,"teamGames","race");
+      const snap=await tx.get(ref);
+      let cur=snap.exists()?snap.data():{};
+      if(cur.week!==week) cur={week,laps:{},log:[],lastLap:null};
+      const laps={...(cur.laps||{})};let log=(cur.log||[]).slice();let last=cur.lastLap||null;let changed=false;
+      teams.forEach(t=>{
+        const done=Math.floor(t.frac+1e-9);const had=laps[t.admin.id]||0;
+        if(done>had){
+          const iso=new Date().toISOString();
+          for(let n=had+1;n<=done;n++) log.unshift({adminId:t.admin.id,label:t.label,lap:n,at:iso});
+          laps[t.admin.id]=done;last={adminId:t.admin.id,label:t.label,lap:done,from:had+1,at:iso};changed=true;
+        }
+      });
+      if(!changed) return;
+      tx.set(ref,{week,laps,log:log.slice(0,60),lastLap:last});
+    }).catch(e=>console.warn("lap save failed",e));
+  },[lapSig,raceDoc&&raceDoc.week,raceDoc&&JSON.stringify(raceDoc.laps||{}),readOnly]);
+  // Confetti + banner for everyone watching when a lap is completed
+  const lastLap=raceDoc&&raceDoc.week===week?raceDoc.lastLap:null;
+  useEffect(()=>{
+    if(raceDoc===null) return;
+    const w=lastLap;
+    const show=(x)=>{
+      setLapBanner(x);tgFireConfetti(canvasRef.current,x.lap>=3);
+      clearTimeout(lapTimerRef.current);lapTimerRef.current=setTimeout(()=>setLapBanner(null),12000);
+    };
+    if(seenLapRef.current===undefined){
+      seenLapRef.current=w?w.at+w.adminId+w.lap:null;
+      if(w&&Date.now()-new Date(w.at).getTime()<90000) show(w);
+      return;
+    }
+    const key=w?w.at+w.adminId+w.lap:null;
+    if(w&&key!==seenLapRef.current){seenLapRef.current=key;show(w);}
+  },[lastLap&&lastLap.at,lastLap&&lastLap.adminId,lastLap&&lastLap.lap,raceDoc===null]);
+  const lapsDone=(raceDoc&&raceDoc.week===week&&raceDoc.laps)||{};
+  const lapLog=(raceDoc&&raceDoc.week===week&&raceDoc.log)||[];
+  const firstCross=lapLog.filter(x=>x.lap===1).sort((a,b)=>String(a.at).localeCompare(String(b.at)))[0];
   const ranked=teams.slice().sort((a,b)=>b.frac-a.frac);
   const leader=ranked[0];
   const crossed=leader&&leader.frac>=1;
@@ -13067,6 +13120,11 @@ function RaceGame({data,colors,finishPer}){
     }));
   },[sig]);
   return <div>
+    <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:50}}/>
+    {lapBanner&&<div style={{background:"linear-gradient(135deg,#111827,#374151)",color:"white",borderRadius:16,padding:16,textAlign:"center",marginBottom:14,fontWeight:800,fontSize:20,border:"3px solid #fbbf24"}}>
+      🏁 {lapBanner.label} {(lapBanner.from&&lapBanner.from<lapBanner.lap)?`completed laps ${lapBanner.from}–${lapBanner.lap}!`:`completed lap ${lapBanner.lap}!`} 🏁
+      <div style={{fontSize:13,fontWeight:600,marginTop:2,opacity:.9}}>{lapBanner.lap>=3?"On fire! 🔥":"Keep those wheels turning!"}</div>
+    </div>}
     <div style={{...card,marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:8}}>
         <div style={{fontSize:16,fontWeight:800,color:C.text}}>🏁 Team Race · {fmt(mon)} – {fmt(sun)}</div>
@@ -13083,7 +13141,7 @@ function RaceGame({data,colors,finishPer}){
             <rect x="-19" y="-9" width="38" height="18" rx="6" fill={t.color} stroke="#fff" strokeWidth="2"/><rect x="2" y="-6" width="8" height="12" rx="2" fill="#fff" opacity=".7"/>
           </g>)}
         </svg>
-        {crossed&&<div style={{background:"#fff7ed",border:"2px solid #f26b21",borderRadius:12,padding:"10px 14px",marginTop:10,textAlign:"center",fontWeight:800,color:"#c2410c"}}>🏆 {leader.label} crossed the finish line first!</div>}
+        {(firstCross||crossed)&&<div style={{background:"#fff7ed",border:"2px solid #f26b21",borderRadius:12,padding:"10px 14px",marginTop:10,textAlign:"center",fontWeight:800,color:"#c2410c"}}>🏆 {firstCross?firstCross.label:leader.label} crossed the finish line first!</div>}
       </>}
     </div>
     {teams.length>0&&<div style={card}>
@@ -13091,11 +13149,17 @@ function RaceGame({data,colors,finishPer}){
       {ranked.map((t,i)=><div key={t.admin.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderTop:i?`1px solid ${C.border}`:"none"}}>
         <div style={{width:26,height:26,borderRadius:"50%",background:t.color,color:"white",fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:800,color:C.text}}>{t.label}{t.frac>=1?` · lap ${Math.floor(t.frac)+1}`:""}</div>
+          <div style={{fontSize:14,fontWeight:800,color:C.text}}>{t.label}{t.frac>=1?` · lap ${Math.floor(t.frac)+1}`:""}{(lapsDone[t.admin.id]||0)>0&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#92400e",background:"#fef3c7",borderRadius:6,padding:"1px 7px"}}>🏁 {lapsDone[t.admin.id]} lap{lapsDone[t.admin.id]===1?"":"s"} done</span>}</div>
           <div style={{height:8,background:"#e5e7eb",borderRadius:5,overflow:"hidden",margin:"4px 0 2px"}}><div style={{height:"100%",width:Math.min(100,t.frac*100)+"%",background:t.color}}/></div>
           <div style={{fontSize:12,color:C.textMid}}>{Math.round(t.points)} points · {t.members} member{t.members===1?"":"s"} · {t.pace.toFixed(1)} per member</div>
         </div>
         <div style={{fontWeight:900,color:C.text}}>{Math.round(t.frac*100)}%</div>
+      </div>)}
+    </div>}
+    {lapLog.length>0&&<div style={{...card,marginTop:14}}>
+      <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>🏁 Lap log this week</div>
+      {lapLog.slice(0,10).map((x,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",gap:10,padding:"7px 0",borderTop:i?`1px solid ${C.border}`:"none",fontSize:13,color:C.text}}>
+        <div><b>{x.label}</b> completed lap {x.lap}</div><span style={{color:C.textLight,fontSize:12}}>{tgAgo(x.at)}</span>
       </div>)}
     </div>}
   </div>;
@@ -13179,7 +13243,7 @@ function TeamGames({session,data,db:dbProp,readOnly=false}){
       <button onClick={()=>{const nv=!howOpen;setHowOpen(nv);if(!nv) tgHowSet(game,uid,true);else tgHowSet(game,uid,false);}} aria-label="How to play" title="How to play" style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.5)",color:"white",borderRadius:999,width:34,height:34,fontWeight:900,fontSize:16,cursor:"pointer"}}>?</button>
     </div>
     <TgHowTo game={game} uid={uid} open={howOpen} setOpen={setHowOpen}/>
-    {game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
+    {game==="race"?<RaceGame data={data} colors={colors} finishPer={finishPer} readOnly={readOnly}/>:<BingoGame session={session} data={data} db={dbProp||db} readOnly={readOnly} colors={colors}/>}
   </div>;
 }
 
