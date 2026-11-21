@@ -13006,8 +13006,8 @@ function TgHowTo({game,uid,open,setOpen}){
     <>The mountain <b>resets every Monday</b>. Reach the Peak to join the <b>Peak Club</b> 👑.</>,
   ]:[
     <>Every admin's team has <b>a car on the track</b>.</>,
-    <>You don't have to do anything extra. <b>Your scorecard moves your team's car</b>: contacts, appointments set and appointments done.</>,
-    <>Points: <b>1</b> per contact, <b>5</b> per appointment set, <b>10</b> per appointment done.</>,
+    <>You don't have to do anything extra. <b>Your scorecard moves your team's car</b>: calls, contacts, appointments set and appointments done.</>,
+    <>Points: <b>1</b> per call, <b>1</b> per contact, <b>5</b> per appointment set, <b>10</b> per appointment done.</>,
     <>The car's speed is <b>points per team member</b>, so a smaller team can beat a bigger one.</>,
     <>The <b>first car across the finish line</b> wins the week. If nobody gets there, the best pace when the week closes wins.</>,
     <>Go past the finish line and you start lap 2. The race starts fresh every Monday.</>,
@@ -13034,7 +13034,7 @@ function tgRaceTeams(data,week,base,wantMap){
     }
     return Number(w[key])||0;
   };
-  const rawPts=(uid)=>total(uid,"contacts")*1+total(uid,"apptSet")*5+total(uid,"apptDone")*10;
+  const rawPts=(uid)=>total(uid,"calls")*1+total(uid,"contacts")*1+total(uid,"apptSet")*5+total(uid,"apptDone")*10;
   if(wantMap){const m={};[...admins,...trainers,...(data.reps||[])].forEach(x=>{m[x.id]=rawPts(x.id);});return m;}
   // A reset stores everyone's points at that moment; the race only counts points earned since then
   const pts=(uid)=>Math.max(0,rawPts(uid)-((base&&base[uid])||0));
@@ -13510,7 +13510,7 @@ function TeamGames({session,data,db:dbProp,readOnly=false}){
       {opt("race","🏁","Team Race","Each team's car races around the track, powered by scorecard results. First across the finish line wins the week.")}
       {opt("summit","⛰️","Summit Climb","Everyone climbs the mountain by logging income-producing activities. Reach the Peak to join the Peak Club.")}
       {opt("off","⏸️","No game this week","Team Games is hidden from the menu until you turn a game back on.")}
-      {pickG==="race"&&<div style={{margin:"4px 0 10px"}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Finish line (points per team member, 1 per contact, 5 per appt set, 10 per appt done)</div><input type="number" min="10" max="1000" value={pickFinish} onChange={e=>setPickFinish(e.target.value)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,width:120}}/></div>}
+      {pickG==="race"&&<div style={{margin:"4px 0 10px"}}><div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Finish line (points per team member, 1 per call, 1 per contact, 5 per appt set, 10 per appt done)</div><input type="number" min="10" max="1000" value={pickFinish} onChange={e=>setPickFinish(e.target.value)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,width:120}}/></div>}
       <label style={{display:"flex",gap:9,fontSize:13,margin:"10px 0",alignItems:"center",cursor:"pointer",color:C.text}}><input type="checkbox" checked={announce} onChange={e=>setAnnounce(e.target.checked)}/> Show everyone a “New game this week” banner when I switch</label>
       <button onClick={savePick} disabled={saving} style={{padding:"11px 16px",borderRadius:10,border:"none",background:C.teal,color:"white",fontSize:14,fontWeight:800,cursor:"pointer"}}>{saving?"Saving...":"Save game of the week"}</button>
       {msg&&<div style={{fontSize:13,color:msg.startsWith("✓")?"#15803d":"#991b1b",fontWeight:700,marginTop:10}}>{msg}</div>}
