@@ -1904,6 +1904,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   const myRecruits=(data.reps||[]).filter(r=>r.recruitedBy===rep.id&&!r.excludeFromRecruitCount);
   const tabs=[
     {k:"checklist",l:"Checklist"},
+    {k:"teamgames",l:"Team Games"},
     {k:"refs",l:"Refs"},
     {k:"milestones",l:"Milestones"},
     ...(rep.track==="licensed"?[{k:"production",l:"Production"},{k:"myactivity",l:"My Activity Report"}]:rep.fieldTrainerGranted?[{k:"production",l:"Production"}]:[]),
@@ -2002,6 +2003,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
   useEffect(()=>{const h=()=>setRepWinWidth(window.innerWidth);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   const isDesktop=repWinWidth>=768;
   const tabIcons={
+    teamgames:"M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z",
     checklist:"M9 11L12 14L22 4M21 12V19C21 19.5 20.8 20 20.4 20.4C20 20.8 19.5 21 19 21H5C4.5 21 4 20.8 3.6 20.4C3.2 20 3 19.5 3 19V5C3 4.5 3.2 4 3.6 3.6C4 3.2 4.5 3 5 3H16",
     milestones:"M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z",
     career:"M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999",
@@ -2405,6 +2407,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
     {tab==="liveobjections"&&<LiveObjectionQueuePage onNav={setTab}/>}
     {tab==="prospecting"&&<ProspectingPage data={data} onUpdate={onUpdateData||(() => {})} userRole="rep"/>}
     {tab==="planner"&&<DailyPlanner session={{id:rep.id,role:"rep"}} db={db}/>}
+    {tab==="teamgames"&&<TeamGames session={{id:rep.id,name:rep.name,role:"rep"}} data={data} db={db} readOnly={!isOwnView||readOnly}/>}
       </div>
     </div>
   </div>;
@@ -11336,7 +11339,7 @@ const NAV_GROUP_ICONS={
   book:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   more:"M5 12h.01M12 12h.01M19 12h.01",
 };
-const ADMIN_NAV_PINNED=["dashboard","myactivity","scorecard","production"];
+const ADMIN_NAV_PINNED=["dashboard","myactivity","teamgames","scorecard","production"];
 const ADMIN_NAV_GROUPS=[
   {n:"My day",ic:"calendar",keys:["planner","mytasks"]},
   {n:"My team",ic:"users",keys:["reps","accountability","wallfame","schedule"]},
@@ -11345,7 +11348,7 @@ const ADMIN_NAV_GROUPS=[
   {n:"My business",ic:"briefcase",keys:["careerpath","advancement","resources","myprofile"]},
   {n:"Admin tools",ic:"settings",keys:["announcements","dataexport","commitmentcats","checklisteditor","team"]},
 ];
-const REP_NAV_PINNED=["checklist","myactivity","scorecard","production"];
+const REP_NAV_PINNED=["checklist","myactivity","teamgames","scorecard","production"];
 const REP_NAV_GROUPS=[
   {n:"My progress",ic:"flag",keys:["refs","milestones","appointments","career","advancement"]},
   {n:"My day",ic:"calendar",keys:["planner","myactivity"],foldInto:"My progress"},
@@ -11429,6 +11432,7 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
     ...(role==="admin"||role==="superadmin"||role==="trainer"?[{k:"myactivity",l:"My Activity Report",d:"M9 19V6L21 3V16M9 19C9 20.1 8.1 21 7 21C5.9 21 5 20.1 5 19C5 17.9 5.9 17 7 17C8.1 17 9 17.9 9 19ZM21 16C21 17.1 20.1 18 19 18C17.9 18 17 17.1 17 16C17 14.9 17.9 14 19 14C20.1 14 21 14.9 21 16Z"}]:[]),
     {k:"reps",l:"My Reps",d:"M17 21V19C17 17.9 16.1 17 15 17H9C7.9 17 7 17.9 7 19V21M12 14C9.8 14 8 12.2 8 10C8 7.8 9.8 6 12 6C14.2 6 16 7.8 16 10C16 12.2 14.2 14 12 14Z"},
     {k:"planner",l:"Daily Planner",d:"M8 2V5M16 2V5M3.5 9H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"},
+    {k:"teamgames",l:"Team Games",d:"M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"},
     {k:"mytasks",l:"My Tasks",d:"M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"},
     {k:"accountability",l:"Accountability",d:"M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"},
     {k:"mypipeline",l:"My Pipeline",d:"M9 17H7C5.9 17 5 16.1 5 15V5C5 3.9 5.9 3 7 3H17C18.1 3 19 3.9 19 5V15C19 16.1 18.1 17 17 17H15M9 17L12 21L15 17M9 17H15"},
@@ -12568,6 +12572,398 @@ function nowSlot() {
   return (h - SLOT_START) * SLOTS_PER_HOUR + Math.floor(m/SLOT_MINUTES);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TEAM GAMES — BINGO. One shared card for the whole team, stored in its own Firestore
+// document (teamGames/bingo). Anyone taps a square when they do it and it is stamped with
+// their name and their team's color. A line (row, column, diagonal) is a BINGO; all 25 is a
+// BLACKOUT. Only admins can rename squares, shuffle/reset, or change settings.
+// Brand-new and separate: it never reads or writes appdata/main or any rep record.
+// ═══════════════════════════════════════════════════════════════════════════
+const TG_DEFAULT_SQUARES=[
+  "Training Appt Done","Interview","Investment App Done","Recruit","Life App",
+  "Interview","Recruit","Life App","Auto / Mtg Quote Done","Training Appt Done",
+  "Life App","Interview","Get 5 New Names & Numbers","Interview","Recruit",
+  "Recruit","Life App","Interview","PAC Started","LegalShield Done",
+  "Training Appt","Recruit","Life App","Training Appt Done","Training Appt",
+];
+const TG_CENTER=12;
+const TG_TEAM_COLORS=["#0f766e","#7c3aed","#2563eb","#db2777","#d97706","#475569"];
+const TG_LINES=(()=>{
+  const L=[];
+  for(let r=0;r<5;r++) L.push([0,1,2,3,4].map(c=>r*5+c));
+  for(let c=0;c<5;c++) L.push([0,1,2,3,4].map(r=>r*5+c));
+  L.push([0,6,12,18,24]);L.push([4,8,12,16,20]);
+  return L;
+})();
+const tgDefaultState=()=>({squares:TG_DEFAULT_SQUARES.slice(),marks:{},cardNo:1,autoNew:false,prize:"",history:[],lastWin:null,startedAt:new Date().toISOString()});
+const tgDoneLines=(marks)=>TG_LINES.filter(l=>l.every(i=>marks&&marks[i]));
+function tgShortName(raw){
+  const parts=String(raw||"").replace(/[^A-Za-z\s.'-]/g," ").trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return "Someone";
+  const cap=w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  const first=cap(parts[0].replace(/\./g,""));
+  if(parts.length===1) return first;
+  const last=parts[parts.length-1].replace(/\./g,"");
+  return last?first+" "+last.charAt(0).toUpperCase()+".":first;
+}
+const tgInitials=(n)=>{const p=String(n||"?").replace(/\./g,"").trim().split(/\s+/);return ((p[0]||"?").charAt(0)+(p.length>1?p[p.length-1].charAt(0):"")).toUpperCase();};
+function tgShuffled(squares){
+  const rest=squares.filter((_,i)=>i!==TG_CENTER);
+  for(let i=rest.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]];}
+  const out=[];let k=0;
+  for(let n=0;n<25;n++) out.push(n===TG_CENTER?squares[TG_CENTER]:rest[k++]);
+  return out;
+}
+// A short record of a finished/replaced card for the history list.
+function tgArchive(s){
+  const by={};
+  Object.values(s.marks||{}).forEach(m=>{by[m.name]=(by[m.name]||0)+1;});
+  const players=Object.keys(by).map(n=>({name:n,n:by[n]})).sort((a,b)=>b.n-a.n).slice(0,3);
+  return {cardNo:s.cardNo,endedAt:new Date().toISOString(),stamps:Object.keys(s.marks||{}).length,bingos:tgDoneLines(s.marks).length,blackout:Object.keys(s.marks||{}).length===25,players};
+}
+function tgAgo(iso){
+  if(!iso) return "";
+  const mins=Math.floor((Date.now()-new Date(iso).getTime())/60000);
+  if(mins<1) return "Just now";
+  if(mins<60) return mins+"m ago";
+  const h=Math.floor(mins/60);
+  if(h<24) return h+"h ago";
+  const d=Math.floor(h/24);
+  return d===1?"Yesterday":d+"d ago";
+}
+function tgFireConfetti(canvas,big){
+  if(!canvas) return;
+  try{if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;}catch(e){}
+  const dpr=window.devicePixelRatio||1,W=window.innerWidth,H=window.innerHeight;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  const x=canvas.getContext("2d");if(!x) return;
+  x.scale(dpr,dpr);
+  const cols=["#f26b21","#0f766e","#7c3aed","#fbbf24","#ef4444","#3b82f6"],N=big?260:150,ps=[];
+  for(let i=0;i<N;i++) ps.push({x:W/2+(Math.random()-.5)*W*.5,y:H*.35,vx:(Math.random()-.5)*14,vy:-Math.random()*13-3,g:.28+Math.random()*.15,s:6+Math.random()*7,r:Math.random()*6.28,vr:(Math.random()-.5)*.35,c:cols[i%cols.length],sh:Math.random()<.5});
+  let t0=null;const dur=big?4200:3000;
+  const f=(ts)=>{
+    if(!t0) t0=ts;const el=ts-t0;x.clearRect(0,0,W,H);
+    ps.forEach(p=>{p.vy+=p.g;p.vx*=.992;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.globalAlpha=Math.max(0,1-el/dur);x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;if(p.sh){x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);}else{x.beginPath();x.arc(0,0,p.s/2.5,0,6.28);x.fill();}x.restore();});
+    if(el<dur) requestAnimationFrame(f);else x.clearRect(0,0,W,H);
+  };
+  requestAnimationFrame(f);
+}
+
+function TeamGames({session,data,db,readOnly=false}){
+  const me=session?.id;
+  const isAdmin=(session?.role==="admin"||session?.role==="superadmin");
+  const myName=tgShortName(session?.name);
+  const admins=(data&&data.admins)||[];
+  // Which admin's team the person is on (admins are their own team; trainers and reps via their trainer)
+  const myTeam=(()=>{
+    if(isAdmin) return session.id;
+    const trainers=(data&&data.trainers)||[];
+    const reps=(data&&data.reps)||[];
+    if(session?.role==="trainer"){const t=trainers.find(x=>x.id===me);return t?.adminId||null;}
+    const r=reps.find(x=>x.id===me);
+    const t=trainers.find(x=>x.id===r?.trainerId);
+    return t?.adminId||r?.adminId||null;
+  })();
+  const teamColor=(tid)=>{const i=admins.findIndex(a=>a.id===tid);return i<0?"#6b7280":TG_TEAM_COLORS[i%TG_TEAM_COLORS.length];};
+  const teamLabel=(a)=>tgShortName(a.name).split(" ")[0]+"'s team";
+
+  const [state,setState]=useState(null); // null until the first snapshot
+  const [loadErr,setLoadErr]=useState(false);
+  const [width,setWidth]=useState(typeof window!=="undefined"?window.innerWidth:1200);
+  const mobile=width<760;
+  const [modal,setModal]=useState(null); // {type:"mark"|"undo"|"info"|"shuffle", pos}
+  const [note,setNote]=useState("");
+  const [banner,setBanner]=useState(null);
+  const [showAdmin,setShowAdmin]=useState(false);
+  const [editNames,setEditNames]=useState([]);
+  const [editAuto,setEditAuto]=useState(false);
+  const [editPrize,setEditPrize]=useState("");
+  const [adminMsg,setAdminMsg]=useState("");
+  const [saveStatus,setSaveStatus]=useState(null);
+  const canvasRef=useRef(null);
+  const seenWinRef=useRef(undefined);
+  const lastWriteRef=useRef(null);
+  const savedTimeoutRef=useRef(null);
+  const bannerTimeoutRef=useRef(null);
+  const ref=db?doc(db,"teamGames","bingo"):null;
+
+  useEffect(()=>{
+    const onResize=()=>setWidth(window.innerWidth);
+    window.addEventListener("resize",onResize);
+    return ()=>window.removeEventListener("resize",onResize);
+  },[]);
+  useEffect(()=>()=>{clearTimeout(savedTimeoutRef.current);clearTimeout(bannerTimeoutRef.current);},[]);
+
+  // Live card for everyone
+  useEffect(()=>{
+    if(!db) return;
+    const unsub=onSnapshot(doc(db,"teamGames","bingo"),snap=>{
+      const s=snap.exists()?{...tgDefaultState(),...snap.data()}:tgDefaultState();
+      setState(s);setLoadErr(false);
+    },err=>{console.warn("Bingo load failed:",err);setLoadErr(true);setState(st=>st||tgDefaultState());});
+    return ()=>unsub();
+  },[db]);
+
+  // Confetti + banner for everyone watching when a new BINGO / BLACKOUT lands
+  useEffect(()=>{
+    if(!state) return;
+    const w=state.lastWin;
+    if(seenWinRef.current===undefined){
+      seenWinRef.current=w?w.at:null;
+      if(w&&Date.now()-new Date(w.at).getTime()<90000){showWin(w);}
+      return;
+    }
+    if(w&&w.at!==seenWinRef.current){seenWinRef.current=w.at;showWin(w);}
+  },[state&&state.lastWin&&state.lastWin.at]);
+  const showWin=(w)=>{
+    setBanner(w);
+    tgFireConfetti(canvasRef.current,w.type==="blackout");
+    clearTimeout(bannerTimeoutRef.current);
+    bannerTimeoutRef.current=setTimeout(()=>setBanner(null),14000);
+  };
+
+  // Saves show their status and retry once, like the Daily Planner
+  const writeWithRetry=async(writeFn)=>{
+    lastWriteRef.current=writeFn;
+    setSaveStatus("saving");
+    const ok=()=>{setSaveStatus("saved");clearTimeout(savedTimeoutRef.current);savedTimeoutRef.current=setTimeout(()=>setSaveStatus(s=>s==="saved"?null:s),2000);};
+    try{await writeFn();ok();}
+    catch(e1){
+      await new Promise(r=>setTimeout(r,1200));
+      try{await writeFn();ok();}
+      catch(e2){console.warn("Bingo save failed after retry:",e2);setSaveStatus("failed");}
+    }
+  };
+  const retryLastSave=()=>{if(lastWriteRef.current) writeWithRetry(lastWriteRef.current);};
+  // Read-modify-write in a transaction so two people tapping at once never overwrite each other
+  const runTx=async(fn)=>{
+    if(!db||!ref) return false;
+    let aborted=false;
+    await writeWithRetry(async()=>{
+      aborted=false;
+      await runTransaction(db,async(tx)=>{
+        const snap=await tx.get(ref);
+        const cur=snap.exists()?{...tgDefaultState(),...snap.data()}:tgDefaultState();
+        const next=fn(cur);
+        if(!next){aborted=true;return;}
+        tx.set(ref,next);
+      });
+    });
+    return aborted;
+  };
+
+  const s=state||tgDefaultState();
+  const marks=s.marks||{};
+  const lines=tgDoneLines(marks);
+  const winSet={};lines.forEach(l=>l.forEach(i=>{winSet[i]=1;}));
+  const count=Object.keys(marks).length;
+  const blackout=count===25;
+  const canTap=!readOnly&&!!me&&!!db;
+
+  const doMark=async(pos)=>{
+    setModal(null);setNote("");
+    const aborted=await runTx(cur=>{
+      if((cur.marks||{})[pos]) return null; // someone got there first
+      const iso=new Date().toISOString();
+      const nm={...(cur.marks||{}),[pos]:{ownerId:me,name:myName,team:myTeam||null,at:iso}};
+      const before=tgDoneLines(cur.marks).length,after=tgDoneLines(nm).length;
+      const full=Object.keys(nm).length===25;
+      let next={...cur,marks:nm,updatedAt:iso};
+      if(after>before||full) next.lastWin={type:full?"blackout":"bingo",name:myName,team:myTeam||null,at:iso,cardNo:cur.cardNo};
+      if(full&&cur.autoNew){
+        next.history=[tgArchive(next),...(cur.history||[])].slice(0,12);
+        next.squares=tgShuffled(cur.squares);next.marks={};next.cardNo=(cur.cardNo||1)+1;next.startedAt=iso;
+      }
+      return next;
+    });
+    if(aborted) setNote("Someone just got that square. The card has been updated.");
+  };
+  const doUndo=async(pos)=>{
+    setModal(null);setNote("");
+    await runTx(cur=>{
+      const m=(cur.marks||{})[pos];
+      if(!m) return null;
+      if(!(m.ownerId===me||isAdmin)) return null;
+      const nm={...cur.marks};delete nm[pos];
+      return {...cur,marks:nm,updatedAt:new Date().toISOString()};
+    });
+  };
+  const doShuffle=async()=>{
+    if(!isAdmin) return;
+    setModal(null);setAdminMsg("");
+    const aborted=await runTx(cur=>{
+      const iso=new Date().toISOString();
+      const hist=Object.keys(cur.marks||{}).length>0?[tgArchive(cur),...(cur.history||[])].slice(0,12):(cur.history||[]);
+      return {...cur,history:hist,squares:tgShuffled(cur.squares),marks:{},cardNo:(cur.cardNo||1)+1,startedAt:iso,lastWin:null,updatedAt:iso};
+    });
+    if(!aborted) setAdminMsg("✓ Card shuffled and cleared. Everyone now sees the new card.");
+  };
+  const saveSetup=async()=>{
+    if(!isAdmin) return;
+    setAdminMsg("");
+    const names=editNames.map((n,i)=>(String(n||"").trim()||s.squares[i]).slice(0,40));
+    await runTx(cur=>({...cur,squares:names,autoNew:!!editAuto,prize:String(editPrize||"").slice(0,200),updatedAt:new Date().toISOString()}));
+    setAdminMsg("✓ Saved. Stamps stay on their squares.");
+  };
+  const openAdmin=()=>{
+    if(!showAdmin){setEditNames(s.squares.slice());setEditAuto(!!s.autoNew);setEditPrize(s.prize||"");setAdminMsg("");}
+    setShowAdmin(v=>!v);
+  };
+
+  // leaderboard + latest
+  const by={};
+  Object.keys(marks).forEach(k=>{const m=marks[k];const key=m.ownerId||m.name;by[key]=by[key]||{name:m.name,team:m.team,n:0};by[key].n++;});
+  const leaders=Object.values(by).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name)).slice(0,5);
+  const latest=Object.keys(marks).map(k=>({pos:Number(k),m:marks[k]})).sort((a,b)=>String(b.m.at).localeCompare(String(a.m.at))).slice(0,4);
+
+  const card={background:"white",border:`1px solid ${C.border}`,borderRadius:16,padding:dv(14,18)};
+  const modalWrap=(children)=><div onClick={()=>setModal(null)} style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.55)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:16,padding:20,width:"100%",maxWidth:390,boxSizing:"border-box"}}>{children}</div>
+  </div>;
+  const btn=(bg,color,border)=>({padding:"11px 16px",borderRadius:10,border:border||"none",background:bg,color,fontSize:14,fontWeight:800,cursor:"pointer"});
+
+  const modalBody=(()=>{
+    if(!modal) return null;
+    const pos=modal.pos;const label=s.squares[pos];const m=marks[pos];
+    if(modal.type==="mark") return modalWrap(<>
+      <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:6}}>Mark off “{label}”?</div>
+      <div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:14}}>It will be stamped for the team under your name, <b>{myName}</b>, so everyone can see who got it. Only tap it when you really did it.</div>
+      <div style={{display:"flex",gap:8}}><button onClick={()=>doMark(pos)} style={btn(C.teal,"white")}>Yes, I did it</button><button onClick={()=>setModal(null)} style={btn("white",C.textMid,"1px solid #d1d5db")}>Not yet</button></div>
+    </>);
+    if(modal.type==="undo") return modalWrap(<>
+      <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:6}}>Take off this stamp?</div>
+      <div style={{fontSize:13,color:C.textMid,lineHeight:1.5,marginBottom:14}}>{m&&m.ownerId===me?"You":<b>{m&&m.name}</b>} marked <b>{label}</b>. {isAdmin&&m&&m.ownerId!==me?"As an admin you can take it off.":"Only you (or an admin) can take your stamp off."}</div>
+      <div style={{display:"flex",gap:8}}><button onClick={()=>doUndo(pos)} style={btn(C.teal,"white")}>Yes, take it off</button><button onClick={()=>setModal(null)} style={btn("white",C.textMid,"1px solid #d1d5db")}>Keep it</button></div>
+    </>);
+    if(modal.type==="info") return modalWrap(<>
+      <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:6}}>{label}</div>
+      <div style={{fontSize:13,color:C.textMid,marginBottom:14}}>{m?<>Marked by <b>{m.name}</b> · {tgAgo(m.at)}</>:"Not marked yet."}</div>
+      <button onClick={()=>setModal(null)} style={btn("white",C.textMid,"1px solid #d1d5db")}>Close</button>
+    </>);
+    if(modal.type==="shuffle") return modalWrap(<>
+      <div style={{fontSize:17,fontWeight:800,color:C.text,marginBottom:6}}>⚠️ Shuffle the card?</div>
+      <div style={{fontSize:13,color:C.textMid,lineHeight:1.55,marginBottom:14}}>This puts all the squares in a new order and <b>clears every stamp</b> for the whole team. Everyone will see the new card right away. This cannot be undone.</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={doShuffle} style={btn("#dc2626","white")}>Yes, shuffle and clear</button><button onClick={()=>setModal(null)} style={btn("white",C.textMid,"1px solid #d1d5db")}>Cancel</button></div>
+    </>);
+    return null;
+  })();
+
+  const tap=(pos)=>{
+    const m=marks[pos];
+    if(m){setModal({type:(canTap&&(m.ownerId===me||isAdmin))?"undo":"info",pos});return;}
+    if(canTap) setModal({type:"mark",pos});
+  };
+
+  const winBanner=banner?<div style={{background:"linear-gradient(135deg,#f59e0b,#f26b21)",color:"white",borderRadius:16,padding:16,textAlign:"center",marginBottom:14,fontWeight:800,fontSize:20}}>
+    {banner.type==="blackout"?"⬛ BLACKOUT! ⬛":"🎉 BINGO! 🎉"}
+    <div style={{fontSize:13,fontWeight:600,marginTop:2}}>{banner.type==="blackout"?`${banner.name} filled the last square. The whole team did it!`:`${banner.name} completed a line for the team!`}</div>
+  </div>:null;
+  const promo=(!banner&&lines.length>0&&!blackout)?<div style={{background:"#fff7ed",border:"2px solid #f26b21",borderRadius:14,padding:"12px 16px",marginBottom:14,textAlign:"center"}}>
+    <div style={{fontSize:16,fontWeight:900,color:"#c2410c"}}>BINGO is on the board. Now go for the BLACKOUT! ⬛</div>
+    <div style={{fontSize:13,color:C.textMid,marginTop:2}}>{25-count} square{25-count===1?"":"s"} to go{s.prize?` · ${s.prize}`:""}</div>
+  </div>:null;
+  const blackoutBar=(!banner&&blackout)?<div style={{background:"#0f172a",color:"white",borderRadius:14,padding:"12px 16px",marginBottom:14,textAlign:"center",fontWeight:800}}>⬛ BLACKOUT! The team filled the whole card.{isAdmin?<div style={{fontSize:13,fontWeight:600,marginTop:2,opacity:.85}}>Use “Shuffle the card” in Admin setup to start the next one.</div>:null}</div>:null;
+
+  return <div style={{maxWidth:1000,margin:"0 auto"}}>
+    <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:50}}/>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
+      <div style={{fontSize:dv(18,22),fontWeight:800,color:C.text}}>🎯 Team Games</div>
+      {isAdmin&&!readOnly&&<button onClick={openAdmin} style={{padding:"8px 14px",borderRadius:10,border:`1px solid ${showAdmin?C.navy:C.border}`,background:showAdmin?C.navy:"white",color:showAdmin?"white":C.textMid,fontSize:13,fontWeight:800,cursor:"pointer"}}>⚙️ Admin setup</button>}
+    </div>
+    {readOnly&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:13,color:C.textMid}}>Preview — you can look at the card, but marking squares is turned off here.</div>}
+    {saveStatus==="saving"&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:12,color:C.textMid}}>⏳ Saving...</div>}
+    {saveStatus==="saved"&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:12,color:"#166534",fontWeight:600}}>✓ Saved</div>}
+    {saveStatus==="failed"&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+      <div style={{fontSize:12,color:"#991b1b",fontWeight:700}}>⚠️ Didn't save. Check your connection and try again.</div>
+      <button onClick={retryLastSave} style={{padding:"5px 12px",borderRadius:7,border:"none",background:"#dc2626",color:"white",fontSize:12,fontWeight:800,cursor:"pointer"}}>Try again</button>
+    </div>}
+    {loadErr&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:13,color:"#991b1b"}}>Couldn't load the Bingo card. It may need its database permission turned on, or the connection dropped. Refresh and try again.</div>}
+    {note&&<div style={{background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:13,color:"#92400e",fontWeight:600}}>{note}</div>}
+    {winBanner}{promo}{blackoutBar}
+
+    {!state&&!loadErr&&<div style={{...card,textAlign:"center",color:C.textMid,fontSize:14}}>Loading the card...</div>}
+
+    {state&&<div style={{display:"grid",gridTemplateColumns:mobile?"1fr":"minmax(0,1.5fr) minmax(0,1fr)",gap:16,alignItems:"start"}}>
+      <div style={card}>
+        <div style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:dv(38,58),letterSpacing:dv(8,14),color:"#f26b21",textAlign:"center",lineHeight:1,margin:"0 0 4px",paddingLeft:dv(8,14)}}>BINGO</div>
+        <div style={{textAlign:"center",fontSize:13,color:C.textMid,marginBottom:14}}>Card #{s.cardNo||1} · tap a square when you do it</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:dv(5,8)}}>
+          {s.squares.map((label,i)=>{
+            const m=marks[i];const col=m?teamColor(m.team):null;
+            return <div key={i} onClick={()=>tap(i)} role="button" tabIndex={0} aria-label={label+(m?" — marked by "+m.name:"")} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tap(i);}}} style={{position:"relative",aspectRatio:"1/1",border:`2.5px solid ${m?col:"#fdba9c"}`,borderRadius:dv(10,16),background:m?col+"22":"white",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:3,fontSize:"clamp(8px,1.3vw,13px)",fontWeight:700,color:m?col:"#3f3f46",lineHeight:1.15,textTransform:"uppercase",cursor:(canTap||m)?"pointer":"default",minWidth:0,boxShadow:winSet[i]?"0 0 0 3px #fbbf24, 0 0 14px rgba(251,191,36,0.7)":"none",boxSizing:"border-box"}}>
+              {label}
+              {m&&<span style={{position:"absolute",right:-5,top:-7,minWidth:22,height:22,borderRadius:11,background:col,color:"white",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 4px",letterSpacing:0}}>{tgInitials(m.name)}</span>}
+            </div>;
+          })}
+        </div>
+        <div style={{display:"flex",gap:14,flexWrap:"wrap",justifyContent:"center",marginTop:12,fontSize:12,color:C.textMid}}>
+          {admins.slice(0,6).map((a,i)=><span key={a.id}><span style={{display:"inline-block",width:10,height:10,borderRadius:"50%",background:TG_TEAM_COLORS[i%TG_TEAM_COLORS.length],marginRight:5,verticalAlign:"middle"}}/>{teamLabel(a)}</span>)}
+          <span><span style={{display:"inline-block",width:10,height:10,borderRadius:"50%",background:"#fbbf24",marginRight:5,verticalAlign:"middle"}}/>Part of a BINGO</span>
+        </div>
+      </div>
+      <div>
+        <div style={{...card,marginBottom:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+            <div style={{border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 12px"}}><div style={{fontSize:11,fontWeight:800,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.6px"}}>Squares</div><div style={{fontSize:26,fontWeight:900,color:C.text,lineHeight:1.15}}>{count}/25</div></div>
+            <div style={{border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 12px"}}><div style={{fontSize:11,fontWeight:800,color:C.textLight,textTransform:"uppercase",letterSpacing:"0.6px"}}>Bingos</div><div style={{fontSize:26,fontWeight:900,color:C.text,lineHeight:1.15}}>{lines.length}</div></div>
+          </div>
+          <div style={{fontSize:14,fontWeight:800,color:C.text}}>Blackout progress</div>
+          <div style={{height:10,background:"#e5e7eb",borderRadius:6,overflow:"hidden",margin:"6px 0 4px"}}><div style={{height:"100%",width:(count/25*100)+"%",background:"#f26b21",borderRadius:6,transition:"width .3s"}}/></div>
+          <div style={{fontSize:12,color:C.textMid}}>{blackout?"BLACKOUT! 🎉":`${25-count} squares to a blackout`}</div>
+          {s.prize&&<div style={{fontSize:12,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"6px 10px",marginTop:10}}>🏆 {s.prize}</div>}
+        </div>
+        <div style={{...card,marginBottom:14}}>
+          <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>🌟 Top players this card</div>
+          {leaders.length===0?<div style={{fontSize:13,color:C.textMid}}>No one yet. Be the first!</div>
+            :leaders.map((p,i)=><div key={p.name+i} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderTop:i?`1px solid ${C.border}`:"none"}}>
+              <div style={{width:26,height:26,borderRadius:"50%",background:teamColor(p.team),color:"white",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{tgInitials(p.name)}</div>
+              <div style={{flex:1,fontSize:13,fontWeight:700,color:C.text}}>{i+1}. {p.name}</div><div style={{fontWeight:900,color:C.text}}>{p.n}</div>
+            </div>)}
+        </div>
+        <div style={card}>
+          <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>Latest</div>
+          {latest.length===0?<div style={{fontSize:13,color:C.textMid}}>Nothing marked yet.</div>
+            :latest.map((x,i)=><div key={x.pos} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderTop:i?`1px solid ${C.border}`:"none",fontSize:13}}>
+              <div style={{width:26,height:26,borderRadius:"50%",background:teamColor(x.m.team),color:"white",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{tgInitials(x.m.name)}</div>
+              <div style={{flex:1,color:C.text}}><b>{x.m.name}</b> got <b>{s.squares[x.pos]}</b></div><span style={{fontSize:11,color:C.textLight}}>{tgAgo(x.m.at)}</span>
+            </div>)}
+        </div>
+      </div>
+    </div>}
+
+    {state&&(s.history||[]).length>0&&<div style={{...card,marginTop:16}}>
+      <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>Past cards</div>
+      {s.history.map((h,i)=><div key={h.cardNo+"_"+i} style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",padding:"8px 0",borderTop:i?`1px solid ${C.border}`:"none",fontSize:13,color:C.text}}>
+        <div><b>Card #{h.cardNo}</b> · {h.blackout?"⬛ Blackout":h.bingos>0?`${h.bingos} BINGO${h.bingos===1?"":"S"}`:"No BINGO"} · {h.stamps}/25 squares</div>
+        <div style={{color:C.textMid}}>{(h.players||[]).map(p=>`${p.name} (${p.n})`).join(", ")}{h.endedAt?` · ${tgAgo(h.endedAt)}`:""}</div>
+      </div>)}
+    </div>}
+
+    {state&&isAdmin&&!readOnly&&showAdmin&&<div style={{...card,marginTop:16}}>
+      <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:4}}>Bingo card setup <span style={{fontSize:11,fontWeight:800,background:"#fef3c7",color:"#92400e",borderRadius:5,padding:"1px 6px",marginLeft:6}}>Admins only</span></div>
+      <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>These are the 25 squares, in their current positions. Rename any of them. Stamps stay on their squares.</div>
+      <div style={{display:"grid",gridTemplateColumns:mobile?"repeat(2,minmax(0,1fr))":"repeat(5,minmax(0,1fr))",gap:6,marginBottom:14}}>
+        {editNames.map((n,i)=><input key={i} value={n} maxLength={40} onChange={e=>{const v=e.target.value;setEditNames(a=>a.map((x,j)=>j===i?v:x));}} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${i===TG_CENTER?C.gold:C.border}`,fontSize:13,boxSizing:"border-box",width:"100%"}}/>)}
+      </div>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.textMid,marginBottom:3}}>Prize or shout-out for a BINGO / BLACKOUT (shows on the card)</div>
+        <input value={editPrize} maxLength={200} onChange={e=>setEditPrize(e.target.value)} placeholder="BINGO: team shout-out · BLACKOUT: pizza party 🍕" style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:13,boxSizing:"border-box",width:"100%"}}/>
+      </div>
+      <label style={{display:"flex",alignItems:"flex-start",gap:9,fontSize:13,color:C.text,marginBottom:14,cursor:"pointer"}}>
+        <input type="checkbox" checked={editAuto} onChange={e=>setEditAuto(e.target.checked)} style={{marginTop:3}}/>
+        <span><b>Start a new shuffled card automatically after each BLACKOUT.</b><br/><span style={{color:C.textMid,fontSize:12}}>Off by default. When off, the card only resets when an admin shuffles it. The finished card is saved in Past cards either way.</span></span>
+      </label>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <button onClick={saveSetup} style={btn(C.teal,"white")}>Save card setup</button>
+        <button onClick={()=>setModal({type:"shuffle"})} style={btn("white",C.textMid,"1px solid #d1d5db")}>🔀 Shuffle the card…</button>
+      </div>
+      {adminMsg&&<div style={{fontSize:13,color:"#15803d",fontWeight:700,marginTop:10}}>{adminMsg}</div>}
+      <div style={{fontSize:12,color:C.textMid,marginTop:10}}>Only admins see these buttons. Shuffling puts the squares in a new order (the center square stays put) and clears the stamps. You always get a warning first.</div>
+    </div>}
+    {modalBody}
+  </div>;
+}
+
 function DailyPlanner({ session, db }) {
   const today = localDate();
   const [selDate, setSelDate] = useState(today);
@@ -13676,6 +14072,7 @@ export default function App() {
     if(section==="commitmentcats"&&(session.role==="admin"||session.role==="superadmin")) return <CommitmentCategoryEditor data={data} onUpdate={upd}/>;
     if(section==="checklisteditor"&&(session.role==="admin"||session.role==="superadmin")) return <ChecklistEditor data={data} onUpdate={upd}/>;
     if(section==="announcements"&&(session.role==="admin"||session.role==="superadmin")) return <AnnouncementsEditor data={data} onUpdate={upd} session={session}/>;
+    if(section==="teamgames") return <TeamGames session={session} data={data} db={db}/>;
     if(section==="myprofile") return <MyProfilePage session={session} data={data} onUpdate={upd}/>;
     if(section==="mytasks") return <MyTasksPage session={session} data={data} onUpdate={upd}/>;
     if(section==="prospects") return <ProspectsPage session={session} data={data} onUpdate={upd}/>;
