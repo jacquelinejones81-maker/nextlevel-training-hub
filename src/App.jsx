@@ -1848,7 +1848,8 @@ function RefsEditor({rep,data,onUpdate}) {
 }
 
 function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpenCommitment}) {
-  const tgOff=tgGameOf(useTgSettings())==="off";
+  const tgSt=useTgSettings();
+  const tgOff=tgGameOf(tgSt)==="off";
   const [tab,setTab]=useState("checklist");
   const [showCelebration,setShowCelebration]=useState(false);
   // Lightweight check for the sidebar's "new lead" dot — same MoneyMap leads collection
@@ -2089,6 +2090,7 @@ function RepView({rep,data,onUpdate,onUpdateData,readOnly,isOwnView=false,onOpen
           <span style={{fontSize:13,color:tab===t.k?C.teal:"rgba(255,255,255,0.7)",fontWeight:tab===t.k?600:400,flex:1}}>{t.l}</span>
           {t.k==="fttasks"&&hasUnattendedTasksToday(data,rep.id)&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
           {t.k==="pipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
+          {t.k==="teamgames"&&<span title={"This week's game: "+((TG_GAMES[tgGameOf(tgSt)]||{}).n||"Team Games")} style={{fontSize:15,lineHeight:1,flexShrink:0,marginLeft:4}}>{(TG_GAMES[tgGameOf(tgSt)]||{e:"🎮"}).e}</span>}
         </button>}/>
     </div>
     {/* Footer */}
@@ -11427,7 +11429,8 @@ function GroupedNav({items,pinnedKeys,groupDefs,activeKey,onSelect,navOpen,setNa
 
 function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTour,alsoRecruits=false,rewatchVideo=null,hasUnattendedTasks=false,hasNewLead=false}) {
   const [navOpen,setNavOpen]=useState(null);
-  const tgOffSb=tgGameOf(useTgSettings())==="off";
+  const tgStSb=useTgSettings();
+  const tgOffSb=tgGameOf(tgStSb)==="off";
   const nav=[
     {k:"dashboard",l:"Dashboard",d:"M3 12L12 3L21 12V20H15V14H9V20H3V12Z"},
     {k:"production",l:"Production",d:"M3 3H21V5H3ZM3 8H15V10H3ZM3 13H21V15H3ZM3 18H15V20H3Z"},
@@ -11488,7 +11491,8 @@ function Sidebar({section,onNav,role,name,onSignOut,onClose,onShowPhone,onShowTo
           <span style={{fontSize:13,fontWeight:section===item.k?600:400,flex:1}}>{item.l}</span>
           {item.k==="mytasks"&&hasUnattendedTasks&&<div title="You have unattended tasks today" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
           {item.k==="mypipeline"&&hasNewLead&&<div title="You have a new lead" style={{width:8,height:8,borderRadius:4,background:C.gold,flexShrink:0}}/>}
-          {section===item.k&&<div style={{width:3,height:3,borderRadius:2,background:C.teal,flexShrink:0,marginLeft:6}}/>}
+          {item.k==="teamgames"&&<span title={"This week's game: "+((TG_GAMES[tgGameOf(tgStSb)]||{}).n||"Team Games")} style={{fontSize:15,lineHeight:1,flexShrink:0,marginLeft:4}}>{(TG_GAMES[tgGameOf(tgStSb)]||{e:"🎮"}).e}</span>}
+          {item.k!=="teamgames"&&section===item.k&&<div style={{width:3,height:3,borderRadius:2,background:C.teal,flexShrink:0,marginLeft:6}}/>}
         </button>}/>
       <div style={{borderTop:`1px solid ${C.borderLight}`,marginTop:8,paddingTop:8}}>
         {[{l:"App Tour",fn:onShowTour},{l:"Add to Phone",fn:onShowPhone}].map(btn=><button key={btn.l} onClick={()=>{btn.fn();onClose?.();}} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"7px 9px",borderRadius:7,border:"none",cursor:"pointer",textAlign:"left",marginBottom:1,background:"transparent",color:"rgba(255,255,255,0.45)",fontSize:13}}>{btn.l}</button>)}
