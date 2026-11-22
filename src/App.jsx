@@ -4643,6 +4643,20 @@ function getWeekStart(date=new Date()) {
   return localDateStr(d);
 }
 
+// Re-renders a screen when the calendar day changes (midnight, or the phone waking up the next
+// morning), so a page left open overnight starts the new day empty instead of writing to yesterday.
+function useLocalToday(){
+  const [day,setDay]=useState(()=>localDateStr());
+  useEffect(()=>{
+    const check=()=>setDay(d=>{const n=localDateStr();return n===d?d:n;});
+    const id=setInterval(check,20000);
+    document.addEventListener("visibilitychange",check);
+    window.addEventListener("focus",check);
+    return ()=>{clearInterval(id);document.removeEventListener("visibilitychange",check);window.removeEventListener("focus",check);};
+  },[]);
+  return day;
+}
+
 // ── DAILY COMMITMENT TRACKING (Scorecard) ──
 // "manual" categories have no other data source in the app — logged by hand each day.
 // Non-manual categories are auto-pulled from existing production/recruiting data so nobody double-enters them.
@@ -4771,7 +4785,7 @@ function getScorecardActual(data,userId,dateStr,catKey,dayEntry){
 }
 
 function ScorecardPage({data,onUpdate,userId,userRole,track}) {
-
+  useLocalToday();
   const weekKey=getWeekStart();
   const todayStr=localDateStr();
   const allScores=data.scorecards||{};
@@ -5529,6 +5543,7 @@ function SidebarPhotoUpload({userId,data,onUpdateData}) {
 // ── MY PROFILE PAGE ──
 // ── MY ACTIVITY REPORT (for admins/trainers to view their own production + coaching) ──
 function MyActivityReport({session,data,onUpdate}) {
+  useLocalToday();
   const userId = session?.id;
   const isTrainerRole = (data.trainers||[]).some(t=>t.id===userId);
   const staffRecord = (data.trainers||[]).find(t=>t.id===userId) || (data.admins||[]).find(a=>a.id===userId) || (data.reps||[]).find(r=>r.id===userId) || {};
@@ -12656,6 +12671,7 @@ function tgFireConfetti(canvas,big){
 }
 
 function BingoGame({session,data,db,readOnly=false,colors={}}){
+  const [openPlayers,setOpenPlayers]=useState({});
   const me=session?.id;
   const isAdmin=(session?.role==="admin"||session?.role==="superadmin");
   const myName=tgShortName(session?.name);
@@ -12818,8 +12834,8 @@ function BingoGame({session,data,db,readOnly=false,colors={}}){
 
   // leaderboard + latest
   const by={};
-  Object.keys(marks).forEach(k=>{const m=marks[k];const key=m.ownerId||m.name;by[key]=by[key]||{name:m.name,team:m.team,n:0};by[key].n++;});
-  const leaders=Object.values(by).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name)).slice(0,5);
+  Object.keys(marks).forEach(k=>{const m=marks[k];const key=m.ownerId||m.name;by[key]=by[key]||{key,name:m.name,team:m.team,n:0,items:[]};by[key].n++;by[key].items.push({pos:Number(k),at:m.at});});
+  const leaders=Object.values(by).map(p=>({...p,items:p.items.sort((a,b)=>String(b.at).localeCompare(String(a.at)))})).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name));
   const latest=Object.keys(marks).map(k=>({pos:Number(k),m:marks[k]})).sort((a,b)=>String(b.m.at).localeCompare(String(a.m.at))).slice(0,4);
 
   const card={background:"white",border:`1px solid ${C.border}`,borderRadius:16,padding:dv(14,18)};
@@ -12919,12 +12935,21 @@ function BingoGame({session,data,db,readOnly=false,colors={}}){
           {s.prize&&<div style={{fontSize:12,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"6px 10px",marginTop:10}}>🏆 {s.prize}</div>}
         </div>
         <div style={{...card,marginBottom:14}}>
-          <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>🌟 Top players this card</div>
+          <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:2}}>🌟 Players this card</div>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:6}}>Tap a name to see the squares they got.</div>
           {leaders.length===0?<div style={{fontSize:13,color:C.textMid}}>No one yet. Be the first!</div>
-            :leaders.map((p,i)=><div key={p.name+i} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderTop:i?`1px solid ${C.border}`:"none"}}>
-              <div style={{width:26,height:26,borderRadius:"50%",background:teamColor(p.team),color:"white",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{tgInitials(p.name)}</div>
-              <div style={{flex:1,fontSize:13,fontWeight:700,color:C.text}}>{i+1}. {p.name}</div><div style={{fontWeight:900,color:C.text}}>{p.n}</div>
-            </div>)}
+            :leaders.map((p,i)=>{const open=!!openPlayers[p.key];return <div key={p.key} style={{borderTop:i?`1px solid ${C.border}`:"none"}}>
+              <button onClick={()=>setOpenPlayers(o=>({...o,[p.key]:!o[p.key]}))} aria-expanded={open} style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"8px 0",border:"none",background:"none",cursor:"pointer",textAlign:"left"}}>
+                <span style={{fontSize:11,color:C.textMid,width:12}}>{open?"▼":"▶"}</span>
+                <div style={{width:26,height:26,borderRadius:"50%",background:teamColor(p.team),color:"white",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{tgInitials(p.name)}</div>
+                <div style={{flex:1,fontSize:13,fontWeight:700,color:C.text}}>{i+1}. {p.name}</div><div style={{fontWeight:900,color:C.text}}>{p.n}</div>
+              </button>
+              {open&&<div style={{margin:"0 0 8px 36px",background:C.surface,borderRadius:10,padding:"4px 12px"}}>
+                {p.items.map((x,j)=><div key={x.pos} style={{display:"flex",justifyContent:"space-between",gap:8,padding:"6px 0",borderTop:j?`1px solid ${C.border}`:"none",fontSize:13,color:C.text}}>
+                  <b>{s.squares[x.pos]}</b><span style={{fontSize:11,color:C.textLight,whiteSpace:"nowrap"}}>{tgAgo(x.at)}</span>
+                </div>)}
+              </div>}
+            </div>;})}
         </div>
         <div style={card}>
           <div style={{fontSize:14,fontWeight:800,color:C.text,marginBottom:8}}>Latest</div>
