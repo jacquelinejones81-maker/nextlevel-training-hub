@@ -4822,7 +4822,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     onUpdate({...data,scorecards:{...allScores,[userId]:{...myScores,[weekKey]:{...week,days:newDays}}}});
   };
 
-  const totalPct=Math.round(((weeklyTotal("contacts")/goals.contacts)+(weeklyTotal("apptSet")/goals.apptSet)+(weeklyTotal("apptDone")/goals.apptDone))/3*100);
+  const totalPct=Math.round((((weeklyTotal("contacts")+weeklyTotal("calls"))/goals.contacts)+(weeklyTotal("apptSet")/goals.apptSet)+(weeklyTotal("apptDone")/goals.apptDone))/3*100);
   const getMessage=()=>{
     if(totalPct>=80) return {msg:"Outstanding week! You are on fire!",color:C.success};
     if(totalPct>=50) return {msg:"You are building momentum! Keep going!",color:C.teal};
@@ -4831,7 +4831,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
   };
   const {msg,color}=getMessage();
 
-  const wkContacts=weeklyTotal("contacts"), wkApptSet=weeklyTotal("apptSet"), wkApptDone=weeklyTotal("apptDone");
+  const wkContacts=weeklyTotal("contacts")+weeklyTotal("calls"), wkApptSet=weeklyTotal("apptSet"), wkApptDone=weeklyTotal("apptDone");
   const contactRate=wkContacts>0?Math.round((wkApptSet/wkContacts)*100):0;
   const showRate=wkApptSet>0?Math.round((wkApptDone/wkApptSet)*100):0;
 
@@ -4843,42 +4843,11 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     const wkData=myScores[wk]||{contacts:0,apptSet:0,apptDone:0,days:{}};
     const wkDayList=Object.values(wkData.days||{});
     const tot=(key)=>wkDayList.length>0?wkDayList.reduce((s,dd)=>s+(Number(dd.actual?.[key])||0),0):(Number(wkData[key])||0);
-    const c=tot("contacts"),s=tot("apptSet"),dn=tot("apptDone");
-    const pct=Math.round(((c/goals.contacts)+(s/goals.apptSet)+(dn/goals.apptDone))/3*100);
-    return {week:wk,label:i===0?"This Week":i===1?"Last Week":`${i} Weeks Ago`,pct,c,s,dn};
+    const c=tot("contacts"),s=tot("apptSet"),dn=tot("apptDone"),cc=c+tot("calls");
+    const pct=Math.round(((cc/goals.contacts)+(s/goals.apptSet)+(dn/goals.apptDone))/3*100);
+    return {week:wk,label:i===0?"This Week":i===1?"Last Week":`${i} Weeks Ago`,pct,c,cc,s,dn};
   });
 
-  // Team Today dashboard — admins see everyone who can commit, trainers see their own reps + themselves
-  const licensedReps=(data.reps||[]).filter(r=>r.track==="licensed"&&!r.inactive);
-  const trainers=data.trainers||[];
-  const allAdmins=data.admins||[];
-  const [teamScope,setTeamScope]=useState("mine");
-  const [teamSearch,setTeamSearch]=useState("");
-  const [teamExpanded,setTeamExpanded]=useState(false);
-
-  let teamMembers=[];
-  if(isAdmin){
-    if(teamScope==="all") teamMembers=[...trainers,...licensedReps];
-    else if(teamScope==="mine") teamMembers=[...trainers.filter(t=>t.adminId===userId),...licensedReps.filter(r=>r.adminId===userId)];
-    else teamMembers=[...trainers.filter(t=>t.adminId===teamScope),...licensedReps.filter(r=>r.adminId===teamScope)];
-  }
-  else if(isTrainer) teamMembers=[{id:userId,name:(trainers.find(t=>t.id===userId)||{}).name||"Me"},...licensedReps.filter(r=>r.trainerId===userId)];
-
-  const teamTodayAll=teamMembers.map(m=>{
-    const mScores=(data.scorecards||{})[m.id]||{};
-    const mWeek=mScores[weekKey]||{days:{}};
-    const mToday=(mWeek.days||{})[todayStr]||{committed:{},actual:{}};
-    const committedTotal=getEffectiveCommitmentCategories(data).reduce((s,c)=>s+(Number(mToday.committed?.[c.key])||0),0);
-    const actualTotal=getEffectiveCommitmentCategories(data).reduce((s,c)=>s+getScorecardActual(data,m.id,todayStr,c.key,mToday),0);
-    const pct=committedTotal>0?Math.round((actualTotal/committedTotal)*100):(actualTotal>0?100:0);
-    return {...m,committedTotal,actualTotal,pct};
-  });
-  // Only show people actually using it today — no point reviewing someone with nothing logged
-  const teamActive=teamTodayAll.filter(m=>m.committedTotal>0||m.actualTotal>0);
-  const teamFiltered=teamSearch.trim()?teamActive.filter(m=>m.name?.toLowerCase().includes(teamSearch.trim().toLowerCase())):teamActive;
-  const teamToday=[...teamFiltered].sort((a,b)=>a.pct-b.pct);
-  const onPaceCount=teamActive.filter(m=>m.pct>=80).length;
-  const behindCount=teamActive.length-onPaceCount;
 
   return <div>
     <div style={{fontSize:dv(17,22),fontWeight:700,color:C.text,marginBottom:4}}>Scorecard</div>
@@ -4951,7 +4920,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     {/* Weekly score */}
     <Card style={{marginBottom:16,background:`linear-gradient(135deg,${C.navy},${C.navyMid})`,border:"none"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div><div style={{fontSize:14,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Contacts / Appts Set / Appts Completed vs. weekly goals</div></div>
+        <div><div style={{fontSize:14,fontWeight:700,color:"white"}}>Weekly Score</div><div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Calls &amp; Contacts / Appts Set / Appts Completed vs. weekly goals</div></div>
         <div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:totalPct>=80?C.success:totalPct>=50?C.teal:C.gold}}>{totalPct}%</div></div>
       </div>
       <Bar pct={totalPct} color={totalPct>=80?C.success:totalPct>=50?C.teal:C.gold} h={8}/>
@@ -4962,7 +4931,7 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     {(wkContacts>0||wkApptSet>0)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
       <Card style={{padding:"10px 12px",textAlign:"center"}}>
         <div style={{fontSize:20,fontWeight:700,color:C.purple}}>{contactRate}%</div>
-        <div style={{fontSize:13,color:C.textMid}}>Contact-to-Appt Rate</div>
+        <div style={{fontSize:13,color:C.textMid}}>Call/Contact-to-Appt Rate</div>
         <div style={{fontSize:12,color:C.textLight}}>Industry target: 20%</div>
       </Card>
       <Card style={{padding:"10px 12px",textAlign:"center"}}>
@@ -4975,50 +4944,20 @@ function ScorecardPage({data,onUpdate,userId,userRole,track}) {
     {/* History */}
     <Card style={{marginBottom:16}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Recent History</div>
-      {weekHistory.map((wh,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-        <div style={{width:80,fontSize:13,color:i===0?C.text:C.textMid,fontWeight:i===0?700:400}}>{wh.label}</div>
-        <div style={{flex:1}}><Bar pct={wh.pct} color={wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold} h={5}/></div>
-        <div style={{fontSize:13,fontWeight:600,color:wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{wh.pct}%</div>
-        <div style={{fontSize:12,color:C.textLight,width:80,textAlign:"right"}}>{wh.c}c / {wh.s}s / {wh.dn}d</div>
+      {weekHistory.map((wh,i)=><div key={i} style={{marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:80,fontSize:13,color:i===0?C.text:C.textMid,fontWeight:i===0?700:400}}>{wh.label}</div>
+          <div style={{flex:1}}><Bar pct={wh.pct} color={wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold} h={5}/></div>
+          <div style={{fontSize:13,fontWeight:600,color:wh.pct>=80?C.success:wh.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{wh.pct}%</div>
+        </div>
+        <div style={{display:"flex",gap:14,flexWrap:"wrap",marginLeft:90,marginTop:3,fontSize:12,color:C.textMid}}>
+          <span><b style={{color:C.text}}>{wh.cc}</b> calls &amp; contacts</span>
+          <span><b style={{color:C.text}}>{wh.s}</b> appts set</span>
+          <span><b style={{color:C.text}}>{wh.dn}</b> appts done</span>
+        </div>
       </div>)}
     </Card>
 
-    {/* Team Today dashboard — admins see the whole team, trainers see their own */}
-    {(isAdmin||isTrainer)&&<Card>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text}}>Team Today</div>
-        {teamActive.length>0&&<button onClick={()=>setTeamExpanded(!teamExpanded)} style={{fontSize:12,color:C.teal,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>{teamExpanded?"Collapse":"Expand"}</button>}
-      </div>
-      <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>Only shows people with something logged today — no news from someone means nothing to review yet</div>
-
-      {isAdmin&&allAdmins.length>1&&<div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
-        <button onClick={()=>setTeamScope("mine")} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${teamScope==="mine"?C.teal:C.border}`,background:teamScope==="mine"?C.teal+"11":"white",color:teamScope==="mine"?C.teal:C.textMid,cursor:"pointer",fontWeight:teamScope==="mine"?700:500}}>My Team</button>
-        {allAdmins.filter(a=>a.id!==userId).map(a=><button key={a.id} onClick={()=>setTeamScope(a.id)} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${teamScope===a.id?C.teal:C.border}`,background:teamScope===a.id?C.teal+"11":"white",color:teamScope===a.id?C.teal:C.textMid,cursor:"pointer",fontWeight:teamScope===a.id?700:500}}>{a.name}'s Team</button>)}
-        <button onClick={()=>setTeamScope("all")} style={{fontSize:12,padding:"4px 10px",borderRadius:6,border:`1px solid ${teamScope==="all"?C.teal:C.border}`,background:teamScope==="all"?C.teal+"11":"white",color:teamScope==="all"?C.teal:C.textMid,cursor:"pointer",fontWeight:teamScope==="all"?700:500}}>Everyone</button>
-      </div>}
-
-      {teamActive.length===0?
-        <div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No one's logged a commitment yet today</div>
-        :
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",background:C.surface,borderRadius:8,marginBottom:teamExpanded?10:0}}>
-          <div style={{fontSize:13,color:C.text}}><b style={{color:C.success}}>{onPaceCount}</b> of <b>{teamActive.length}</b> on pace{behindCount>0&&<span>, <b style={{color:C.gold}}>{behindCount}</b> falling behind</span>}</div>
-        </div>
-      }
-
-      {teamExpanded&&teamActive.length>0&&<>
-        <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)} placeholder="Search by name..." style={{width:"100%",padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,fontSize:13,color:C.text,marginBottom:8,boxSizing:"border-box"}}/>
-        {teamToday.map((u,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 10px",background:C.surface,borderRadius:8}}>
-          <div style={{width:28,height:28,borderRadius:7,background:C.teal+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.teal,flexShrink:0}}>{u.name?.charAt(0)?.toUpperCase()}</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
-            <div style={{fontSize:12,color:C.textLight}}>{u.actualTotal} actual / {u.committedTotal} committed</div>
-          </div>
-          <div style={{flex:1}}><Bar pct={u.pct} color={u.pct>=80?C.success:u.pct>=50?C.teal:C.gold} h={4}/></div>
-          <div style={{fontSize:13,fontWeight:700,color:u.pct>=80?C.success:u.pct>=50?C.teal:C.gold,width:36,textAlign:"right"}}>{u.pct}%</div>
-        </div>)}
-        {teamToday.length===0&&<div style={{fontSize:13,color:C.textLight,textAlign:"center",padding:"10px 0"}}>No match for "{teamSearch}"</div>}
-      </>}
-    </Card>}
   </div>;
 }
 
