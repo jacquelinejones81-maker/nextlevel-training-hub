@@ -807,19 +807,19 @@ const FIELD_TRAINER_REQS = [
 const TOUR_STEPS = {
   admin:[
     {title:"Welcome to NextLevel Hub!",body:"You have full admin access — manage trainers, reps, announcements, scripts, resources, production, and the full team career journey all in one place."},
-    {title:"Dashboard Alerts",body:"Your dashboard shows Field Trainer Review Requests, Activity Alerts for reps with no check-ins, Upcoming Birthdays, Top Recruiters, and the Team Leaderboard — everything you need at a glance."},
+    {title:"Dashboard Alerts",body:"Your dashboard shows Field Trainer Review Requests, Activity Alerts for reps with no check-ins, Upcoming Birthdays, and Top Recruiters — everything you need at a glance."},
     {title:"Next Level & Field Trainer Requests",body:"When a rep finishes their checklist they request Licensed Now What access. When a licensed rep is ready they request Field Trainer review. Both show as banners on your dashboard — approve or deny with one click."},
     {title:"Add & Manage Reps",body:"Click 'Add New Rep' to add a recruit — assign their track, trainer, and who recruited them. Click any rep card to open their full profile, view as rep, log check-ins, or remove them."},
     {title:"Rep Profile",body:"Each rep profile shows their trainer and rep progress, DGO photo, t-shirt size, My Why, birthday, pre-licensing class type, bonus goal, and recruit log. Everything your trainer needs in one place."},
     {title:"Team Announcements",body:"Go to Team Mgmt to post announcements. Choose Info, Warning, Success, or Urgent. Set an expiry date and it auto-hides. All users see it instantly on every device."},
     {title:"Scripts & Resources",body:"Scripts are fully editable — add, edit, or delete anytime. Resources holds links to training docs and videos organized by category. Both update for everyone instantly."},
-    {title:"Leaderboard & Top Recruiters",body:"The Team Leaderboard ranks everyone by Scorecard, Life Apps, Appointments, or Recruits. Top Recruiters shows who is building the team. Both are collapsible on the dashboard."},
+    {title:"Top Recruiters",body:"Top Recruiters shows who is building the team. It is collapsible on the dashboard."},
     {title:"Scorecard",body:"Track weekly activity — Contacts Made (goal 100), Appointments Set (goal 20), Appointments Completed (goal 20). The admin view shows a team summary so you can coach based on real activity data."},
     {title:"Production & History",body:"Track annual premium, recruits, and licensed agents against your goals. Archive each month to build a production history and track trends over time."},
   ],
   trainer:[
     {title:"Welcome, Trainer!",body:"This is your field training hub. Manage your reps, track progress, log check-ins, track your own production and scorecard — all in one place synced across every device."},
-    {title:"Dashboard",body:"See activity alerts for reps with no check-ins, upcoming birthdays, top recruiters, and the leaderboard. Rep cards show dual progress bars and a gold Upgrade Pending badge when a rep has finished their checklist."},
+    {title:"Dashboard",body:"See activity alerts for reps with no check-ins, upcoming birthdays, and top recruiters. Rep cards show dual progress bars and a gold Upgrade Pending badge when a rep has finished their checklist."},
     {title:"Rep Profile",body:"Click any rep card to open their full profile. See their trainer and rep checklists, appointments, milestones, DGO photo, t-shirt size, My Why, birthday, pre-licensing class, bonus goal, and recruit log."},
     {title:"View as Rep",body:"Use 'View as Rep' at the top of any rep profile to see exactly what they see — great for troubleshooting or walking them through the app on a call."},
     {title:"Trainer Checklist",body:"Complete your trainer checklist for each rep — covers everything from Telegram to FNA and DGO. This is your onboarding roadmap."},
@@ -4177,14 +4177,14 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
     </div>
     <RvpPathRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
     <HelpRequestsBanner data={data} onUpdate={onUpdate} userRole={userRole} userId={userId}/>
-    <GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>
+    {SHOW_DASH_TEAM_GOALS&&<GoalBoard data={data} onUpdate={onUpdate} userRole={userRole} showEdit={true}/>}
     <FieldTrainerRequests data={data} onUpdate={onUpdate} userRole={userRole}/>
-    <StalledReferencesAlert data={data} onUpdate={onUpdate} userRole={userRole} userId={userId} onSelectRep={onSelectRep}/>
+    {SHOW_DASH_STALLED_REFS&&<StalledReferencesAlert data={data} onUpdate={onUpdate} userRole={userRole} userId={userId} onSelectRep={onSelectRep}/>}
 
     <BirthdayAnniversaryWidget data={data}/>
     {(userRole==="admin"||userRole==="superadmin")&&<LinkSharingActivity data={data}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<TopRecruiters data={data} onUpdate={onUpdate} userRole={userRole}/>}
-    {(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
+    {SHOW_DASH_LEADERBOARD&&(userRole==="admin"||userRole==="superadmin")&&<Leaderboard data={data} userId={userId}/>}
     {(userRole==="admin"||userRole==="superadmin")&&<ProdDash data={data} onUpdateData={onUpdate}/>}
 
     {userRole==="trainer"&&<WallOfFameBanner data={data}/>}
@@ -10766,6 +10766,10 @@ const REP_NAV_GROUPS_FT=[
 ];
 // Set to true to bring the Accountability tab back in the menu (the page itself is untouched).
 const SHOW_ACCOUNTABILITY_TAB=false;
+// Dashboard boxes that are turned off. Set any to true to show it again (the code is still here).
+const SHOW_DASH_TEAM_GOALS=false;
+const SHOW_DASH_STALLED_REFS=false;
+const SHOW_DASH_LEADERBOARD=false;
 function buildNavGroups(items,pinnedKeys,groupDefs){
   const byKey={};
   items.forEach(it=>{byKey[it.k]=it;});
