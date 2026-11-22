@@ -4109,6 +4109,8 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
   // Search now lives in the top bar and shows a results dropdown; the rep list below is
   // narrowed by the track filter only.
   const filtered=reps.filter(r=>filter==="all"||r.track===filter);
+  // Admins use My Reps for the full roster; the dashboard list stays for trainers.
+  const showRepList=!isAdmin||SHOW_DASH_REP_LIST;
   const searchMatches=search.trim()?reps.filter(r=>(r.name||"").toLowerCase().includes(search.trim().toLowerCase())||(r.phone||"").includes(search.trim())).slice(0,8):[];
   const [searchFocused,setSearchFocused]=useState(false);
   const addRep=f=>onUpdate({...data,reps:[...(data.reps||[]),{...f,id:"rep_"+Date.now(),checked:{},trainerChecked:{},appointments:[],references:[],checkIns:[],repPin:null,createdAt:Date.now()}]});
@@ -4129,7 +4131,7 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
           </div>)}
         </div>}
       </div>
-      <select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>
+      {showRepList&&<select value={filter} onChange={e=>setFilter(e.target.value)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,fontSize:14,color:C.text}}><option value="all">All Tracks</option>{Object.entries(TRACK_INFO).map(([k,t])=><option key={k} value={k}>{t.label}</option>)}</select>}
       <button onClick={()=>setShowAdd(true)} style={{padding:"10px 20px",borderRadius:9,background:C.teal,color:"white",border:"none",cursor:"pointer",fontWeight:700,fontSize:14,whiteSpace:"nowrap"}}>+ Add New Rep</button>
     </div>
     {isAdmin&&<TeamNumbersCard data={data} userId={userId}/>}
@@ -4210,8 +4212,8 @@ function Dashboard({data,onUpdate,userRole,userId,onSelectRep}) {
       </Card>;
     })()}
 
-    {filtered.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textLight}}>{reps.length===0?"No reps yet - add your first rep":"No results found"}</div>}
-    {filtered.map(rep=>{
+    {showRepList&&filtered.length===0&&<div style={{textAlign:"center",padding:"28px 0",color:C.textLight}}>{reps.length===0?"No reps yet - add your first rep":"No results found"}</div>}
+    {showRepList&&filtered.map(rep=>{
       const track=TRACK_INFO[rep.track];
       const cl=TRACK_TO_CHECKLIST_KEY[rep.track]?getChecklistItems(data,TRACK_TO_CHECKLIST_KEY[rep.track]):[];
       const done=cl.filter(i=>(rep.checked||{})[i.id]).length;
@@ -10770,6 +10772,7 @@ const SHOW_ACCOUNTABILITY_TAB=false;
 const SHOW_DASH_TEAM_GOALS=false;
 const SHOW_DASH_STALLED_REFS=false;
 const SHOW_DASH_LEADERBOARD=false;
+const SHOW_DASH_REP_LIST=false; // admin dashboard rep cards (everyone is in My Reps); trainers still see theirs
 function buildNavGroups(items,pinnedKeys,groupDefs){
   const byKey={};
   items.forEach(it=>{byKey[it.k]=it;});
